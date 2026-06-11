@@ -1,0 +1,224 @@
+/* static/css/index.css - 全域タップ完全対応版 */
+
+/* ===========================
+   メインレイアウト
+   =========================== */
+.page-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+}
+
+/* 編集ボタンレイアウト */
+.btn-edit {
+    display: inline-block;
+    padding: 2px 12px;       
+    font-size: 14px;
+    font-weight: 500;
+    color: #545454;
+    border: 1.2px solid #858585;
+    border-radius: 4px;
+    margin-right: 7px;
+}
+
+a[role="button"]:hover {
+    color: #000000;
+    border-color: #070707;
+    background: #f4f4f4;
+    text-decoration: none;
+}
+
+/* フィルター表示テキスト */
+.filter-label {
+    font-size: 13px;
+    color: #777;
+    font-weight: 500;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    background: #f0f0f0;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* ===========================
+   記事カード全体
+   =========================== */
+.post-card {
+    display: flex;
+    gap: 32px; 
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px; 
+    padding: 28px; 
+    margin-bottom: 28px; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+    
+    /* ★ リンク領域(::after)をカード全体に広げるための絶対基準位置に設定 */
+    position: relative;
+    cursor: pointer;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 左側: サムネイル */
+.post-thumbnail {
+    flex: 0 0 270px;
+    height: 160px;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #f7fafc;
+    /* z-index や position: relative を持たせないことで、全域リンクの下に配置させます */
+}
+
+.thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* 右側: コンテンツエリア */
+.post-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    
+    /* ⚠️ 重要：元のコードにあった position: relative; を削除しました。
+       これにより、タイトルの ::after が枠を突き抜けてカード全体に広がります。*/
+}
+
+/* メタ情報 */
+.post-header-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+}
+
+/* 記事タイトル */
+.post-title {
+    margin: 0 0 15px 0;
+    font-size: 1.30rem;
+    line-height: 1.4;
+    text-align: left !important;
+}
+
+.post-title a {
+    color: #2d3748;
+    text-decoration: none;
+    display: inline-block;
+}
+
+/* ★ 魔法の全域タップ化（マクロリンク）
+   親の .post-card に対して上下左右いっぱい(inset: 0)に広げます。
+*/
+.post-title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.post-card:hover .post-title a {
+    color: #005cfa;
+}
+
+/* ★ ボタンを全域リンクから保護する
+   z-index: 2 を指定し、透明なリンクカバー(z-index: 1)より前面に配置します。
+*/
+.post-actions {
+    position: relative;
+    z-index: 2;
+}
+
+.btn-delete {
+    background: transparent;
+    border: 1.2px solid #e53e3e;
+    color: #e53e3e;
+    padding: 2px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-delete:hover {
+    background-color: #fff5f5;
+}
+
+/* 投稿日時 */
+.post-date {
+    margin: 8px 0 0 0;
+    font-size: 0.80rem;
+    color: #718096;
+}
+
+/* ===========================
+   📱 スマホ対応（レスポンシブ）
+   =========================== */
+@media (max-width: 600px) {
+    .page-wrapper {
+        padding: 16px 12px 48px;
+    }
+
+    .post-card {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+        margin-top: 5px;
+    }
+    
+    .post-thumbnail {
+        flex: none;
+        width: 100%; 
+        height: 180px;
+    }
+
+    .post-content {
+        width: 100%;
+    }
+
+    .post-header-meta {
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+    }
+
+    .post-title {
+        font-size: 1.15rem;
+        line-height: 1.4;
+        margin-bottom: 12px;
+    }
+
+    .post-actions {
+        margin-top: 4px;
+        margin-bottom: 8px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-edit, .btn-delete {
+        padding: 6px 16px;
+        font-size: 13px;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .post-date {
+        font-size: 0.75rem;
+        margin-top: 6px;
+    }
+
+    /* スマホ時も全域リンクを維持 */
+    .post-title a::after {
+        inset: 0;
+        z-index: 1;
+    }
+}

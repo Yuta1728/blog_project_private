@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/create_update.css') }}">
+
+<h1>新規投稿作成</h1>
+<div>
+    <form action="{{ url_for('admin.create') }}" method="post" enctype="multipart/form-data" class="post-form">
+        <label for="title">タイトル</label>
+        <input type="text" name="title" required>
+
+        <p>
+            <label for="genre_select">ジャンル</label>
+            <select name="genre_select" id="genre_select" onchange="toggleNewGenreInput()">
+                <option value="未分類" selected>-- ジャンルを選択（選択なしは未分類） --</option>
+                
+                {% for genre in genres %}
+                    <option value="{{ genre }}">{{ genre }}</option>
+                {% endfor %}
+                <option value="__NEW__">+ 新しいジャンルを作成する</option>
+            </select>
+        </p>
+
+        <p id="new_genre_wrapper" style="display: none;">
+            <label for="genre_new">新しいジャンル名</label>
+            <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
+        </p>
+
+        <p>
+            <label>公開設定</label>
+            <input type="hidden" name="is_published" id="is_published" value="false">
+            
+            <button type="button" id="toggle_status_btn" class="toggle-status-btn private" onclick="handleStatusToggle()">
+                <span class="status-icon">🔒</span>
+                <span class="status-text">非公開</span>
+            </button>
+        </p>
+
+        <script>
+        function handleStatusToggle() {
+            const hiddenInput = document.getElementById('is_published');
+            const btn = document.getElementById('toggle_status_btn');
+            const icon = btn.querySelector('.status-icon');
+            const text = btn.querySelector('.status-text');
+
+            if (hiddenInput.value === 'false') {
+                // 全体公開に切り替え
+                hiddenInput.value = 'true';
+                btn.classList.remove('private');
+                btn.classList.add('published');
+                icon.textContent = '🔓';
+                text.textContent = '全体公開';
+            } else {
+                // 非公開に切り替え
+                hiddenInput.value = 'false';
+                btn.classList.remove('published');
+                btn.classList.add('private');
+                icon.textContent = '🔒';
+                text.textContent = '非公開';
+            }
+        }
+        </script>
+
+        <p>
+            <label for="body">内容</label>
+            ※見出しの作り方：大見出し <b>## 見出し</b>、中見出し <b>### 見出し</b> …<br>
+            ※目次の挟み方： <b>[toc]</b> と半角で入力（未入力の場合は一番上に自動挿入）<br>
+            ※画像の挟み方： <b>[img1]…</b> と半角で入力（選択した画像の1枚目の順に対応）<br>
+            ※文字の太字化： <b>**太字にする文字**</b> アスタリスクで囲んでください
+        </p>
+
+        <p>
+            <textarea name="body" rows="17" required placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
+        </p>
+            
+        <p>
+            <label for="fileUpload">画像（複数選択可 / 順番に [img1], [img2] になります）</label>
+            <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
+        </p>
+
+
+        <p>
+            <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
+            <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
+                <option value="none" selected>-- 選択なし（システム共通のデフォルトになります） --</option>
+                <option value="thumb_option1.jpg">選択肢1：趣味（thumb_option1.jpg）</option>
+                <option value="thumb_option2.jpg">選択肢2：旅行（thumb_option2.jpg）</option>
+                <option value="thumb_option3.jpg">選択肢3：スポーツ（thumb_option3.jpg）</option>
+                <option value="thumb_option4.jpg">選択肢4：アニメ（thumb_option4.jpg）</option>
+                <option value="thumb_option5.jpg">選択肢5：本（thumb_option5.jpg）</option>
+                <option value="thumb_option6.jpg">選択肢6：ゲーム（thumb_option6.jpg）</option>
+                <option value="thumb_option7.jpg">選択肢7：音楽（thumb_option7.jpg）</option>
+                <option value="thumb_option8.jpg">選択肢8：映画（thumb_option8.jpg）</option>
+                <option value="thumb_option9.jpg">選択肢9：ドラマ（thumb_option9.jpg）</option>
+                <option value="thumb_option10.jpg">選択肢10：開発（thumb_option10.jpg）</option>
+                <option value="thumb_option11.jpg">選択肢11：勉強（thumb_option11.jpg）</option>
+            </select>
+        </p>
+
+        <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
+            <div class="preview-item" style="max-width: 200px;">
+                <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                <div class="preview-label">選択中のサムネイル</div>
+            </div>
+        </div>
+
+        <script>
+        // 選んだデフォルト画像をその場でプレビューするJavaScript
+        function previewDefaultThumb(select) {
+            const previewArea = document.getElementById('default-thumb-preview-area');
+            const previewImg = document.getElementById('default-thumb-preview-img');
+            
+            if (select.value === 'none') {
+                previewArea.style.display = 'none';
+                previewImg.src = '';
+            } else {
+                previewArea.style.display = 'block';
+                previewImg.src = "/static/img/" + select.value;
+            }
+        }
+        </script>
+
+
+        <!-- 画像プレビューエリア -->
+        <div id="preview-area" style="display: none;">
+            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+                📸 アップロード画像プレビュー
+            </p>
+            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+        </div>
+
+        <input type="submit" value="投稿する">
+    </form>
+</div>
+
+
+<script>
+function toggleNewGenreInput() {
+    const selectBox = document.getElementById('genre_select');
+    const newGenreWrapper = document.getElementById('new_genre_wrapper');
+    const newGenreInput = document.getElementById('genre_new');
+
+    if (selectBox.value === '__NEW__') {
+        newGenreWrapper.style.display = 'block';
+        newGenreInput.required = true;
+    } else {
+        newGenreWrapper.style.display = 'none';
+        newGenreInput.required = false;
+        newGenreInput.value = '';
+    }
+}
+
+function previewImages(input) {
+    const previewArea = document.getElementById('preview-area');
+    const previewList = document.getElementById('preview-list');
+
+    // 前回のプレビューをリセット
+    previewList.innerHTML = '';
+
+    const files = Array.from(input.files);
+
+    if (files.length === 0) {
+        previewArea.style.display = 'none';
+        return;
+    }
+
+    previewArea.style.display = 'block';
+
+    files.forEach((file, index) => {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+
+            const label = document.createElement('div');
+            label.className = 'preview-label';
+            label.textContent = `[img${index + 1}]`;
+
+            const filename = document.createElement('div');
+            filename.className = 'preview-filename';
+            filename.textContent = file.name;
+            filename.title = file.name; // ホバーでフルネーム表示
+
+            item.appendChild(img);
+            item.appendChild(label);
+            item.appendChild(filename);
+            previewList.appendChild(item);
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+</script>
+
+{% endblock %}

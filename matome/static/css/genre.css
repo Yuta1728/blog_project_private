@@ -1,0 +1,192 @@
+/* static/css/genre.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   ページレイアウト
+   =========================== */
+h1 {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin: 36px 0 20px;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+}
+
+.genre-container {
+    max-width: 480px;
+    margin: 0 auto 60px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ===========================
+   リストリセット
+   =========================== */
+.genre-list, .sub-genre-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* 「全て表示」 */
+.genre-item-all a {
+    display: block;
+    padding: 16px 24px;
+    font-size: 15px !important;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-decoration: none;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+}
+
+.genre-item-all a:hover {
+    background: #fafafa;
+    text-decoration: none;
+}
+
+/* 各グループ */
+.genre-group {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.genre-group:last-child {
+    border-bottom: none;
+}
+
+/* アコーディオンタイトル */
+.group-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    list-style: none;
+    transition: background 0.15s;
+    min-height: 52px;
+    box-sizing: border-box;
+}
+
+.group-title:hover {
+    background: #fafafa;
+}
+
+.group-title::-webkit-details-marker {
+    display: none;
+}
+
+/* 矢印 */
+.group-title .arrow {
+    font-size: 10px;
+    color: #bbb;
+    display: inline-block;
+    transition: transform 0.22s ease, color 0.22s;
+    flex-shrink: 0;
+}
+
+details[open] .group-title .arrow {
+    transform: rotate(90deg);
+    color: #777;
+}
+
+details[open] .group-title {
+    color: #1a1a1a;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* 子ジャンルリスト */
+.sub-genre-list {
+    background: #fafafa;
+    padding: 4px 0;
+}
+
+.sub-genre-list li a {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px 12px 36px;
+    font-size: 14px !important;
+    color: #555;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.sub-genre-list li a::before {
+    content: "–";
+    margin-right: 8px;
+    color: #ccc;
+    flex-shrink: 0;
+}
+
+.sub-genre-list li a:hover {
+    background: #efefef;
+    color: #1a1a1a;
+    text-decoration: none;
+}
+
+/* ===========================
+   フッター
+   =========================== */
+.genre-footer {
+    text-align: center;
+    margin: 20px 0 48px;
+}
+
+.genre-footer a {
+    font-size: 14px;
+    color: #666;
+    text-decoration: none;
+    padding: 10px 22px;
+    border: 1.5px solid #ddd;
+    border-radius: 20px;
+    display: inline-block;
+    transition: all 0.18s;
+}
+
+.genre-footer a:hover {
+    border-color: #999;
+    color: #1a1a1a;
+    background: #f8f8f8;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    h1 {
+        font-size: 18px;
+        margin: 24px 0 16px;
+    }
+
+    .genre-container {
+        margin: 0 16px 48px;
+        border-radius: 10px;
+    }
+
+    .genre-item-all a {
+        padding: 16px 18px;
+        font-size: 14px !important;
+    }
+
+    .group-title {
+        padding: 14px 18px;
+        font-size: 14px;
+        min-height: 50px;
+    }
+
+    .sub-genre-list li a {
+        padding: 12px 18px 12px 30px;
+        font-size: 14px !important;
+        min-height: 48px;
+    }
+}

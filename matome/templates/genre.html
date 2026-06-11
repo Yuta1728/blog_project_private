@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/genre.css') }}">
+
+<h1>ジャンル一覧</h1>
+
+<div class="genre-container">
+    {% if genres %}
+        <ul class="genre-list">
+            <li class="genre-item-all">
+                <a href="{{ url_for('blog.index') }}">📁 全て表示</a>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>ライフスタイル</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if '日常' in genres %}<li><a href="{{ url_for('blog.index', genre='日常') }}">日常</a></li>{% endif %}
+                        {% if '健康' in genres %}<li><a href="{{ url_for('blog.index', genre='健康') }}">健康</a></li>{% endif %}
+                        {% if '趣味' in genres %}<li><a href="{{ url_for('blog.index', genre='趣味') }}">趣味</a></li>{% endif %}
+                        {% if '旅行' in genres %}<li><a href="{{ url_for('blog.index', genre='旅行') }}">旅行</a></li>{% endif %}
+                        {% if 'イラスト' in genres %}<li><a href="{{ url_for('blog.index', genre='イラスト') }}">イラスト</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>社会・経済</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'ニュース' in genres %}<li><a href="{{ url_for('blog.index', genre='ニュース') }}">ニュース</a></li>{% endif %}
+                        {% if '経済' in genres %}<li><a href="{{ url_for('blog.index', genre='経済') }}">経済</a></li>{% endif %}
+                        {% if '投資' in genres %}<li><a href="{{ url_for('blog.index', genre='投資') }}">投資</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>技術・勉強</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'プログラミング学習' in genres %}<li><a href="{{ url_for('blog.index', genre='プログラミング学習') }}">プログラミング学習</a></li>{% endif %}
+                        {% if '開発記録' in genres %}<li><a href="{{ url_for('blog.index', genre='開発記録') }}">開発記録</a></li>{% endif %}
+                        {% if '資格勉強' in genres %}<li><a href="{{ url_for('blog.index', genre='資格勉強') }}">資格勉強</a></li>{% endif %}
+                        {% if '勉強' in genres %}<li><a href="{{ url_for('blog.index', genre='勉強') }}">勉強</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>スポーツ</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'サッカー' in genres %}<li><a href="{{ url_for('blog.index', genre='サッカー') }}">サッカー</a></li>{% endif %}
+                        {% if '野球' in genres %}<li><a href="{{ url_for('blog.index', genre='野球') }}">野球</a></li>{% endif %}
+                        {% if '競馬' in genres %}<li><a href="{{ url_for('blog.index', genre='競馬') }}">競馬</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>娯楽</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'アニメ' in genres %}<li><a href="{{ url_for('blog.index', genre='アニメ') }}">アニメ</a></li>{% endif %}
+                        {% if '漫画' in genres %}<li><a href="{{ url_for('blog.index', genre='漫画') }}">漫画</a></li>{% endif %}
+                        {% if '本' in genres %}<li><a href="{{ url_for('blog.index', genre='本') }}">本</a></li>{% endif %}
+                        {% if 'ゲーム' in genres %}<li><a href="{{ url_for('blog.index', genre='ゲーム') }}">ゲーム</a></li>{% endif %}
+                        {% if '音楽' in genres %}<li><a href="{{ url_for('blog.index', genre='音楽') }}">音楽</a></li>{% endif %}
+                        {% if '国内映画' in genres %}<li><a href="{{ url_for('blog.index', genre='国内映画') }}">国内映画</a></li>{% endif %}
+                        {% if '海外映画' in genres %}<li><a href="{{ url_for('blog.index', genre='海外映画') }}">海外映画</a></li>{% endif %}
+                        {% if '国内ドラマ' in genres %}<li><a href="{{ url_for('blog.index', genre='国内ドラマ') }}">国内ドラマ</a></li>{% endif %}
+                        {% if '海外ドラマ' in genres %}<li><a href="{{ url_for('blog.index', genre='海外ドラマ') }}">海外ドラマ</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>仕事</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'バイト' in genres %}<li><a href="{{ url_for('blog.index', genre='バイト') }}">バイト</a></li>{% endif %}
+                        {% if '就活' in genres %}<li><a href="{{ url_for('blog.index', genre='就活') }}">就活</a></li>{% endif %}
+                        {% if '仕事' in genres %}<li><a href="{{ url_for('blog.index', genre='仕事') }}">仕事</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+        </ul>
+    {% else %}
+        <p style="padding: 24px; color: #aaa; text-align: center;">まだジャンルが登録されていません。</p>
+    {% endif %}
+</div>
+
+<div class="genre-footer">
+    <a href="{{ url_for('blog.index') }}">← 一覧画面に戻る</a>
+</div>
+
+{% endblock %}

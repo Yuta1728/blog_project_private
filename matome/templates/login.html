@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+
+<div class="auth-container">
+    <h2>管理者画面</h2>
+
+    <form action="{{ url_for('auth.secret_login') }}" method="post" class="login-form">
+
+        <div class="form-group">
+            <label for="">ユーザー名</label>
+            <input type="password" name="username" autocomplete="username" required>
+        </div>
+
+        <div class="form-group">
+            <label for="">パスワード</label>
+            <input type="password" name="password" autocomplete="current-password" required>
+        </div>
+
+        <div class="form-button">
+            <input type="submit" value="ログイン" class="submit-btn">
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+

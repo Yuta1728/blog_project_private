@@ -1,0 +1,447 @@
+/* static/css/mypage.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+
+/* ===========================
+   ページレイアウト（中央カラム）
+   =========================== */
+.mypage-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+    box-sizing: border-box;
+}
+
+/* ===========================
+   プロフィールヘッダー
+   =========================== */
+.profile-header {
+    background: #fff;
+    padding: 28px 28px 24px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    border: 1px solid #e8e8e8;
+}
+
+.profile-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+}
+
+.profile-username {
+    margin: 4px 0 0;
+    color: #aaa;
+    font-size: 13px;
+}
+
+.profile-post-count {
+    margin: 10px 0 0;
+    color: #777;
+    font-size: 14px;
+}
+
+.profile-post-count strong {
+    color: #1a1a1a;
+    font-weight: 700;
+}
+
+/* ===========================
+   ニックネーム変更フォーム
+   =========================== */
+.nickname-form-wrapper {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.nickname-form-wrapper > p,
+.nickname-form label {
+    font-size: 13px;
+    color: #8c8c8c;
+    margin: 0 0 8px;
+    font-weight: 500;
+}
+
+.nickname-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nickname-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 14px;
+    border: 1.5px solid #cccccc;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.18s;
+    background: #fafafa;
+}
+
+.nickname-input:focus {
+    border-color: #aaa;
+    background: #fff;
+}
+
+.nickname-submit-btn {
+    padding: 8px 18px;
+    background-color: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.18s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nickname-submit-btn:hover {
+    background-color: #333;
+}
+
+/* ===========================
+   セクション見出し
+   =========================== */
+.section-title-genre,
+.section-title-posts {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 10px;
+    margin: 36px 0 20px;
+    letter-spacing: 0.02em;
+}
+
+/* ===========================
+   ジャンルタグ
+   =========================== */
+.user-genre-list {
+    margin-bottom: 8px;
+}
+
+.genre-tags {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.genre-tag-item {
+    background: #ffffff;
+    border: 1px solid #cdcdcd;
+    padding: 4px 14px;
+    border-radius: 15px;
+    display: inline-block;
+    transition: all 0.15s;
+}
+
+.genre-tag-item:hover {
+    background: #eee;
+    border-color: #ccc;
+}
+
+.genre-tag-link {
+    text-decoration: none;
+    color: #444;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ===========================
+   検索ボックス（マイページ内）
+   =========================== */
+.search-box {
+    margin-bottom: 20px;
+}
+
+.search-box form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: #fff;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 24px;
+    padding: 8px 16px;
+    transition: border-color 0.2s;
+}
+
+.search-box form:focus-within {
+    border-color: #999;
+}
+
+.search-box input[type="text"] {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    background: transparent;
+    color: #333;
+    padding: 4px 0;
+    min-width: 0;
+}
+
+.search-box input[type="text"]::placeholder {
+    color: #bbb;
+}
+
+.search-box button {
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.18s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.search-box button:hover {
+    background: #333;
+}
+
+.search-box a[role="button"] {
+    display: inline-block;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #666;
+    background: transparent;
+    border: 1.5px solid #ddd;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.search-box a[role="button"]:hover {
+    color: #333;
+    border-color: #aaa;
+    background: #f8f8f8;
+}
+
+/* ===========================
+   投稿カード
+   =========================== */
+article {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: box-shadow 0.18s, border-color 0.18s;
+}
+
+article:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    border-color: #d0d0d0;
+}
+
+article h2 {
+    text-align: left;
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.45;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center; 
+    gap: 8px;
+    color: #1a1a1a;
+}
+
+article h2 a {
+    text-decoration: none;
+    color: #1a1a1a;
+    flex: 1;
+    min-width: 0;
+}
+
+article h2 a:hover {
+    text-decoration: underline;
+}
+
+/* マイページ編集・削除ボタン */
+article a[role="button"] {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 12px;
+    color: #555;
+    background: transparent;
+    border: 1.5px solid #bababa;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s;
+    margin-right: 6px;
+}
+
+article a[role="button"]:hover {
+    border-color: #aaa;
+    background: #f8f8f8;
+}
+
+article form {
+    display: inline;
+}
+
+article form button {
+    font-size: 12px;
+    padding: 5px 12px;
+    background: transparent;
+    color: #c0392b;
+    border: 1.5px solid #e8bebe;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+article form button:hover {
+    background: #fef2f2;
+    border-color: #e06060;
+}
+
+article p {
+    font-size: 12px;
+    color: #bbb;
+    margin: 10px 0 0;
+    line-height: 1.5;
+}
+
+.empty-message {
+    color: #aaa;
+    text-align: center;
+    margin-top: 48px;
+    font-size: 15px;
+    line-height: 2;
+}
+
+.empty-message a {
+    color: #555;
+    text-decoration: underline;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+    .mypage-container {
+        padding: 16px 12px 48px;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .profile-header {
+        padding: 20px 16px 18px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .profile-title {
+        font-size: 18px;
+    }
+
+    .nickname-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .nickname-input {
+        font-size: 16px; 
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .nickname-submit-btn {
+        text-align: center;
+        margin-top: 4px;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 20px;
+        width: 100%;
+        min-height: 40px;
+    }
+
+    .section-title-genre,
+    .section-title-posts {
+        font-size: 15px;
+        margin: 28px 0 16px;
+    }
+
+    /* 💡 スマホ用検索ボックスの修正点 */
+    .search-box form {
+        padding: 8px 12px;
+        flex-wrap: wrap; 
+        gap: 8px;
+        justify-content: flex-end; /* ボタンを右寄せに配置 */
+    }
+
+    .search-box input[type="text"] {
+        font-size: 16px; 
+        width: 100%; /* インプットフィールドは1行を広く使う */
+        margin-bottom: 0;
+    }
+
+    .search-box button,
+    .search-box a[role="button"] {
+        padding: 6px 16px;
+        font-size: 13px;
+        flex: none; /* ←【重要】均等割当てを解除し、文字幅に応じたコンパクトなサイズに縮小 */
+        width: auto;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 投稿リストAndroid重なり完全防止 */
+    article {
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+
+    article h2 {
+        font-size: 15px;
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    article h2 a {
+        width: 100%;
+    }
+
+    /* バッジ類のスマホ専用余白調整 */
+    article h2 span {
+        margin-left: 0 !important;
+        display: inline-block !important;
+    }
+
+    /* スマホアクションエリアのタッチ調整 */
+    article a[role="button"],
+    article form button {
+        padding: 8px 16px;
+        font-size: 13px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 8px;
+    }
+
+    .genre-tag-item {
+        padding: 6px 14px;
+        background-color: #ffffff;
+    }
+}

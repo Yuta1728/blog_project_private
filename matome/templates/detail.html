@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+
+<div class="detail-container">
+    <article>
+        <h1>
+            {{ post.title }}
+        </h1>
+        
+        <div class="post-meta" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            <span class="genre-badge">
+                {{ post.genre if post.genre else '未分類' }}
+            </span>
+
+            <div class="post-user-info">
+                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
+                    alt="avatar">
+                
+                <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
+            </div>
+            
+            <div class="post-time">
+                投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                &nbsp;
+                {% if post.updated_at %}
+                    更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if toc_html and '<li>' in toc_html %}
+            <div class="post-toc">
+                <p class="toc-title">目次</p>
+                {{ toc_html | safe }}
+            </div>
+        {% endif %}
+
+        <div class="detail-article-body">{{ display_body | safe }}</div>
+    </article>
+
+    <hr>
+    <ul class="detail-ul" style="justify-content: center;">
+        <li class="detail-ul-li">
+            <button type="button" class="detail-ul-li-a" onclick="history.back();">
+                前の画面に戻る
+            </button>
+        </li>
+        {% if current_user.is_authenticated and post.user_id == current_user.id %}
+            <li class="detail-ul-li">
+                <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-ul-li-a">この記事を編集する</a>
+            </li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock %}

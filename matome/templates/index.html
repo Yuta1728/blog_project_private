@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
+<div class="page-wrapper">
+
+    {% if selected_genre or search_word %}
+        <p class="filter-label">
+            🔍 
+            {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
+            {% if search_word %}キーワード「{{ search_word }}」{% endif %}
+            を表示中
+        </p>
+    {% endif %}
+
+    {% for post in posts %}
+        <article class="post-card">
+            <div class="post-thumbnail">
+                {% if post.img_name %}
+                    {% set first_img = post.img_name.split(',')[0] %}
+                    <img src="{{ url_for('static', filename='img/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                
+                {% elif post.default_thumb %}
+                    <img src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
+                
+                {% else %}
+                    <img src="{{ url_for('static', filename='img/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
+                {% endif %}
+            </div>
+
+            <div class="post-content">
+                <div class="post-header-meta">
+                    <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
+                    
+                    {% if not post.is_published %}
+                        <span class="badge-private">🔒 非公開</span>
+                    {% endif %}
+                </div>
+
+                <h2 class="post-title">
+                    <!-- この <a> の疑似要素を親の .post-card 全体に広げることで、どこをタップしても詳細に遷移させます -->
+                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
+                </h2>
+
+                {% if current_user.is_authenticated and post.user_id == current_user.id %}
+                    <!-- z-index: 2 を持たせて、全体リンクに邪魔されず個別にクリックできるように保護します -->
+                    <div class="post-actions">
+                        <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
+                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                            <button type="submit" class="btn-delete">削除</button>
+                        </form>
+                    </div>
+                {% endif %}
+
+                <p class="post-date">
+                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                    {% if post.created_at != post.updated_at %}
+                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
+                    {% endif %}
+                </p>
+            </div>
+        </article>
+    {% endfor %}
+
+</div>
+
+{% endblock %}

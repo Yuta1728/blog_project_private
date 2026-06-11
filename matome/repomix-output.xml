@@ -1,0 +1,4000 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+app.py
+config.py
+docker-compose.yml
+extensions.py
+init/01_login.sql
+init/02_post.sql
+migrations/alembic.ini
+migrations/env.py
+migrations/README
+migrations/script.py.mako
+migrations/versions/42dc0996903d_add_default_thumb_to_post.py
+migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
+models.py
+README.md
+requirements.txt
+save_path
+static/css/auth.css
+static/css/base.css
+static/css/create_update.css
+static/css/detail.css
+static/css/genre.css
+static/css/index.css
+static/css/mypage.css
+static/img/01e73b9c-5b1d-41be-bbb3-a7d8fc729a46.jpg
+static/img/0336913e-6d91-4637-8f18-b802079fb4ef.png
+static/img/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
+static/img/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
+static/img/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
+static/img/system-default.jpg
+static/img/thumb_option1.jpg
+static/img/thumb_option10.jpg
+static/img/thumb_option11.jpg
+static/img/thumb_option2.jpg
+static/img/thumb_option3.jpg
+static/img/thumb_option4.jpg
+static/img/thumb_option5.jpg
+static/img/thumb_option6.jpg
+static/img/thumb_option7.jpg
+static/img/thumb_option8.jpg
+static/img/thumb_option9.jpg
+static/img/スクリーンショット 2025-02-01 222147.png
+static/img/スクリーンショット 2025-02-01 222455.png
+templates/base.html
+templates/create.html
+templates/detail.html
+templates/genre.html
+templates/index.html
+templates/login.html
+templates/mypage.html
+templates/update.html
+views/admin.py
+views/auth.py
+views/blog.py
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+venv/
+.env
+__pycache__/
+</file>
+
+<file path="app.py">
+# app.py
+import os
+from flask import Flask
+from extensions import db, login_manager, migrate
+from models import User
+import config
+
+# Blueprintの登録（ここで各機能のルーティングファイルを合体）
+from views.auth import auth_bp
+from views.blog import blog_bp
+from views.admin import admin_bp
+
+def create_app():
+    app = Flask(__name__)
+
+    # アプリ・データベース設定の統合と固定化
+    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", os.urandom(24))
+
+    # PostgreSQL接続用URLの設定
+    local_db_url = f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}@localhost:54321/{config.postgre_DB}"
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", local_db_url)
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # 拡張機能の初期化
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+    
+    # 遷移先URLの設定（既存のまま変更なし）
+    login_manager.login_view = 'auth.secret_login'
+    login_manager.login_message = "ログインしてください。"
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(blog_bp)
+    app.register_blueprint(admin_bp)
+
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True)
+</file>
+
+<file path="config.py">
+"""環境変数を管理するモジュール"""
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+postgre_user = os.getenv("POSTGRES_USER")
+postgre_password = os.getenv("POSTGRES_PASSWORD")
+postgre_DB = os.getenv("POSTGRES_DB")
+
+# .envから管理者情報と秘密のURLを取得
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+ADMIN_LOGIN_PATH = os.getenv("ADMIN_LOGIN_PATH")
+</file>
+
+<file path="docker-compose.yml">
+services:
+    db:
+        image: postgres:18-alpine
+        container_name: dbtest
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+            TZ: Asia/Tokyo
+        ports:
+            # ホスト : コンテナ(PostgreSQL)
+            - "54321:5432"
+        volumes:
+            # データを永続化するための名前付きボリューム
+            - personal_blog_data:/var/lib/postgresql
+            # 初期化用(自動実行)
+            - ./init:/docker-entrypoint-initdb.d
+        restart: unless-stopped
+
+volumes:
+    personal_blog_data:
+</file>
+
+
+<file path="extensions.py">
+# extensions.py
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_migrate import Migrate
+
+db = SQLAlchemy()
+login_manager = LoginManager()
+migrate = Migrate()
+</file>
+
+
+<file path="models.py">
+# models.py
+from extensions import db
+from flask_login import UserMixin
+from datetime import datetime
+import pytz
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.TEXT, nullable=False)
+    body = db.Column(db.TEXT, nullable=False)
+    genre = db.Column(db.String(100), nullable=False, default='未分類')
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    img_name = db.Column(db.String(100), nullable=True)
+    default_thumb = db.Column(db.String(100), nullable=True)
+    
+    # ユーザーIDとの紐付け
+    user = db.relationship('User', backref=db.backref('posts', lazy=True))
+    
+    # 公開・非公開設定（デフォルトは True = 公開）
+    is_published = db.Column(db.Boolean, nullable=False, default=True)
+    
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(30), unique=True) 
+    password = db.Column(db.String(200))
+    nickname = db.Column(db.String(60), nullable=True)
+</file>
+
+<file path="README.md">
+# MY Blog
+
+Flask + PostgreSQL で構築した個人向けブログアプリケーションです。Markdown 記述・画像埋め込み・ジャンル管理・公開/非公開設定などを備えています。
+
+---
+
+## 機能一覧
+
+- **記事の投稿・編集・削除** — タイトル・本文・ジャンル・サムネイル画像（複数枚）を管理
+- **Markdown 対応** — `##` 大見出し・`###` 中見出し・`**太字**` に対応。自動目次（TOC）生成機能あり
+- **画像埋め込み** — 本文中に `[img1]` と記述することで任意の位置に画像を挿入
+- **デフォルトサムネイル** — 画像をアップロードしない場合、11 種類のプリセット画像から選択可能
+- **ジャンル管理** — 26 種類のデフォルトジャンル＋ユーザー独自ジャンルの作成に対応
+- **公開/非公開設定** — 投稿ごとに全体公開・非公開をトグルボタンで切り替え
+- **タイトル検索・ジャンル絞り込み** — トップページ・マイページ両方で対応（ヘッダー常設の検索バー付き）
+- **マイページ** — 自分の投稿一覧・ジャンル一覧・ニックネーム変更
+- **管理者専用ログイン** — 秘密の URL によるアクセス制限
+- **レスポンシブデザイン** — PC・スマートフォン両対応（ハンバーガーメニュー付き）
+
+---
+
+## 技術スタック
+
+| カテゴリ | 使用技術 |
+| --- | --- |
+| バックエンド | Python / Flask 3.1 |
+| ORM・マイグレーション | Flask-SQLAlchemy 3.1 / Flask-Migrate 4.1 (Alembic) |
+| 認証 | Flask-Login 0.6 |
+| データベース | PostgreSQL（Docker コンテナ） |
+| テンプレートエンジン | Jinja2 |
+| Markdown | Python-Markdown 3.9（`toc`・`nl2br` 拡張） |
+| フロントエンド | HTML / CSS（バニラ） |
+| 環境変数管理 | python-dotenv |
+
+---
+
+## ディレクトリ構成
+
+```
+matome/
+├── app.py                  # アプリケーションファクトリ（create_app）
+├── config.py               # 環境変数の読み込み
+├── extensions.py           # Flask 拡張機能の初期化（db / login_manager / migrate）
+├── models.py               # DB モデル（User, Post）
+├── requirements.txt        # 依存パッケージ一覧
+├── docker-compose.yml      # PostgreSQL コンテナ設定
+├── init/
+│   ├── 01_login.sql        # user テーブル定義（参考用）
+│   └── 02_post.sql         # post テーブル定義（参考用）
+├── migrations/             # Alembic マイグレーションファイル群
+├── views/
+│   ├── auth.py             # ログイン・ログアウト
+│   ├── blog.py             # 記事一覧・詳細・ジャンル一覧（公開側）
+│   └── admin.py            # 投稿・編集・削除・マイページ（認証必須）
+├── templates/              # Jinja2 テンプレート
+│   ├── base.html           # 共通レイアウト（ヘッダー・フラッシュメッセージ）
+│   ├── index.html          # トップ（記事一覧）
+│   ├── detail.html         # 記事詳細
+│   ├── create.html         # 新規投稿フォーム
+│   ├── update.html         # 記事編集フォーム
+│   ├── mypage.html         # マイページ
+│   ├── genre.html          # ジャンル一覧
+│   └── login.html          # 管理者ログイン
+└── static/
+    ├── css/                # ページごとのスタイルシート
+    └── img/                # アップロード画像・デフォルトサムネイル画像の保存先
+```
+
+---
+
+## セットアップ手順
+
+### 1. リポジトリのクローン
+
+```bash
+git clone <repository-url>
+cd matome
+```
+
+### 2. 環境変数の設定
+
+プロジェクトルートに `.env` ファイルを作成し、以下の変数を設定します。
+
+```env
+# PostgreSQL
+POSTGRES_USER=your_db_user
+POSTGRES_PASSWORD=your_db_password
+POSTGRES_DB=your_db_name
+
+# Flask
+SECRET_KEY=your_secret_key
+
+# 管理者設定
+ADMIN_USERNAME=your_admin_username
+ADMIN_PASSWORD=your_admin_password_hash   # Werkzeug でハッシュ化したもの
+ADMIN_LOGIN_PATH=your_secret_login_path   # 例: my-secret-login
+```
+
+> **注意:** `ADMIN_PASSWORD` は平文ではなく、Werkzeug の `generate_password_hash()` で生成したハッシュ値を設定してください。
+
+### 3. Docker で PostgreSQL を起動
+
+```bash
+docker-compose up -d
+```
+
+ポート `54321` でローカルに PostgreSQL が起動します。
+
+### 4. Python 仮想環境の作成と依存関係のインストール
+
+```bash
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 5. データベースのマイグレーション
+
+```bash
+flask db upgrade
+```
+
+### 6. 管理者ユーザーの作成
+
+Flask シェルで管理者アカウントを登録します。
+
+```bash
+flask shell
+```
+
+```python
+from extensions import db
+from models import User
+from werkzeug.security import generate_password_hash
+
+user = User(
+    username='your_admin_username',
+    password=generate_password_hash('your_password')
+)
+db.session.add(user)
+db.session.commit()
+```
+
+### 7. アプリケーションの起動
+
+```bash
+python app.py
+```
+
+ブラウザで `http://localhost:5000` にアクセスします。
+
+---
+
+## 使い方
+
+### ログイン
+
+`http://localhost:5000/<ADMIN_LOGIN_PATH>` にアクセスしてログインします。URL は `.env` の `ADMIN_LOGIN_PATH` で設定した値です。
+
+### 記事の投稿
+
+ヘッダーの「新規投稿」から記事を作成できます。
+
+**Markdown 記法のサポート:**
+
+| 記法 | 説明 |
+| --- | --- |
+| `## 見出し` | 大見出し（目次に自動追加） |
+| `### 見出し` | 中見出し（目次に自動追加） |
+| `**テキスト**` | 太字 |
+| `[toc]` | 任意の位置に目次を挿入（未記入の場合は本文先頭に自動挿入） |
+| `[img1]` | 1 枚目の添付画像を挿入 |
+| `[img2]` | 2 枚目の添付画像を挿入 |
+
+### サムネイル画像
+
+画像をアップロードした場合は先頭の 1 枚が一覧のサムネイルになります。アップロードしない場合は、趣味・旅行・スポーツ・アニメ・ゲームなど 11 種類のプリセット画像から選択できます。いずれも設定しない場合はシステム共通のデフォルト画像が表示されます。
+
+### ジャンル
+
+投稿時に既存のジャンルから選択するか、新規ジャンルを作成できます。ヘッダーの「ジャンル一覧」からカテゴリ別（ライフスタイル・社会/経済・技術/勉強・スポーツ・娯楽・仕事）に記事を絞り込めます。
+
+### 公開設定
+
+投稿・編集フォームのトグルボタンで「全体公開 🔓」と「非公開 🔒」を切り替えられます。非公開の記事は管理者本人のみ閲覧できます。
+
+---
+
+## データモデル
+
+### User
+
+| カラム | 型 | 説明 |
+| --- | --- | --- |
+| id | Integer | 主キー |
+| username | String(30) | ログインユーザー名（ユニーク） |
+| password | String(200) | ハッシュ化パスワード |
+| nickname | String(60) | 表示名（任意） |
+
+### Post
+
+| カラム | 型 | 説明 |
+| --- | --- | --- |
+| id | Integer | 主キー |
+| title | TEXT | 記事タイトル |
+| body | TEXT | 本文（Markdown） |
+| genre | String(100) | ジャンル（デフォルト: 未分類） |
+| created_at | DateTime | 投稿日時（Asia/Tokyo） |
+| updated_at | DateTime | 更新日時（Asia/Tokyo） |
+| user_id | Integer | 投稿者 ID（外部キー → user.id） |
+| img_name | String(100) | 画像ファイル名（カンマ区切り、任意） |
+| default_thumb | String(100) | プリセットサムネイル画像名（任意） |
+| is_published | Boolean | 公開フラグ（デフォルト: True） |
+
+---
+
+## ライセンス
+
+このプロジェクトは個人用途のブログアプリケーションです。
+</file>
+
+<file path="requirements.txt">
+alembic==1.16.5
+blinker==1.9.0
+click==8.1.8
+colorama==0.4.6
+Flask==3.1.3
+Flask-Login==0.6.3
+Flask-Migrate==4.1.0
+Flask-SQLAlchemy==3.1.1
+greenlet==3.2.5
+importlib_metadata==8.7.1
+itsdangerous==2.2.0
+Jinja2==3.1.6
+Mako==1.3.12
+Markdown==3.9
+MarkupSafe==3.0.3
+psycopg==3.2.13
+psycopg-binary==3.2.13
+psycopg2-binary==2.9.12
+python-dotenv==1.2.1
+pytz==2026.2
+SQLAlchemy==2.0.50
+tomli==2.4.1
+typing_extensions==4.15.0
+tzdata==2026.2
+Werkzeug==3.1.8
+zipp==3.23.1
+</file>
+
+<file path="save_path">
+
+</file>
+
+<file path="static/css/auth.css">
+/* static/css/auth.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   ログインコンテナ
+   =========================== */
+.auth-container {
+    max-width: 400px;
+    margin: 72px auto 60px;
+    padding: 40px 40px 36px;
+    background-color: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8e8e8;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+h2 {
+    text-align: center;
+    color: #1a1a1a;
+    margin: 0 0 20px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    color: #777;
+    letter-spacing: 0.03em;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+    outline: none;
+    background: #fafafa;
+    color: #1a1a1a;
+    transition: border-color 0.18s, background 0.18s;
+    font-family: inherit;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #888;
+    background: #fff;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 13px;
+    background-color: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.18s;
+    font-family: inherit;
+}
+
+.submit-btn:hover {
+    background-color: #333;
+}
+
+.footer-link {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: #aaa;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    .auth-container {
+        margin: 24px 16px;
+        padding: 28px 22px;
+        border-radius: 12px;
+    }
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .submit-btn {
+        padding: 14px;
+        font-size: 15px;
+    }
+}
+</file>
+
+<file path="static/css/base.css">
+/* static/css/base.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   リセット & ベース
+   =========================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #333;
+    background-color: #f5f5f5;
+    line-height: 1.7;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 24px 0;
+    text-align: center;
+    color: #1a1a1a;
+}
+
+a {
+    color: #333;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+/* ===========================
+   フラッシュメッセージ
+   =========================== */
+.flash-messages {
+    list-style: none;
+    padding: 0;
+    max-width: 680px;
+    margin: 16px auto;
+    text-align: center;
+}
+
+.flash-messages li {
+    font-size: 14px;
+    color: #d73a49;
+    background-color: #fff5f5;
+    border: 1px solid #fca5a5;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+}
+
+/* ===========================
+   ヘッダー（noteスタイル）
+   =========================== */
+.main-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e8e8e8;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    gap: 24px;
+}
+
+/* ロゴ */
+.header-logo {
+    flex-shrink: 0;
+}
+
+.header-logo a {
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    display: block;
+}
+
+.header-logo a:hover {
+    color: #555 !important;
+    text-decoration: none !important;
+}
+
+/* PCナビ */
+.header-nav {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.header-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-nav ul li {
+    display: inline-block;
+    line-height: 1;
+}
+
+.header-nav ul li a {
+    color: #555;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background-color: transparent;
+    border: 1.5px solid #a7a7a7;
+    transition: all 0.18s ease;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.header-nav ul li a:hover {
+    color: #1a1a1a;
+    border-color: #999;
+    background-color: #f8f8f8;
+    text-decoration: none;
+}
+
+/* 「新規投稿」だけアクセントカラー */
+.header-nav ul li:first-child a {
+    background-color: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+}
+
+.header-nav ul li:first-child a:hover {
+    background-color: #333;
+    border-color: #333;
+    color: #fff;
+}
+
+/* ===========================
+   ハンバーガーボタン（スマホ）
+   =========================== */
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.hamburger-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: #333;
+    border-radius: 2px;
+    transition: all 0.25s ease;
+}
+
+/* ===========================
+   ドロワーナビ（スマホ）
+   =========================== */
+.mobile-nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 999;
+}
+
+.mobile-nav-overlay.open {
+    display: block;
+}
+
+.mobile-nav-drawer {
+    position: fixed;
+    top: 0;
+    right: -290px;
+    width: 270px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+    z-index: 1000;
+    transition: right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0;
+    overflow-y: auto;
+}
+
+.mobile-nav-drawer.open {
+    right: 0;
+}
+
+.mobile-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-nav-header-logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #1a1a1a;
+}
+
+.mobile-nav-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #888;
+    padding: 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: background 0.15s;
+}
+
+.mobile-nav-close:hover {
+    background: #f5f5f5;
+}
+
+.mobile-nav-drawer ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0 12px;
+}
+
+.mobile-nav-drawer ul li {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.mobile-nav-drawer ul li + li {
+    margin-top: 2px;
+}
+
+.mobile-nav-drawer ul li a {
+    display: block;
+    padding: 14px 16px;
+    color: #333;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: background 0.15s;
+    border-radius: 8px;
+}
+
+.mobile-nav-drawer ul li a:hover {
+    background: #f5f5f5;
+}
+
+/* 新規投稿ボタン（スマホドロワー内） */
+.mobile-nav-drawer ul li:first-child a {
+    background-color: #1a1a1a;
+    color: #fff;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.mobile-nav-drawer ul li:first-child a:hover {
+    background-color: #333;
+}
+
+.clear { clear: both; }
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    .header-container {
+        padding: 0 16px;
+        height: 56px;
+        gap: 12px;
+    }
+
+    .header-logo a {
+        font-size: 22px;
+    }
+
+    .header-nav {
+        display: none;
+    }
+
+    .hamburger-btn {
+        display: flex;
+    }
+
+    .flash-messages {
+        margin: 12px 16px;
+    }
+
+    .flash-messages li {
+        font-size: 13px;
+    }
+
+    h2 {
+        font-size: 20px;
+        margin: 16px 0;
+    }
+}
+
+/* ==========================================================================
+   ヘッダー三分割・中央検索バーのレイアウトスタイル
+   ========================================================================== */
+
+/* 全体のコンテナ設定 */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px; /* 必要に応じてブログの最大幅に合わせてください */
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 1. ロゴエリア（左側をキープ） */
+.header-logo {
+    flex: 0 0 auto; /* 幅を自動にして縮ませない */
+}
+
+/* 2. 検索バーエリア（★ここが中央配置の肝になります） */
+.header-search-box {
+    flex: 1;               /* 利用可能なスペースをすべて広げる */
+    display: flex;
+    justify-content: center; /* 中身のフォームを完全に中央に寄せる */
+    padding: 0 20px;
+}
+
+/* 検索フォーム自体のデザイン */
+.header-search-box form {
+    display: flex;
+    align-items: center;
+    background-color: #f1f3f5;
+    border-radius: 20px;
+    padding: 4px 14px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 350px; /* 検索バーが広がりすぎないように最大幅を制限 */
+}
+
+/* フォーカス時の演出 */
+.header-search-box form:focus-within {
+    background-color: #fff;
+    border-color: #339af0;
+    box-shadow: 0 0 0 3px rgba(51, 154, 240, 0.15);
+}
+
+.header-search-box input[type="text"] {
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 6px 4px;
+    font-size: 14px;
+    color: #495057;
+    width: 100%; /* フォームの幅いっぱいに広げる */
+}
+
+/* ボタンとクリアボタンの調整 */
+.search-submit-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #868e96;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.search-submit-btn:hover {
+    color: #212529;
+    background-color: #e9ecef;
+}
+
+.search-clear-btn {
+    color: #adb5bd;
+    text-decoration: none;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.search-clear-btn:hover {
+    color: #fa5252;
+}
+
+/* 3. ナビゲーションエリア（右側をキープ） */
+.header-nav {
+    flex: 0 0 auto;
+}
+
+
+/* ==========================================================================
+   レスポンシブ対応（スマホ画面で検索バーをコンパクトに収める）
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* タブレット・スマホ全般での検索バー全体の配置設定 */
+    .header-search-box {
+        padding: 0 5px;   /* 左右のロゴやボタンとの間隔を最小限に */
+        flex: 1;          /* 中央配置のためのベースは維持 */
+        display: flex;
+        justify-content: center; /* 常に中央に寄せる */
+    }
+    
+    /* 検索バー本体を小さく絞り込む */
+    .header-search-box form {
+        width: 100%;
+        max-width: 160px; /* 👈 【重要】スマホ版での検索バーの最大横幅をかなり小さく制限 */
+        padding: 2px 8px; /* 上下の厚みを薄くしてスリムに */
+        border-radius: 15px; /* スリム化に合わせて角丸の具合を調整 */
+        background-color: #f1f3f5;
+    }
+    
+    /* 入力エリアの文字と高さを小さく */
+    .header-search-box input[type="text"] {
+        font-size: 12px;     /* 文字を小さく */
+        padding: 3px 2px;    /* 入力欄を縦に補足 */
+    }
+    
+    /* 虫眼鏡アイコンを小さく */
+    .search-submit-btn svg {
+        width: 14px;         /* アイコンを一回り小さく */
+        height: 14px;
+    }
+    
+    /* ✕（クリア）ボタンも小さく */
+    .search-clear-btn {
+        margin-left: 4px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* さらに画面幅が狭いスマホ（iPhone SEなど）での最終調整 */
+    .header-search-box form {
+        max-width: 120px; /* 👈 超小型スマホではさらに横幅を「120px」まで小さくして絶対に溢れさせない */
+    }
+    
+    /* プレースホルダーの文字（キーワードで検索...）がはみ出るのを防ぐため、文字をさらに小さく */
+    .header-search-box input[type="text"]::placeholder {
+        font-size: 11px;
+    }
+}
+</file>
+
+<file path="static/css/create_update.css">
+/* static/css/create_update.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   ページレイアウト
+   =========================== */
+h1 {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin: 36px 0 24px;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+}
+
+/* ===========================
+   フォームコンテナ
+   =========================== */
+.post-form {
+    max-width: 720px;
+    margin: 0 auto 60px;
+    background: #fff;
+    padding: 40px 44px;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    box-sizing: border-box;
+}
+
+/* ===========================
+   ラベル
+   =========================== */
+.post-form label {
+    display: block;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #555;
+    letter-spacing: 0.02em;
+}
+
+/* ===========================
+   入力フィールド
+   =========================== */
+.post-form input[type="text"],
+.post-form select {
+    width: 100% !important;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin-bottom: 22px;
+    outline: none;
+    background-color: #fafafa;
+    color: #1a1a1a;
+    transition: border-color 0.18s, background 0.18s;
+    font-family: inherit;
+}
+
+.post-form input[type="text"]:focus,
+.post-form select:focus {
+    border-color: #888;
+    background-color: #fff;
+}
+
+/* ===========================
+   テキストエリア（本文）
+   =========================== */
+.post-form textarea {
+    width: 100% !important;
+    padding: 18px !important;
+    font-size: 17px !important;
+    line-height: 1.9 !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Noto Sans JP", "MS Gothic", monospace !important;
+    letter-spacing: normal !important;
+    border: 1.5px solid #e0e0e0 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    margin-bottom: 22px !important;
+    outline: none !important;
+    background-color: #fafafa !important;
+    color: #1a1a1a !important;
+    min-height: 520px !important;
+    resize: vertical !important;
+    transition: border-color 0.18s, background 0.18s !important;
+}
+
+.post-form textarea:focus {
+    border-color: #888 !important;
+    background-color: #fff !important;
+}
+
+/* ===========================
+   説明テキスト
+   =========================== */
+.post-form p {
+    font-size: 13px;
+    color: #999;
+    margin: 0 0 6px;
+    line-height: 1.6;
+}
+
+/* ===========================
+   ファイル入力
+   =========================== */
+.post-form input[type="file"] {
+    display: block;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #666;
+    width: 100%;
+}
+
+/* ===========================
+   送信・更新ボタン
+   =========================== */
+.post-form input[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background-color: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.18s;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+}
+
+.post-form input[type="submit"]:hover {
+    background-color: #333;
+}
+
+/* ===========================
+   画像プレビュー
+   =========================== */
+.preview-item {
+    position: relative;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafafa;
+    width: 150px;
+}
+
+.preview-item img {
+    width: 150px;
+    height: 112px;
+    object-fit: cover;
+    display: block;
+}
+
+.preview-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #777;
+    padding: 5px 0 3px;
+    background: #f5f5f5;
+    border-top: 1px solid #eee;
+    letter-spacing: 0.03em;
+}
+
+.preview-filename {
+    text-align: center;
+    font-size: 10px;
+    color: #aaa;
+    padding: 2px 6px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    h1 {
+        font-size: 17px;
+        margin: 20px 0 16px;
+    }
+
+    .post-form {
+        padding: 20px 16px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        margin-bottom: 0;
+    }
+
+    .post-form label {
+        font-size: 13px;
+    }
+
+    .post-form input[type="text"],
+    .post-form select {
+        font-size: 16px !important;
+        padding: 10px 12px !important;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    .post-form textarea {
+        font-size: 16px !important;
+        line-height: 1.75 !important;
+        padding: 14px !important;
+        min-height: 280px !important;
+        border-radius: 6px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .post-form input[type="submit"] {
+        padding: 14px;
+        font-size: 15px;
+        border-radius: 8px;
+    }
+
+    .preview-item {
+        width: 100px;
+    }
+
+    .preview-item img {
+        width: 100px;
+        height: 75px;
+    }
+}
+
+
+/* ===========================
+   公開設定トグルボタン（追加分）
+   =========================== */
+.toggle-status-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 20px; /* 丸みのある扱いやすいデザイン */
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    margin-bottom: 22px;
+    outline: none;
+}
+
+/* 非公開時のスタイル（控えめなグレー） */
+.toggle-status-btn.private {
+    background-color: #f0f0f0;
+    color: #555;
+    border-color: #e0e0e0;
+}
+
+.toggle-status-btn.private:hover {
+    background-color: #e5e5e5;
+}
+
+/* 全体公開時のスタイル（注意を引く緑系、またはブランドカラー） */
+.toggle-status-btn.published {
+    background-color: #e6f4ea;
+    color: #137333;
+    border-color: #ceead6;
+}
+
+.toggle-status-btn.published:hover {
+    background-color: #d2e9d6;
+}
+
+/* スマホ対応の微調整 */
+@media (max-width: 767px) {
+    .toggle-status-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+}
+
+
+/* ===========================
+   マークダウンツールバー
+   =========================== */
+.md-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+    background: #f5f5f5;
+    border: 1.5px solid #e0e0e0;
+    border-bottom: none;          /* textareaと繋げる */
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 0 !important;
+}
+
+.md-btn {
+    padding: 7px 13px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    line-height: 1;
+    min-width: 44px;              /* スマホでのタップ領域を確保 */
+    min-height: 36px;
+    text-align: center;
+}
+
+.md-btn:hover,
+.md-btn:active {
+    background: #e8e8e8;
+    border-color: #aaa;
+    color: #111;
+}
+
+/* ツールバーと接続するためtextareaの上角を角丸なしに */
+#bodyTextarea {
+    border-radius: 0 0 8px 8px !important;
+    border-top: none !important;
+}
+
+/* スマホ（〜767px） */
+@media (max-width: 767px) {
+    .md-btn {
+        padding: 9px 11px;
+        font-size: 13px;
+        min-width: 48px;          /* タップしやすいサイズに */
+        min-height: 42px;
+    }
+}
+</file>
+
+<file path="static/css/detail.css">
+/* static/css/detail.css - note風レスポンシブ対応版（埋め込み目次同期・文字サイズ微拡大版） */
+
+/* ===========================
+   ページレイアウト
+   =========================== */
+.detail-container {
+    max-width: 720px !important;
+    margin: 0 auto;
+    padding: 36px 24px 60px;
+    box-sizing: border-box;
+}
+
+/* ===========================
+   記事本体
+   =========================== */
+article {
+    background: #fff;
+    padding: 48px 52px;
+    border: 1px solid #dedede;
+    border-radius: 12px;
+    margin-bottom: 32px;
+    box-sizing: border-box;
+}
+
+h1 {
+    font-size: 25px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 0 0 20px;
+    text-align: left;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+}
+
+/* ジャンルバッジ */
+.genre-badge {
+    background-color: #f0f0f0;
+    color: #474747;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* メタ情報エリア */
+.post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+    width: 100%;
+}
+
+.post-user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #555;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.post-user-info img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e9ecef;
+    border: 1px solid #e0e0e0;
+    margin: 0 !important;
+}
+
+.post-time {
+    color: #8d8d8d;
+    font-size: 12px;
+}
+
+/* ===========================
+   目次（TOC）：上部固定・本文内埋め込み共通デザイン
+   =========================== */
+.post-toc,
+.detail-article-body .toc {
+    background-color: #f6f6f6 !important;
+    border: 1px solid #dbdbdb !important;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 36px 0;
+    box-sizing: border-box;
+}
+
+/* 1. 【文字を強制表示するグループ】（HTML側にタイトルがない埋め込み目次用） */
+.detail-article-body .toc::before {
+    content: "目次" !important; /* CSS側で文字を出力します */
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    margin: 0 0 14px !important;
+    color: #3c3c3c !important;
+    text-align: left !important;
+    letter-spacing: 0.05em !important;
+    text-transform: none !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+/* 2. 【HTML内のタイトルを装飾するグループ】（今回の <p class="toc-title"> 用） */
+/* 💡 HTML側にすでに書かれている「目次」という文字に、デザインだけを適用します（2重化を防止） */
+.post-toc .toc-title,
+.toc-fixed .toc-title,
+.toc-sticky .toc-title {
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 17px !important;   /* 埋め込み式と同じサイズ */
+    margin: 0 0 14px !important;  /* 下の見出しリストとの隙間 */
+    color: #3c3c3c !important;    /* 落ち着いた黒（note風） */
+    text-align: left !important;
+    letter-spacing: 0.05em !important;
+    text-transform: none !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+
+/* 埋め込み目次の「目次」タイトル設定（上部固定の.toc-titleとデザインを完全同期） */
+.detail-article-body .toc::before {
+    content: "目次" !important;
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 15px !important; /* タイトルもわずかに大きく調整 (14px -> 15px) */
+    margin: 0 0 14px !important;
+    color: #3c3c3c !important;
+    text-align: left !important;
+    letter-spacing: 0.05em !important;
+    text-transform: none !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+/* 一番外側のul（大見出しのリスト） */
+.post-toc > ul,
+.post-toc .toc > ul,
+.detail-article-body .toc > ul {
+    list-style-type: none !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    text-align: left !important;
+    display: block !important;
+}
+
+/* 大見出し（h2）に該当するli */
+.post-toc > ul > li,
+.post-toc .toc > ul > li,
+.detail-article-body .toc > ul > li {
+    text-align: left !important;
+    margin-bottom: 0 !important; 
+    padding: 11px 0 !important; /* 🌟 文字拡大に合わせて上下の余白を微調整 (10px -> 11px) */
+    font-size: 15px !important; /* 🌟 【PC版大見出し】わずかに拡大 (14px -> 15px) */
+    font-weight: bold !important;
+    display: block !important;
+    background: none !important;
+    border: none !important;
+    border-bottom: 1px solid #dbdbdb !important;
+}
+
+/* 中見出しを包む内側のul（字下げ設定） */
+.post-toc ul ul,
+.post-toc .toc ul ul,
+.detail-article-body .toc ul ul {
+    list-style-type: none !important;
+    padding-left: 20px !important; /* 🌟 視認性向上のため字下げ幅をわずかに調整 (18px -> 20px) */
+    margin: 6px 0 0 !important;   /* 🌟 大見出しとの隙間をわずかに拡張 (4px -> 6px) */
+    display: block !important;
+}
+
+/* 中見出し（h3）に該当するli */
+.post-toc ul ul li,
+.post-toc .toc ul ul li,
+.detail-article-body .toc ul ul li {
+    font-size: 14px !important; /* 🌟 【PC版中見出し】わずかに拡大 (13px -> 14px) */
+    font-weight: normal !important;
+    padding: 4px 0 !important; /* 🌟 行間が詰まりすぎないよう微調整 (3px -> 4px) */
+    border-bottom: none !important;
+    position: relative !important;
+    display: block !important;
+}
+
+/* 中見出しの先頭に「•」アイコンを添える */
+.post-toc ul ul li::before,
+.post-toc .toc ul ul li::before,
+.detail-article-body .toc ul ul li::before {
+    content: "•" !important;
+    color: #8d8d8d !important;
+    margin-right: 6px !important;
+    font-size: 13px !important; /* 🌟 アイコンのサイズも微調整 (12px -> 13px) */
+}
+
+/* 一番最後の項目だけは下線を消してスッキリさせる */
+.post-toc > ul > li:last-child,
+.post-toc .toc > ul > li:last-child,
+.detail-article-body .toc > ul > li:last-child {
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+/* 最初の項目の上側の余白を少し詰める調整 */
+.post-toc > ul > li:first-child,
+.post-toc .toc > ul > li:first-child,
+.detail-article-body .toc > ul > li:first-child {
+    padding-top: 4px !important;
+}
+
+/* 目次内のリンク共通スタイル */
+.post-toc a,
+.detail-article-body .toc a {
+    color: #515151 !important;
+    text-decoration: none !important;
+    transition: color 0.15s !important;
+    display: inline-block !important;
+}
+
+.post-toc a:hover,
+.detail-article-body .toc a:hover {
+    color: #000 !important;
+    text-decoration: none !important;
+}
+
+/* ===========================
+   本文
+   =========================== */
+.detail-article-body {
+    font-size: 18px;
+    line-height: 1.5;
+    word-break: break-word;
+    text-align: left;
+    white-space: normal;
+    color: #2a2a2a;
+}
+
+.detail-article-body strong {
+    font-weight: 700 !important;
+    color: #1a1a1a;
+}
+
+.detail-article-body p {
+    margin-top: 9px !important;
+    margin-bottom: 1.4em;
+    font-size: 20px;
+}
+
+.detail-article-body h2 {
+    font-size: 23px;
+    font-weight: 700;
+    border-bottom: 2px solid #e8e8e8;
+    padding-bottom: 6px;
+    margin: 40px 0 16px;
+    text-align: left;
+    color: #1a1a1a;
+}
+
+.detail-article-body h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 28px 0 0;
+    text-align: left;
+    color: #1a1a1a;
+}
+
+article img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 25px auto;
+    border-radius: 5px;
+    margin-bottom: 0%;
+}
+
+/* ===========================
+   フッター
+   =========================== */
+hr {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 0 0 24px;
+}
+
+.detail-ul {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    flex-wrap: wrap;
+}
+
+.detail-ul-li {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.detail-ul-li-a {
+    font-size: 14px;
+    color: #4e4e4e;
+    text-decoration: none;
+    padding: 10px 22px;
+    border: 1.5px solid #c9c9c9;
+    border-radius: 20px;
+    display: inline-block;
+    transition: all 0.18s;
+}
+
+.detail-ul-li-a:hover {
+    border-color: #999;
+    color: #1a1a1a;
+    background: #f8f8f8;
+    text-decoration: none;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    .detail-container {
+        padding: 16px 0 48px !important;
+    }
+
+    article {
+        padding: 24px 18px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        margin-bottom: 16px;
+    }
+
+    h1 {
+        font-size: 20px;
+        letter-spacing: -0.01em;
+        line-height: 1.45;
+    }
+
+    .post-meta {
+        font-size: 12px;
+        gap: 6px;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+    }
+
+    .post-user-info {
+        font-size: 13px;
+    }
+
+    .detail-article-body {
+        font-size: 16px !important;
+        line-height: 1.65 !important;
+    }
+
+    .detail-article-body p {
+        margin-top: 9px !important;
+        margin-bottom: 1.4em;
+        font-size: 16px;
+    }
+
+    .detail-article-body h2 {
+        font-size: 19px;
+        margin: 32px 0 12px;
+    }
+
+    .detail-article-body h3 {
+        font-size: 17px;
+        margin: 24px 0 0;
+    }
+
+    /* スマホ用の目次（上部・埋め込み共通） */
+    .post-toc,
+    .detail-article-body .toc {
+        padding: 16px !important;
+        border-radius: 6px !important;
+        margin-bottom: 24px !important;
+    }
+
+    /* 大見出し（h2）に該当するスマホ用の目次スタイル */
+    .post-toc > ul > li,
+    .post-toc .toc > ul > li,
+    .detail-article-body .toc > ul > li {
+        font-size: 14px !important; /* 🌟 【スマホ版大見出し】わずかに拡大 (13px -> 14px) */
+        padding: 9px 0 !important;  /* スマホの余白も微調整 (8px -> 9px) */
+    }
+
+    /* 中見出し（h3）を包むスマホ用の内側リスト */
+    .post-toc ul ul,
+    .post-toc .toc ul ul,
+    .detail-article-body .toc ul ul {
+        padding-left: 16px !important; /* スマホ側の字下げもわずかに調整 (14px -> 16px) */
+        margin: 4px 0 0 !important;   /* スマホ側の大見出しとの隙間調整 (2px -> 4px) */
+    }
+
+    /* 中見出し（h3）に該当するスマホ用の目次スタイル */
+    .post-toc ul ul li,
+    .post-toc .toc ul ul li,
+    .detail-article-body .toc ul ul li {
+        font-size: 13px !important; /* 🌟 【スマホ版中見出し】わずかに拡大 (12px -> 13px) */
+        padding: 3px 0 !important;  /* スマホ側の行間調整 (2px -> 3px) */
+    }
+
+    /* 中見出しの「•」アイコンのスマホ用サイズ */
+    .post-toc ul ul li::before,
+    .post-toc .toc ul ul li::before,
+    .detail-article-body .toc ul ul li::before {
+        font-size: 12px !important; /* アイコンサイズ微調整 (11px -> 12px) */
+        margin-right: 5px !important;
+    }
+
+    hr {
+        margin: 0 16px 20px;
+    }
+
+    .detail-ul {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px 12px;
+    }
+
+    .detail-ul-li-a {
+        font-size: 14px;
+        padding: 11px 24px;
+        display: block;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+</file>
+
+<file path="static/css/genre.css">
+/* static/css/genre.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   ページレイアウト
+   =========================== */
+h1 {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin: 36px 0 20px;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+}
+
+.genre-container {
+    max-width: 480px;
+    margin: 0 auto 60px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ===========================
+   リストリセット
+   =========================== */
+.genre-list, .sub-genre-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* 「全て表示」 */
+.genre-item-all a {
+    display: block;
+    padding: 16px 24px;
+    font-size: 15px !important;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-decoration: none;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+}
+
+.genre-item-all a:hover {
+    background: #fafafa;
+    text-decoration: none;
+}
+
+/* 各グループ */
+.genre-group {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.genre-group:last-child {
+    border-bottom: none;
+}
+
+/* アコーディオンタイトル */
+.group-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    list-style: none;
+    transition: background 0.15s;
+    min-height: 52px;
+    box-sizing: border-box;
+}
+
+.group-title:hover {
+    background: #fafafa;
+}
+
+.group-title::-webkit-details-marker {
+    display: none;
+}
+
+/* 矢印 */
+.group-title .arrow {
+    font-size: 10px;
+    color: #bbb;
+    display: inline-block;
+    transition: transform 0.22s ease, color 0.22s;
+    flex-shrink: 0;
+}
+
+details[open] .group-title .arrow {
+    transform: rotate(90deg);
+    color: #777;
+}
+
+details[open] .group-title {
+    color: #1a1a1a;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* 子ジャンルリスト */
+.sub-genre-list {
+    background: #fafafa;
+    padding: 4px 0;
+}
+
+.sub-genre-list li a {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px 12px 36px;
+    font-size: 14px !important;
+    color: #555;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.sub-genre-list li a::before {
+    content: "–";
+    margin-right: 8px;
+    color: #ccc;
+    flex-shrink: 0;
+}
+
+.sub-genre-list li a:hover {
+    background: #efefef;
+    color: #1a1a1a;
+    text-decoration: none;
+}
+
+/* ===========================
+   フッター
+   =========================== */
+.genre-footer {
+    text-align: center;
+    margin: 20px 0 48px;
+}
+
+.genre-footer a {
+    font-size: 14px;
+    color: #666;
+    text-decoration: none;
+    padding: 10px 22px;
+    border: 1.5px solid #ddd;
+    border-radius: 20px;
+    display: inline-block;
+    transition: all 0.18s;
+}
+
+.genre-footer a:hover {
+    border-color: #999;
+    color: #1a1a1a;
+    background: #f8f8f8;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    h1 {
+        font-size: 18px;
+        margin: 24px 0 16px;
+    }
+
+    .genre-container {
+        margin: 0 16px 48px;
+        border-radius: 10px;
+    }
+
+    .genre-item-all a {
+        padding: 16px 18px;
+        font-size: 14px !important;
+    }
+
+    .group-title {
+        padding: 14px 18px;
+        font-size: 14px;
+        min-height: 50px;
+    }
+
+    .sub-genre-list li a {
+        padding: 12px 18px 12px 30px;
+        font-size: 14px !important;
+        min-height: 48px;
+    }
+}
+</file>
+
+<file path="static/css/index.css">
+/* static/css/index.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   メインレイアウト
+   =========================== */
+
+/* note風：中央カラム＋最大幅制限 */
+.page-wrapper {
+    max-width: 800px; /* 【拡大】PC版の全体の最大幅を 720px → 800px に拡大 */
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+}
+
+/* 編集ボタンのレイアウトとhover */
+.btn-edit {
+    display: inline-block;
+    padding: 1.5px 10px;       
+    font-size: 14px;
+    font-weight: 500;
+    color: #545454;
+    border: 1.2px solid #858585;
+    border-radius: 4px;
+    margin-right: 7px;
+}
+
+a[role="button"]:hover {
+    color: #000000;
+    border-color: #070707;
+    background: #f4f4f4;
+    text-decoration: none;
+}
+
+/* フィルター中の表示テキスト */
+.filter-label {
+    font-size: 13px;
+    color: #777;
+    font-weight: 500;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    background: #f0f0f0;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* 記事カード全体のコンテナ */
+.post-card {
+    display: flex;
+    gap: 24px; 
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px; 
+    padding: 20px; 
+    margin-bottom: 24px; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    /* 👇【重要】ここを追加：透明な膜をカード全体のサイズに広げるための「基準」にします */
+    position: relative;
+    /* 👇【重要】ここを追加：カード全体にマウスを乗せたときに指マーク（クリック可能）にします */
+    cursor: pointer;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 左側: サムネイルの設定 */
+.post-thumbnail {
+    flex: 0 0 240px; /* 【拡大】PC版のサムネイルの横幅を 200px → 240px に拡大 */
+    height: 150px;   /* 【拡大】PC版のサムネイルの縦幅を 135px → 150px に拡大 */
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #f7fafc;
+}
+
+.thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 縦横比を維持したまま綺麗に枠内に収める（超重要） */
+    object-position: center;
+}
+
+/* 右側: コンテンツエリアの設定 */
+.post-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    /* 👇【この1行を追加】レイアウト崩れを防ぐために必須です */
+    position: relative;
+}
+
+/* メタ情報（ジャンル・非公開） */
+.post-header-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+}
+
+/* 記事タイトル */
+.post-title {
+    margin: 0 0 8px 0;
+    font-size: 1.20rem;
+    line-height: 1.4;
+    text-align: left !important;
+}
+
+.post-title a {
+    color: #2d3748;
+    text-decoration: none;
+    display: inline-block; /* 👈【追加】リンクの挙動を安定させる */
+}
+
+
+/* 💡 [修正] 膜を少しだけカードの外側にはみ出させて、フラッシュを防止する */
+.post-title a::after {
+    content: "";
+    position: absolute;
+    
+    /* 上下左右を「0」から「マイナス」に変更して、カードの枠より少し広げます */
+    top: -12px;     /* 上の隙間カバー用 */
+    bottom: -12px;  /* 下の隙間カバー用 */
+    left: -4px;     /* 左右も少しだけ余裕を持たせる */
+    right: -4px;
+    
+    z-index: 1;
+}
+
+/* カード全体にマウスが乗ったとき、タイトルを青色（ホバー色）に変える連動設定 */
+.post-card:hover .post-title a {
+    color: #005cfa;
+}
+
+/* 管理者用の編集・削除ボタンを、透明なリンクよりも「前面」に浮かせてクリック可能にする設定 */
+.post-actions {
+    position: relative;
+    z-index: 2; /* z-index: 1 よりも上に重ねる */
+}
+
+
+/* 投稿日時 */
+.post-date {
+    margin: 8px 0 0 0;
+    font-size: 0.80rem;
+    color: #718096;
+}
+
+/* 📱 レスポンシブ対応（画面幅が狭いスマホ等の処理） */
+@media (max-width: 600px) {
+    .post-card {
+        flex-direction: column; /* 縦並びに切り替え */
+        gap: 12px; /* 隙間を少し狭く */
+        padding: 14px; /* 余白を少しスリムに */
+    }
+    
+    /* 1. サムネイルの設定（高さを引き上げて画像を大きく見せる） */
+    .post-thumbnail {
+        flex: none;
+        width: 100%; 
+        height: 170px; /* 👈【変更】140px から 170px に引き上げ、存在感をアップ */
+    }
+
+    /* 2. 各種テキスト・要素の文字サイズを調整 */
+    .post-header-meta {
+        font-size: 0.85rem; /* 👈【追加】ジャンルバッジなどの文字を少し小さく（0.95rem → 0.85rem） */
+        margin-bottom: 4px;
+    }
+
+    .post-title {
+        font-size: 1.1rem; /* 👈【追加】タイトル文字をひと回りシャープに（1.25rem → 1.1rem） */
+        line-height: 1.35;
+    }
+
+    .post-date {
+        font-size: 0.75rem; /* 👈【追加】日付の文字も少し小さく（0.80rem → 0.75rem） */
+        margin-top: 6px;
+    }
+
+    /* この指定にすると、中身の高さがどれだけ変わっても自動でカード全体に広がります */
+    .post-title a::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1;
+    }
+}
+</file>
+
+<file path="static/css/mypage.css">
+/* static/css/mypage.css - note風レスポンシブ対応版 */
+
+/* ===========================
+   ページレイアウト（中央カラム）
+   =========================== */
+.mypage-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+    box-sizing: border-box;
+}
+
+/* ===========================
+   プロフィールヘッダー
+   =========================== */
+.profile-header {
+    background: #fff;
+    padding: 28px 28px 24px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    border: 1px solid #e8e8e8;
+}
+
+.profile-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+}
+
+.profile-username {
+    margin: 4px 0 0;
+    color: #aaa;
+    font-size: 13px;
+}
+
+.profile-post-count {
+    margin: 10px 0 0;
+    color: #777;
+    font-size: 14px;
+}
+
+.profile-post-count strong {
+    color: #1a1a1a;
+    font-weight: 700;
+}
+
+/* ===========================
+   ニックネーム変更フォーム
+   =========================== */
+.nickname-form-wrapper {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.nickname-form-wrapper > p,
+.nickname-form label {
+    font-size: 13px;
+    color: #8c8c8c;
+    margin: 0 0 8px;
+    font-weight: 500;
+}
+
+.nickname-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nickname-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 14px;
+    border: 1.5px solid #cccccc;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.18s;
+    background: #fafafa;
+}
+
+.nickname-input:focus {
+    border-color: #aaa;
+    background: #fff;
+}
+
+.nickname-submit-btn {
+    padding: 8px 18px;
+    background-color: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.18s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nickname-submit-btn:hover {
+    background-color: #333;
+}
+
+/* ===========================
+   セクション見出し
+   =========================== */
+.section-title-genre {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 10px;
+    margin: 36px 0 20px;
+    letter-spacing: 0.02em;
+}
+
+.section-title-posts {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 10px;
+    margin: 36px 0 20px;
+    letter-spacing: 0.02em;
+}
+
+/* ===========================
+   ジャンルタグ
+   =========================== */
+.user-genre-list {
+    margin-bottom: 8px;
+}
+
+.genre-tags {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.genre-tag-item {
+    background: #ffffff;
+    border: 1px solid #cdcdcd;
+    padding: 4px 14px;
+    border-radius: 15px;
+    display: inline-block;
+    transition: all 0.15s;
+}
+
+.genre-tag-item:hover {
+    background: #eee;
+    border-color: #ccc;
+}
+
+.genre-tag-link {
+    text-decoration: none;
+    color: #444;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.genre-tag-link:hover {
+    text-decoration: none;
+}
+
+/* ===========================
+   検索ボックス（マイページ内）
+   =========================== */
+.search-box {
+    margin-bottom: 20px;
+}
+
+.search-box form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: #fff;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 24px;
+    padding: 8px 16px;
+    transition: border-color 0.2s;
+}
+
+.search-box form:focus-within {
+    border-color: #999;
+}
+
+.search-box input[type="text"] {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    background: transparent;
+    color: #333;
+    padding: 4px 0;
+    min-width: 0;
+}
+
+.search-box input[type="text"]::placeholder {
+    color: #bbb;
+}
+
+.search-box button {
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.18s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.search-box button:hover {
+    background: #333;
+}
+
+/* クリアボタン */
+.search-box a[role="button"] {
+    display: inline-block;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #666;
+    background: transparent;
+    border: 1.5px solid #ddd;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.search-box a[role="button"]:hover {
+    color: #333;
+    border-color: #aaa;
+    background: #f8f8f8;
+}
+
+/* ===========================
+   投稿カード（マイページ内）
+   =========================== */
+article {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: box-shadow 0.18s, border-color 0.18s;
+}
+
+article:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    border-color: #d0d0d0;
+}
+
+article h2 {
+    text-align: left;
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.45;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+    color: #1a1a1a;
+}
+
+article h2 a {
+    text-decoration: none;
+    color: #1a1a1a;
+    flex: 1;
+    min-width: 0;
+}
+
+article h2 a:hover {
+    text-decoration: underline;
+}
+
+/* マイページ内のボタン */
+article a[role="button"] {
+    display: inline-block;
+    font-size: 12px;
+    padding: 5px 12px;
+    color: #555;
+    background: transparent;
+    border: 1.5px solid #ddd;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: all 0.15s;
+    margin-right: 6px;
+}
+
+article a[role="button"]:hover {
+    border-color: #aaa;
+    background: #f8f8f8;
+}
+
+article form {
+    display: inline;
+}
+
+article form button {
+    font-size: 12px;
+    padding: 5px 12px;
+    background: transparent;
+    color: #c0392b;
+    border: 1.5px solid #e8bebe;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+article form button:hover {
+    background: #fef2f2;
+    border-color: #e06060;
+}
+
+article p {
+    font-size: 12px;
+    color: #bbb;
+    margin: 10px 0 0;
+    line-height: 1.5;
+}
+
+/* 空メッセージ */
+.empty-message {
+    color: #aaa;
+    text-align: center;
+    margin-top: 48px;
+    font-size: 15px;
+    line-height: 2;
+}
+
+.empty-message a {
+    color: #555;
+    text-decoration: underline;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+
+    .mypage-container {
+        padding: 16px 16px 48px;
+    }
+
+    .profile-header {
+        padding: 20px 18px 18px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .profile-title {
+        font-size: 18px;
+    }
+
+    .nickname-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .nickname-input {
+        font-size: 15px; /* iOSズーム防止 */
+    }
+
+    .nickname-submit-btn {
+        text-align: center;
+        margin-top: 8px;
+        padding: 8px;
+    }
+
+    .section-title-genre,
+    .section-title-posts {
+        font-size: 15px;
+        margin: 28px 0 16px;
+    }
+
+    .search-box form {
+        padding: 6px 12px;
+    }
+
+    .search-box input[type="text"] {
+        font-size: 16px;
+    }
+
+    article {
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+
+    article h2 {
+        font-size: 15px;
+    }
+
+    .genre-tag-item {
+        padding: 5px 12px;
+        background-color: #ffffff;
+    }
+}
+</file>
+
+<file path="templates/base.html">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>create1.blog.jp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-container">
+            <div class="header-logo">
+                <a href="{{ url_for('blog.index') }}">MY Blog</a>
+            </div>
+
+            <div class="header-search-box">
+                <form action="{{ url_for('blog.index') }}" method="GET">
+                    {% if selected_genre %}
+                        <input type="hidden" name="genre" value="{{ selected_genre }}">
+                    {% endif %}
+                    
+                    <input type="text" name="search" value="{{ search_word if search_word else '' }}" placeholder="キーワードで検索...">
+                    <button type="submit" class="search-submit-btn" aria-label="検索">
+                        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    
+                    {% if search_word or selected_genre %}
+                        <a href="{{ url_for('blog.index') }}" class="search-clear-btn" role="button">✕</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <nav class="header-nav">
+                <ul>
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
+                        <li><a href="{{ url_for('blog.genre_list') }}">ジャンル一覧</a></li>
+                        <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
+                        <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('blog.genre_list') }}">ジャンル一覧</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- オーバーレイ -->
+    <div class="mobile-nav-overlay" id="navOverlay"></div>
+
+    <!-- スマホ用ドロワー -->
+    <div class="mobile-nav-drawer" id="navDrawer" aria-hidden="true">
+        <div class="mobile-nav-header">
+            <span class="mobile-nav-header-logo">MY Blog</span>
+            <button class="mobile-nav-close" id="navCloseBtn" aria-label="メニューを閉じる">✕</button>
+        </div>
+        <ul>
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
+                <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル一覧</a></li>
+                <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
+                <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
+            {% else %}
+                <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル一覧</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <script>
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const navOverlay   = document.getElementById('navOverlay');
+        const navDrawer    = document.getElementById('navDrawer');
+        const navCloseBtn  = document.getElementById('navCloseBtn');
+
+        function openDrawer() {
+            navDrawer.classList.add('open');
+            navOverlay.classList.add('open');
+            navDrawer.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+            navDrawer.classList.remove('open');
+            navOverlay.classList.remove('open');
+            navDrawer.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        hamburgerBtn.addEventListener('click', openDrawer);
+        navCloseBtn.addEventListener('click', closeDrawer);
+        navOverlay.addEventListener('click', closeDrawer);
+
+        // Escキーでも閉じる
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDrawer();
+        });
+    </script>
+</body>
+</html>
+</file>
+
+<file path="templates/create.html">
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/create_update.css') }}">
+
+<h1>新規投稿作成</h1>
+<div>
+    <form action="{{ url_for('admin.create') }}" method="post" enctype="multipart/form-data" class="post-form">
+        <label for="title">タイトル</label>
+        <input type="text" name="title" required>
+
+        <p>
+            <label for="genre_select">ジャンル</label>
+            <select name="genre_select" id="genre_select" onchange="toggleNewGenreInput()">
+                <option value="未分類" selected>-- ジャンルを選択（選択なしは未分類） --</option>
+                
+                {% for genre in genres %}
+                    <option value="{{ genre }}">{{ genre }}</option>
+                {% endfor %}
+                <option value="__NEW__">+ 新しいジャンルを作成する</option>
+            </select>
+        </p>
+
+        <p id="new_genre_wrapper" style="display: none;">
+            <label for="genre_new">新しいジャンル名</label>
+            <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
+        </p>
+
+        <p>
+            <label>公開設定</label>
+            <input type="hidden" name="is_published" id="is_published" value="false">
+            
+            <button type="button" id="toggle_status_btn" class="toggle-status-btn private" onclick="handleStatusToggle()">
+                <span class="status-icon">🔒</span>
+                <span class="status-text">非公開</span>
+            </button>
+        </p>
+
+        <script>
+        function handleStatusToggle() {
+            const hiddenInput = document.getElementById('is_published');
+            const btn = document.getElementById('toggle_status_btn');
+            const icon = btn.querySelector('.status-icon');
+            const text = btn.querySelector('.status-text');
+
+            if (hiddenInput.value === 'false') {
+                // 全体公開に切り替え
+                hiddenInput.value = 'true';
+                btn.classList.remove('private');
+                btn.classList.add('published');
+                icon.textContent = '🔓';
+                text.textContent = '全体公開';
+            } else {
+                // 非公開に切り替え
+                hiddenInput.value = 'false';
+                btn.classList.remove('published');
+                btn.classList.add('private');
+                icon.textContent = '🔒';
+                text.textContent = '非公開';
+            }
+        }
+        </script>
+
+        <p>
+            <label for="body">内容</label>
+            ※見出しの作り方は、大見出し <b>## 見出し</b>、中見出し <b>### 見出し</b> …のように記述してください<br>
+            ※目次を好きな場所に挟みたい場合、半角大文字で <b>[toc]</b> と入力してください（未入力の場合は一番上に自動挿入されます）<br>
+            ※画像を挟みたい場所に <b>[img1]</b> と半角で入力してください（選択した画像の1枚目の順に対応）<br>
+            ※文字を太字にしたい場合は <b>**太字にする文字**</b> のようにアスタリスクで囲んでください
+        </p>
+
+        <p>
+            <textarea name="body" rows="17" required placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
+        </p>
+            
+        <p>
+            <label for="fileUpload">画像（複数選択可 / 順番に [img1], [img2] になります）</label>
+            <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
+        </p>
+
+
+        <p>
+            <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
+            <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
+                <option value="none" selected>-- 選択なし（システム共通のデフォルトになります） --</option>
+                <option value="thumb_option1.jpg">選択肢1：趣味（thumb_option1.jpg）</option>
+                <option value="thumb_option2.jpg">選択肢2：旅行（thumb_option2.jpg）</option>
+                <option value="thumb_option3.jpg">選択肢3：スポーツ（thumb_option3.jpg）</option>
+                <option value="thumb_option4.jpg">選択肢4：アニメ（thumb_option4.jpg）</option>
+                <option value="thumb_option5.jpg">選択肢5：本（thumb_option5.jpg）</option>
+                <option value="thumb_option6.jpg">選択肢6：ゲーム（thumb_option6.jpg）</option>
+                <option value="thumb_option7.jpg">選択肢7：音楽（thumb_option7.jpg）</option>
+                <option value="thumb_option8.jpg">選択肢8：映画（thumb_option8.jpg）</option>
+                <option value="thumb_option9.jpg">選択肢9：ドラマ（thumb_option9.jpg）</option>
+                <option value="thumb_option10.jpg">選択肢10：開発（thumb_option10.jpg）</option>
+                <option value="thumb_option11.jpg">選択肢11：勉強（thumb_option11.jpg）</option>
+            </select>
+        </p>
+
+        <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
+            <div class="preview-item" style="max-width: 200px;">
+                <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                <div class="preview-label">選択中のサムネイル</div>
+            </div>
+        </div>
+
+        <script>
+        // 選んだデフォルト画像をその場でプレビューするJavaScript
+        function previewDefaultThumb(select) {
+            const previewArea = document.getElementById('default-thumb-preview-area');
+            const previewImg = document.getElementById('default-thumb-preview-img');
+            
+            if (select.value === 'none') {
+                previewArea.style.display = 'none';
+                previewImg.src = '';
+            } else {
+                previewArea.style.display = 'block';
+                previewImg.src = "/static/img/" + select.value;
+            }
+        }
+        </script>
+
+
+        <!-- 画像プレビューエリア -->
+        <div id="preview-area" style="display: none;">
+            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+                📸 アップロード画像プレビュー
+            </p>
+            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+        </div>
+
+        <input type="submit" value="投稿する">
+    </form>
+</div>
+
+
+<script>
+function toggleNewGenreInput() {
+    const selectBox = document.getElementById('genre_select');
+    const newGenreWrapper = document.getElementById('new_genre_wrapper');
+    const newGenreInput = document.getElementById('genre_new');
+
+    if (selectBox.value === '__NEW__') {
+        newGenreWrapper.style.display = 'block';
+        newGenreInput.required = true;
+    } else {
+        newGenreWrapper.style.display = 'none';
+        newGenreInput.required = false;
+        newGenreInput.value = '';
+    }
+}
+
+function previewImages(input) {
+    const previewArea = document.getElementById('preview-area');
+    const previewList = document.getElementById('preview-list');
+
+    // 前回のプレビューをリセット
+    previewList.innerHTML = '';
+
+    const files = Array.from(input.files);
+
+    if (files.length === 0) {
+        previewArea.style.display = 'none';
+        return;
+    }
+
+    previewArea.style.display = 'block';
+
+    files.forEach((file, index) => {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+
+            const label = document.createElement('div');
+            label.className = 'preview-label';
+            label.textContent = `[img${index + 1}]`;
+
+            const filename = document.createElement('div');
+            filename.className = 'preview-filename';
+            filename.textContent = file.name;
+            filename.title = file.name; // ホバーでフルネーム表示
+
+            item.appendChild(img);
+            item.appendChild(label);
+            item.appendChild(filename);
+            previewList.appendChild(item);
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+</script>
+
+{% endblock %}
+</file>
+
+<file path="templates/detail.html">
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+
+<div class="detail-container">
+    <article>
+        <h1>
+            {{ post.title }}
+        </h1>
+        
+        <div class="post-meta" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+            <span class="genre-badge">
+                {{ post.genre if post.genre else '未分類' }}
+            </span>
+
+            <div class="post-user-info">
+                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
+                    alt="avatar">
+                
+                <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
+            </div>
+            
+            <div class="post-time">
+                投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                &nbsp;
+                {% if post.updated_at %}
+                    更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if toc_html and '<li>' in toc_html %}
+            <div class="post-toc">
+                <p class="toc-title">目次</p>
+                {{ toc_html | safe }}
+            </div>
+        {% endif %}
+
+        <div class="detail-article-body">{{ display_body | safe }}</div>
+    </article>
+
+    <hr>
+    <ul class="detail-ul" style="justify-content: center;">
+        <li class="detail-ul-li">
+            <a href="{{ url_for('blog.index') }}" class="detail-ul-li-a">一覧画面に戻る</a>
+        </li>
+        {% if current_user.is_authenticated and post.user_id == current_user.id %}
+            <li class="detail-ul-li">
+                <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-ul-li-a">この記事を編集する</a>
+            </li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock %}
+</file>
+
+<file path="templates/genre.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/genre.css') }}">
+
+<h1>ジャンル一覧</h1>
+
+<div class="genre-container">
+    {% if genres %}
+        <ul class="genre-list">
+            <li class="genre-item-all">
+                <a href="{{ url_for('blog.index') }}">📁 全て表示</a>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>ライフスタイル</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if '日常' in genres %}<li><a href="{{ url_for('blog.index', genre='日常') }}">日常</a></li>{% endif %}
+                        {% if '健康' in genres %}<li><a href="{{ url_for('blog.index', genre='健康') }}">健康</a></li>{% endif %}
+                        {% if '趣味' in genres %}<li><a href="{{ url_for('blog.index', genre='趣味') }}">趣味</a></li>{% endif %}
+                        {% if '旅行' in genres %}<li><a href="{{ url_for('blog.index', genre='旅行') }}">旅行</a></li>{% endif %}
+                        {% if 'イラスト' in genres %}<li><a href="{{ url_for('blog.index', genre='イラスト') }}">イラスト</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>社会・経済</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'ニュース' in genres %}<li><a href="{{ url_for('blog.index', genre='ニュース') }}">ニュース</a></li>{% endif %}
+                        {% if '経済' in genres %}<li><a href="{{ url_for('blog.index', genre='経済') }}">経済</a></li>{% endif %}
+                        {% if '投資' in genres %}<li><a href="{{ url_for('blog.index', genre='投資') }}">投資</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>技術・勉強</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'プログラミング学習' in genres %}<li><a href="{{ url_for('blog.index', genre='プログラミング学習') }}">プログラミング学習</a></li>{% endif %}
+                        {% if '開発記録' in genres %}<li><a href="{{ url_for('blog.index', genre='開発記録') }}">開発記録</a></li>{% endif %}
+                        {% if '資格勉強' in genres %}<li><a href="{{ url_for('blog.index', genre='資格勉強') }}">資格勉強</a></li>{% endif %}
+                        {% if '勉強' in genres %}<li><a href="{{ url_for('blog.index', genre='勉強') }}">勉強</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>スポーツ</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'サッカー' in genres %}<li><a href="{{ url_for('blog.index', genre='サッカー') }}">サッカー</a></li>{% endif %}
+                        {% if '野球' in genres %}<li><a href="{{ url_for('blog.index', genre='野球') }}">野球</a></li>{% endif %}
+                        {% if '競馬' in genres %}<li><a href="{{ url_for('blog.index', genre='競馬') }}">競馬</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>娯楽</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'アニメ' in genres %}<li><a href="{{ url_for('blog.index', genre='アニメ') }}">アニメ</a></li>{% endif %}
+                        {% if '漫画' in genres %}<li><a href="{{ url_for('blog.index', genre='漫画') }}">漫画</a></li>{% endif %}
+                        {% if '本' in genres %}<li><a href="{{ url_for('blog.index', genre='本') }}">本</a></li>{% endif %}
+                        {% if 'ゲーム' in genres %}<li><a href="{{ url_for('blog.index', genre='ゲーム') }}">ゲーム</a></li>{% endif %}
+                        {% if '音楽' in genres %}<li><a href="{{ url_for('blog.index', genre='音楽') }}">音楽</a></li>{% endif %}
+                        {% if '国内映画' in genres %}<li><a href="{{ url_for('blog.index', genre='国内映画') }}">国内映画</a></li>{% endif %}
+                        {% if '海外映画' in genres %}<li><a href="{{ url_for('blog.index', genre='海外映画') }}">海外映画</a></li>{% endif %}
+                        {% if '国内ドラマ' in genres %}<li><a href="{{ url_for('blog.index', genre='国内ドラマ') }}">国内ドラマ</a></li>{% endif %}
+                        {% if '海外ドラマ' in genres %}<li><a href="{{ url_for('blog.index', genre='海外ドラマ') }}">海外ドラマ</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+
+            <li class="genre-group">
+                <details>
+                    <summary class="group-title">
+                        <span>仕事</span>
+                        <span class="arrow">▶</span>
+                    </summary>
+                    <ul class="sub-genre-list">
+                        {% if 'バイト' in genres %}<li><a href="{{ url_for('blog.index', genre='バイト') }}">バイト</a></li>{% endif %}
+                        {% if '就活' in genres %}<li><a href="{{ url_for('blog.index', genre='就活') }}">就活</a></li>{% endif %}
+                        {% if '仕事' in genres %}<li><a href="{{ url_for('blog.index', genre='仕事') }}">仕事</a></li>{% endif %}
+                    </ul>
+                </details>
+            </li>
+        </ul>
+    {% else %}
+        <p style="padding: 24px; color: #aaa; text-align: center;">まだジャンルが登録されていません。</p>
+    {% endif %}
+</div>
+
+<div class="genre-footer">
+    <a href="{{ url_for('blog.index') }}">← 一覧画面に戻る</a>
+</div>
+
+{% endblock %}
+</file>
+
+<file path="templates/index.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
+<div class="page-wrapper">
+
+    {% if selected_genre or search_word %}
+        <p class="filter-label">
+            🔍 
+            {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
+            {% if search_word %}キーワード「{{ search_word }}」{% endif %}
+            を表示中
+        </p>
+    {% endif %}
+
+    {% for post in posts %}
+        <article class="post-card">
+            <div class="post-thumbnail">
+                {% if post.img_name %}
+                    {% set first_img = post.img_name.split(',')[0] %}
+                    <img src="{{ url_for('static', filename='img/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                
+                {% elif post.default_thumb %}
+                    <img src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
+                
+                {% else %}
+                    <img src="{{ url_for('static', filename='img/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
+                {% endif %}
+            </div>
+
+            <div class="post-content">
+                <div class="post-header-meta">
+                    <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
+                    
+                    {% if not post.is_published %}
+                        <span class="badge-private">🔒 非公開</span>
+                    {% endif %}
+                </div>
+
+                <h2 class="post-title">
+                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
+                </h2>
+
+                {% if current_user.is_authenticated and post.user_id == current_user.id %}
+                    <div class="post-actions">
+                        <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
+                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                            <button type="submit" class="btn-delete">削除</button>
+                        </form>
+                    </div>
+                {% endif %}
+
+                <p class="post-date">
+                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                    {% if post.created_at != post.updated_at %}
+                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
+                    {% endif %}
+                </p>
+            </div>
+        </article>
+    {% endfor %}
+
+</div>
+
+{% endblock %}
+</file>
+
+<file path="templates/login.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+
+<div class="auth-container">
+    <h2>管理者画面</h2>
+
+    <form action="{{ url_for('auth.secret_login') }}" method="post" class="login-form">
+
+        <div class="form-group">
+            <label for="">ユーザー名</label>
+            <input type="password" name="username" autocomplete="username" required>
+        </div>
+
+        <div class="form-group">
+            <label for="">パスワード</label>
+            <input type="password" name="password" autocomplete="current-password" required>
+        </div>
+
+        <div class="form-button">
+            <input type="submit" value="ログイン" class="submit-btn">
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+</file>
+
+<file path="templates/mypage.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
+
+<div class="mypage-container">
+    
+    <div class="profile-header">
+        <h2 class="profile-title">
+            👤 {% if current_user.nickname %}{{ current_user.nickname }}{% endif %} さんのマイページ
+        </h2>
+
+        <p class="profile-post-count">
+            これまでの総投稿数: <strong>{{ posts|length }}</strong> 件
+        </p>
+
+        <div class="nickname-form-wrapper">
+            <form method="POST" action="{{ url_for('admin.mypage') }}" class="nickname-form">
+                <label for="nickname">ニックネーム変更:</label>
+                <input type="text" name="nickname" id="nickname" 
+                    class="nickname-input"
+                    placeholder="新しいニックネーム" 
+                    maxlength="50">
+                <button type="submit" class="nickname-submit-btn">変更する</button>
+            </form>
+        </div>
+    </div>
+
+    <h3 class="section-title-genre">📂 あなたの作成・使用したジャンル</h3>
+    <div class="user-genre-list">
+        {% if user_genres %}
+            <ul class="genre-tags">
+                {% for genre_name in user_genres %}
+                    <li class="genre-tag-item">
+                        <a href="{{ url_for('admin.mypage', genre=genre_name) }}" class="genre-tag-link">
+                            # {{ genre_name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="profile-post-count">まだオリジナルのジャンルは作成されていません。</p>
+        {% endif %}
+    </div>
+
+    <h3 class="section-title-posts">📋 自分の投稿一覧</h3>
+
+    <div class="search-box" style="margin: 20px 0;">
+        <form action="{{ url_for('admin.mypage') }}" method="GET">
+            {% if selected_genre %}
+                <input type="hidden" name="genre" value="{{ selected_genre }}">
+            {% endif %}
+            
+            <input type="text" name="search" value="{{ search_word if search_word else '' }}" placeholder="自分の投稿からタイトルで検索..." style="padding: 6px; width: 250px;">
+            <button type="submit" style="padding: 6px 12px;">検索</button>
+            
+            {% if search_word or selected_genre %}
+                <a href="{{ url_for('admin.mypage') }}" role="button" style="margin-left: 8px; text-decoration: none; background: #e9ecef; color: #333; padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">クリア</a>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if selected_genre or search_word %}
+        <p style="color: #555; font-weight: bold; margin-bottom: 15px;">
+            🔍 自分の一覧から 
+            {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
+            {% if search_word %} キーワード「{{ search_word }}」{% endif %}
+            の表示中
+        </p>
+    {% endif %}
+
+    {% if posts %}
+        {% for post in posts %}
+            <article>
+                <h2>
+                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
+                    {% if not post.is_published %}
+                        <span style="font-size: 12px; background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle;">🔒 非公開</span>
+                    {% endif %}
+
+                    <span style="background-color: #e9ecef; color: #495057; padding: 3px 8px; border-radius: 4px; font-size: 13px; font-weight: 500;">
+                        📂 {{ post.genre if post.genre else '未分類' }}
+                    </span>
+                </h2>
+
+                <a href="{{ url_for('admin.update', id=post.id) }}" role="button">編集</a>
+                
+                <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
+                    <button type="submit" class="btn btn-danger">削除</button>
+                </form>
+
+                <p>投稿日時: {{ post.created_at.strftime('%Y年%m月%d日 %H:%M') }}
+                    <br>{% if post.created_at != post.updated_at %}
+                            更新日時: {{ post.updated_at.strftime('%Y年%m月%d日 %H:%M') }}
+                        {% endif %}
+                </p>
+            </article>
+        {% endfor %}
+    {% else %}
+        <p class="empty-message">まだ投稿がありません。<br><a href="{{ url_for('admin.create') }}">最初のブログを投稿してみましょう！</a></p>
+    {% endif %}
+</div>
+
+{% endblock %}
+</file>
+
+<file path="templates/update.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/create_update.css') }}">
+
+<h1>編集</h1>
+
+<div>
+    <form action="{{ url_for('admin.update', id=post.id) }}" method="post" enctype="multipart/form-data" class="post-form">
+
+        <label for="title">タイトル</label>
+        <input type="text" name="title" value="{{post.title}}">
+
+        <p>
+            <label for="genre_select">ジャンル</label>
+            <select name="genre_select" id="genre_select" onchange="toggleNewGenreInput()">
+                <option value="未分類" {% if post.genre == '未分類' or not post.genre %}selected{% endif %}>-- ジャンルを選択（選択なしは未分類） --</option>
+                
+                {% for genre in genres %}
+                    <option value="{{ genre }}" {% if post.genre == genre %}selected{% endif %}>{{ genre }}</option>
+                {% endfor %}
+                <option value="__NEW__">+ 新しいジャンルを作成する</option>
+            </select>
+        </p>
+
+        <p id="new_genre_wrapper" style="display: none;">
+            <label for="genre_new">新しいジャンル名</label>
+            <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
+        </p>
+
+        <p>
+            <label>公開設定</label>
+            <input type="hidden" name="is_published" id="is_published" value="{{ 'true' if post.is_published else 'false' }}">
+            
+            <button type="button" id="toggle_status_btn" 
+                    class="toggle-status-btn {{ 'published' if post.is_published else 'private' }}" 
+                    onclick="handleStatusToggle()">
+                <span class="status-icon">{{ '🔓' if post.is_published else '🔒' }}</span>
+                <span class="status-text">{{ '全体公開' if post.is_published else '非公開' }}</span>
+            </button>
+        </p>
+
+        <script>
+        function handleStatusToggle() {
+            const hiddenInput = document.getElementById('is_published');
+            const btn = document.getElementById('toggle_status_btn');
+            const icon = btn.querySelector('.status-icon');
+            const text = btn.querySelector('.status-text');
+
+            if (hiddenInput.value === 'false') {
+                hiddenInput.value = 'true';
+                btn.classList.remove('private');
+                btn.classList.add('published');
+                icon.textContent = '🔓';
+                text.textContent = '全体公開';
+            } else {
+                hiddenInput.value = 'false';
+                btn.classList.remove('published');
+                btn.classList.add('private');
+                icon.textContent = '🔒';
+                text.textContent = '非公開';
+            }
+        }
+        </script>
+        
+        <p>
+            <label for="body">内容</label>
+                ※見出しの作り方は、大見出し <b>## 見出し</b>、中見出し <b>### 見出し</b> …のように記述してください。<br>
+                ※目次を好きな場所に挟みたい場合、半角大文字で <b>[toc]</b> と入力してください（未入力の場合は一番上に自動挿入されます）<br>
+                ※画像を挟みたい場所に <b>[img1]</b> と半角で入力してください。（選択した画像の1枚目の順に対応）<br>
+                ※文字を太字にしたい場合は <b>**太字にする文字**</b> のようにアスタリスクで囲んでください。
+            <textarea name="body" rows="17">{{post.body}}</textarea>
+        </p>
+        
+        {% if post.img_name %}
+            <label>現在の画像</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+                {% for img in post.img_name.split(',') %}
+                    <div class="preview-item">
+                        <img src="{{ url_for('static', filename='img/' + img) }}" alt="{{ img }}">
+                        <div class="preview-label">[img{{ loop.index }}]（現在）</div>
+                        <div class="preview-filename" title="{{ img }}">{{ img }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div>
+            <label>画像を変更する（複数選択可 / 順番に [img1], [img2] になります）</label>
+            <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
+
+
+            <p>
+                <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
+                <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
+                    <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
+                    <option value="thumb_option1.jpg" {% if post.default_thumb == 'thumb_option1.jpg' %}selected{% endif %}>選択肢1：趣味（thumb_option1.jpg）</option>
+                    <option value="thumb_option2.jpg" {% if post.default_thumb == 'thumb_option2.jpg' %}selected{% endif %}>選択肢2：旅行（thumb_option2.jpg）</option>
+                    <option value="thumb_option3.jpg" {% if post.default_thumb == 'thumb_option3.jpg' %}selected{% endif %}>選択肢3：スポーツ（thumb_option3.jpg）</option>
+                    <option value="thumb_option4.jpg" {% if post.default_thumb == 'thumb_option4.jpg' %}selected{% endif %}>選択肢4：アニメ（thumb_option4.jpg）</option>
+                    <option value="thumb_option5.jpg" {% if post.default_thumb == 'thumb_option5.jpg' %}selected{% endif %}>選択肢5：本（thumb_option5.jpg）</option>
+                    <option value="thumb_option6.jpg" {% if post.default_thumb == 'thumb_option6.jpg' %}selected{% endif %}>選択肢6：ゲーム（thumb_option6.jpg）</option>
+                    <option value="thumb_option7.jpg" {% if post.default_thumb == 'thumb_option7.jpg' %}selected{% endif %}>選択肢7：音楽（thumb_option7.jpg）</option>
+                    <option value="thumb_option8.jpg" {% if post.default_thumb == 'thumb_option8.jpg' %}selected{% endif %}>選択肢8：映画（thumb_option8.jpg）</option>
+                    <option value="thumb_option9.jpg" {% if post.default_thumb == 'thumb_option9.jpg' %}selected{% endif %}>選択肢9：ドラマ（thumb_option9.jpg）</option>
+                    <option value="thumb_option10.jpg" {% if post.default_thumb == 'thumb_option10.jpg' %}selected{% endif %}>選択肢10：開発（thumb_option10.jpg）</option>
+                    <option value="thumb_option11.jpg" {% if post.default_thumb == 'thumb_option11.jpg' %}selected{% endif %}>選択肢11：勉強（thumb_option11.jpg）</option>
+                </select>
+            </p>
+
+            {% if post.default_thumb %}
+                <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
+                    <div class="preview-item" style="max-width: 200px;">
+                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                        <div class="preview-label">選択中のサムネイル</div>
+                    </div>
+                </div>
+            {% else %}
+                <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
+                    <div class="preview-item" style="max-width: 200px;">
+                        <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                        <div class="preview-label">選択中のサムネイル</div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <script>
+            function previewDefaultThumb(select) {
+                const previewArea = document.getElementById('default-thumb-preview-area');
+                const previewImg = document.getElementById('default-thumb-preview-img');
+                
+                if (select.value === 'none') {
+                    previewArea.style.display = 'none';
+                    previewImg.src = '';
+                } else {
+                    previewArea.style.display = 'block';
+                    previewImg.src = "/static/img/" + select.value;
+                }
+            }
+            </script>
+
+
+            <!-- 新しい画像のプレビューエリア -->
+            <div id="preview-area" style="display: none; margin-top: 14px;">
+                <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+                    📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
+                </p>
+                <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+            </div>
+
+            <input type="submit" value="更新">
+        </div>
+
+    </form>
+</div>
+
+
+
+<script>
+function toggleNewGenreInput() {
+    const selectBox = document.getElementById('genre_select');
+    const newGenreWrapper = document.getElementById('new_genre_wrapper');
+    const newGenreInput = document.getElementById('genre_new');
+
+    if (selectBox.value === '__NEW__') {
+        newGenreWrapper.style.display = 'block';
+        newGenreInput.required = true;
+    } else {
+        newGenreWrapper.style.display = 'none';
+        newGenreInput.required = false;
+        newGenreInput.value = '';
+    }
+}
+
+function previewImages(input) {
+    const previewArea = document.getElementById('preview-area');
+    const previewList = document.getElementById('preview-list');
+
+    previewList.innerHTML = '';
+
+    const files = Array.from(input.files);
+
+    if (files.length === 0) {
+        previewArea.style.display = 'none';
+        return;
+    }
+
+    previewArea.style.display = 'block';
+
+    files.forEach((file, index) => {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+
+            const label = document.createElement('div');
+            label.className = 'preview-label';
+            label.textContent = `[img${index + 1}]`;
+
+            const filename = document.createElement('div');
+            filename.className = 'preview-filename';
+            filename.textContent = file.name;
+            filename.title = file.name;
+
+            item.appendChild(img);
+            item.appendChild(label);
+            item.appendChild(filename);
+            previewList.appendChild(item);
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+</script>
+
+{% endblock %}
+</file>
+
+<file path="views/admin.py">
+# views/admin.py
+from flask import Blueprint, render_template, request, redirect, flash, current_app
+from flask_login import current_user  
+from flask_login import login_required
+from datetime import datetime
+from urllib.parse import urlparse
+import os
+import uuid
+import pytz
+from extensions import db
+from models import Post
+import config
+
+admin_bp = Blueprint('admin', __name__)
+
+# views/blog.pyと同じDEFAULT_GENRESを参照
+DEFAULT_GENRES = [
+    '日常', '健康', '旅行', '趣味', 'イラスト', 'ニュース', '経済', '投資',
+    'プログラミング学習', '開発記録', '資格勉強', '勉強', 'サッカー', '野球', '競馬',
+    'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
+    'バイト', '就活', '仕事'
+]
+
+# 新規投稿画面の表示設定
+@admin_bp.route('/create', methods=['GET', 'POST'])
+@login_required
+def create():
+    if current_user.username != config.ADMIN_USERNAME:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        body = request.form.get('body')
+        selected_genre = request.form.get('genre_select')
+        new_genre = request.form.get('genre_new')
+        
+        final_genre = '未分類'
+        if new_genre and new_genre.strip() != '':
+            final_genre = new_genre.strip()
+        elif selected_genre and selected_genre != '':
+            final_genre = selected_genre
+        
+        # 👇【追加】選択されたデフォルトサムネイル画像名を取得
+        selected_default_thumb = request.form.get('default_thumb_select')
+        if selected_default_thumb == 'none':  # 「選択なし」の場合はNone(Null)にする
+            selected_default_thumb = None
+        
+        files = request.files.getlist('img[]')
+        
+        filename_list = []
+        for file in files:
+            if file and file.filename != '':
+                ext = os.path.splitext(file.filename)[1]
+                filename = f"{uuid.uuid4()}{ext}"
+                
+                save_path = os.path.join(current_app.static_folder, 'img', filename)
+                file.save(save_path)
+                filename_list.append(filename)
+                
+        img_name_str = ",".join(filename_list) if filename_list else None
+        
+        if not title or not body or title.strip() == '' or body.strip() == '':
+            flash('タイトルと内容はどちらも入力必須です。')
+            return redirect('/create')
+        
+        is_published_form = request.form.get('is_published')
+        is_published = (is_published_form == 'true') if is_published_form is not None else False
+            
+        post = Post(
+            title=title, 
+            body=body, 
+            user_id=current_user.id, 
+            img_name=img_name_str, 
+            default_thumb=selected_default_thumb,
+            genre=final_genre,
+            is_published=is_published  
+        )
+        
+        db.session.add(post)
+        db.session.commit()
+        return redirect('/')
+        
+    else:
+        existing_genres = db.session.query(Post.genre).filter(
+            Post.user_id == current_user.id,
+            Post.genre != '未分類', Post.genre != None, Post.genre != ''
+        ).distinct().all()
+        user_genres_list = [g[0] for g in existing_genres]
+
+        all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
+
+        existing_genres = sorted(
+            list(all_genres_set),
+            key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
+        )
+        return render_template('create.html', genres=existing_genres)
+
+# 編集画面の表示設定   
+@admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
+@login_required
+def update(id):
+    if current_user.username != config.ADMIN_USERNAME:
+        return redirect('/')
+    
+    post = db.session.get(Post, id)
+    if not post or post.user_id != current_user.id:
+        flash("指定された記事が見つからないか、アクセス権限がありません。")
+        return redirect('/')
+    
+    if request.method == 'GET':
+        existing_genres = db.session.query(Post.genre).filter(
+            Post.user_id == current_user.id, 
+            Post.genre != '未分類', Post.genre != None, Post.genre != ''
+        ).distinct().all()
+        user_genres_list = [g[0] for g in existing_genres]
+        
+        all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
+        if post.genre:
+            all_genres_set.add(post.genre)
+        if '未分類' in all_genres_set:
+            all_genres_set.remove('未分類')
+            
+        genres_list = sorted(
+            list(all_genres_set),
+            key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
+        )
+        return render_template('update.html', post=post, genres=genres_list)
+    else:
+        post.title = request.form.get('title')
+        post.body = request.form.get('body')
+        
+        # 👇【追加】編集画面から送信されたデフォルトサムネイル画像名で更新
+        selected_default_thumb = request.form.get('default_thumb_select')
+        post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
+        
+        is_published_form = request.form.get('is_published')
+        if is_published_form is not None:
+            post.is_published = (is_published_form == 'true')
+        
+        selected_genre = request.form.get('genre_select')
+        new_genre = request.form.get('genre_new')
+        
+        if new_genre and new_genre.strip() != '':
+            post.genre = new_genre.strip()
+        elif selected_genre and selected_genre != '':
+            post.genre = selected_genre
+        else:
+            post.genre = '未分類'
+        
+        if not post.title or not post.body or post.title.strip() == '' or post.body.strip() == '':
+            flash('タイトルと内容はどちらも入力必須です。')
+            return redirect(f'/{id}/update')
+
+        files = request.files.getlist('img[]')
+        if files and files[0].filename != '':
+            if post.img_name:
+                for old_img in post.img_name.split(','):
+                    old_path = os.path.join(current_app.static_folder, 'img', old_img)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+            
+            filename_list = []
+            for file in files:
+                if file and file.filename != '':
+                    ext = os.path.splitext(file.filename)[1]
+                    filename = f"{uuid.uuid4()}{ext}"
+                    
+                    save_path = os.path.join(current_app.static_folder, 'img', filename)
+                    file.save(save_path)
+                    filename_list.append(filename)
+            post.img_name = ",".join(filename_list)
+            
+        post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
+        db.session.commit()
+    return redirect(f'/{id}/detail')
+
+# 削除機能
+@admin_bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
+def delete(id):
+    if current_user.username != config.ADMIN_USERNAME:
+        return redirect('/')
+    
+    post = db.session.get(Post, id)
+    if not post or post.user_id != current_user.id:
+        flash("指定された記事が見つからないか、アクセス権限がありません。")
+        return redirect('/')
+    
+    if post.img_name:
+        for img_file in post.img_name.split(','):
+            img_path = os.path.join(current_app.static_folder, 'img', img_file)
+            if os.path.exists(img_path):
+                os.remove(img_path)
+
+    db.session.delete(post)
+    db.session.commit()
+    
+    referrer = request.referrer
+    if referrer:
+        parsed_ref = urlparse(referrer)
+        parsed_req = urlparse(request.url)
+        if parsed_ref.netloc == parsed_req.netloc:
+            return redirect(referrer)
+    
+    return redirect('/')
+
+# マイページの表示設定
+@admin_bp.route('/mypage', methods=['GET', 'POST'])
+@login_required  
+def mypage():
+    if current_user.username != config.ADMIN_USERNAME:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        new_nickname = request.form.get('nickname')
+        if new_nickname and new_nickname.strip() != '':
+            current_user.nickname = new_nickname.strip()
+            flash('ニックネームを更新しました！')
+        else:
+            current_user.nickname = None
+            flash('ニックネームを解除しました。')
+            
+        db.session.commit()
+        return redirect('/mypage')
+    
+    posts_query = Post.query.filter(Post.user_id == current_user.id)
+    search_word = request.args.get('search')
+    selected_genre = request.args.get('genre')
+    
+    if search_word and search_word.strip() != '':
+        posts_query = posts_query.filter(Post.title.contains(search_word.strip()))
+        
+    if selected_genre:
+        posts_query = posts_query.filter(Post.genre == selected_genre)
+        
+    user_posts = posts_query.order_by(Post.created_at.desc()).all()
+    
+    existing_genres = db.session.query(Post.genre).filter(
+        Post.user_id == current_user.id,
+        Post.genre != '未分類', Post.genre != None, Post.genre != ''
+    ).distinct().all()
+    
+    user_genres = [g[0] for g in existing_genres]
+    if '未分類' in user_genres:
+        user_genres.remove('未分類')
+    user_genres = sorted(user_genres) 
+    user_genres.append('未分類')
+        
+    return render_template(
+        'mypage.html', 
+        posts=user_posts, 
+        user_genres=user_genres, 
+        selected_genre=selected_genre,
+        search_word=search_word
+    )
+</file>
+
+<file path="views/auth.py">
+# views/auth.py
+from flask import Blueprint, render_template, request, redirect, flash, current_app
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash
+from extensions import db
+from models import User
+import config
+
+auth_bp = Blueprint('auth', __name__)
+
+# 個人専用ログイン機能
+@auth_bp.route(f'/{config.ADMIN_LOGIN_PATH}', methods=['GET', 'POST'])
+def secret_login():
+    if current_user.is_authenticated:
+        return redirect('/')
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
+        
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            flash("管理者としてログインしました。")
+            return redirect('/mypage')
+        else:
+            flash("ユーザー名またはパスワードが正しくありません。")
+            return redirect(f'/{config.ADMIN_LOGIN_PATH}')
+
+    return render_template('login.html')
+
+# ログアウト機能
+@auth_bp.route('/logout')
+@login_required  
+def logout():
+    logout_user()
+    flash("ログアウトしました。")
+    return render_template('login.html')
+</file>
+
+<file path="views/blog.py">
+# views/blog.py
+from flask import Blueprint, render_template, request, redirect, flash
+from flask_login import current_user  
+import markdown
+import re
+from extensions import db
+from models import Post
+
+blog_bp = Blueprint('blog', __name__)
+
+# デフォルトジャンル
+DEFAULT_GENRES = [
+    '日常', '健康', '旅行', '趣味', 'イラスト', 'ニュース', '経済', '投資',
+    'プログラミング学習', '開発記録', '資格勉強', '勉強', 'サッカー', '野球', '競馬',
+    'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
+    'バイト', '就活', '仕事'
+]  
+
+# トップ画面の表示設定
+@blog_bp.route('/', methods=['GET', 'POST'])
+def index():
+    selected_genre = request.args.get('genre')
+    search_word = request.args.get('search')
+    
+    if current_user.is_authenticated:
+        query = Post.query.filter((Post.is_published == True) | (Post.user_id == current_user.id))
+    else:
+        query = Post.query.filter(Post.is_published == True)
+
+    if search_word:
+        query = query.filter(Post.title.ilike(f'%{search_word}%'))
+    if selected_genre:
+        query = query.filter(Post.genre == selected_genre)
+
+    posts = query.order_by(Post.created_at.desc()).all()
+            
+    return render_template('index.html', posts=posts, selected_genre=selected_genre, search_word=search_word)
+
+# 投稿詳細
+@blog_bp.route('/<int:id>/detail', methods=['GET'])
+def detail(id):
+    post = db.session.get(Post, id)
+    
+    if not post:
+        flash("指定された記事が見つかりません。")
+        return redirect('/')
+    
+    if not post.is_published:
+        if not current_user.is_authenticated or post.user_id != current_user.id:
+            flash("この記事は非公開に設定されているため閲覧できません。")
+            return redirect('/')
+    
+    body_content = post.body
+    # body_content = body_content.replace(' ', '&emsp;')
+    
+    # 💡 marker の指定を小文字の '[toc]' に変更します
+    md = markdown.Markdown(
+        extensions=['toc', 'nl2br'],
+        extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
+    )
+    
+    display_body = md.convert(body_content)
+    
+    # 💡 判定に使用する文字列も小文字の '[toc]' に変更します
+    has_toc_marker = '[toc]' in body_content
+    toc_html = md.toc if not has_toc_marker else None
+
+    if post.img_name:
+        images = post.img_name.split(',')
+        for index, img_file in enumerate(images):
+            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/{img_file}" style="max-width:100%; height:auto;"></span>'
+            display_body = display_body.replace(f'[img{index+1}]', img_tag)
+            
+    display_body = re.sub(r'\[img\d+\]', '', display_body)
+            
+    return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
+
+# ジャンル一覧画面の表示設定
+@blog_bp.route('/genre', methods=['GET'])
+def genre_list():
+    genres_list = sorted(DEFAULT_GENRES)
+    
+    if '未分類' in genres_list:
+        genres_list.remove('未分類')
+        genres_list.append('未分類')
+    
+    return render_template('genre.html', genres=genres_list)
+</file>
+
+</files>

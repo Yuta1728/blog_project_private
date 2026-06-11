@@ -1,0 +1,461 @@
+/* static/css/base.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+
+/* ===========================
+   リセット & ベース
+   =========================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #333;
+    background-color: #f5f5f5;
+    line-height: 1.7;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 24px 0;
+    text-align: center;
+    color: #1a1a1a;
+}
+
+a {
+    color: #333;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+/* ===========================
+   フラッシュメッセージ
+   =========================== */
+.flash-messages {
+    list-style: none;
+    padding: 0;
+    max-width: 680px;
+    margin: 16px auto;
+    text-align: center;
+}
+
+.flash-messages li {
+    font-size: 14px;
+    color: #d73a49;
+    background-color: #fff5f5;
+    border: 1px solid #fca5a5;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+}
+
+/* ===========================
+   ヘッダー（noteスタイル）
+   =========================== */
+.main-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e8e8e8;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    gap: 24px;
+}
+
+/* ロゴ */
+.header-logo {
+    flex-shrink: 0;
+}
+
+.header-logo a {
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    display: block;
+}
+
+.header-logo a:hover {
+    color: #555 !important;
+    text-decoration: none !important;
+}
+
+/* PCナビ */
+.header-nav {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.header-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-nav ul li {
+    display: inline-block;
+    line-height: 1;
+}
+
+.header-nav ul li a {
+    color: #555;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background-color: transparent;
+    border: 1.5px solid #a7a7a7;
+    transition: all 0.18s ease;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.header-nav ul li a:hover {
+    color: #1a1a1a;
+    border-color: #999;
+    background-color: #f8f8f8;
+    text-decoration: none;
+}
+
+/* 「新規投稿」だけアクセントカラー */
+.header-nav ul li:first-child a {
+    background-color: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+}
+
+.header-nav ul li:first-child a:hover {
+    background-color: #333;
+    border-color: #333;
+    color: #fff;
+}
+
+/* ===========================
+   ハンバーガーボタン（スマホ）
+   =========================== */
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 12px; /* タッチしやすいサイズに */
+    cursor: pointer;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.hamburger-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: #333;
+    border-radius: 2px;
+    transition: all 0.25s ease;
+}
+
+/* ===========================
+   ドロワーナビ（スマホ）
+   =========================== */
+.mobile-nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45); /* コントラストを上げてタッチしやすく */
+    z-index: 999;
+}
+
+.mobile-nav-overlay.open {
+    display: block;
+}
+
+.mobile-nav-drawer {
+    position: fixed;
+    top: 0;
+    right: -290px;
+    width: 270px;
+    /* height: 100% から 100dvh に修正してAndroidの仮想キーボードやアドレスバー伸縮時の破綻を防ぐ */
+    height: 100dvh;
+    background: #fff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+    z-index: 1000;
+    transition: right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0;
+    overflow-y: auto; /* スクロール可能を保証 */
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-nav-drawer.open {
+    right: 0;
+}
+
+.mobile-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-nav-header-logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #1a1a1a;
+}
+
+.mobile-nav-close {
+    background: none;
+    border: none;
+    font-size: 24px; /* タップしやすくやや大きめに */
+    cursor: pointer;
+    color: #888;
+    padding: 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; /* タップ領域 (44px以上) を確保 */
+    height: 44px;
+    border-radius: 50%;
+    transition: background 0.15s;
+}
+
+.mobile-nav-close:hover,
+.mobile-nav-close:active {
+    background: #f5f5f5;
+}
+
+.mobile-nav-drawer ul {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0 12px;
+}
+
+.mobile-nav-drawer ul li {
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 6px; /* リスト間の余裕を少し確保 */
+}
+
+.mobile-nav-drawer ul li a {
+    display: block;
+    padding: 14px 16px; /* Androidでの誤タップ防止のためタップターゲットを確保 */
+    color: #333;
+    text-decoration: none;
+    font-size: 16px; /* スマホで見やすい文字サイズに引き上げ */
+    font-weight: 500;
+    transition: background 0.15s;
+    border-radius: 8px;
+    min-height: 48px; /* Android必須要件：タップターゲット高さを48px以上に保証 */
+}
+
+.mobile-nav-drawer ul li a:hover,
+.mobile-nav-drawer ul li a:active {
+    background: #f5f5f5;
+}
+
+/* 新規投稿ボタン（スマホドロワー内） */
+.mobile-nav-drawer ul li:first-child a {
+    background-color: #1a1a1a;
+    color: #fff;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.mobile-nav-drawer ul li:first-child a:hover,
+.mobile-nav-drawer ul li:first-child a:active {
+    background-color: #333;
+}
+
+.clear { clear: both; }
+
+/* ==========================================================================
+   ヘッダー三分割・中央検索バーのレイアウトスタイル
+   ========================================================================== */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 1. ロゴエリア */
+.header-logo {
+    flex: 0 0 auto;
+}
+
+/* 2. 検索バーエリア */
+.header-search-box {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.header-search-box form {
+    display: flex;
+    align-items: center;
+    background-color: #f7f7f7;
+    border-radius: 20px;
+    padding: 4px 14px;
+    border: 1px solid #a7a7a7;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 350px;
+}
+
+.header-search-box form:focus-within {
+    background-color: #fff;
+    border-color: #888;
+}
+
+.header-search-box input[type="text"] {
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 6px 4px;
+    font-size: 14px;
+    color: #495057;
+    width: 100%;
+}
+
+.search-submit-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #868e96;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px; /* Androidでのタッチ領域調整 */
+    border-radius: 50%;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.search-submit-btn:hover {
+    color: #212529;
+    background-color: #e9ecef;
+}
+
+.search-clear-btn {
+    color: #ff5c5c;
+    text-decoration: none;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.search-clear-btn:hover {
+    color: #fd1d1d;
+}
+
+/* 3. ナビゲーションエリア */
+.header-nav {
+    flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   レスポンシブ対応（スマホ画面で検索バーをコンパクトに収める）
+   ========================================================================== */
+@media (max-width: 767px) {
+    .header-container {
+        padding: 0 16px;
+        height: 56px;
+        gap: 12px;
+    }
+
+    .header-logo a {
+        font-size: 22px;
+    }
+
+    .header-nav {
+        display: none;
+    }
+
+    .hamburger-btn {
+        display: flex;
+    }
+
+    .flash-messages {
+        margin: 12px 16px;
+    }
+
+    .flash-messages li {
+        font-size: 13px;
+    }
+
+    h2 {
+        font-size: 20px;
+        margin: 16px 0;
+    }
+
+    .header-search-box {
+        padding: 0 5px;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .header-search-box form {
+        width: 100%;
+        max-width: 160px;
+        padding: 2px 8px;
+        border-radius: 15px;
+        background-color: #f1f3f5;
+    }
+    
+    .header-search-box input[type="text"] {
+        font-size: 12px;
+        padding: 3px 2px;
+    }
+    
+    .search-submit-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .search-clear-btn {
+        margin-left: 4px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-search-box form {
+        max-width: 145px; /* 極狭の画面でも崩さないための限界幅調整 */
+    }
+    
+    .header-search-box input[type="text"]::placeholder {
+        font-size: 12px;
+    }
+}
