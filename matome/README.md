@@ -1,69 +1,59 @@
-# MY Blog
+# 個人ブログアプリ
 
-Flask + PostgreSQL で構築した個人向けブログアプリケーションです。Markdown 記述・画像埋め込み・ジャンル管理・公開/非公開設定などを備えています。
+FlaskとPostgreSQLを使って構築した、シンプルな個人ブログシステムです。マークダウン記法による記事投稿・管理、画像アップロード、ジャンル分類などの機能を備えています。
 
 ---
 
 ## 機能一覧
 
-- **記事の投稿・編集・削除** — タイトル・本文・ジャンル・サムネイル画像（複数枚）を管理
-- **Markdown 対応** — `##` 大見出し・`###` 中見出し・`**太字**` に対応。自動目次（TOC）生成機能あり
-- **画像埋め込み** — 本文中に `[img1]` と記述することで任意の位置に画像を挿入
-- **デフォルトサムネイル** — 画像をアップロードしない場合、11 種類のプリセット画像から選択可能
-- **ジャンル管理** — 26 種類のデフォルトジャンル＋ユーザー独自ジャンルの作成に対応
-- **公開/非公開設定** — 投稿ごとに全体公開・非公開をトグルボタンで切り替え
-- **タイトル検索・ジャンル絞り込み** — トップページ・マイページ両方で対応（ヘッダー常設の検索バー付き）
-- **マイページ** — 自分の投稿一覧・ジャンル一覧・ニックネーム変更
-- **管理者専用ログイン** — 秘密の URL によるアクセス制限
-- **レスポンシブデザイン** — PC・スマートフォン両対応（ハンバーガーメニュー付き）
+- **記事管理**：投稿・編集・削除・一覧表示・詳細表示
+- **公開/非公開設定**：記事ごとに公開状態をトグルで切り替え
+- **マークダウン記法**：`## 見出し`・`**太字**` など対応、目次（`[toc]`）自動生成
+- **画像アップロード**：複数画像対応、`[img1]` プレースホルダーで本文に埋め込み
+- **デフォルトサムネイル**：11種類のカテゴリ画像から選択可能
+- **ジャンル分類**：既定ジャンルへの分類、または新規ジャンルの作成
+- **キーワード検索**：タイトルによる絞り込み
+- **管理者認証**：秘密URLによるセキュアなログイン
+- **マイページ**：ニックネーム設定、自分の投稿一覧・絞り込み
+- **レスポンシブデザイン**：スマホ・PC両対応（ハンバーガーメニュー付き）
 
 ---
 
 ## 技術スタック
 
 | カテゴリ | 使用技術 |
-| --- | --- |
-| バックエンド | Python / Flask 3.1 |
-| ORM・マイグレーション | Flask-SQLAlchemy 3.1 / Flask-Migrate 4.1 (Alembic) |
-| 認証 | Flask-Login 0.6 |
-| データベース | PostgreSQL（Docker コンテナ） |
-| テンプレートエンジン | Jinja2 |
-| Markdown | Python-Markdown 3.9（`toc`・`nl2br` 拡張） |
-| フロントエンド | HTML / CSS（バニラ） |
-| 環境変数管理 | python-dotenv |
+|---|---|
+| バックエンド | Python / Flask |
+| データベース | PostgreSQL（psycopg3）|
+| ORM | SQLAlchemy / Flask-SQLAlchemy |
+| マイグレーション | Flask-Migrate / Alembic |
+| 認証 | Flask-Login |
+| マークダウン変換 | Python-Markdown |
+| コンテナ | Docker / Docker Compose |
+| フロントエンド | Jinja2 / Vanilla CSS・JS |
 
 ---
 
 ## ディレクトリ構成
 
 ```
-matome/
-├── app.py                  # アプリケーションファクトリ（create_app）
+.
+├── app.py                  # アプリケーションファクトリ
 ├── config.py               # 環境変数の読み込み
-├── extensions.py           # Flask 拡張機能の初期化（db / login_manager / migrate）
-├── models.py               # DB モデル（User, Post）
-├── requirements.txt        # 依存パッケージ一覧
-├── docker-compose.yml      # PostgreSQL コンテナ設定
-├── init/
-│   ├── 01_login.sql        # user テーブル定義（参考用）
-│   └── 02_post.sql         # post テーブル定義（参考用）
-├── migrations/             # Alembic マイグレーションファイル群
+├── extensions.py           # Flask拡張機能のインスタンス化
+├── models.py               # DBモデル定義（User, Post）
+├── requirements.txt
+├── docker-compose.yml
 ├── views/
 │   ├── auth.py             # ログイン・ログアウト
-│   ├── blog.py             # 記事一覧・詳細・ジャンル一覧（公開側）
-│   └── admin.py            # 投稿・編集・削除・マイページ（認証必須）
-├── templates/              # Jinja2 テンプレート
-│   ├── base.html           # 共通レイアウト（ヘッダー・フラッシュメッセージ）
-│   ├── index.html          # トップ（記事一覧）
-│   ├── detail.html         # 記事詳細
-│   ├── create.html         # 新規投稿フォーム
-│   ├── update.html         # 記事編集フォーム
-│   ├── mypage.html         # マイページ
-│   ├── genre.html          # ジャンル一覧
-│   └── login.html          # 管理者ログイン
-└── static/
-    ├── css/                # ページごとのスタイルシート
-    └── img/                # アップロード画像・デフォルトサムネイル画像の保存先
+│   ├── blog.py             # 一覧・詳細・ジャンル（公開側）
+│   └── admin.py            # 投稿・編集・削除・マイページ（管理者側）
+├── templates/              # Jinja2テンプレート
+├── static/
+│   ├── css/                # ページ別CSSファイル
+│   └── img/                # アップロード画像・サムネイル画像
+├── migrations/             # Alembicマイグレーションファイル
+└── init/                   # Docker初期化SQL
 ```
 
 ---
@@ -74,7 +64,7 @@ matome/
 
 ```bash
 git clone <repository-url>
-cd matome
+cd <project-directory>
 ```
 
 ### 2. 環境変数の設定
@@ -90,23 +80,21 @@ POSTGRES_DB=your_db_name
 # Flask
 SECRET_KEY=your_secret_key
 
-# 管理者設定
+# 管理者アカウント
 ADMIN_USERNAME=your_admin_username
-ADMIN_PASSWORD=your_admin_password_hash   # Werkzeug でハッシュ化したもの
-ADMIN_LOGIN_PATH=your_secret_login_path   # 例: my-secret-login
+ADMIN_PASSWORD=your_admin_password   # ハッシュ化して init/01_login.sql に記載
+ADMIN_LOGIN_PATH=your_secret_path    # 例: my-secret-login
 ```
 
-> **注意:** `ADMIN_PASSWORD` は平文ではなく、Werkzeug の `generate_password_hash()` で生成したハッシュ値を設定してください。
-
-### 3. Docker で PostgreSQL を起動
+### 3. Dockerでデータベースを起動
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-ポート `54321` でローカルに PostgreSQL が起動します。
+PostgreSQLが `localhost:54321` で起動します。
 
-### 4. Python 仮想環境の作成と依存関係のインストール
+### 4. Python仮想環境のセットアップ
 
 ```bash
 python -m venv venv
@@ -120,28 +108,7 @@ pip install -r requirements.txt
 flask db upgrade
 ```
 
-### 6. 管理者ユーザーの作成
-
-Flask シェルで管理者アカウントを登録します。
-
-```bash
-flask shell
-```
-
-```python
-from extensions import db
-from models import User
-from werkzeug.security import generate_password_hash
-
-user = User(
-    username='your_admin_username',
-    password=generate_password_hash('your_password')
-)
-db.session.add(user)
-db.session.commit()
-```
-
-### 7. アプリケーションの起動
+### 6. アプリケーションの起動
 
 ```bash
 python app.py
@@ -151,69 +118,37 @@ python app.py
 
 ---
 
-## 使い方
+## 管理者ログイン
 
-### ログイン
+管理者用ログインページには通常のURLからはアクセスできません。`.env` の `ADMIN_LOGIN_PATH` で設定した秘密のパスを使用します。
 
-`http://localhost:5000/<ADMIN_LOGIN_PATH>` にアクセスしてログインします。URL は `.env` の `ADMIN_LOGIN_PATH` で設定した値です。
+```
+http://localhost:5000/<ADMIN_LOGIN_PATH>
+```
 
-### 記事の投稿
+---
 
-ヘッダーの「新規投稿」から記事を作成できます。
-
-**Markdown 記法のサポート:**
+## 記事の書き方
 
 | 記法 | 説明 |
-| --- | --- |
-| `## 見出し` | 大見出し（目次に自動追加） |
-| `### 見出し` | 中見出し（目次に自動追加） |
+|---|---|
+| `## 見出し` | 大見出し（H2）|
+| `### 見出し` | 中見出し（H3）|
 | `**テキスト**` | 太字 |
-| `[toc]` | 任意の位置に目次を挿入（未記入の場合は本文先頭に自動挿入） |
-| `[img1]` | 1 枚目の添付画像を挿入 |
-| `[img2]` | 2 枚目の添付画像を挿入 |
-
-### サムネイル画像
-
-画像をアップロードした場合は先頭の 1 枚が一覧のサムネイルになります。アップロードしない場合は、趣味・旅行・スポーツ・アニメ・ゲームなど 11 種類のプリセット画像から選択できます。いずれも設定しない場合はシステム共通のデフォルト画像が表示されます。
-
-### ジャンル
-
-投稿時に既存のジャンルから選択するか、新規ジャンルを作成できます。ヘッダーの「ジャンル一覧」からカテゴリ別（ライフスタイル・社会/経済・技術/勉強・スポーツ・娯楽・仕事）に記事を絞り込めます。
-
-### 公開設定
-
-投稿・編集フォームのトグルボタンで「全体公開 🔓」と「非公開 🔒」を切り替えられます。非公開の記事は管理者本人のみ閲覧できます。
+| `[toc]` | 目次を挿入（未記入の場合は先頭に自動挿入）|
+| `[img1]` | アップロード画像の1枚目を挿入（`[img2]` で2枚目…）|
 
 ---
 
-## データモデル
+## 環境変数一覧
 
-### User
-
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| id | Integer | 主キー |
-| username | String(30) | ログインユーザー名（ユニーク） |
-| password | String(200) | ハッシュ化パスワード |
-| nickname | String(60) | 表示名（任意） |
-
-### Post
-
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| id | Integer | 主キー |
-| title | TEXT | 記事タイトル |
-| body | TEXT | 本文（Markdown） |
-| genre | String(100) | ジャンル（デフォルト: 未分類） |
-| created_at | DateTime | 投稿日時（Asia/Tokyo） |
-| updated_at | DateTime | 更新日時（Asia/Tokyo） |
-| user_id | Integer | 投稿者 ID（外部キー → user.id） |
-| img_name | String(100) | 画像ファイル名（カンマ区切り、任意） |
-| default_thumb | String(100) | プリセットサムネイル画像名（任意） |
-| is_published | Boolean | 公開フラグ（デフォルト: True） |
-
----
-
-## ライセンス
-
-このプロジェクトは個人用途のブログアプリケーションです。
+| 変数名 | 説明 | 必須 |
+|---|---|---|
+| `POSTGRES_USER` | PostgreSQLユーザー名 | ✅ |
+| `POSTGRES_PASSWORD` | PostgreSQLパスワード | ✅ |
+| `POSTGRES_DB` | データベース名 | ✅ |
+| `SECRET_KEY` | FlaskセッションのSECRET_KEY | ✅ |
+| `ADMIN_USERNAME` | 管理者ユーザー名 | ✅ |
+| `ADMIN_PASSWORD` | 管理者パスワード（ハッシュ化済み） | ✅ |
+| `ADMIN_LOGIN_PATH` | 秘密のログインURLパス | ✅ |
+| `DATABASE_URL` | 本番環境用DB接続URL（省略時はローカル設定を使用）| — |
