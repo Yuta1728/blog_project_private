@@ -42,7 +42,7 @@
     <hr>
     <ul class="detail-ul" style="justify-content: center;">
         <li class="detail-ul-li">
-            <button type="button" class="detail-ul-li-a" onclick="history.back();">
+            <button type="button" class="detail-ul-li-a" onclick="goBack();">
                 前の画面に戻る
             </button>
         </li>
@@ -53,4 +53,17 @@
         {% endif %}
     </ul>
 </div>
+
+<script>
+function goBack() {
+    const referrer = document.referrer;
+    // referrerが同一オリジン内のページであれば直接遷移（アンカー履歴をスキップ）
+    if (referrer && new URL(referrer).origin === location.origin) {
+        location.href = referrer;
+    } else {
+        // referrerがない・外部サイトの場合はブラウザ履歴を辿る
+        history.back();
+    }
+}
+</script>
 {% endblock %}
