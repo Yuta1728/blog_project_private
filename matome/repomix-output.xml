@@ -65,25 +65,25 @@ static/css/detail.css
 static/css/genre.css
 static/css/index.css
 static/css/mypage.css
-static/img/01e73b9c-5b1d-41be-bbb3-a7d8fc729a46.jpg
-static/img/0336913e-6d91-4637-8f18-b802079fb4ef.png
-static/img/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
-static/img/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
-static/img/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
-static/img/system-default.jpg
-static/img/thumb_option1.jpg
-static/img/thumb_option10.jpg
-static/img/thumb_option11.jpg
-static/img/thumb_option2.jpg
-static/img/thumb_option3.jpg
-static/img/thumb_option4.jpg
-static/img/thumb_option5.jpg
-static/img/thumb_option6.jpg
-static/img/thumb_option7.jpg
-static/img/thumb_option8.jpg
-static/img/thumb_option9.jpg
-static/img/スクリーンショット 2025-02-01 222147.png
-static/img/スクリーンショット 2025-02-01 222455.png
+static/img/posts/01e73b9c-5b1d-41be-bbb3-a7d8fc729a46.jpg
+static/img/posts/0336913e-6d91-4637-8f18-b802079fb4ef.png
+static/img/posts/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
+static/img/posts/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
+static/img/posts/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
+static/img/posts/スクリーンショット 2025-02-01 222147.png
+static/img/posts/スクリーンショット 2025-02-01 222455.png
+static/img/thbnails/system-default.jpg
+static/img/thbnails/thumb_option1.jpg
+static/img/thbnails/thumb_option10.jpg
+static/img/thbnails/thumb_option11.jpg
+static/img/thbnails/thumb_option2.jpg
+static/img/thbnails/thumb_option3.jpg
+static/img/thbnails/thumb_option4.jpg
+static/img/thbnails/thumb_option5.jpg
+static/img/thbnails/thumb_option6.jpg
+static/img/thbnails/thumb_option7.jpg
+static/img/thbnails/thumb_option8.jpg
+static/img/thbnails/thumb_option9.jpg
 templates/base.html
 templates/create.html
 templates/detail.html
@@ -135,14 +135,14 @@ Thumbs.db
 </file>
 
 <file path="app.py">
-# app.py
 import os
-from flask import Flask
+from flask import Flask, flash, redirect, url_for
+from flask_wtf.csrf import CSRFProtect  # CSRF保護用
 from extensions import db, login_manager, migrate
 from models import User
 import config
 
-# Blueprintの登録（ここで各機能のルーティングファイルを合体）
+# Blueprintの登録
 from views.auth import auth_bp
 from views.blog import blog_bp
 from views.admin import admin_bp
@@ -150,8 +150,23 @@ from views.admin import admin_bp
 def create_app():
     app = Flask(__name__)
 
-    # アプリ・データベース設定の統合と固定化
-    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", os.urandom(24))
+    # ---SECRET_KEY の安全性強化 ---
+    # 開発用（ローカル）か本番用（DATABASE_URL等の有無）かを簡易判定
+    is_production = os.getenv("DATABASE_URL") is not None or os.getenv("FLASK_ENV") == "production"
+    secret_key = os.getenv("SECRET_KEY")
+
+    if not secret_key:
+        if is_production:
+            # 本番環境で未設定なら、セッション切断やセキュリティリスクを防ぐため起動を拒否する
+            raise ValueError("【重大なエラー】本番環境の環境変数 'SECRET_KEY' が設定されていません。")
+        else:
+            # 開発環境であれば、開発のしやすさを優先して固定値をフォールバックにする
+            secret_key = "dev-secret-key-for-local-use"
+            
+    app.config['SECRET_KEY'] = secret_key
+
+    # --- 4層目の防御（ファイルアップロード30MB制限） ---
+    app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024
 
     # PostgreSQL接続用URLの設定
     local_db_url = f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}@localhost:54321/{config.postgre_DB}"
@@ -163,14 +178,28 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
     
-    # 遷移先URLの設定（既存のまま変更なし）
+    # --- S-02: CSRF保護をアプリ全体に適用 ---
+    csrf = CSRFProtect()
+    csrf.init_app(app)
+    
+    # 遷移先URLの設定
     login_manager.login_view = 'auth.secret_login'
     login_manager.login_message = "ログインしてください。"
+    login_manager.login_message_category = "info"  # フラッシュの色分け対応用にカテゴリーを追加
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    # ---  30MB容量オーバー(413エラー)発生時のカスタムハンドラー ---
+    @app.errorhandler(413)
+    def request_entity_too_large(error):
+        # 'danger'(赤色)カテゴリーでフラッシュを送信
+        flash("アップロードされたファイルの合計サイズが30MBを超えています。", "danger")
+        # 安全にマイページ（またはトップページ）へリダイレクト
+        return redirect(url_for('admin.mypage'))
+
+    # Blueprintの登録
     app.register_blueprint(auth_bp)
     app.register_blueprint(blog_bp)
     app.register_blueprint(admin_bp)
@@ -265,16 +294,17 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(60), nullable=True)
 </file>
 
-
 <file path="requirements.txt">
-alembic==1.16.5
+alembic==1.16.5                                                                         
 blinker==1.9.0
 click==8.1.8
 colorama==0.4.6
+filetype==1.2.0
 Flask==3.1.3
 Flask-Login==0.6.3
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
 greenlet==3.2.5
 importlib_metadata==8.7.1
 itsdangerous==2.2.0
@@ -292,9 +322,9 @@ tomli==2.4.1
 typing_extensions==4.15.0
 tzdata==2026.2
 Werkzeug==3.1.8
+WTForms==3.2.1
 zipp==3.23.1
 </file>
-
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - note風レスポンシブ対応版 */
@@ -576,7 +606,7 @@ a:hover {
     background: none;
     border: 1.5px solid #ddd;
     border-radius: 8px;
-    padding: 10px 12px; /* タッチしやすいサイズに */
+    padding: 10px 12px; 
     cursor: pointer;
     flex-direction: column;
     gap: 5px;
@@ -612,7 +642,6 @@ a:hover {
     top: 0;
     right: -290px;
     width: 270px;
-    /* height: 100% から 100dvh に修正してAndroidの仮想キーボードやアドレスバー伸縮時の破綻を防ぐ */
     height: 100dvh;
     background: #fff;
     box-shadow: -4px 0 20px rgba(0,0,0,0.12);
@@ -645,7 +674,7 @@ a:hover {
 .mobile-nav-close {
     background: none;
     border: none;
-    font-size: 24px; /* タップしやすくやや大きめに */
+    font-size: 24px; 
     cursor: pointer;
     color: #888;
     padding: 4px;
@@ -653,7 +682,7 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px; /* タップ領域 (44px以上) を確保 */
+    width: 44px; 
     height: 44px;
     border-radius: 50%;
     transition: background 0.15s;
@@ -673,19 +702,19 @@ a:hover {
 .mobile-nav-drawer ul li {
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 6px; /* リスト間の余裕を少し確保 */
+    margin-bottom: 6px; 
 }
 
 .mobile-nav-drawer ul li a {
     display: block;
-    padding: 14px 16px; /* Androidでの誤タップ防止のためタップターゲットを確保 */
+    padding: 14px 16px; 
     color: #333;
     text-decoration: none;
-    font-size: 16px; /* スマホで見やすい文字サイズに引き上げ */
+    font-size: 16px; 
     font-weight: 500;
     transition: background 0.15s;
     border-radius: 8px;
-    min-height: 48px; /* Android必須要件：タップターゲット高さを48px以上に保証 */
+    min-height: 48px; 
 }
 
 .mobile-nav-drawer ul li a:hover,
@@ -769,7 +798,7 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px; /* Androidでのタッチ領域調整 */
+    padding: 6px; 
     border-radius: 50%;
     transition: color 0.2s, background-color 0.2s;
 }
@@ -864,7 +893,7 @@ a:hover {
 
 @media (max-width: 480px) {
     .header-search-box form {
-        max-width: 145px; /* 極狭の画面でも崩さないための限界幅調整 */
+        max-width: 145px; 
     }
     
     .header-search-box input[type="text"]::placeholder {
@@ -1185,7 +1214,7 @@ h1 {
         padding: 14px;
         font-size: 15px;
         border-radius: 8px;
-        min-height: 48px; /* タップ保証 */
+        min-height: 48px; 
     }
 
     /* アップロード画像プレビューのAndroid崩れ対応 */
@@ -1207,7 +1236,7 @@ h1 {
     }
 
     .toggle-status-btn {
-        padding: 12px 20px; /* タップしやすく */
+        padding: 12px 20px; 
         font-size: 14px;
         margin-bottom: 16px;
         width: 100%; /* スマホ時は100%幅で誤タップ防止 */
@@ -1217,7 +1246,7 @@ h1 {
     .md-btn {
         padding: 10px 12px;
         font-size: 14px;
-        min-width: 48px; /* Android指タッチ最小要件 */
+        min-width: 48px; 
         min-height: 44px;
     }
 }
@@ -1929,7 +1958,6 @@ a[role="button"]:hover {
     border-radius: 6px;
     overflow: hidden;
     background-color: #f7fafc;
-    /* z-index や position: relative を持たせないことで、全域リンクの下に配置させます */
 }
 
 .thumb-img {
@@ -1945,9 +1973,6 @@ a[role="button"]:hover {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    
-    /* ⚠️ 重要：元のコードにあった position: relative; を削除しました。
-       これにより、タイトルの ::after が枠を突き抜けてカード全体に広がります。*/
 }
 
 /* メタ情報 */
@@ -2666,6 +2691,8 @@ article p {
 <h1>新規投稿作成</h1>
 <div>
     <form action="{{ url_for('admin.create') }}" method="post" enctype="multipart/form-data" class="post-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
         <label for="title">タイトル</label>
         <input type="text" name="title" required>
 
@@ -2775,13 +2802,13 @@ article p {
                 previewImg.src = '';
             } else {
                 previewArea.style.display = 'block';
-                previewImg.src = "/static/img/" + select.value;
+                // 💡【修正】読み込みパスを "/static/img/" から "/static/img/thbnails/" に変更
+                previewImg.src = "/static/img/thbnails/" + select.value;
             }
         }
         </script>
 
 
-        <!-- 画像プレビューエリア -->
         <div id="preview-area" style="display: none;">
             <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
                 📸 アップロード画像プレビュー
@@ -3046,7 +3073,7 @@ function goBack() {
 </div>
 
 <div class="genre-footer">
-    <a href="{{ url_for('blog.index') }}">← 一覧画面に戻る</a>
+    <a href="{{ url_for('blog.index') }}">一覧画面に戻る</a>
 </div>
 
 {% endblock %}
@@ -3074,13 +3101,13 @@ function goBack() {
             <div class="post-thumbnail">
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
-                    <img src="{{ url_for('static', filename='img/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
                 
                 {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
                 
                 {% else %}
-                    <img src="{{ url_for('static', filename='img/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
                 {% endif %}
             </div>
 
@@ -3094,15 +3121,15 @@ function goBack() {
                 </div>
 
                 <h2 class="post-title">
-                    <!-- この <a> の疑似要素を親の .post-card 全体に広げることで、どこをタップしても詳細に遷移させます -->
                     <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
                 </h2>
 
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
-                    <!-- z-index: 2 を持たせて、全体リンクに邪魔されず個別にクリックできるように保護します -->
                     <div class="post-actions">
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
                         <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
                             <button type="submit" class="btn-delete">削除</button>
                         </form>
                     </div>
@@ -3133,6 +3160,7 @@ function goBack() {
     <h2>管理者画面</h2>
 
     <form action="{{ url_for('auth.secret_login') }}" method="post" class="login-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <div class="form-group">
             <label for="">ユーザー名</label>
@@ -3173,6 +3201,8 @@ function goBack() {
 
         <div class="nickname-form-wrapper">
             <form method="POST" action="{{ url_for('admin.mypage') }}" class="nickname-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
                 <label for="nickname">ニックネーム変更:</label>
                 <input type="text" name="nickname" id="nickname" 
                     class="nickname-input"
@@ -3204,11 +3234,11 @@ function goBack() {
             <div class="post-thumbnail">
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
-                    <img src="{{ url_for('static', filename='img/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
                 {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
                 {% else %}
-                    <img src="{{ url_for('static', filename='img/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
                 {% endif %}
             </div>
 
@@ -3257,6 +3287,7 @@ function goBack() {
 
 <div>
     <form action="{{ url_for('admin.update', id=post.id) }}" method="post" enctype="multipart/form-data" class="post-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <label for="title">タイトル</label>
         <input type="text" name="title" value="{{post.title}}">
@@ -3328,7 +3359,7 @@ function goBack() {
             <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
                 {% for img in post.img_name.split(',') %}
                     <div class="preview-item">
-                        <img src="{{ url_for('static', filename='img/' + img) }}" alt="{{ img }}">
+                        <img src="{{ url_for('static', filename='img/posts/' + img) }}" alt="{{ img }}">
                         <div class="preview-label">[img{{ loop.index }}]（現在）</div>
                         <div class="preview-filename" title="{{ img }}">{{ img }}</div>
                     </div>
@@ -3362,7 +3393,7 @@ function goBack() {
             {% if post.default_thumb %}
                 <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
                     <div class="preview-item" style="max-width: 200px;">
-                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
                         <div class="preview-label">選択中のサムネイル</div>
                     </div>
                 </div>
@@ -3385,13 +3416,13 @@ function goBack() {
                     previewImg.src = '';
                 } else {
                     previewArea.style.display = 'block';
-                    previewImg.src = "/static/img/" + select.value;
+                    // 💡【修正3】JavaScriptで切り替えた際のプレビューパスを 'thbnails/' に変更
+                    previewImg.src = "/static/img/thbnails/" + select.value;
                 }
             }
             </script>
 
 
-            <!-- 新しい画像のプレビューエリア -->
             <div id="preview-area" style="display: none; margin-top: 14px;">
                 <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
                     📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
@@ -3473,7 +3504,6 @@ function previewImages(input) {
 </file>
 
 <file path="views/admin.py">
-# views/admin.py
 from flask import Blueprint, render_template, request, redirect, flash, current_app
 from flask_login import current_user  
 from flask_login import login_required
@@ -3482,6 +3512,8 @@ from urllib.parse import urlparse
 import os
 import uuid
 import pytz
+import filetype  # マジックナンバー検証用ライブラリ
+from werkzeug.utils import secure_filename  # ファイル名サニタイズ用
 from extensions import db
 from models import Post
 import config
@@ -3495,6 +3527,15 @@ DEFAULT_GENRES = [
     'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
     'バイト', '就活', '仕事'
 ]
+
+# ---  ファイル検証用のホワイトリスト設定 ---
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+
+def allowed_file(filename):
+    """拡張子がホワイトリストに含まれているかチェック"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 # 新規投稿画面の表示設定
 @admin_bp.route('/create', methods=['GET', 'POST'])
@@ -3515,7 +3556,7 @@ def create():
         elif selected_genre and selected_genre != '':
             final_genre = selected_genre
         
-        # 👇【追加】選択されたデフォルトサムネイル画像名を取得
+        # 選択されたデフォルトサムネイル画像名を取得
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':  # 「選択なし」の場合はNone(Null)にする
             selected_default_thumb = None
@@ -3525,17 +3566,37 @@ def create():
         filename_list = []
         for file in files:
             if file and file.filename != '':
-                ext = os.path.splitext(file.filename)[1]
+                #  拡張子ホワイトリスト検証
+                if not allowed_file(file.filename):
+                    flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
+                    return redirect('/create')
+                
+                #  サニタイズ (secure_filename)
+                safe_filename = secure_filename(file.filename)
+                ext = os.path.splitext(safe_filename)[1]
+                
+                #  マジックナンバー検証 (filetype)
+                header = file.stream.read(2048)  # 先頭2048バイトを読み込み
+                file.stream.seek(0)             # シーク位置を必ず先頭に戻す
+                
+                kind = filetype.guess(header)
+                if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+                    flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
+                    return redirect('/create')
+                
+                # 検証を通過したらUUIDのファイル名を生成して保存
                 filename = f"{uuid.uuid4()}{ext}"
                 
-                save_path = os.path.join(current_app.static_folder, 'img', filename)
+                # 💡【修正】保存先を 'img' から 'img/posts' に変更
+                save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+                
                 file.save(save_path)
                 filename_list.append(filename)
                 
         img_name_str = ",".join(filename_list) if filename_list else None
         
         if not title or not body or title.strip() == '' or body.strip() == '':
-            flash('タイトルと内容はどちらも入力必須です。')
+            flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect('/create')
         
         is_published_form = request.form.get('is_published')
@@ -3570,6 +3631,7 @@ def create():
         )
         return render_template('create.html', genres=existing_genres)
 
+
 # 編集画面の表示設定   
 @admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
 @login_required
@@ -3579,7 +3641,7 @@ def update(id):
     
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
-        flash("指定された記事が見つからないか、アクセス権限がありません。")
+        flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
     
     if request.method == 'GET':
@@ -3604,7 +3666,7 @@ def update(id):
         post.title = request.form.get('title')
         post.body = request.form.get('body')
         
-        # 👇【追加】編集画面から送信されたデフォルトサムネイル画像名で更新
+        # 編集画面から送信されたデフォルトサムネイル画像名で更新
         selected_default_thumb = request.form.get('default_thumb_select')
         post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
         
@@ -3623,24 +3685,47 @@ def update(id):
             post.genre = '未分類'
         
         if not post.title or not post.body or post.title.strip() == '' or post.body.strip() == '':
-            flash('タイトルと内容はどちらも入力必須です。')
+            flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect(f'/{id}/update')
 
         files = request.files.getlist('img[]')
         if files and files[0].filename != '':
+            
+            # 先にファイル群のバリデーションをまとめて実施（途中でエラーになった場合に古い画像を消さないため）
+            for file in files:
+                if file and file.filename != '':
+                    if not allowed_file(file.filename):
+                        flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
+                        return redirect(f'/{id}/update')
+                    
+                    safe_filename = secure_filename(file.filename)
+                    header = file.stream.read(2048)
+                    file.stream.seek(0)
+                    
+                    kind = filetype.guess(header)
+                    if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+                        flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
+                        return redirect(f'/{id}/update')
+
+            # バリデーション全通過後、古い画像を削除
             if post.img_name:
                 for old_img in post.img_name.split(','):
-                    old_path = os.path.join(current_app.static_folder, 'img', old_img)
+                    # 💡【修正】削除対象のフォルダを 'img/posts' に変更
+                    old_path = os.path.join(current_app.static_folder, 'img', 'posts', old_img)
                     if os.path.exists(old_path):
                         os.remove(old_path)
             
+            # 新しい画像の保存処理
             filename_list = []
             for file in files:
                 if file and file.filename != '':
-                    ext = os.path.splitext(file.filename)[1]
+                    safe_filename = secure_filename(file.filename)
+                    ext = os.path.splitext(safe_filename)[1]
                     filename = f"{uuid.uuid4()}{ext}"
                     
-                    save_path = os.path.join(current_app.static_folder, 'img', filename)
+                    # 💡【修正】新しい保存先を 'img/posts' に変更
+                    save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+                    
                     file.save(save_path)
                     filename_list.append(filename)
             post.img_name = ",".join(filename_list)
@@ -3648,6 +3733,7 @@ def update(id):
         post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
         db.session.commit()
     return redirect(f'/{id}/detail')
+
 
 # 削除機能
 @admin_bp.route('/<int:id>/delete', methods=['POST'])
@@ -3658,12 +3744,13 @@ def delete(id):
     
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
-        flash("指定された記事が見つからないか、アクセス権限がありません。")
+        flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
     
     if post.img_name:
         for img_file in post.img_name.split(','):
-            img_path = os.path.join(current_app.static_folder, 'img', img_file)
+            # 💡【修正】削除対象のフォルダを 'img/posts' に変更
+            img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file)
             if os.path.exists(img_path):
                 os.remove(img_path)
 
@@ -3679,6 +3766,7 @@ def delete(id):
     
     return redirect('/')
 
+
 # マイページの表示設定
 @admin_bp.route('/mypage', methods=['GET', 'POST'])
 @login_required  
@@ -3690,10 +3778,10 @@ def mypage():
         new_nickname = request.form.get('nickname')
         if new_nickname and new_nickname.strip() != '':
             current_user.nickname = new_nickname.strip()
-            flash('ニックネームを更新しました！')
+            flash('ニックネームを更新しました！', 'success')
         else:
             current_user.nickname = None
-            flash('ニックネームを解除しました。')
+            flash('ニックネームを解除しました。', 'info')
             
         db.session.commit()
         return redirect('/mypage')
@@ -3828,7 +3916,6 @@ def detail(id):
     body_content = post.body
     # body_content = body_content.replace(' ', '&emsp;')
     
-    # 💡 marker の指定を小文字の '[toc]' に変更します
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
         extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
@@ -3836,14 +3923,14 @@ def detail(id):
     
     display_body = md.convert(body_content)
     
-    # 💡 判定に使用する文字列も小文字の '[toc]' に変更します
     has_toc_marker = '[toc]' in body_content
     toc_html = md.toc if not has_toc_marker else None
 
     if post.img_name:
         images = post.img_name.split(',')
         for index, img_file in enumerate(images):
-            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/{img_file}" style="max-width:100%; height:auto;"></span>'
+            # 💡【修正】src の画像読み込みパスを '/static/img/' から '/static/img/posts/' に変更
+            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;"></span>'
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
             
     display_body = re.sub(r'\[img\d+\]', '', display_body)
