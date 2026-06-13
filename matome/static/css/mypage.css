@@ -1,4 +1,4 @@
-/* static/css/mypage.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/mypage.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    ページレイアウト（中央カラム）
@@ -18,31 +18,32 @@
     padding: 28px 28px 24px;
     border-radius: 12px;
     margin-bottom: 28px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
 .profile-title {
     font-size: 22px;
     font-weight: 700;
     margin: 0 0 8px 0;
-    color: #1a1a1a;
+    color: #0d3a52;
     letter-spacing: -0.01em;
 }
 
 .profile-username {
     margin: 4px 0 0;
-    color: #aaa;
+    color: #7aaec8;
     font-size: 13px;
 }
 
 .profile-post-count {
     margin: 10px 0 0;
-    color: #777;
+    color: #2a6f94;
     font-size: 14px;
 }
 
 .profile-post-count strong {
-    color: #1a1a1a;
+    color: #1a7aad;
     font-weight: 700;
 }
 
@@ -52,13 +53,13 @@
 .nickname-form-wrapper {
     margin-top: 20px;
     padding-top: 18px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid #dff0fb;
 }
 
 .nickname-form-wrapper > p,
 .nickname-form label {
     font-size: 13px;
-    color: #8c8c8c;
+    color: #7aaec8;
     margin: 0 0 8px;
     font-weight: 500;
 }
@@ -73,22 +74,23 @@
     flex: 1;
     min-width: 0;
     padding: 8px 14px;
-    border: 1.5px solid #cccccc;
+    border: 1.5px solid #c5dff0;
     border-radius: 20px;
     font-size: 14px;
     outline: none;
     transition: border-color 0.18s;
-    background: #fafafa;
+    background: #f5f9fd;
+    color: #0d3a52;
 }
 
 .nickname-input:focus {
-    border-color: #aaa;
+    border-color: #1a7aad;
     background: #fff;
 }
 
 .nickname-submit-btn {
     padding: 8px 18px;
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 20px;
@@ -101,7 +103,7 @@
 }
 
 .nickname-submit-btn:hover {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 /* ===========================
@@ -111,8 +113,8 @@
 .section-title-posts {
     font-size: 16px;
     font-weight: 700;
-    color: #1a1a1a;
-    border-bottom: 2px solid #1a1a1a;
+    color: #0d3a52;
+    border-bottom: 2px solid #1a7aad;
     padding-bottom: 10px;
     margin: 36px 0 20px;
     letter-spacing: 0.02em;
@@ -136,7 +138,7 @@
 
 .genre-tag-item {
     background: #ffffff;
-    border: 1px solid #cdcdcd;
+    border: 1px solid #8cc8e8;
     padding: 4px 14px;
     border-radius: 15px;
     display: inline-block;
@@ -144,13 +146,13 @@
 }
 
 .genre-tag-item:hover {
-    background: #eee;
-    border-color: #ccc;
+    background: #dff0fb;
+    border-color: #5aaedc;
 }
 
 .genre-tag-link {
     text-decoration: none;
-    color: #444;
+    color: #2a6f94;
     font-size: 13px;
     font-weight: 500;
 }
@@ -167,14 +169,14 @@
     gap: 8px;
     align-items: center;
     background: #fff;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 24px;
     padding: 8px 16px;
     transition: border-color 0.2s;
 }
 
 .search-box form:focus-within {
-    border-color: #999;
+    border-color: #1a7aad;
 }
 
 .search-box input[type="text"] {
@@ -183,17 +185,17 @@
     outline: none;
     font-size: 14px;
     background: transparent;
-    color: #333;
+    color: #0d3a52;
     padding: 4px 0;
     min-width: 0;
 }
 
 .search-box input[type="text"]::placeholder {
-    color: #bbb;
+    color: #7aaec8;
 }
 
 .search-box button {
-    background: #1a1a1a;
+    background: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 16px;
@@ -207,16 +209,16 @@
 }
 
 .search-box button:hover {
-    background: #333;
+    background: #155f8a;
 }
 
 .search-box a[role="button"] {
     display: inline-block;
     padding: 6px 14px;
     font-size: 13px;
-    color: #666;
+    color: #2a6f94;
     background: transparent;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #8cc8e8;
     border-radius: 16px;
     text-decoration: none;
     transition: all 0.18s;
@@ -225,9 +227,9 @@
 }
 
 .search-box a[role="button"]:hover {
-    color: #333;
-    border-color: #aaa;
-    background: #f8f8f8;
+    color: #1a7aad;
+    border-color: #5aaedc;
+    background: #dff0fb;
 }
 
 /* ===========================
@@ -235,7 +237,7 @@
    =========================== */
 article {
     background: #fff;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     padding: 22px 24px;
     margin-bottom: 14px;
@@ -243,8 +245,8 @@ article {
 }
 
 article:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-    border-color: #d0d0d0;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.1);
+    border-color: #8cc8e8;
 }
 
 article h2 {
@@ -255,30 +257,30 @@ article h2 {
     line-height: 1.45;
     display: flex;
     flex-wrap: wrap;
-    align-items: center; 
+    align-items: center;
     gap: 8px;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 article h2 a {
     text-decoration: none;
-    color: #1a1a1a;
+    color: #0d3a52;
     flex: 1;
     min-width: 0;
 }
 
 article h2 a:hover {
     text-decoration: underline;
+    color: #1a7aad;
 }
 
-/* マイページ編集・削除ボタン */
 article a[role="button"] {
     display: inline-block;
     font-size: 12px;
     padding: 4px 12px;
-    color: #555;
+    color: #2a6f94;
     background: transparent;
-    border: 1.5px solid #bababa;
+    border: 1.5px solid #8cc8e8;
     border-radius: 8px;
     text-decoration: none;
     transition: all 0.15s;
@@ -286,8 +288,9 @@ article a[role="button"] {
 }
 
 article a[role="button"]:hover {
-    border-color: #aaa;
-    background: #f8f8f8;
+    border-color: #5aaedc;
+    background: #dff0fb;
+    color: #1a7aad;
 }
 
 article form {
@@ -298,27 +301,28 @@ article form button {
     font-size: 12px;
     padding: 5px 12px;
     background: transparent;
-    color: #c0392b;
-    border: 1.5px solid #e8bebe;
+    color: #2a6f94;
+    border: 1.5px solid #8cc8e8;
     border-radius: 14px;
     cursor: pointer;
     transition: all 0.15s;
 }
 
 article form button:hover {
-    background: #fef2f2;
-    border-color: #e06060;
+    background: #dff0fb;
+    border-color: #5aaedc;
+    color: #1a7aad;
 }
 
 article p {
     font-size: 12px;
-    color: #bbb;
+    color: #7aaec8;
     margin: 10px 0 0;
     line-height: 1.5;
 }
 
 .empty-message {
-    color: #aaa;
+    color: #7aaec8;
     text-align: center;
     margin-top: 48px;
     font-size: 15px;
@@ -326,7 +330,7 @@ article p {
 }
 
 .empty-message a {
-    color: #555;
+    color: #1a7aad;
     text-decoration: underline;
 }
 
@@ -357,7 +361,7 @@ article p {
     }
 
     .nickname-input {
-        font-size: 16px; 
+        font-size: 16px;
         width: 100% !important;
         box-sizing: border-box;
     }
@@ -378,17 +382,16 @@ article p {
         margin: 28px 0 16px;
     }
 
-    /* 💡 スマホ用検索ボックスの修正点 */
     .search-box form {
         padding: 8px 12px;
-        flex-wrap: wrap; 
+        flex-wrap: wrap;
         gap: 8px;
-        justify-content: flex-end; /* ボタンを右寄せに配置 */
+        justify-content: flex-end;
     }
 
     .search-box input[type="text"] {
-        font-size: 16px; 
-        width: 100%; /* インプットフィールドは1行を広く使う */
+        font-size: 16px;
+        width: 100%;
         margin-bottom: 0;
     }
 
@@ -396,7 +399,7 @@ article p {
     .search-box a[role="button"] {
         padding: 6px 16px;
         font-size: 13px;
-        flex: none; /* ←【重要】均等割当てを解除し、文字幅に応じたコンパクトなサイズに縮小 */
+        flex: none;
         width: auto;
         min-height: 36px;
         display: inline-flex;
@@ -404,7 +407,6 @@ article p {
         justify-content: center;
     }
 
-    /* 投稿リストAndroid重なり完全防止 */
     article {
         padding: 16px;
         border-radius: 10px;
@@ -413,7 +415,7 @@ article p {
 
     article h2 {
         font-size: 15px;
-        flex-direction: column; 
+        flex-direction: column;
         align-items: flex-start;
         gap: 6px;
     }
@@ -422,13 +424,11 @@ article p {
         width: 100%;
     }
 
-    /* バッジ類のスマホ専用余白調整 */
     article h2 span {
         margin-left: 0 !important;
         display: inline-block !important;
     }
 
-    /* スマホアクションエリアのタッチ調整 */
     article a[role="button"],
     article form button {
         padding: 8px 16px;

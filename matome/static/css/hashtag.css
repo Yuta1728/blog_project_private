@@ -1,7 +1,4 @@
-/* static/css/hashtag.css
-   ハッシュタグ関連スタイル（全ページ共通）
-   base.css の後に読み込むこと
-   =========================================================== */
+/* static/css/hashtag.css - 水色×白 爽やかテーマ版 */
 
 
 /* ===========================================================
@@ -12,9 +9,9 @@
     padding: 2px 10px;
     font-size: 12px;
     font-weight: 600;
-    color: #0969da;
-    background-color: #ddf4ff;
-    border: 1px solid #b6e3ff;
+    color: #1a7aad;
+    background-color: #dff0fb;
+    border: 1px solid #8cc8e8;
     border-radius: 20px;
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
@@ -22,9 +19,9 @@
 }
 
 .hashtag-badge:hover {
-    background-color: #b6e3ff;
-    border-color: #79c0ff;
-    color: #0550ae;
+    background-color: #c5dff0;
+    border-color: #5aaedc;
+    color: #155f8a;
     text-decoration: none;
 }
 
@@ -53,8 +50,8 @@
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 10px;
-    background: #f6f8fa;
-    border: 1px solid #d0d7de;
+    background: #f0f8fd;
+    border: 1px solid #c5dff0;
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 24px;
@@ -63,7 +60,7 @@
 .hashtag-filter-label {
     font-size: 13px;
     font-weight: 700;
-    color: #57606a;
+    color: #2a6f94;
     white-space: nowrap;
     padding-top: 2px;
     flex-shrink: 0;
@@ -82,9 +79,9 @@
     padding: 4px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #0969da;
+    color: #1a7aad;
     background-color: #fff;
-    border: 1.5px solid #b6e3ff;
+    border: 1.5px solid #8cc8e8;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -92,21 +89,21 @@
 }
 
 .hashtag-filter-badge:hover {
-    background-color: #ddf4ff;
-    border-color: #79c0ff;
+    background-color: #dff0fb;
+    border-color: #5aaedc;
     text-decoration: none;
 }
 
 /* 選択中バッジ */
 .hashtag-filter-badge.active {
-    background-color: #0969da;
-    border-color: #0969da;
+    background-color: #1a7aad;
+    border-color: #1a7aad;
     color: #fff;
 }
 
 .hashtag-filter-badge.active:hover {
-    background-color: #0550ae;
-    border-color: #0550ae;
+    background-color: #155f8a;
+    border-color: #155f8a;
     color: #fff;
 }
 
@@ -116,9 +113,9 @@
     padding: 4px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #cf222e;
+    color: #2a6f94;
     background-color: #fff;
-    border: 1.5px solid #ffcdd2;
+    border: 1.5px solid #c5dff0;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -126,8 +123,9 @@
 }
 
 .hashtag-filter-clear:hover {
-    background-color: #ffebee;
-    border-color: #ef9a9a;
+    background-color: #dff0fb;
+    border-color: #5aaedc;
+    color: #1a7aad;
     text-decoration: none;
 }
 
@@ -138,10 +136,10 @@
 .hashtag-input-wrapper {
     display: flex;
     align-items: center;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
     padding: 8px 14px;
-    background: #fafafa;
+    background: #f5f9fd;
     margin-bottom: 10px;
     transition: border-color 0.18s, background 0.18s;
     box-sizing: border-box;
@@ -149,14 +147,14 @@
 }
 
 .hashtag-input-wrapper:focus-within {
-    border-color: #888;
+    border-color: #1a7aad;
     background: #fff;
 }
 
 .hashtag-prefix {
     font-size: 16px;
     font-weight: 700;
-    color: #0969da;
+    color: #1a7aad;
     margin-right: 6px;
     user-select: none;
     flex-shrink: 0;
@@ -168,7 +166,7 @@
     outline: none !important;
     background: transparent !important;
     font-size: 15px;
-    color: #1a1a1a;
+    color: #0d3a52;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -191,9 +189,9 @@
     padding: 3px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #0969da;
-    background-color: #ddf4ff;
-    border: 1px solid #b6e3ff;
+    color: #1a7aad;
+    background-color: #dff0fb;
+    border: 1px solid #8cc8e8;
     border-radius: 20px;
     animation: badgePop 0.15s ease;
 }
@@ -240,6 +238,6 @@
     }
 
     .hashtag-text-input {
-        font-size: 16px !important; /* Android ズーム防止 */
+        font-size: 16px !important;
     }
 }

@@ -1,4 +1,4 @@
-/* static/css/genre.css - note風レスポンシブ対応版 */
+/* static/css/genre.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    ページレイアウト
@@ -8,7 +8,7 @@ h1 {
     font-weight: 700;
     text-align: center;
     margin: 36px 0 20px;
-    color: #1a1a1a;
+    color: #0d3a52;
     letter-spacing: -0.01em;
 }
 
@@ -16,9 +16,10 @@ h1 {
     max-width: 480px;
     margin: 0 auto 60px;
     background: #fff;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
 /* ===========================
@@ -36,20 +37,20 @@ h1 {
     padding: 16px 24px;
     font-size: 15px !important;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #1a7aad;
     text-decoration: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
     transition: background 0.15s;
 }
 
 .genre-item-all a:hover {
-    background: #fafafa;
+    background: #f0f8fd;
     text-decoration: none;
 }
 
 /* 各グループ */
 .genre-group {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
 }
 
 .genre-group:last-child {
@@ -64,7 +65,7 @@ h1 {
     padding: 15px 24px;
     font-size: 15px;
     font-weight: 600;
-    color: #333;
+    color: #2a4a5e;
     cursor: pointer;
     user-select: none;
     outline: none;
@@ -75,7 +76,7 @@ h1 {
 }
 
 .group-title:hover {
-    background: #fafafa;
+    background: #f0f8fd;
 }
 
 .group-title::-webkit-details-marker {
@@ -85,7 +86,7 @@ h1 {
 /* 矢印 */
 .group-title .arrow {
     font-size: 10px;
-    color: #bbb;
+    color: #8cc8e8;
     display: inline-block;
     transition: transform 0.22s ease, color 0.22s;
     flex-shrink: 0;
@@ -93,18 +94,18 @@ h1 {
 
 details[open] .group-title .arrow {
     transform: rotate(90deg);
-    color: #777;
+    color: #1a7aad;
 }
 
 details[open] .group-title {
-    color: #1a1a1a;
-    background: #fafafa;
-    border-bottom: 1px solid #f0f0f0;
+    color: #0d3a52;
+    background: #f0f8fd;
+    border-bottom: 1px solid #dff0fb;
 }
 
 /* 子ジャンルリスト */
 .sub-genre-list {
-    background: #fafafa;
+    background: #f8fbfe;
     padding: 4px 0;
 }
 
@@ -113,7 +114,7 @@ details[open] .group-title {
     align-items: center;
     padding: 12px 24px 12px 36px;
     font-size: 14px !important;
-    color: #555;
+    color: #2a6f94;
     text-decoration: none;
     transition: background 0.15s, color 0.15s;
     min-height: 44px;
@@ -123,13 +124,13 @@ details[open] .group-title {
 .sub-genre-list li a::before {
     content: "–";
     margin-right: 8px;
-    color: #ccc;
+    color: #8cc8e8;
     flex-shrink: 0;
 }
 
 .sub-genre-list li a:hover {
-    background: #efefef;
-    color: #1a1a1a;
+    background: #dff0fb;
+    color: #1a7aad;
     text-decoration: none;
 }
 
@@ -143,19 +144,19 @@ details[open] .group-title {
 
 .genre-footer a {
     font-size: 14px;
-    color: #666;
+    color: #2a6f94;
     text-decoration: none;
     padding: 10px 22px;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #8cc8e8;
     border-radius: 20px;
     display: inline-block;
     transition: all 0.18s;
 }
 
 .genre-footer a:hover {
-    border-color: #999;
-    color: #1a1a1a;
-    background: #f8f8f8;
+    border-color: #1a7aad;
+    color: #1a7aad;
+    background: #dff0fb;
 }
 
 /* ===========================

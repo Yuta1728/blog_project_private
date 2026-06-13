@@ -1,4 +1,4 @@
-/* static/css/auth.css - note風レスポンシブ対応版 */
+/* static/css/auth.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    ログインコンテナ
@@ -9,14 +9,14 @@
     padding: 40px 40px 36px;
     background-color: #fff;
     border-radius: 12px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     box-sizing: border-box;
     font-family: inherit;
 }
 
 h2 {
     text-align: center;
-    color: #1a1a1a;
+    color: #0d3a52;
     margin: 0 0 20px;
     font-size: 24px;
     font-weight: 800;
@@ -32,7 +32,7 @@ label {
     margin-bottom: 8px;
     font-weight: 700;
     font-size: 13px;
-    color: #777;
+    color: #7aaec8;
     letter-spacing: 0.03em;
 }
 
@@ -40,27 +40,27 @@ input[type="text"],
 input[type="password"] {
     width: 100%;
     padding: 12px 16px;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
     box-sizing: border-box;
     font-size: 16px;
     outline: none;
-    background: #fafafa;
-    color: #1a1a1a;
+    background: #f5f9fd;
+    color: #0d3a52;
     transition: border-color 0.18s, background 0.18s;
     font-family: inherit;
 }
 
 input[type="text"]:focus,
 input[type="password"]:focus {
-    border-color: #888;
+    border-color: #1a7aad;
     background: #fff;
 }
 
 .submit-btn {
     width: 100%;
     padding: 13px;
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -73,14 +73,14 @@ input[type="password"]:focus {
 }
 
 .submit-btn:hover {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 .footer-link {
     text-align: center;
     margin-top: 18px;
     font-size: 13px;
-    color: #aaa;
+    color: #7aaec8;
 }
 
 /* ===========================

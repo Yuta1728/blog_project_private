@@ -41,6 +41,7 @@ The content is organized as follows:
 
 <directory_structure>
 .gitignore
+.python-version
 app.py
 config.py
 docker-compose.yml
@@ -53,6 +54,7 @@ migrations/env.py
 migrations/README
 migrations/script.py.mako
 migrations/versions/42dc0996903d_add_default_thumb_to_post.py
+migrations/versions/Add_hashtag_tables.py
 migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
 models.py
 README.md
@@ -63,10 +65,10 @@ static/css/base.css
 static/css/create_update.css
 static/css/detail.css
 static/css/genre.css
+static/css/hashtag.css
 static/css/index.css
 static/css/mypage.css
 static/img/posts/01e73b9c-5b1d-41be-bbb3-a7d8fc729a46.jpg
-static/img/posts/0336913e-6d91-4637-8f18-b802079fb4ef.png
 static/img/posts/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
 static/img/posts/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
 static/img/posts/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
@@ -100,39 +102,6 @@ views/blog.py
 <files>
 This section contains the contents of the repository's files.
 
-<file path=".gitignore">
-# Python関連
-__pycache__/
-*.py[cod]
-*$py.class
-
-# 仮想環境（venvを使用している場合）
-venv/
-.venv/
-env/
-
-# 環境変数・シークレット情報
-# config.pyでOS環境変数を読み込む運用が基本ですが、
-# もし .env ファイルを作成して管理している場合は必須です
-.env
-.env.*
-
-# データベース関連
-# SQLiteを使用している場合は、そのファイルを除外（PostgreSQLなら不要）
-*.db
-*.sqlite3
-
-# OS生成ファイル
-.DS_Store
-Thumbs.db
-
-# ログファイル
-*.log
-
-# アップロードされた画像（static/img/ 以下を丸ごと除外したい場合）
-# もし初期設定画像以外をgit管理したくない場合は以下を追加
-# static/img/uploads/
-</file>
 
 <file path="app.py">
 import os
@@ -263,6 +232,325 @@ login_manager = LoginManager()
 migrate = Migrate()
 </file>
 
+
+<file path="migrations/alembic.ini">
+# A generic, single database configuration.
+
+[alembic]
+# template used to generate migration files
+# file_template = %%(rev)s_%%(slug)s
+
+# set to 'true' to run the environment during
+# the 'revision' command, regardless of autogenerate
+# revision_environment = false
+
+
+# Logging configuration
+[loggers]
+keys = root,sqlalchemy,alembic,flask_migrate
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = WARN
+handlers = console
+qualname =
+
+[logger_sqlalchemy]
+level = WARN
+handlers =
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
+
+[logger_flask_migrate]
+level = INFO
+handlers =
+qualname = flask_migrate
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S
+</file>
+
+<file path="migrations/env.py">
+import logging
+from logging.config import fileConfig
+
+from flask import current_app
+
+from alembic import context
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+fileConfig(config.config_file_name)
+logger = logging.getLogger('alembic.env')
+
+
+def get_engine():
+    try:
+        # this works with Flask-SQLAlchemy<3 and Alchemical
+        return current_app.extensions['migrate'].db.get_engine()
+    except (TypeError, AttributeError):
+        # this works with Flask-SQLAlchemy>=3
+        return current_app.extensions['migrate'].db.engine
+
+
+def get_engine_url():
+    try:
+        return get_engine().url.render_as_string(hide_password=False).replace(
+            '%', '%%')
+    except AttributeError:
+        return str(get_engine().url).replace('%', '%%')
+
+
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+config.set_main_option('sqlalchemy.url', get_engine_url())
+target_db = current_app.extensions['migrate'].db
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
+
+def get_metadata():
+    if hasattr(target_db, 'metadatas'):
+        return target_db.metadatas[None]
+    return target_db.metadata
+
+
+def run_migrations_offline():
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url, target_metadata=get_metadata(), literal_binds=True
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online():
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+
+    # this callback is used to prevent an auto-migration from being generated
+    # when there are no changes to the schema
+    # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
+    def process_revision_directives(context, revision, directives):
+        if getattr(config.cmd_opts, 'autogenerate', False):
+            script = directives[0]
+            if script.upgrade_ops.is_empty():
+                directives[:] = []
+                logger.info('No changes in schema detected.')
+
+    conf_args = current_app.extensions['migrate'].configure_args
+    if conf_args.get("process_revision_directives") is None:
+        conf_args["process_revision_directives"] = process_revision_directives
+
+    connectable = get_engine()
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=get_metadata(),
+            **conf_args
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+</file>
+
+<file path="migrations/README">
+Single-database configuration for Flask.
+</file>
+
+<file path="migrations/script.py.mako">
+"""${message}
+
+Revision ID: ${up_revision}
+Revises: ${down_revision | comma,n}
+Create Date: ${create_date}
+
+"""
+from alembic import op
+import sqlalchemy as sa
+${imports if imports else ""}
+
+# revision identifiers, used by Alembic.
+revision = ${repr(up_revision)}
+down_revision = ${repr(down_revision)}
+branch_labels = ${repr(branch_labels)}
+depends_on = ${repr(depends_on)}
+
+
+def upgrade():
+    ${upgrades if upgrades else "pass"}
+
+
+def downgrade():
+    ${downgrades if downgrades else "pass"}
+</file>
+
+<file path="migrations/versions/42dc0996903d_add_default_thumb_to_post.py">
+"""Add default_thumb to Post
+
+Revision ID: 42dc0996903d
+Revises: f8bd789a6d74
+Create Date: 2026-06-08 23:43:23.246323
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision = '42dc0996903d'
+down_revision = 'f8bd789a6d74'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('default_thumb', sa.String(length=100), nullable=True))
+
+    # ### end Alembic commands ###
+
+
+def downgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.drop_column('default_thumb')
+
+    # ### end Alembic commands ###
+</file>
+
+<file path="migrations/versions/Add_hashtag_tables.py">
+"""add hashtag tables
+
+Revision ID: add_hashtag_tables
+Revises: 42dc0996903d
+Create Date: 2025-01-01 00:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+# revision identifiers, used by Alembic.
+revision = 'add_hashtag_tables'
+down_revision = '42dc0996903d'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # hashtag テーブルの作成
+    op.create_table(
+        'hashtag',
+        sa.Column('id',   sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(length=100), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name')
+    )
+
+    # post_hashtags 中間テーブルの作成
+    op.create_table(
+        'post_hashtags',
+        sa.Column('post_id',    sa.Integer(), nullable=False),
+        sa.Column('hashtag_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['post_id'],    ['post.id']),
+        sa.ForeignKeyConstraint(['hashtag_id'], ['hashtag.id']),
+        sa.PrimaryKeyConstraint('post_id', 'hashtag_id')
+    )
+
+
+def downgrade():
+    op.drop_table('post_hashtags')
+    op.drop_table('hashtag')
+</file>
+
+<file path="migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py">
+"""initial revision after manual dbeaver fix
+
+Revision ID: f8bd789a6d74
+Revises: 
+Create Date: 2026-05-27 06:25:27.562683
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision = 'f8bd789a6d74'
+down_revision = None
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.alter_column('is_published',
+               existing_type=sa.BOOLEAN(),
+               nullable=False)
+
+    # ### end Alembic commands ###
+
+
+def downgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.alter_column('is_published',
+               existing_type=sa.BOOLEAN(),
+               nullable=True)
+
+    # ### end Alembic commands ###
+</file>
+
 <file path="models.py">
 # models.py
 from extensions import db
@@ -270,29 +558,53 @@ from flask_login import UserMixin
 from datetime import datetime
 import pytz
 
+# ===== Post ↔ Hashtag 中間テーブル =====
+post_hashtags = db.Table(
+    'post_hashtags',
+    db.Column('post_id',    db.Integer, db.ForeignKey('post.id'),    primary_key=True),
+    db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True)
+)
+
+
+class Hashtag(db.Model):
+    __tablename__ = 'hashtag'
+    id   = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)   # '#' を除いた文字列で保存
+
+
 class Post(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.TEXT, nullable=False)
-    body = db.Column(db.TEXT, nullable=False)
-    genre = db.Column(db.String(100), nullable=False, default='未分類')
-    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    img_name = db.Column(db.String(100), nullable=True)
+    id           = db.Column(db.Integer, primary_key=True)
+    title        = db.Column(db.TEXT, nullable=False)
+    body         = db.Column(db.TEXT, nullable=False)
+    genre        = db.Column(db.String(100), nullable=False, default='未分類')
+    created_at   = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    updated_at   = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    img_name     = db.Column(db.String(100), nullable=True)
     default_thumb = db.Column(db.String(100), nullable=True)
-    
+
     # ユーザーIDとの紐付け
     user = db.relationship('User', backref=db.backref('posts', lazy=True))
-    
+
     # 公開・非公開設定（デフォルトは True = 公開）
     is_published = db.Column(db.Boolean, nullable=False, default=True)
-    
+
+    # ===== ハッシュタグとの多対多リレーション =====
+    hashtags = db.relationship(
+        'Hashtag',
+        secondary=post_hashtags,
+        lazy='subquery',
+        backref=db.backref('posts', lazy=True)
+    )
+
+
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(30), unique=True) 
+    id       = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(30), unique=True)
     password = db.Column(db.String(200))
     nickname = db.Column(db.String(60), nullable=True)
 </file>
+
 
 <file path="requirements.txt">
 alembic==1.16.5                                                                         
@@ -325,6 +637,7 @@ Werkzeug==3.1.8
 WTForms==3.2.1
 zipp==3.23.1
 </file>
+
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - note風レスポンシブ対応版 */
@@ -1884,6 +2197,254 @@ details[open] .group-title {
 }
 </file>
 
+<file path="static/css/hashtag.css">
+/* static/css/hashtag.css
+   ハッシュタグ関連スタイル（全ページ共通）
+   base.css の後に読み込むこと
+   =========================================================== */
+
+
+/* ===========================================================
+   1. 投稿カード・詳細ページ共通：ハッシュタグバッジ
+   =========================================================== */
+.hashtag-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0969da;
+    background-color: #ddf4ff;
+    border: 1px solid #b6e3ff;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.hashtag-badge:hover {
+    background-color: #b6e3ff;
+    border-color: #79c0ff;
+    color: #0550ae;
+    text-decoration: none;
+}
+
+/* 投稿カード内バッジエリア */
+.post-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 10px;
+}
+
+/* 詳細ページ内バッジエリア */
+.detail-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+
+/* ===========================================================
+   2. トップページ：ジャンル選択時のハッシュタグ絞り込みバー
+   =========================================================== */
+.hashtag-filter-bar {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+}
+
+.hashtag-filter-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #57606a;
+    white-space: nowrap;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+
+.hashtag-filter-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+/* フィルターバー内バッジ */
+.hashtag-filter-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0969da;
+    background-color: #fff;
+    border: 1.5px solid #b6e3ff;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.hashtag-filter-badge:hover {
+    background-color: #ddf4ff;
+    border-color: #79c0ff;
+    text-decoration: none;
+}
+
+/* 選択中バッジ */
+.hashtag-filter-badge.active {
+    background-color: #0969da;
+    border-color: #0969da;
+    color: #fff;
+}
+
+.hashtag-filter-badge.active:hover {
+    background-color: #0550ae;
+    border-color: #0550ae;
+    color: #fff;
+}
+
+/* タグ解除ボタン */
+.hashtag-filter-clear {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #cf222e;
+    background-color: #fff;
+    border: 1.5px solid #ffcdd2;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.hashtag-filter-clear:hover {
+    background-color: #ffebee;
+    border-color: #ef9a9a;
+    text-decoration: none;
+}
+
+
+/* ===========================================================
+   3. 投稿フォーム：ハッシュタグ入力エリア
+   =========================================================== */
+.hashtag-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    background: #fafafa;
+    margin-bottom: 10px;
+    transition: border-color 0.18s, background 0.18s;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.hashtag-input-wrapper:focus-within {
+    border-color: #888;
+    background: #fff;
+}
+
+.hashtag-prefix {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0969da;
+    margin-right: 6px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.hashtag-text-input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    font-size: 15px;
+    color: #1a1a1a;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    min-width: 0;
+    font-family: inherit;
+}
+
+/* 入力中プレビューエリア */
+.hashtag-preview-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 28px;
+    margin-bottom: 22px;
+}
+
+/* プレビューバッジ（入力中リアルタイム） */
+.hashtag-badge-preview {
+    display: inline-block;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0969da;
+    background-color: #ddf4ff;
+    border: 1px solid #b6e3ff;
+    border-radius: 20px;
+    animation: badgePop 0.15s ease;
+}
+
+@keyframes badgePop {
+    from { transform: scale(0.85); opacity: 0.6; }
+    to   { transform: scale(1);    opacity: 1;   }
+}
+
+
+/* ===========================================================
+   4. レスポンシブ（〜767px）
+   =========================================================== */
+@media (max-width: 767px) {
+    .hashtag-filter-bar {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+
+    .hashtag-filter-list {
+        gap: 6px;
+    }
+
+    .hashtag-filter-badge,
+    .hashtag-filter-clear {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+
+    .post-hashtags,
+    .detail-hashtags {
+        gap: 5px;
+    }
+
+    .hashtag-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    .hashtag-input-wrapper {
+        padding: 10px 12px;
+    }
+
+    .hashtag-text-input {
+        font-size: 16px !important; /* Android ズーム防止 */
+    }
+}
+</file>
+
 <file path="static/css/index.css">
 /* static/css/index.css - 全域タップ完全対応版 */
 
@@ -1934,11 +2495,11 @@ a[role="button"]:hover {
     display: flex;
     gap: 32px; 
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbcfd4;
     border-radius: 10px; 
     padding: 28px; 
-    margin-bottom: 28px; 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    margin-bottom: 20px; 
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.02);
     transition: transform 0.2s, box-shadow 0.2s;
     
     /* ★ リンク領域(::after)をカード全体に広げるための絶対基準位置に設定 */
@@ -1953,8 +2514,8 @@ a[role="button"]:hover {
 
 /* 左側: サムネイル */
 .post-thumbnail {
-    flex: 0 0 270px;
-    height: 160px;
+    flex: 0 0 280px;
+    height: 170px;
     border-radius: 6px;
     overflow: hidden;
     background-color: #f7fafc;
@@ -1978,7 +2539,7 @@ a[role="button"]:hover {
 /* メタ情報 */
 .post-header-meta {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
     margin-bottom: 6px;
     font-size: 0.95rem;
@@ -2046,20 +2607,20 @@ a[role="button"]:hover {
    =========================== */
 @media (max-width: 600px) {
     .page-wrapper {
-        padding: 16px 12px 48px;
+        padding: 16px 14px 48px;
     }
 
     .post-card {
         flex-direction: column;
-        gap: 16px;
-        padding: 16px;
+        gap: 12px;
+        padding: 12px;
         margin-top: 5px;
     }
     
     .post-thumbnail {
         flex: none;
         width: 100%; 
-        height: 180px;
+        height: 190px;
     }
 
     .post-content {
@@ -2068,14 +2629,14 @@ a[role="button"]:hover {
 
     .post-header-meta {
         font-size: 0.85rem;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         flex-wrap: wrap;
     }
 
     .post-title {
         font-size: 1.15rem;
         line-height: 1.4;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .post-actions {
@@ -2565,6 +3126,7 @@ article p {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>create1.blog.jp</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
 </head>
 <body>
 
@@ -2674,7 +3236,6 @@ article p {
         navCloseBtn.addEventListener('click', closeDrawer);
         navOverlay.addEventListener('click', closeDrawer);
 
-        // Escキーでも閉じる
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeDrawer();
         });
@@ -2731,14 +3292,12 @@ article p {
             const text = btn.querySelector('.status-text');
 
             if (hiddenInput.value === 'false') {
-                // 全体公開に切り替え
                 hiddenInput.value = 'true';
                 btn.classList.remove('private');
                 btn.classList.add('published');
                 icon.textContent = '🔓';
                 text.textContent = '全体公開';
             } else {
-                // 非公開に切り替え
                 hiddenInput.value = 'false';
                 btn.classList.remove('published');
                 btn.classList.add('private');
@@ -2759,12 +3318,30 @@ article p {
         <p>
             <textarea name="body" rows="17" required placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
         </p>
-            
+
+        <!-- ===== ハッシュタグ入力 ===== -->
+        <p>
+            <label for="hashtag_input">ハッシュタグ</label>
+            ※スペース・カンマ区切りで複数入力できます。「#」は付けても省略しても OK<br>
+            　例：<code>#Flask Python ブログ開発</code>
+        </p>
+        <div class="hashtag-input-wrapper">
+            <span class="hashtag-prefix">#</span>
+            <input type="text"
+                   name="hashtag_input"
+                   id="hashtag_input"
+                   class="hashtag-text-input"
+                   placeholder="Flask Python ブログ開発 …"
+                   autocomplete="off"
+                   oninput="renderHashtagPreview(this.value)">
+        </div>
+        <div id="hashtag-preview" class="hashtag-preview-area"></div>
+        <!-- ========================== -->
+
         <p>
             <label for="fileUpload">画像（複数選択可 / 順番に [img1], [img2] になります）</label>
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
         </p>
-
 
         <p>
             <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
@@ -2792,22 +3369,18 @@ article p {
         </div>
 
         <script>
-        // 選んだデフォルト画像をその場でプレビューするJavaScript
         function previewDefaultThumb(select) {
             const previewArea = document.getElementById('default-thumb-preview-area');
-            const previewImg = document.getElementById('default-thumb-preview-img');
-            
+            const previewImg  = document.getElementById('default-thumb-preview-img');
             if (select.value === 'none') {
                 previewArea.style.display = 'none';
                 previewImg.src = '';
             } else {
                 previewArea.style.display = 'block';
-                // 💡【修正】読み込みパスを "/static/img/" から "/static/img/thbnails/" に変更
                 previewImg.src = "/static/img/thbnails/" + select.value;
             }
         }
         </script>
-
 
         <div id="preview-area" style="display: none;">
             <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
@@ -2825,7 +3398,7 @@ article p {
 function toggleNewGenreInput() {
     const selectBox = document.getElementById('genre_select');
     const newGenreWrapper = document.getElementById('new_genre_wrapper');
-    const newGenreInput = document.getElementById('genre_new');
+    const newGenreInput   = document.getElementById('genre_new');
 
     if (selectBox.value === '__NEW__') {
         newGenreWrapper.style.display = 'block';
@@ -2840,47 +3413,42 @@ function toggleNewGenreInput() {
 function previewImages(input) {
     const previewArea = document.getElementById('preview-area');
     const previewList = document.getElementById('preview-list');
-
-    // 前回のプレビューをリセット
     previewList.innerHTML = '';
-
     const files = Array.from(input.files);
-
-    if (files.length === 0) {
-        previewArea.style.display = 'none';
-        return;
-    }
-
+    if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
-
     files.forEach((file, index) => {
         const reader = new FileReader();
-
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
-
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
-
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
-
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
-            filename.title = file.name; // ホバーでフルネーム表示
-
+            filename.title = file.name;
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
             previewList.appendChild(item);
         };
-
         reader.readAsDataURL(file);
     });
+}
+
+/* ハッシュタグ入力プレビュー */
+function renderHashtagPreview(value) {
+    const area = document.getElementById('hashtag-preview');
+    const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+    area.innerHTML = tokens.map(t => {
+        const name = t.replace(/^#+/, '');
+        return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
+    }).join('');
 }
 </script>
 
@@ -2906,7 +3474,6 @@ function previewImages(input) {
             <div class="post-user-info">
                 <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
                     alt="avatar">
-                
                 <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
             </div>
             
@@ -2917,6 +3484,19 @@ function previewImages(input) {
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
             </div>
+
+            {# ===== ハッシュタグ表示 ===== #}
+            {% if post.hashtags %}
+                <div class="detail-hashtags">
+                    {% for tag in post.hashtags %}
+                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                           class="hashtag-badge">
+                            #{{ tag.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {# ========================== #}
         </div>
 
         {% if toc_html and '<li>' in toc_html %}
@@ -2947,11 +3527,9 @@ function previewImages(input) {
 <script>
 function goBack() {
     const referrer = document.referrer;
-    // referrerが同一オリジン内のページであれば直接遷移（アンカー履歴をスキップ）
     if (referrer && new URL(referrer).origin === location.origin) {
         location.href = referrer;
     } else {
-        // referrerがない・外部サイトの場合はブラウザ履歴を辿る
         history.back();
     }
 }
@@ -3087,14 +3665,35 @@ function goBack() {
 
 <div class="page-wrapper">
 
-    {% if selected_genre or search_word %}
+    {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
             🔍 
             {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
+            {% if selected_hashtag %}ハッシュタグ「#{{ selected_hashtag }}」{% endif %}
             {% if search_word %}キーワード「{{ search_word }}」{% endif %}
             を表示中
         </p>
     {% endif %}
+
+    {# ===== ハッシュタグ絞り込みバー（ジャンル選択中のみ表示） ===== #}
+    {% if selected_genre and hashtags_in_genre %}
+        <div class="hashtag-filter-bar">
+            <span class="hashtag-filter-label">🏷️ タグで絞り込む：</span>
+            <div class="hashtag-filter-list">
+                {% for tag in hashtags_in_genre %}
+                    <a href="{{ url_for('blog.index', genre=selected_genre, hashtag=tag.name) }}"
+                       class="hashtag-filter-badge {% if selected_hashtag == tag.name %}active{% endif %}">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+                {% if selected_hashtag %}
+                    <a href="{{ url_for('blog.index', genre=selected_genre) }}"
+                       class="hashtag-filter-clear">✕ タグ解除</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+    {# ========================================================= #}
 
     {% for post in posts %}
         <article class="post-card">
@@ -3102,10 +3701,8 @@ function goBack() {
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
                     <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
-                
                 {% elif post.default_thumb %}
                     <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
-                
                 {% else %}
                     <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
                 {% endif %}
@@ -3114,7 +3711,18 @@ function goBack() {
             <div class="post-content">
                 <div class="post-header-meta">
                     <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-                    
+                    {# ===== ハッシュタグバッジ ===== #}
+                    {% if post.hashtags %}
+                        <div class="post-hashtags">
+                            {% for tag in post.hashtags %}
+                                <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                                class="hashtag-badge">
+                                    #{{ tag.name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {# ============================= #}
                     {% if not post.is_published %}
                         <span class="badge-private">🔒 非公開</span>
                     {% endif %}
@@ -3129,7 +3737,6 @@ function goBack() {
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
                         <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            
                             <button type="submit" class="btn-delete">削除</button>
                         </form>
                     </div>
@@ -3143,6 +3750,10 @@ function goBack() {
                 </p>
             </div>
         </article>
+    {% else %}
+        <p style="text-align:center; color:#aaa; margin-top:60px;">
+            該当する記事が見つかりませんでした。
+        </p>
     {% endfor %}
 
 </div>
@@ -3296,7 +3907,6 @@ function goBack() {
             <label for="genre_select">ジャンル</label>
             <select name="genre_select" id="genre_select" onchange="toggleNewGenreInput()">
                 <option value="未分類" {% if post.genre == '未分類' or not post.genre %}selected{% endif %}>-- ジャンルを選択（選択なしは未分類） --</option>
-                
                 {% for genre in genres %}
                     <option value="{{ genre }}" {% if post.genre == genre %}selected{% endif %}>{{ genre }}</option>
                 {% endfor %}
@@ -3312,9 +3922,8 @@ function goBack() {
         <p>
             <label>公開設定</label>
             <input type="hidden" name="is_published" id="is_published" value="{{ 'true' if post.is_published else 'false' }}">
-            
-            <button type="button" id="toggle_status_btn" 
-                    class="toggle-status-btn {{ 'published' if post.is_published else 'private' }}" 
+            <button type="button" id="toggle_status_btn"
+                    class="toggle-status-btn {{ 'published' if post.is_published else 'private' }}"
                     onclick="handleStatusToggle()">
                 <span class="status-icon">{{ '🔓' if post.is_published else '🔒' }}</span>
                 <span class="status-text">{{ '全体公開' if post.is_published else '非公開' }}</span>
@@ -3324,10 +3933,9 @@ function goBack() {
         <script>
         function handleStatusToggle() {
             const hiddenInput = document.getElementById('is_published');
-            const btn = document.getElementById('toggle_status_btn');
+            const btn  = document.getElementById('toggle_status_btn');
             const icon = btn.querySelector('.status-icon');
             const text = btn.querySelector('.status-text');
-
             if (hiddenInput.value === 'false') {
                 hiddenInput.value = 'true';
                 btn.classList.remove('private');
@@ -3353,7 +3961,32 @@ function goBack() {
         </p>
 
         <textarea name="body" rows="17">{{post.body}}</textarea>
-        
+
+        <!-- ===== ハッシュタグ入力 ===== -->
+        <p>
+            <label for="hashtag_input">ハッシュタグ</label>
+            ※スペース・カンマ区切りで複数入力できます。「#」は付けても省略しても OK<br>
+            　例：<code>#Flask Python ブログ開発</code>
+        </p>
+        <div class="hashtag-input-wrapper">
+            <span class="hashtag-prefix">#</span>
+            <input type="text"
+                   name="hashtag_input"
+                   id="hashtag_input"
+                   class="hashtag-text-input"
+                   value="{{ existing_hashtag_str }}"
+                   placeholder="Flask Python ブログ開発 …"
+                   autocomplete="off"
+                   oninput="renderHashtagPreview(this.value)">
+        </div>
+        <div id="hashtag-preview" class="hashtag-preview-area">
+            {# 既存タグを初期表示 #}
+            {% for tag in post.hashtags %}
+                <span class="hashtag-badge-preview">#{{ tag.name }}</span>
+            {% endfor %}
+        </div>
+        <!-- ========================== -->
+
         {% if post.img_name %}
             <label>現在の画像</label>
             <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
@@ -3371,57 +4004,50 @@ function goBack() {
             <label>画像を変更する（複数選択可 / 順番に [img1], [img2] になります）</label>
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
 
-
             <p>
                 <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
                 <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                     <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
-                    <option value="thumb_option1.jpg" {% if post.default_thumb == 'thumb_option1.jpg' %}selected{% endif %}>選択肢1：趣味（thumb_option1.jpg）</option>
-                    <option value="thumb_option2.jpg" {% if post.default_thumb == 'thumb_option2.jpg' %}selected{% endif %}>選択肢2：旅行（thumb_option2.jpg）</option>
-                    <option value="thumb_option3.jpg" {% if post.default_thumb == 'thumb_option3.jpg' %}selected{% endif %}>選択肢3：スポーツ（thumb_option3.jpg）</option>
-                    <option value="thumb_option4.jpg" {% if post.default_thumb == 'thumb_option4.jpg' %}selected{% endif %}>選択肢4：アニメ（thumb_option4.jpg）</option>
-                    <option value="thumb_option5.jpg" {% if post.default_thumb == 'thumb_option5.jpg' %}selected{% endif %}>選択肢5：本（thumb_option5.jpg）</option>
-                    <option value="thumb_option6.jpg" {% if post.default_thumb == 'thumb_option6.jpg' %}selected{% endif %}>選択肢6：ゲーム（thumb_option6.jpg）</option>
-                    <option value="thumb_option7.jpg" {% if post.default_thumb == 'thumb_option7.jpg' %}selected{% endif %}>選択肢7：音楽（thumb_option7.jpg）</option>
-                    <option value="thumb_option8.jpg" {% if post.default_thumb == 'thumb_option8.jpg' %}selected{% endif %}>選択肢8：映画（thumb_option8.jpg）</option>
-                    <option value="thumb_option9.jpg" {% if post.default_thumb == 'thumb_option9.jpg' %}selected{% endif %}>選択肢9：ドラマ（thumb_option9.jpg）</option>
-                    <option value="thumb_option10.jpg" {% if post.default_thumb == 'thumb_option10.jpg' %}selected{% endif %}>選択肢10：開発（thumb_option10.jpg）</option>
-                    <option value="thumb_option11.jpg" {% if post.default_thumb == 'thumb_option11.jpg' %}selected{% endif %}>選択肢11：勉強（thumb_option11.jpg）</option>
+                    <option value="thumb_option1.jpg"  {% if post.default_thumb == 'thumb_option1.jpg'  %}selected{% endif %}>選択肢1：趣味</option>
+                    <option value="thumb_option2.jpg"  {% if post.default_thumb == 'thumb_option2.jpg'  %}selected{% endif %}>選択肢2：旅行</option>
+                    <option value="thumb_option3.jpg"  {% if post.default_thumb == 'thumb_option3.jpg'  %}selected{% endif %}>選択肢3：スポーツ</option>
+                    <option value="thumb_option4.jpg"  {% if post.default_thumb == 'thumb_option4.jpg'  %}selected{% endif %}>選択肢4：アニメ</option>
+                    <option value="thumb_option5.jpg"  {% if post.default_thumb == 'thumb_option5.jpg'  %}selected{% endif %}>選択肢5：本</option>
+                    <option value="thumb_option6.jpg"  {% if post.default_thumb == 'thumb_option6.jpg'  %}selected{% endif %}>選択肢6：ゲーム</option>
+                    <option value="thumb_option7.jpg"  {% if post.default_thumb == 'thumb_option7.jpg'  %}selected{% endif %}>選択肢7：音楽</option>
+                    <option value="thumb_option8.jpg"  {% if post.default_thumb == 'thumb_option8.jpg'  %}selected{% endif %}>選択肢8：映画</option>
+                    <option value="thumb_option9.jpg"  {% if post.default_thumb == 'thumb_option9.jpg'  %}selected{% endif %}>選択肢9：ドラマ</option>
+                    <option value="thumb_option10.jpg" {% if post.default_thumb == 'thumb_option10.jpg' %}selected{% endif %}>選択肢10：開発</option>
+                    <option value="thumb_option11.jpg" {% if post.default_thumb == 'thumb_option11.jpg' %}selected{% endif %}>選択肢11：勉強</option>
                 </select>
             </p>
 
             {% if post.default_thumb %}
                 <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
-                    <div class="preview-item" style="max-width: 200px;">
-                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
-                        <div class="preview-label">選択中のサムネイル</div>
-                    </div>
-                </div>
             {% else %}
                 <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
-                    <div class="preview-item" style="max-width: 200px;">
-                        <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
-                        <div class="preview-label">選択中のサムネイル</div>
-                    </div>
-                </div>
             {% endif %}
+                <div class="preview-item" style="max-width: 200px;">
+                    <img id="default-thumb-preview-img"
+                         src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) if post.default_thumb else '' }}"
+                         alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                    <div class="preview-label">選択中のサムネイル</div>
+                </div>
+            </div>
 
             <script>
             function previewDefaultThumb(select) {
                 const previewArea = document.getElementById('default-thumb-preview-area');
-                const previewImg = document.getElementById('default-thumb-preview-img');
-                
+                const previewImg  = document.getElementById('default-thumb-preview-img');
                 if (select.value === 'none') {
                     previewArea.style.display = 'none';
                     previewImg.src = '';
                 } else {
                     previewArea.style.display = 'block';
-                    // 💡【修正3】JavaScriptで切り替えた際のプレビューパスを 'thbnails/' に変更
                     previewImg.src = "/static/img/thbnails/" + select.value;
                 }
             }
             </script>
-
 
             <div id="preview-area" style="display: none; margin-top: 14px;">
                 <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
@@ -3437,13 +4063,11 @@ function goBack() {
 </div>
 
 
-
 <script>
 function toggleNewGenreInput() {
     const selectBox = document.getElementById('genre_select');
     const newGenreWrapper = document.getElementById('new_genre_wrapper');
-    const newGenreInput = document.getElementById('genre_new');
-
+    const newGenreInput   = document.getElementById('genre_new');
     if (selectBox.value === '__NEW__') {
         newGenreWrapper.style.display = 'block';
         newGenreInput.required = true;
@@ -3457,46 +4081,42 @@ function toggleNewGenreInput() {
 function previewImages(input) {
     const previewArea = document.getElementById('preview-area');
     const previewList = document.getElementById('preview-list');
-
     previewList.innerHTML = '';
-
     const files = Array.from(input.files);
-
-    if (files.length === 0) {
-        previewArea.style.display = 'none';
-        return;
-    }
-
+    if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
-
     files.forEach((file, index) => {
         const reader = new FileReader();
-
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
-
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
-
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
-
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
-
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
             previewList.appendChild(item);
         };
-
         reader.readAsDataURL(file);
     });
+}
+
+/* ハッシュタグ入力プレビュー */
+function renderHashtagPreview(value) {
+    const area   = document.getElementById('hashtag-preview');
+    const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+    area.innerHTML = tokens.map(t => {
+        const name = t.replace(/^#+/, '');
+        return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
+    }).join('');
 }
 </script>
 
@@ -3505,22 +4125,22 @@ function previewImages(input) {
 
 <file path="views/admin.py">
 from flask import Blueprint, render_template, request, redirect, flash, current_app
-from flask_login import current_user  
+from flask_login import current_user
 from flask_login import login_required
 from datetime import datetime
 from urllib.parse import urlparse
 import os
 import uuid
 import pytz
-import filetype  # マジックナンバー検証用ライブラリ
+import filetype          # マジックナンバー検証用ライブラリ
 from werkzeug.utils import secure_filename  # ファイル名サニタイズ用
 from extensions import db
-from models import Post
+from models import Post, Hashtag
 import config
 
 admin_bp = Blueprint('admin', __name__)
 
-# views/blog.pyと同じDEFAULT_GENRESを参照
+# views/blog.py と同じ DEFAULT_GENRES を参照
 DEFAULT_GENRES = [
     '日常', '健康', '旅行', '趣味', 'イラスト', 'ニュース', '経済', '投資',
     'プログラミング学習', '開発記録', '資格勉強', '勉強', 'サッカー', '野球', '競馬',
@@ -3528,293 +4148,329 @@ DEFAULT_GENRES = [
     'バイト', '就活', '仕事'
 ]
 
-# ---  ファイル検証用のホワイトリスト設定 ---
+# --- ファイル検証用ホワイトリスト ---
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+ALLOWED_MIME_TYPES  = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+
 
 def allowed_file(filename):
     """拡張子がホワイトリストに含まれているかチェック"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# 新規投稿画面の表示設定
+# ===== ハッシュタグ用ヘルパー =====
+
+def parse_hashtag_input(raw: str) -> list[str]:
+    """
+    フォームから受け取った文字列をハッシュタグ名リストに変換する。
+    入力例: "#Flask #Python ブログ" → ['Flask', 'Python', 'ブログ']
+    - '#' はあっても無くても OK
+    - 空白・全角空白・カンマ・読点 で区切り
+    - 重複は除去、50文字以内のみ受け付ける
+    """
+    import re
+    raw = raw.strip()
+    if not raw:
+        return []
+    tokens = re.split(r'[\s\u3000,、]+', raw)
+    names = []
+    seen  = set()
+    for token in tokens:
+        name = token.lstrip('#').strip()
+        if name and name not in seen and len(name) <= 50:
+            names.append(name)
+            seen.add(name)
+    return names
+
+
+def sync_hashtags(post: Post, tag_names: list[str]):
+    """
+    post.hashtags を tag_names と同期する。
+    - 既存タグは使い回す（Hashtag テーブルに重複を作らない）
+    - 不要になったタグは post との紐付けを外す（Hashtag 行自体は残す）
+    """
+    new_tags = []
+    for name in tag_names:
+        tag = Hashtag.query.filter_by(name=name).first()
+        if not tag:
+            tag = Hashtag(name=name)
+            db.session.add(tag)
+        new_tags.append(tag)
+    post.hashtags = new_tags
+
+
+# ===== ジャンルリスト取得ヘルパー =====
+
+def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]:
+    existing = db.session.query(Post.genre).filter(
+        Post.user_id == user_id,
+        Post.genre   != '未分類',
+        Post.genre   != None,
+        Post.genre   != ''
+    ).distinct().all()
+    user_genres_list = [g[0] for g in existing]
+
+    all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
+    if current_genre:
+        all_genres_set.add(current_genre)
+    all_genres_set.discard('未分類')
+
+    return sorted(
+        list(all_genres_set),
+        key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
+    )
+
+
+# ===== 新規投稿 =====
+
 @admin_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
-    
+
     if request.method == 'POST':
-        title = request.form.get('title')
-        body = request.form.get('body')
+        title        = request.form.get('title')
+        body         = request.form.get('body')
         selected_genre = request.form.get('genre_select')
-        new_genre = request.form.get('genre_new')
-        
+        new_genre      = request.form.get('genre_new')
+        hashtag_input  = request.form.get('hashtag_input', '')
+
         final_genre = '未分類'
-        if new_genre and new_genre.strip() != '':
+        if new_genre and new_genre.strip():
             final_genre = new_genre.strip()
-        elif selected_genre and selected_genre != '':
+        elif selected_genre and selected_genre:
             final_genre = selected_genre
-        
-        # 選択されたデフォルトサムネイル画像名を取得
+
         selected_default_thumb = request.form.get('default_thumb_select')
-        if selected_default_thumb == 'none':  # 「選択なし」の場合はNone(Null)にする
+        if selected_default_thumb == 'none':
             selected_default_thumb = None
-        
+
         files = request.files.getlist('img[]')
-        
+
         filename_list = []
         for file in files:
             if file and file.filename != '':
-                #  拡張子ホワイトリスト検証
                 if not allowed_file(file.filename):
                     flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
                     return redirect('/create')
-                
-                #  サニタイズ (secure_filename)
+
                 safe_filename = secure_filename(file.filename)
                 ext = os.path.splitext(safe_filename)[1]
-                
-                #  マジックナンバー検証 (filetype)
-                header = file.stream.read(2048)  # 先頭2048バイトを読み込み
-                file.stream.seek(0)             # シーク位置を必ず先頭に戻す
-                
+
+                header = file.stream.read(2048)
+                file.stream.seek(0)
+
                 kind = filetype.guess(header)
                 if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
                     flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
                     return redirect('/create')
-                
-                # 検証を通過したらUUIDのファイル名を生成して保存
-                filename = f"{uuid.uuid4()}{ext}"
-                
-                # 💡【修正】保存先を 'img' から 'img/posts' に変更
+
+                filename  = f"{uuid.uuid4()}{ext}"
                 save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-                
                 file.save(save_path)
                 filename_list.append(filename)
-                
+
         img_name_str = ",".join(filename_list) if filename_list else None
-        
+
         if not title or not body or title.strip() == '' or body.strip() == '':
             flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect('/create')
-        
+
         is_published_form = request.form.get('is_published')
         is_published = (is_published_form == 'true') if is_published_form is not None else False
-            
+
         post = Post(
-            title=title, 
-            body=body, 
-            user_id=current_user.id, 
-            img_name=img_name_str, 
-            default_thumb=selected_default_thumb,
-            genre=final_genre,
-            is_published=is_published  
+            title        = title,
+            body         = body,
+            user_id      = current_user.id,
+            img_name     = img_name_str,
+            default_thumb = selected_default_thumb,
+            genre        = final_genre,
+            is_published = is_published,
         )
-        
         db.session.add(post)
+
+        # ハッシュタグの同期（flush で post.id を確定させてから）
+        db.session.flush()
+        tag_names = parse_hashtag_input(hashtag_input)
+        sync_hashtags(post, tag_names)
+
         db.session.commit()
         return redirect('/')
-        
+
     else:
-        existing_genres = db.session.query(Post.genre).filter(
-            Post.user_id == current_user.id,
-            Post.genre != '未分類', Post.genre != None, Post.genre != ''
-        ).distinct().all()
-        user_genres_list = [g[0] for g in existing_genres]
-
-        all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
-
-        existing_genres = sorted(
-            list(all_genres_set),
-            key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
-        )
-        return render_template('create.html', genres=existing_genres)
+        genres = _get_genre_list(current_user.id)
+        return render_template('create.html', genres=genres)
 
 
-# 編集画面の表示設定   
+# ===== 編集 =====
+
 @admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
 @login_required
 def update(id):
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
-    
+
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
         flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
-    
+
     if request.method == 'GET':
-        existing_genres = db.session.query(Post.genre).filter(
-            Post.user_id == current_user.id, 
-            Post.genre != '未分類', Post.genre != None, Post.genre != ''
-        ).distinct().all()
-        user_genres_list = [g[0] for g in existing_genres]
-        
-        all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
-        if post.genre:
-            all_genres_set.add(post.genre)
-        if '未分類' in all_genres_set:
-            all_genres_set.remove('未分類')
-            
-        genres_list = sorted(
-            list(all_genres_set),
-            key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
-        )
-        return render_template('update.html', post=post, genres=genres_list)
+        genres = _get_genre_list(current_user.id, post.genre)
+        # 編集画面用：既存ハッシュタグを「#name #name …」形式で渡す
+        existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
+        return render_template('update.html', post=post, genres=genres,
+                               existing_hashtag_str=existing_hashtag_str)
+
     else:
         post.title = request.form.get('title')
-        post.body = request.form.get('body')
-        
-        # 編集画面から送信されたデフォルトサムネイル画像名で更新
+        post.body  = request.form.get('body')
+
         selected_default_thumb = request.form.get('default_thumb_select')
         post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
-        
+
         is_published_form = request.form.get('is_published')
         if is_published_form is not None:
             post.is_published = (is_published_form == 'true')
-        
+
         selected_genre = request.form.get('genre_select')
-        new_genre = request.form.get('genre_new')
-        
-        if new_genre and new_genre.strip() != '':
+        new_genre      = request.form.get('genre_new')
+        if new_genre and new_genre.strip():
             post.genre = new_genre.strip()
-        elif selected_genre and selected_genre != '':
+        elif selected_genre and selected_genre:
             post.genre = selected_genre
         else:
             post.genre = '未分類'
-        
+
         if not post.title or not post.body or post.title.strip() == '' or post.body.strip() == '':
             flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect(f'/{id}/update')
 
+        # ハッシュタグ更新
+        hashtag_input = request.form.get('hashtag_input', '')
+        tag_names = parse_hashtag_input(hashtag_input)
+        sync_hashtags(post, tag_names)
+
+        # 画像更新
         files = request.files.getlist('img[]')
         if files and files[0].filename != '':
-            
-            # 先にファイル群のバリデーションをまとめて実施（途中でエラーになった場合に古い画像を消さないため）
             for file in files:
                 if file and file.filename != '':
                     if not allowed_file(file.filename):
                         flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
                         return redirect(f'/{id}/update')
-                    
-                    safe_filename = secure_filename(file.filename)
                     header = file.stream.read(2048)
                     file.stream.seek(0)
-                    
                     kind = filetype.guess(header)
                     if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
                         flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
                         return redirect(f'/{id}/update')
 
-            # バリデーション全通過後、古い画像を削除
             if post.img_name:
                 for old_img in post.img_name.split(','):
-                    # 💡【修正】削除対象のフォルダを 'img/posts' に変更
                     old_path = os.path.join(current_app.static_folder, 'img', 'posts', old_img)
                     if os.path.exists(old_path):
                         os.remove(old_path)
-            
-            # 新しい画像の保存処理
+
             filename_list = []
             for file in files:
                 if file and file.filename != '':
                     safe_filename = secure_filename(file.filename)
-                    ext = os.path.splitext(safe_filename)[1]
-                    filename = f"{uuid.uuid4()}{ext}"
-                    
-                    # 💡【修正】新しい保存先を 'img/posts' に変更
+                    ext  = os.path.splitext(safe_filename)[1]
+                    filename  = f"{uuid.uuid4()}{ext}"
                     save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-                    
                     file.save(save_path)
                     filename_list.append(filename)
             post.img_name = ",".join(filename_list)
-            
+
         post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
         db.session.commit()
-    return redirect(f'/{id}/detail')
+        return redirect(f'/{id}/detail')
 
 
-# 削除機能
+# ===== 削除 =====
+
 @admin_bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
-    
+
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
         flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
-    
+
     if post.img_name:
         for img_file in post.img_name.split(','):
-            # 💡【修正】削除対象のフォルダを 'img/posts' に変更
             img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file)
             if os.path.exists(img_path):
                 os.remove(img_path)
 
     db.session.delete(post)
     db.session.commit()
-    
+
     referrer = request.referrer
     if referrer:
         parsed_ref = urlparse(referrer)
         parsed_req = urlparse(request.url)
         if parsed_ref.netloc == parsed_req.netloc:
             return redirect(referrer)
-    
+
     return redirect('/')
 
 
-# マイページの表示設定
+# ===== マイページ =====
+
 @admin_bp.route('/mypage', methods=['GET', 'POST'])
-@login_required  
+@login_required
 def mypage():
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
-    
+
     if request.method == 'POST':
         new_nickname = request.form.get('nickname')
-        if new_nickname and new_nickname.strip() != '':
+        if new_nickname and new_nickname.strip():
             current_user.nickname = new_nickname.strip()
             flash('ニックネームを更新しました！', 'success')
         else:
             current_user.nickname = None
             flash('ニックネームを解除しました。', 'info')
-            
         db.session.commit()
         return redirect('/mypage')
-    
-    posts_query = Post.query.filter(Post.user_id == current_user.id)
-    search_word = request.args.get('search')
+
+    posts_query  = Post.query.filter(Post.user_id == current_user.id)
+    search_word  = request.args.get('search')
     selected_genre = request.args.get('genre')
-    
-    if search_word and search_word.strip() != '':
+
+    if search_word and search_word.strip():
         posts_query = posts_query.filter(Post.title.contains(search_word.strip()))
-        
     if selected_genre:
         posts_query = posts_query.filter(Post.genre == selected_genre)
-        
+
     user_posts = posts_query.order_by(Post.created_at.desc()).all()
-    
+
     existing_genres = db.session.query(Post.genre).filter(
         Post.user_id == current_user.id,
-        Post.genre != '未分類', Post.genre != None, Post.genre != ''
+        Post.genre   != '未分類',
+        Post.genre   != None,
+        Post.genre   != ''
     ).distinct().all()
-    
+
     user_genres = [g[0] for g in existing_genres]
     if '未分類' in user_genres:
         user_genres.remove('未分類')
-    user_genres = sorted(user_genres) 
+    user_genres = sorted(user_genres)
     user_genres.append('未分類')
-        
+
     return render_template(
-        'mypage.html', 
-        posts=user_posts, 
-        user_genres=user_genres, 
-        selected_genre=selected_genre,
-        search_word=search_word
+        'mypage.html',
+        posts        = user_posts,
+        user_genres  = user_genres,
+        selected_genre = selected_genre,
+        search_word  = search_word
     )
 </file>
 
@@ -3863,11 +4519,11 @@ def logout():
 <file path="views/blog.py">
 # views/blog.py
 from flask import Blueprint, render_template, request, redirect, flash
-from flask_login import current_user  
+from flask_login import current_user
 import markdown
 import re
 from extensions import db
-from models import Post
+from models import Post, Hashtag
 
 blog_bp = Blueprint('blog', __name__)
 
@@ -3877,16 +4533,21 @@ DEFAULT_GENRES = [
     'プログラミング学習', '開発記録', '資格勉強', '勉強', 'サッカー', '野球', '競馬',
     'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
     'バイト', '就活', '仕事'
-]  
+]
 
-# トップ画面の表示設定
+
+# ===== トップ画面 =====
+
 @blog_bp.route('/', methods=['GET', 'POST'])
 def index():
-    selected_genre = request.args.get('genre')
-    search_word = request.args.get('search')
-    
+    selected_genre   = request.args.get('genre')
+    search_word      = request.args.get('search')
+    selected_hashtag = request.args.get('hashtag')   # ← 追加
+
     if current_user.is_authenticated:
-        query = Post.query.filter((Post.is_published == True) | (Post.user_id == current_user.id))
+        query = Post.query.filter(
+            (Post.is_published == True) | (Post.user_id == current_user.id)
+        )
     else:
         query = Post.query.filter(Post.is_published == True)
 
@@ -3894,58 +4555,92 @@ def index():
         query = query.filter(Post.title.ilike(f'%{search_word}%'))
     if selected_genre:
         query = query.filter(Post.genre == selected_genre)
+    if selected_hashtag:
+        # ハッシュタグ名で JOIN して絞り込む
+        query = query.join(Post.hashtags).filter(Hashtag.name == selected_hashtag)
 
     posts = query.order_by(Post.created_at.desc()).all()
-            
-    return render_template('index.html', posts=posts, selected_genre=selected_genre, search_word=search_word)
 
-# 投稿詳細
+    # ===== ジャンル一覧ページ用：選択ジャンル配下のハッシュタグを取得 =====
+    hashtags_in_genre = []
+    if selected_genre:
+        # 選択ジャンルの公開記事に紐付くハッシュタグを重複なしで取得
+        if current_user.is_authenticated:
+            genre_posts = Post.query.filter(
+                Post.genre == selected_genre,
+            ).all()
+        else:
+            genre_posts = Post.query.filter(
+                Post.genre == selected_genre,
+                Post.is_published == True
+            ).all()
+
+        seen = set()
+        for p in genre_posts:
+            for tag in p.hashtags:
+                if tag.name not in seen:
+                    hashtags_in_genre.append(tag)
+                    seen.add(tag.name)
+        hashtags_in_genre.sort(key=lambda t: t.name)
+
+    return render_template(
+        'index.html',
+        posts            = posts,
+        selected_genre   = selected_genre,
+        search_word      = search_word,
+        selected_hashtag = selected_hashtag,
+        hashtags_in_genre = hashtags_in_genre,   # ← 追加
+    )
+
+
+# ===== 投稿詳細 =====
+
 @blog_bp.route('/<int:id>/detail', methods=['GET'])
 def detail(id):
     post = db.session.get(Post, id)
-    
+
     if not post:
         flash("指定された記事が見つかりません。")
         return redirect('/')
-    
+
     if not post.is_published:
         if not current_user.is_authenticated or post.user_id != current_user.id:
             flash("この記事は非公開に設定されているため閲覧できません。")
             return redirect('/')
-    
+
     body_content = post.body
-    # body_content = body_content.replace(' ', '&emsp;')
-    
+
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
         extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
     )
-    
+
     display_body = md.convert(body_content)
-    
+
     has_toc_marker = '[toc]' in body_content
     toc_html = md.toc if not has_toc_marker else None
 
     if post.img_name:
         images = post.img_name.split(',')
         for index, img_file in enumerate(images):
-            # 💡【修正】src の画像読み込みパスを '/static/img/' から '/static/img/posts/' に変更
             img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;"></span>'
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
-            
+
     display_body = re.sub(r'\[img\d+\]', '', display_body)
-            
+
     return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
 
-# ジャンル一覧画面の表示設定
+
+# ===== ジャンル一覧 =====
+
 @blog_bp.route('/genre', methods=['GET'])
 def genre_list():
     genres_list = sorted(DEFAULT_GENRES)
-    
+
     if '未分類' in genres_list:
         genres_list.remove('未分類')
         genres_list.append('未分類')
-    
+
     return render_template('genre.html', genres=genres_list)
 </file>
 

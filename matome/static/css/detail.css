@@ -1,4 +1,4 @@
-/* static/css/detail.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/detail.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    ページレイアウト
@@ -16,16 +16,17 @@
 article {
     background: #fff;
     padding: 48px 52px;
-    border: 1px solid #dedede;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     margin-bottom: 32px;
     box-sizing: border-box;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
 h1 {
     font-size: 25px;
     font-weight: 800;
-    color: #1a1a1a;
+    color: #0d3a52;
     margin: 0 0 20px;
     text-align: left;
     line-height: 1.4;
@@ -34,8 +35,8 @@ h1 {
 
 /* ジャンルバッジ */
 .genre-badge {
-    background-color: #f0f0f0;
-    color: #474747;
+    background-color: #dff0fb;
+    color: #1a7aad;
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 13px;
@@ -49,10 +50,10 @@ h1 {
     flex-direction: column;
     gap: 8px;
     font-size: 13px;
-    color: #aaa;
+    color: #7aaec8;
     margin-bottom: 36px;
     padding-bottom: 24px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
     width: 100%;
 }
 
@@ -60,7 +61,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #555;
+    color: #2a6f94;
     font-weight: 600;
     font-size: 13px;
 }
@@ -69,37 +70,36 @@ h1 {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #e9ecef;
-    border: 1px solid #e0e0e0;
+    background: #dff0fb;
+    border: 1px solid #c5dff0;
     margin: 0 !important;
 }
 
 .post-time {
-    color: #8d8d8d;
+    color: #7aaec8;
     font-size: 12px;
 }
 
 /* ===========================
-   目次（TOC）：上部固定・本文内埋め込み共通デザイン
+   目次（TOC）
    =========================== */
 .post-toc,
 .detail-article-body .toc {
-    background-color: #f6f6f6 !important;
-    border: 1px solid #dbdbdb !important;
+    background-color: #f0f8fd !important;
+    border: 1px solid #c5dff0 !important;
     border-radius: 8px;
     padding: 20px 24px;
     margin: 36px 0;
     box-sizing: border-box;
 }
 
-/* 埋め込み用「目次」タイトル設定 */
 .detail-article-body .toc::before {
     content: "目次" !important;
     display: block !important;
     font-weight: 700 !important;
     font-size: 15px !important;
     margin: 0 0 14px !important;
-    color: #3c3c3c !important;
+    color: #0d3a52 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -107,7 +107,6 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* 埋め込み目次の「目次」タイトルデザイン同期 */
 .post-toc .toc-title,
 .toc-fixed .toc-title,
 .toc-sticky .toc-title {
@@ -115,7 +114,7 @@ h1 {
     font-weight: 700 !important;
     font-size: 17px !important;
     margin: 0 0 14px !important;
-    color: #3c3c3c !important;
+    color: #0d3a52 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -123,7 +122,6 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* 大見出しリスト */
 .post-toc > ul,
 .post-toc .toc > ul,
 .detail-article-body .toc > ul {
@@ -134,7 +132,6 @@ h1 {
     display: block !important;
 }
 
-/* 各大見出し行 */
 .post-toc > ul > li,
 .post-toc .toc > ul > li,
 .detail-article-body .toc > ul > li {
@@ -146,10 +143,9 @@ h1 {
     display: block !important;
     background: none !important;
     border: none !important;
-    border-bottom: 1px solid #dbdbdb !important;
+    border-bottom: 1px solid #c5dff0 !important;
 }
 
-/* 中見出し（字下げ設定） */
 .post-toc ul ul,
 .post-toc .toc ul ul,
 .detail-article-body .toc ul ul {
@@ -174,7 +170,7 @@ h1 {
 .post-toc .toc ul ul li::before,
 .detail-article-body .toc ul ul li::before {
     content: "•" !important;
-    color: #8d8d8d !important;
+    color: #7aaec8 !important;
     margin-right: 6px !important;
     font-size: 13px !important;
 }
@@ -195,7 +191,7 @@ h1 {
 
 .post-toc a,
 .detail-article-body .toc a {
-    color: #515151 !important;
+    color: #2a6f94 !important;
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
@@ -203,7 +199,7 @@ h1 {
 
 .post-toc a:hover,
 .detail-article-body .toc a:hover {
-    color: #000 !important;
+    color: #1a7aad !important;
     text-decoration: none !important;
 }
 
@@ -213,15 +209,15 @@ h1 {
 .detail-article-body {
     font-size: 18px;
     line-height: 1.8;
-    word-break: break-word; /* はみ出し対策 */
+    word-break: break-word;
     text-align: left;
     white-space: normal;
-    color: #2a2a2a;
+    color: #2a4a5e;
 }
 
 .detail-article-body strong {
     font-weight: 700 !important;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 .detail-article-body p {
@@ -233,11 +229,11 @@ h1 {
 .detail-article-body h2 {
     font-size: 23px;
     font-weight: 700;
-    border-bottom: 2px solid #e8e8e8;
+    border-bottom: 2px solid #c5dff0;
     padding-bottom: 6px;
     margin: 40px 0 16px;
     text-align: left;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 .detail-article-body h3 {
@@ -245,7 +241,7 @@ h1 {
     font-weight: 700;
     margin: 28px 0 0;
     text-align: left;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 article img {
@@ -261,7 +257,7 @@ article img {
    =========================== */
 hr {
     border: 0;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #dff0fb;
     margin: 0 0 24px;
 }
 
@@ -283,19 +279,22 @@ hr {
 
 .detail-ul-li-a {
     font-size: 14px;
-    color: #4e4e4e;
+    color: #2a6f94;
     text-decoration: none;
     padding: 10px 22px;
-    border: 1.5px solid #c9c9c9;
+    border: 1.5px solid #8cc8e8;
     border-radius: 20px;
     display: inline-block;
     transition: all 0.18s;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .detail-ul-li-a:hover {
-    border-color: #999;
-    color: #1a1a1a;
-    background: #f8f8f8;
+    border-color: #1a7aad;
+    color: #1a7aad;
+    background: #dff0fb;
     text-decoration: none;
 }
 
@@ -306,11 +305,11 @@ hr {
     .detail-container {
         padding: 16px 0 48px !important;
         width: 100% !important;
-        overflow-x: hidden; /* Androidの横揺れを絶対に回避 */
+        overflow-x: hidden;
     }
 
     article {
-        padding: 28px 16px; /* 横余白を縮めて記事を広げ、読みやすく */
+        padding: 28px 16px;
         border-radius: 0;
         border-left: none;
         border-right: none;
@@ -334,11 +333,10 @@ hr {
         font-size: 13px;
     }
 
-    /* はみ出し徹底対策：Android用 */
     .detail-article-body {
         font-size: 16px !important;
         line-height: 1.75 !important;
-        word-break: break-all; /* URL長文のはみ出し切り裂き防止 */
+        word-break: break-all;
     }
 
     .detail-article-body p {
@@ -347,7 +345,6 @@ hr {
         font-size: 16px;
     }
 
-    /* マークダウンコードブロック/テーブル/数式のスマホスクロール保証 */
     .detail-article-body pre,
     .detail-article-body code,
     .detail-article-body table {
@@ -367,7 +364,6 @@ hr {
         margin: 24px 0 0;
     }
 
-    /* スマホ用の目次（上部・埋め込み共通） */
     .post-toc,
     .detail-article-body .toc {
         padding: 16px !important;
@@ -375,7 +371,6 @@ hr {
         margin: 24px 0 !important;
     }
 
-    /* 大見出しスマホ用目次 */
     .post-toc > ul > li,
     .post-toc .toc > ul > li,
     .detail-article-body .toc > ul > li {
@@ -383,7 +378,6 @@ hr {
         padding: 10px 0 !important;
     }
 
-    /* 中見出しスマホ内側リスト */
     .post-toc ul ul,
     .post-toc .toc ul ul,
     .detail-article-body .toc ul ul {
@@ -391,7 +385,6 @@ hr {
         margin: 4px 0 0 !important;
     }
 
-    /* 中見出しスマホ用目次 */
     .post-toc ul ul li,
     .post-toc .toc ul ul li,
     .detail-article-body .toc ul ul li {
@@ -424,7 +417,7 @@ hr {
 
     .detail-ul-li-a {
         font-size: 15px;
-        padding: 13px 24px; /* タップしやすく厚めに調整 */
+        padding: 13px 24px;
         display: block;
         text-align: center;
         width: 100%;

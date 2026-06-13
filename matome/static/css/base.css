@@ -1,4 +1,4 @@
-/* static/css/base.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/base.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    リセット & ベース
@@ -9,8 +9,8 @@
 
 body {
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #333;
-    background-color: #f5f5f5;
+    color: #2a4a5e;
+    background-color: #eef6fb;
     line-height: 1.7;
     margin: 0;
     padding: 0;
@@ -23,16 +23,16 @@ h2 {
     letter-spacing: 0.02em;
     margin: 24px 0;
     text-align: center;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 a {
-    color: #333;
+    color: #2a4a5e;
     text-decoration: none;
 }
 
 a:hover {
-    color: #000;
+    color: #1a7aad;
     text-decoration: underline;
 }
 
@@ -49,20 +49,20 @@ a:hover {
 
 .flash-messages li {
     font-size: 14px;
-    color: #d73a49;
-    background-color: #fff5f5;
-    border: 1px solid #fca5a5;
+    color: #155f8a;
+    background-color: #dff0fb;
+    border: 1px solid #9fd4ef;
     padding: 10px 16px;
     margin-bottom: 8px;
     border-radius: 6px;
 }
 
 /* ===========================
-   ヘッダー（noteスタイル）
+   ヘッダー
    =========================== */
 .main-header {
-    background-color: #fff;
-    border-bottom: 1px solid #e8e8e8;
+    background-color: #ffffff;
+    border-bottom: 1px solid #c5dff0;
     width: 100%;
     position: sticky;
     top: 0;
@@ -86,7 +86,7 @@ a:hover {
 }
 
 .header-logo a {
-    color: #1a1a1a !important;
+    color: #1a7aad !important;
     text-decoration: none !important;
     font-size: 28px;
     font-weight: 800;
@@ -96,7 +96,7 @@ a:hover {
 }
 
 .header-logo a:hover {
-    color: #555 !important;
+    color: #155f8a !important;
     text-decoration: none !important;
 }
 
@@ -123,36 +123,36 @@ a:hover {
 }
 
 .header-nav ul li a {
-    color: #555;
+    color: #2a6f94;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
     padding: 8px 16px;
     border-radius: 20px;
     background-color: transparent;
-    border: 1.5px solid #a7a7a7;
+    border: 1.5px solid #8cc8e8;
     transition: all 0.18s ease;
     display: inline-block;
     white-space: nowrap;
 }
 
 .header-nav ul li a:hover {
-    color: #1a1a1a;
-    border-color: #999;
-    background-color: #f8f8f8;
+    color: #0d3a52;
+    border-color: #5aaedc;
+    background-color: #dff0fb;
     text-decoration: none;
 }
 
 /* 「新規投稿」だけアクセントカラー */
 .header-nav ul li:first-child a {
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
-    border-color: #1a1a1a;
+    border-color: #1a7aad;
 }
 
 .header-nav ul li:first-child a:hover {
-    background-color: #333;
-    border-color: #333;
+    background-color: #155f8a;
+    border-color: #155f8a;
     color: #fff;
 }
 
@@ -162,9 +162,9 @@ a:hover {
 .hamburger-btn {
     display: none;
     background: none;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
-    padding: 10px 12px; 
+    padding: 10px 12px;
     cursor: pointer;
     flex-direction: column;
     gap: 5px;
@@ -175,7 +175,7 @@ a:hover {
     display: block;
     width: 20px;
     height: 2px;
-    background-color: #333;
+    background-color: #2a6f94;
     border-radius: 2px;
     transition: all 0.25s ease;
 }
@@ -187,7 +187,7 @@ a:hover {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45); /* コントラストを上げてタッチしやすく */
+    background: rgba(13, 58, 82, 0.45);
     z-index: 999;
 }
 
@@ -201,12 +201,12 @@ a:hover {
     right: -290px;
     width: 270px;
     height: 100dvh;
-    background: #fff;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+    background: #ffffff;
+    box-shadow: -4px 0 20px rgba(26, 122, 173, 0.15);
     z-index: 1000;
     transition: right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
-    overflow-y: auto; /* スクロール可能を保証 */
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -219,28 +219,28 @@ a:hover {
     align-items: center;
     justify-content: space-between;
     padding: 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
 }
 
 .mobile-nav-header-logo {
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: #1a1a1a;
+    color: #1a7aad;
 }
 
 .mobile-nav-close {
     background: none;
     border: none;
-    font-size: 24px; 
+    font-size: 24px;
     cursor: pointer;
-    color: #888;
+    color: #7aaec8;
     padding: 4px;
     line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px; 
+    width: 44px;
     height: 44px;
     border-radius: 50%;
     transition: background 0.15s;
@@ -248,7 +248,7 @@ a:hover {
 
 .mobile-nav-close:hover,
 .mobile-nav-close:active {
-    background: #f5f5f5;
+    background: #eef6fb;
 }
 
 .mobile-nav-drawer ul {
@@ -260,29 +260,29 @@ a:hover {
 .mobile-nav-drawer ul li {
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 6px; 
+    margin-bottom: 6px;
 }
 
 .mobile-nav-drawer ul li a {
     display: block;
-    padding: 14px 16px; 
-    color: #333;
+    padding: 14px 16px;
+    color: #2a4a5e;
     text-decoration: none;
-    font-size: 16px; 
+    font-size: 16px;
     font-weight: 500;
     transition: background 0.15s;
     border-radius: 8px;
-    min-height: 48px; 
+    min-height: 48px;
 }
 
 .mobile-nav-drawer ul li a:hover,
 .mobile-nav-drawer ul li a:active {
-    background: #f5f5f5;
+    background: #dff0fb;
 }
 
 /* 新規投稿ボタン（スマホドロワー内） */
 .mobile-nav-drawer ul li:first-child a {
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     margin-bottom: 12px;
     text-align: center;
@@ -290,13 +290,13 @@ a:hover {
 
 .mobile-nav-drawer ul li:first-child a:hover,
 .mobile-nav-drawer ul li:first-child a:active {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 .clear { clear: both; }
 
 /* ==========================================================================
-   ヘッダー三分割・中央検索バーのレイアウトスタイル
+   ヘッダー三分割・中央検索バー
    ========================================================================== */
 .header-container {
     display: flex;
@@ -308,12 +308,10 @@ a:hover {
     padding: 0 20px;
 }
 
-/* 1. ロゴエリア */
 .header-logo {
     flex: 0 0 auto;
 }
 
-/* 2. 検索バーエリア */
 .header-search-box {
     flex: 1;
     display: flex;
@@ -324,18 +322,18 @@ a:hover {
 .header-search-box form {
     display: flex;
     align-items: center;
-    background-color: #f7f7f7;
+    background-color: #eef6fb;
     border-radius: 20px;
     padding: 4px 14px;
-    border: 1px solid #a7a7a7;
+    border: 1px solid #8cc8e8;
     transition: all 0.3s ease;
     width: 100%;
     max-width: 350px;
 }
 
 .header-search-box form:focus-within {
-    background-color: #fff;
-    border-color: #888;
+    background-color: #ffffff;
+    border-color: #1a7aad;
 }
 
 .header-search-box input[type="text"] {
@@ -344,7 +342,7 @@ a:hover {
     outline: none;
     padding: 6px 4px;
     font-size: 14px;
-    color: #495057;
+    color: #2a4a5e;
     width: 100%;
 }
 
@@ -352,22 +350,22 @@ a:hover {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #868e96;
+    color: #7aaec8;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px; 
+    padding: 6px;
     border-radius: 50%;
     transition: color 0.2s, background-color 0.2s;
 }
 
 .search-submit-btn:hover {
-    color: #212529;
-    background-color: #e9ecef;
+    color: #1a7aad;
+    background-color: #dff0fb;
 }
 
 .search-clear-btn {
-    color: #ff5c5c;
+    color: #5aaedc;
     text-decoration: none;
     margin-left: 8px;
     font-size: 14px;
@@ -375,16 +373,15 @@ a:hover {
 }
 
 .search-clear-btn:hover {
-    color: #fd1d1d;
+    color: #1a7aad;
 }
 
-/* 3. ナビゲーションエリア */
 .header-nav {
     flex: 0 0 auto;
 }
 
 /* ==========================================================================
-   レスポンシブ対応（スマホ画面で検索バーをコンパクトに収める）
+   レスポンシブ（スマホ）
    ========================================================================== */
 @media (max-width: 767px) {
     .header-container {
@@ -424,25 +421,25 @@ a:hover {
         display: flex;
         justify-content: center;
     }
-    
+
     .header-search-box form {
         width: 100%;
         max-width: 160px;
         padding: 2px 8px;
         border-radius: 15px;
-        background-color: #f1f3f5;
+        background-color: #eef6fb;
     }
-    
+
     .header-search-box input[type="text"] {
         font-size: 12px;
         padding: 3px 2px;
     }
-    
+
     .search-submit-btn svg {
         width: 14px;
         height: 14px;
     }
-    
+
     .search-clear-btn {
         margin-left: 4px;
         font-size: 11px;
@@ -451,9 +448,9 @@ a:hover {
 
 @media (max-width: 480px) {
     .header-search-box form {
-        max-width: 145px; 
+        max-width: 145px;
     }
-    
+
     .header-search-box input[type="text"]::placeholder {
         font-size: 12px;
     }

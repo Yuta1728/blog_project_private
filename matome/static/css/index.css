@@ -1,4 +1,4 @@
-/* static/css/index.css - 全域タップ完全対応版 */
+/* static/css/index.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    メインレイアウト
@@ -12,30 +12,30 @@
 /* 編集ボタンレイアウト */
 .btn-edit {
     display: inline-block;
-    padding: 2px 12px;       
+    padding: 2px 12px;
     font-size: 14px;
     font-weight: 500;
-    color: #545454;
-    border: 1.2px solid #858585;
+    color: #2a6f94;
+    border: 1.2px solid #8cc8e8;
     border-radius: 4px;
     margin-right: 7px;
 }
 
 a[role="button"]:hover {
-    color: #000000;
-    border-color: #070707;
-    background: #f4f4f4;
+    color: #1a7aad;
+    border-color: #5aaedc;
+    background: #dff0fb;
     text-decoration: none;
 }
 
 /* フィルター表示テキスト */
 .filter-label {
     font-size: 13px;
-    color: #777;
+    color: #2a6f94;
     font-weight: 500;
     margin-bottom: 20px;
     padding: 8px 14px;
-    background: #f0f0f0;
+    background: #dff0fb;
     border-radius: 6px;
     display: inline-block;
 }
@@ -45,23 +45,21 @@ a[role="button"]:hover {
    =========================== */
 .post-card {
     display: flex;
-    gap: 32px; 
+    gap: 32px;
     background: #ffffff;
-    border: 1px solid #cbcfd4;
-    border-radius: 10px; 
-    padding: 28px; 
-    margin-bottom: 20px; 
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.02);
+    border: 1px solid #c5dff0;
+    border-radius: 10px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 8px rgba(26, 122, 173, 0.06);
     transition: transform 0.2s, box-shadow 0.2s;
-    
-    /* ★ リンク領域(::after)をカード全体に広げるための絶対基準位置に設定 */
     position: relative;
     cursor: pointer;
 }
 
 .post-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 16px rgba(26, 122, 173, 0.12);
 }
 
 /* 左側: サムネイル */
@@ -70,7 +68,7 @@ a[role="button"]:hover {
     height: 170px;
     border-radius: 6px;
     overflow: hidden;
-    background-color: #f7fafc;
+    background-color: #dff0fb;
 }
 
 .thumb-img {
@@ -106,14 +104,12 @@ a[role="button"]:hover {
 }
 
 .post-title a {
-    color: #2d3748;
+    color: #0d3a52;
     text-decoration: none;
     display: inline-block;
 }
 
-/* ★ 魔法の全域タップ化（マクロリンク）
-   親の .post-card に対して上下左右いっぱい(inset: 0)に広げます。
-*/
+/* 全域タップ化 */
 .post-title a::after {
     content: "";
     position: absolute;
@@ -122,12 +118,10 @@ a[role="button"]:hover {
 }
 
 .post-card:hover .post-title a {
-    color: #005cfa;
+    color: #1a7aad;
 }
 
-/* ★ ボタンを全域リンクから保護する
-   z-index: 2 を指定し、透明なリンクカバー(z-index: 1)より前面に配置します。
-*/
+/* ボタンを全域リンクから保護 */
 .post-actions {
     position: relative;
     z-index: 2;
@@ -135,8 +129,8 @@ a[role="button"]:hover {
 
 .btn-delete {
     background: transparent;
-    border: 1.2px solid #e53e3e;
-    color: #e53e3e;
+    border: 1.2px solid #5aaedc;
+    color: #2a6f94;
     padding: 2px 12px;
     font-size: 14px;
     border-radius: 4px;
@@ -144,18 +138,20 @@ a[role="button"]:hover {
 }
 
 .btn-delete:hover {
-    background-color: #fff5f5;
+    background-color: #dff0fb;
+    border-color: #1a7aad;
+    color: #1a7aad;
 }
 
 /* 投稿日時 */
 .post-date {
     margin: 8px 0 0 0;
     font-size: 0.80rem;
-    color: #718096;
+    color: #7aaec8;
 }
 
 /* ===========================
-   📱 スマホ対応（レスポンシブ）
+   📱 スマホ対応
    =========================== */
 @media (max-width: 600px) {
     .page-wrapper {
@@ -168,10 +164,10 @@ a[role="button"]:hover {
         padding: 12px;
         margin-top: 5px;
     }
-    
+
     .post-thumbnail {
         flex: none;
-        width: 100%; 
+        width: 100%;
         height: 190px;
     }
 
@@ -212,7 +208,6 @@ a[role="button"]:hover {
         margin-top: 6px;
     }
 
-    /* スマホ時も全域リンクを維持 */
     .post-title a::after {
         inset: 0;
         z-index: 1;

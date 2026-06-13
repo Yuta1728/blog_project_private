@@ -1,4 +1,4 @@
-/* static/css/create_update.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/create_update.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    ページレイアウト
@@ -8,7 +8,7 @@ h1 {
     font-weight: 700;
     text-align: center;
     margin: 36px 0 24px;
-    color: #1a1a1a;
+    color: #0d3a52;
     letter-spacing: -0.01em;
 }
 
@@ -20,9 +20,10 @@ h1 {
     margin: 0 auto 60px;
     background: #fff;
     padding: 40px 44px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     box-sizing: border-box;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
 /* ===========================
@@ -33,7 +34,7 @@ h1 {
     font-weight: 700;
     font-size: 14px;
     margin-bottom: 8px;
-    color: #555;
+    color: #2a6f94;
     letter-spacing: 0.02em;
 }
 
@@ -45,20 +46,20 @@ h1 {
     width: 100% !important;
     padding: 10px 14px;
     font-size: 15px;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
     box-sizing: border-box;
     margin-bottom: 22px;
     outline: none;
-    background-color: #fafafa;
-    color: #1a1a1a;
+    background-color: #f5f9fd;
+    color: #0d3a52;
     transition: border-color 0.18s, background 0.18s;
     font-family: inherit;
 }
 
 .post-form input[type="text"]:focus,
 .post-form select:focus {
-    border-color: #888;
+    border-color: #1a7aad;
     background-color: #fff;
 }
 
@@ -72,20 +73,20 @@ h1 {
     line-height: 1.9 !important;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Noto Sans JP", "MS Gothic", monospace !important;
     letter-spacing: normal !important;
-    border: 1.5px solid #e0e0e0 !important;
+    border: 1.5px solid #c5dff0 !important;
     border-radius: 8px !important;
     box-sizing: border-box !important;
     margin-bottom: 22px !important;
     outline: none !important;
-    background-color: #fafafa !important;
-    color: #1a1a1a !important;
+    background-color: #f5f9fd !important;
+    color: #0d3a52 !important;
     min-height: 520px !important;
     resize: vertical !important;
     transition: border-color 0.18s, background 0.18s !important;
 }
 
 .post-form textarea:focus {
-    border-color: #888 !important;
+    border-color: #1a7aad !important;
     background-color: #fff !important;
 }
 
@@ -94,7 +95,7 @@ h1 {
    =========================== */
 .post-form p {
     font-size: 15px;
-    color: #747474;
+    color: #7aaec8;
     margin: 0 0 8px;
     line-height: 1.5;
 }
@@ -106,7 +107,7 @@ h1 {
     display: block;
     margin-bottom: 24px;
     font-size: 13px;
-    color: #666;
+    color: #2a6f94;
     width: 100%;
 }
 
@@ -117,7 +118,7 @@ h1 {
     display: block;
     width: 100%;
     padding: 14px;
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -130,7 +131,7 @@ h1 {
 }
 
 .post-form input[type="submit"]:hover {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 /* ===========================
@@ -138,12 +139,12 @@ h1 {
    =========================== */
 .preview-item {
     position: relative;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 8px;
     overflow: hidden;
-    background: #fafafa;
+    background: #f5f9fd;
     width: 150px;
-    margin-bottom: 8px; /* Androidでの複数並び時の折り返し隙間を確保 */
+    margin-bottom: 8px;
 }
 
 .preview-item img {
@@ -157,17 +158,17 @@ h1 {
     text-align: center;
     font-size: 11px;
     font-weight: 700;
-    color: #777;
+    color: #2a6f94;
     padding: 5px 0 3px;
-    background: #f5f5f5;
-    border-top: 1px solid #eee;
+    background: #dff0fb;
+    border-top: 1px solid #c5dff0;
     letter-spacing: 0.03em;
 }
 
 .preview-filename {
     text-align: center;
     font-size: 10px;
-    color: #aaa;
+    color: #7aaec8;
     padding: 2px 6px 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -195,23 +196,23 @@ h1 {
 }
 
 .toggle-status-btn.private {
-    background-color: #f0f0f0;
-    color: #555;
-    border-color: #e0e0e0;
+    background-color: #eef6fb;
+    color: #2a6f94;
+    border-color: #c5dff0;
 }
 
 .toggle-status-btn.private:hover {
-    background-color: #e5e5e5;
+    background-color: #dff0fb;
 }
 
 .toggle-status-btn.published {
-    background-color: #e6f4ea;
-    color: #137333;
-    border-color: #ceead6;
+    background-color: #dff0fb;
+    color: #1a7aad;
+    border-color: #8cc8e8;
 }
 
 .toggle-status-btn.published:hover {
-    background-color: #d2e9d6;
+    background-color: #c5dff0;
 }
 
 /* ===========================
@@ -222,8 +223,8 @@ h1 {
     flex-wrap: wrap;
     gap: 6px;
     padding: 10px 12px;
-    background: #f5f5f5;
-    border: 1.5px solid #e0e0e0;
+    background: #eef6fb;
+    border: 1.5px solid #c5dff0;
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     margin-bottom: 0 !important;
@@ -233,9 +234,9 @@ h1 {
     padding: 7px 13px;
     font-size: 13px;
     font-weight: 600;
-    color: #444;
+    color: #2a6f94;
     background: #fff;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #c5dff0;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s;
@@ -248,9 +249,9 @@ h1 {
 
 .md-btn:hover,
 .md-btn:active {
-    background: #e8e8e8;
-    border-color: #aaa;
-    color: #111;
+    background: #dff0fb;
+    border-color: #5aaedc;
+    color: #0d3a52;
 }
 
 #bodyTextarea {
@@ -273,15 +274,15 @@ h1 {
         border-left: none;
         border-right: none;
         margin-bottom: 0;
-        width: 100% !important; /* 横ぶれを絶対防止 */
+        width: 100% !important;
         box-sizing: border-box;
     }
 
     .post-form p {
-    font-size: 13px;
-    color: #747474;
-    margin: 0 0 6px;
-    line-height: 1.5;
+        font-size: 13px;
+        color: #7aaec8;
+        margin: 0 0 6px;
+        line-height: 1.5;
     }
 
     .post-form label {
@@ -290,17 +291,17 @@ h1 {
 
     .post-form input[type="text"],
     .post-form select {
-        font-size: 16px !important; /* Android/iOSズーム回避ルール */
+        font-size: 16px !important;
         padding: 12px !important;
         border-radius: 6px;
         margin-bottom: 16px;
     }
 
     .post-form textarea {
-        font-size: 16px !important; /* Android/iOSズーム回避ルール */
+        font-size: 16px !important;
         line-height: 1.75 !important;
         padding: 14px !important;
-        min-height: 320px !important; /* モバイルに適したエディタ領域の確保 */
+        min-height: 320px !important;
         border-radius: 6px !important;
         margin-bottom: 16px !important;
     }
@@ -309,10 +310,9 @@ h1 {
         padding: 14px;
         font-size: 15px;
         border-radius: 8px;
-        min-height: 48px; 
+        min-height: 48px;
     }
 
-    /* アップロード画像プレビューのAndroid崩れ対応 */
     #preview-list,
     .post-form div[style*="display: flex"] {
         gap: 12px !important;
@@ -320,28 +320,28 @@ h1 {
     }
 
     .preview-item {
-        width: calc(50% - 6px); /* スマホ画面で綺麗に二列配置 */
+        width: calc(50% - 6px);
         box-sizing: border-box;
         margin-bottom: 12px;
     }
 
     .preview-item img {
         width: 100%;
-        height: 110px; /* アスペクト比を維持しつつ崩さない */
+        height: 110px;
     }
 
     .toggle-status-btn {
-        padding: 12px 20px; 
+        padding: 12px 20px;
         font-size: 14px;
         margin-bottom: 16px;
-        width: 100%; /* スマホ時は100%幅で誤タップ防止 */
+        width: 100%;
         box-sizing: border-box;
     }
 
     .md-btn {
         padding: 10px 12px;
         font-size: 14px;
-        min-width: 48px; 
+        min-width: 48px;
         min-height: 44px;
     }
 }
