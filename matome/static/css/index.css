@@ -47,11 +47,11 @@ a[role="button"]:hover {
     display: flex;
     gap: 32px; 
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbcfd4;
     border-radius: 10px; 
     padding: 28px; 
-    margin-bottom: 28px; 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    margin-bottom: 20px; 
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.02);
     transition: transform 0.2s, box-shadow 0.2s;
     
     /* ★ リンク領域(::after)をカード全体に広げるための絶対基準位置に設定 */
@@ -66,8 +66,8 @@ a[role="button"]:hover {
 
 /* 左側: サムネイル */
 .post-thumbnail {
-    flex: 0 0 270px;
-    height: 160px;
+    flex: 0 0 280px;
+    height: 170px;
     border-radius: 6px;
     overflow: hidden;
     background-color: #f7fafc;
@@ -159,20 +159,20 @@ a[role="button"]:hover {
    =========================== */
 @media (max-width: 600px) {
     .page-wrapper {
-        padding: 16px 12px 48px;
+        padding: 16px 14px 48px;
     }
 
     .post-card {
         flex-direction: column;
-        gap: 16px;
-        padding: 16px;
+        gap: 12px;
+        padding: 12px;
         margin-top: 5px;
     }
     
     .post-thumbnail {
         flex: none;
         width: 100%; 
-        height: 180px;
+        height: 190px;
     }
 
     .post-content {
@@ -181,14 +181,14 @@ a[role="button"]:hover {
 
     .post-header-meta {
         font-size: 0.85rem;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         flex-wrap: wrap;
     }
 
     .post-title {
         font-size: 1.15rem;
         line-height: 1.4;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .post-actions {
