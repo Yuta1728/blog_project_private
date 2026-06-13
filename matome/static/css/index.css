@@ -71,7 +71,6 @@ a[role="button"]:hover {
     border-radius: 6px;
     overflow: hidden;
     background-color: #f7fafc;
-    /* z-index や position: relative を持たせないことで、全域リンクの下に配置させます */
 }
 
 .thumb-img {
@@ -87,9 +86,6 @@ a[role="button"]:hover {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    
-    /* ⚠️ 重要：元のコードにあった position: relative; を削除しました。
-       これにより、タイトルの ::after が枠を突き抜けてカード全体に広がります。*/
 }
 
 /* メタ情報 */

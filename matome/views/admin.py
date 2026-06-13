@@ -1,4 +1,3 @@
-# views/admin.py
 from flask import Blueprint, render_template, request, redirect, flash, current_app
 from flask_login import current_user  
 from flask_login import login_required
@@ -7,6 +6,8 @@ from urllib.parse import urlparse
 import os
 import uuid
 import pytz
+import filetype  # マジックナンバー検証用ライブラリ
+from werkzeug.utils import secure_filename  # ファイル名サニタイズ用
 from extensions import db
 from models import Post
 import config
@@ -20,6 +21,15 @@ DEFAULT_GENRES = [
     'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
     'バイト', '就活', '仕事'
 ]
+
+# ---  ファイル検証用のホワイトリスト設定 ---
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+
+def allowed_file(filename):
+    """拡張子がホワイトリストに含まれているかチェック"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 # 新規投稿画面の表示設定
 @admin_bp.route('/create', methods=['GET', 'POST'])
@@ -40,7 +50,7 @@ def create():
         elif selected_genre and selected_genre != '':
             final_genre = selected_genre
         
-        # 👇【追加】選択されたデフォルトサムネイル画像名を取得
+        # 選択されたデフォルトサムネイル画像名を取得
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':  # 「選択なし」の場合はNone(Null)にする
             selected_default_thumb = None
@@ -50,9 +60,26 @@ def create():
         filename_list = []
         for file in files:
             if file and file.filename != '':
-                ext = os.path.splitext(file.filename)[1]
-                filename = f"{uuid.uuid4()}{ext}"
+                #  拡張子ホワイトリスト検証
+                if not allowed_file(file.filename):
+                    flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
+                    return redirect('/create')
                 
+                #  サニタイズ (secure_filename)
+                safe_filename = secure_filename(file.filename)
+                ext = os.path.splitext(safe_filename)[1]
+                
+                #  マジックナンバー検証 (filetype)
+                header = file.stream.read(2048)  # 先頭2048バイトを読み込み
+                file.stream.seek(0)             # シーク位置を必ず先頭に戻す
+                
+                kind = filetype.guess(header)
+                if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+                    flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
+                    return redirect('/create')
+                
+                # 検証を通過したらUUIDのファイル名を生成して保存
+                filename = f"{uuid.uuid4()}{ext}"
                 save_path = os.path.join(current_app.static_folder, 'img', filename)
                 file.save(save_path)
                 filename_list.append(filename)
@@ -60,7 +87,7 @@ def create():
         img_name_str = ",".join(filename_list) if filename_list else None
         
         if not title or not body or title.strip() == '' or body.strip() == '':
-            flash('タイトルと内容はどちらも入力必須です。')
+            flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect('/create')
         
         is_published_form = request.form.get('is_published')
@@ -95,6 +122,7 @@ def create():
         )
         return render_template('create.html', genres=existing_genres)
 
+
 # 編集画面の表示設定   
 @admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
 @login_required
@@ -104,7 +132,7 @@ def update(id):
     
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
-        flash("指定された記事が見つからないか、アクセス権限がありません。")
+        flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
     
     if request.method == 'GET':
@@ -129,7 +157,7 @@ def update(id):
         post.title = request.form.get('title')
         post.body = request.form.get('body')
         
-        # 👇【追加】編集画面から送信されたデフォルトサムネイル画像名で更新
+        # 編集画面から送信されたデフォルトサムネイル画像名で更新
         selected_default_thumb = request.form.get('default_thumb_select')
         post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
         
@@ -148,21 +176,41 @@ def update(id):
             post.genre = '未分類'
         
         if not post.title or not post.body or post.title.strip() == '' or post.body.strip() == '':
-            flash('タイトルと内容はどちらも入力必須です。')
+            flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect(f'/{id}/update')
 
         files = request.files.getlist('img[]')
         if files and files[0].filename != '':
+            
+            # 先にファイル群のバリデーションをまとめて実施（途中でエラーになった場合に古い画像を消さないため）
+            for file in files:
+                if file and file.filename != '':
+                    if not allowed_file(file.filename):
+                        flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
+                        return redirect(f'/{id}/update')
+                    
+                    safe_filename = secure_filename(file.filename)
+                    header = file.stream.read(2048)
+                    file.stream.seek(0)
+                    
+                    kind = filetype.guess(header)
+                    if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+                        flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
+                        return redirect(f'/{id}/update')
+
+            # バリデーション全通過後、古い画像を削除
             if post.img_name:
                 for old_img in post.img_name.split(','):
                     old_path = os.path.join(current_app.static_folder, 'img', old_img)
                     if os.path.exists(old_path):
                         os.remove(old_path)
             
+            # 新しい画像の保存処理
             filename_list = []
             for file in files:
                 if file and file.filename != '':
-                    ext = os.path.splitext(file.filename)[1]
+                    safe_filename = secure_filename(file.filename)
+                    ext = os.path.splitext(safe_filename)[1]
                     filename = f"{uuid.uuid4()}{ext}"
                     
                     save_path = os.path.join(current_app.static_folder, 'img', filename)
@@ -174,6 +222,7 @@ def update(id):
         db.session.commit()
     return redirect(f'/{id}/detail')
 
+
 # 削除機能
 @admin_bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
@@ -183,7 +232,7 @@ def delete(id):
     
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
-        flash("指定された記事が見つからないか、アクセス権限がありません。")
+        flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
     
     if post.img_name:
@@ -204,6 +253,7 @@ def delete(id):
     
     return redirect('/')
 
+
 # マイページの表示設定
 @admin_bp.route('/mypage', methods=['GET', 'POST'])
 @login_required  
@@ -215,10 +265,10 @@ def mypage():
         new_nickname = request.form.get('nickname')
         if new_nickname and new_nickname.strip() != '':
             current_user.nickname = new_nickname.strip()
-            flash('ニックネームを更新しました！')
+            flash('ニックネームを更新しました！', 'success')
         else:
             current_user.nickname = None
-            flash('ニックネームを解除しました。')
+            flash('ニックネームを解除しました。', 'info')
             
         db.session.commit()
         return redirect('/mypage')

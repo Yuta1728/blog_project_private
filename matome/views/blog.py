@@ -53,7 +53,6 @@ def detail(id):
     body_content = post.body
     # body_content = body_content.replace(' ', '&emsp;')
     
-    # 💡 marker の指定を小文字の '[toc]' に変更します
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
         extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
@@ -61,7 +60,6 @@ def detail(id):
     
     display_body = md.convert(body_content)
     
-    # 💡 判定に使用する文字列も小文字の '[toc]' に変更します
     has_toc_marker = '[toc]' in body_content
     toc_html = md.toc if not has_toc_marker else None
 

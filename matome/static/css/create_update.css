@@ -309,7 +309,7 @@ h1 {
         padding: 14px;
         font-size: 15px;
         border-radius: 8px;
-        min-height: 48px; /* タップ保証 */
+        min-height: 48px; 
     }
 
     /* アップロード画像プレビューのAndroid崩れ対応 */
@@ -331,7 +331,7 @@ h1 {
     }
 
     .toggle-status-btn {
-        padding: 12px 20px; /* タップしやすく */
+        padding: 12px 20px; 
         font-size: 14px;
         margin-bottom: 16px;
         width: 100%; /* スマホ時は100%幅で誤タップ防止 */
@@ -341,7 +341,7 @@ h1 {
     .md-btn {
         padding: 10px 12px;
         font-size: 14px;
-        min-width: 48px; /* Android指タッチ最小要件 */
+        min-width: 48px; 
         min-height: 44px;
     }
 }

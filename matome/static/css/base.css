@@ -164,7 +164,7 @@ a:hover {
     background: none;
     border: 1.5px solid #ddd;
     border-radius: 8px;
-    padding: 10px 12px; /* タッチしやすいサイズに */
+    padding: 10px 12px; 
     cursor: pointer;
     flex-direction: column;
     gap: 5px;
@@ -200,7 +200,6 @@ a:hover {
     top: 0;
     right: -290px;
     width: 270px;
-    /* height: 100% から 100dvh に修正してAndroidの仮想キーボードやアドレスバー伸縮時の破綻を防ぐ */
     height: 100dvh;
     background: #fff;
     box-shadow: -4px 0 20px rgba(0,0,0,0.12);
@@ -233,7 +232,7 @@ a:hover {
 .mobile-nav-close {
     background: none;
     border: none;
-    font-size: 24px; /* タップしやすくやや大きめに */
+    font-size: 24px; 
     cursor: pointer;
     color: #888;
     padding: 4px;
@@ -241,7 +240,7 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px; /* タップ領域 (44px以上) を確保 */
+    width: 44px; 
     height: 44px;
     border-radius: 50%;
     transition: background 0.15s;
@@ -261,19 +260,19 @@ a:hover {
 .mobile-nav-drawer ul li {
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 6px; /* リスト間の余裕を少し確保 */
+    margin-bottom: 6px; 
 }
 
 .mobile-nav-drawer ul li a {
     display: block;
-    padding: 14px 16px; /* Androidでの誤タップ防止のためタップターゲットを確保 */
+    padding: 14px 16px; 
     color: #333;
     text-decoration: none;
-    font-size: 16px; /* スマホで見やすい文字サイズに引き上げ */
+    font-size: 16px; 
     font-weight: 500;
     transition: background 0.15s;
     border-radius: 8px;
-    min-height: 48px; /* Android必須要件：タップターゲット高さを48px以上に保証 */
+    min-height: 48px; 
 }
 
 .mobile-nav-drawer ul li a:hover,
@@ -357,7 +356,7 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px; /* Androidでのタッチ領域調整 */
+    padding: 6px; 
     border-radius: 50%;
     transition: color 0.2s, background-color 0.2s;
 }
@@ -452,7 +451,7 @@ a:hover {
 
 @media (max-width: 480px) {
     .header-search-box form {
-        max-width: 145px; /* 極狭の画面でも崩さないための限界幅調整 */
+        max-width: 145px; 
     }
     
     .header-search-box input[type="text"]::placeholder {

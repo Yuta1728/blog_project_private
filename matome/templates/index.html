@@ -39,15 +39,15 @@
                 </div>
 
                 <h2 class="post-title">
-                    <!-- この <a> の疑似要素を親の .post-card 全体に広げることで、どこをタップしても詳細に遷移させます -->
                     <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
                 </h2>
 
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
-                    <!-- z-index: 2 を持たせて、全体リンクに邪魔されず個別にクリックできるように保護します -->
                     <div class="post-actions">
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
                         <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
                             <button type="submit" class="btn-delete">削除</button>
                         </form>
                     </div>

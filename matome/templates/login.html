@@ -7,6 +7,7 @@
     <h2>管理者画面</h2>
 
     <form action="{{ url_for('auth.secret_login') }}" method="post" class="login-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <div class="form-group">
             <label for="">ユーザー名</label>

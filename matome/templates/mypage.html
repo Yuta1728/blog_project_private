@@ -17,6 +17,8 @@
 
         <div class="nickname-form-wrapper">
             <form method="POST" action="{{ url_for('admin.mypage') }}" class="nickname-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
                 <label for="nickname">ニックネーム変更:</label>
                 <input type="text" name="nickname" id="nickname" 
                     class="nickname-input"
