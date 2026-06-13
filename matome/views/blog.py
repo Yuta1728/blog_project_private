@@ -66,7 +66,8 @@ def detail(id):
     if post.img_name:
         images = post.img_name.split(',')
         for index, img_file in enumerate(images):
-            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/{img_file}" style="max-width:100%; height:auto;"></span>'
+            # 💡【修正】src の画像読み込みパスを '/static/img/' から '/static/img/posts/' に変更
+            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;"></span>'
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
             
     display_body = re.sub(r'\[img\d+\]', '', display_body)

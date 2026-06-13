@@ -80,7 +80,10 @@ def create():
                 
                 # 検証を通過したらUUIDのファイル名を生成して保存
                 filename = f"{uuid.uuid4()}{ext}"
-                save_path = os.path.join(current_app.static_folder, 'img', filename)
+                
+                # 💡【修正】保存先を 'img' から 'img/posts' に変更
+                save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+                
                 file.save(save_path)
                 filename_list.append(filename)
                 
@@ -201,7 +204,8 @@ def update(id):
             # バリデーション全通過後、古い画像を削除
             if post.img_name:
                 for old_img in post.img_name.split(','):
-                    old_path = os.path.join(current_app.static_folder, 'img', old_img)
+                    # 💡【修正】削除対象のフォルダを 'img/posts' に変更
+                    old_path = os.path.join(current_app.static_folder, 'img', 'posts', old_img)
                     if os.path.exists(old_path):
                         os.remove(old_path)
             
@@ -213,7 +217,9 @@ def update(id):
                     ext = os.path.splitext(safe_filename)[1]
                     filename = f"{uuid.uuid4()}{ext}"
                     
-                    save_path = os.path.join(current_app.static_folder, 'img', filename)
+                    # 💡【修正】新しい保存先を 'img/posts' に変更
+                    save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+                    
                     file.save(save_path)
                     filename_list.append(filename)
             post.img_name = ",".join(filename_list)
@@ -237,7 +243,8 @@ def delete(id):
     
     if post.img_name:
         for img_file in post.img_name.split(','):
-            img_path = os.path.join(current_app.static_folder, 'img', img_file)
+            # 💡【修正】削除対象のフォルダを 'img/posts' に変更
+            img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file)
             if os.path.exists(img_path):
                 os.remove(img_path)
 

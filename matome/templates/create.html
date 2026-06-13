@@ -116,13 +116,13 @@
                 previewImg.src = '';
             } else {
                 previewArea.style.display = 'block';
-                previewImg.src = "/static/img/" + select.value;
+                // 💡【修正】読み込みパスを "/static/img/" から "/static/img/thbnails/" に変更
+                previewImg.src = "/static/img/thbnails/" + select.value;
             }
         }
         </script>
 
 
-        <!-- 画像プレビューエリア -->
         <div id="preview-area" style="display: none;">
             <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
                 📸 アップロード画像プレビュー

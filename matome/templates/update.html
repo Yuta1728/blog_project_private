@@ -79,7 +79,7 @@
             <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
                 {% for img in post.img_name.split(',') %}
                     <div class="preview-item">
-                        <img src="{{ url_for('static', filename='img/' + img) }}" alt="{{ img }}">
+                        <img src="{{ url_for('static', filename='img/posts/' + img) }}" alt="{{ img }}">
                         <div class="preview-label">[img{{ loop.index }}]（現在）</div>
                         <div class="preview-filename" title="{{ img }}">{{ img }}</div>
                     </div>
@@ -113,7 +113,7 @@
             {% if post.default_thumb %}
                 <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
                     <div class="preview-item" style="max-width: 200px;">
-                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
                         <div class="preview-label">選択中のサムネイル</div>
                     </div>
                 </div>
@@ -136,13 +136,13 @@
                     previewImg.src = '';
                 } else {
                     previewArea.style.display = 'block';
-                    previewImg.src = "/static/img/" + select.value;
+                    // 💡【修正3】JavaScriptで切り替えた際のプレビューパスを 'thbnails/' に変更
+                    previewImg.src = "/static/img/thbnails/" + select.value;
                 }
             }
             </script>
 
 
-            <!-- 新しい画像のプレビューエリア -->
             <div id="preview-area" style="display: none; margin-top: 14px;">
                 <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
                     📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）

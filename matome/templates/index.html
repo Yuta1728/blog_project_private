@@ -19,13 +19,13 @@
             <div class="post-thumbnail">
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
-                    <img src="{{ url_for('static', filename='img/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
                 
                 {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
                 
                 {% else %}
-                    <img src="{{ url_for('static', filename='img/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
                 {% endif %}
             </div>
 
