@@ -1,0 +1,245 @@
+/* static/css/hashtag.css
+   ハッシュタグ関連スタイル（全ページ共通）
+   base.css の後に読み込むこと
+   =========================================================== */
+
+
+/* ===========================================================
+   1. 投稿カード・詳細ページ共通：ハッシュタグバッジ
+   =========================================================== */
+.hashtag-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0969da;
+    background-color: #ddf4ff;
+    border: 1px solid #b6e3ff;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.hashtag-badge:hover {
+    background-color: #b6e3ff;
+    border-color: #79c0ff;
+    color: #0550ae;
+    text-decoration: none;
+}
+
+/* 投稿カード内バッジエリア */
+.post-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 10px;
+}
+
+/* 詳細ページ内バッジエリア */
+.detail-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+
+/* ===========================================================
+   2. トップページ：ジャンル選択時のハッシュタグ絞り込みバー
+   =========================================================== */
+.hashtag-filter-bar {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+}
+
+.hashtag-filter-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #57606a;
+    white-space: nowrap;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+
+.hashtag-filter-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+/* フィルターバー内バッジ */
+.hashtag-filter-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0969da;
+    background-color: #fff;
+    border: 1.5px solid #b6e3ff;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.hashtag-filter-badge:hover {
+    background-color: #ddf4ff;
+    border-color: #79c0ff;
+    text-decoration: none;
+}
+
+/* 選択中バッジ */
+.hashtag-filter-badge.active {
+    background-color: #0969da;
+    border-color: #0969da;
+    color: #fff;
+}
+
+.hashtag-filter-badge.active:hover {
+    background-color: #0550ae;
+    border-color: #0550ae;
+    color: #fff;
+}
+
+/* タグ解除ボタン */
+.hashtag-filter-clear {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #cf222e;
+    background-color: #fff;
+    border: 1.5px solid #ffcdd2;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.hashtag-filter-clear:hover {
+    background-color: #ffebee;
+    border-color: #ef9a9a;
+    text-decoration: none;
+}
+
+
+/* ===========================================================
+   3. 投稿フォーム：ハッシュタグ入力エリア
+   =========================================================== */
+.hashtag-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    background: #fafafa;
+    margin-bottom: 10px;
+    transition: border-color 0.18s, background 0.18s;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.hashtag-input-wrapper:focus-within {
+    border-color: #888;
+    background: #fff;
+}
+
+.hashtag-prefix {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0969da;
+    margin-right: 6px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.hashtag-text-input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    font-size: 15px;
+    color: #1a1a1a;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    min-width: 0;
+    font-family: inherit;
+}
+
+/* 入力中プレビューエリア */
+.hashtag-preview-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 28px;
+    margin-bottom: 22px;
+}
+
+/* プレビューバッジ（入力中リアルタイム） */
+.hashtag-badge-preview {
+    display: inline-block;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0969da;
+    background-color: #ddf4ff;
+    border: 1px solid #b6e3ff;
+    border-radius: 20px;
+    animation: badgePop 0.15s ease;
+}
+
+@keyframes badgePop {
+    from { transform: scale(0.85); opacity: 0.6; }
+    to   { transform: scale(1);    opacity: 1;   }
+}
+
+
+/* ===========================================================
+   4. レスポンシブ（〜767px）
+   =========================================================== */
+@media (max-width: 767px) {
+    .hashtag-filter-bar {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+
+    .hashtag-filter-list {
+        gap: 6px;
+    }
+
+    .hashtag-filter-badge,
+    .hashtag-filter-clear {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+
+    .post-hashtags,
+    .detail-hashtags {
+        gap: 5px;
+    }
+
+    .hashtag-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    .hashtag-input-wrapper {
+        padding: 10px 12px;
+    }
+
+    .hashtag-text-input {
+        font-size: 16px !important; /* Android ズーム防止 */
+    }
+}

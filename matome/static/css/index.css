@@ -91,7 +91,7 @@ a[role="button"]:hover {
 /* メタ情報 */
 .post-header-meta {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
     margin-bottom: 6px;
     font-size: 0.95rem;

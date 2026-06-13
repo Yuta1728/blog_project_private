@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>create1.blog.jp</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
 </head>
 <body>
 
@@ -114,7 +115,6 @@
         navCloseBtn.addEventListener('click', closeDrawer);
         navOverlay.addEventListener('click', closeDrawer);
 
-        // Escキーでも閉じる
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeDrawer();
         });

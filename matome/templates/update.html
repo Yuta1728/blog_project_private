@@ -16,7 +16,6 @@
             <label for="genre_select">ジャンル</label>
             <select name="genre_select" id="genre_select" onchange="toggleNewGenreInput()">
                 <option value="未分類" {% if post.genre == '未分類' or not post.genre %}selected{% endif %}>-- ジャンルを選択（選択なしは未分類） --</option>
-                
                 {% for genre in genres %}
                     <option value="{{ genre }}" {% if post.genre == genre %}selected{% endif %}>{{ genre }}</option>
                 {% endfor %}
@@ -32,9 +31,8 @@
         <p>
             <label>公開設定</label>
             <input type="hidden" name="is_published" id="is_published" value="{{ 'true' if post.is_published else 'false' }}">
-            
-            <button type="button" id="toggle_status_btn" 
-                    class="toggle-status-btn {{ 'published' if post.is_published else 'private' }}" 
+            <button type="button" id="toggle_status_btn"
+                    class="toggle-status-btn {{ 'published' if post.is_published else 'private' }}"
                     onclick="handleStatusToggle()">
                 <span class="status-icon">{{ '🔓' if post.is_published else '🔒' }}</span>
                 <span class="status-text">{{ '全体公開' if post.is_published else '非公開' }}</span>
@@ -44,10 +42,9 @@
         <script>
         function handleStatusToggle() {
             const hiddenInput = document.getElementById('is_published');
-            const btn = document.getElementById('toggle_status_btn');
+            const btn  = document.getElementById('toggle_status_btn');
             const icon = btn.querySelector('.status-icon');
             const text = btn.querySelector('.status-text');
-
             if (hiddenInput.value === 'false') {
                 hiddenInput.value = 'true';
                 btn.classList.remove('private');
@@ -73,7 +70,32 @@
         </p>
 
         <textarea name="body" rows="17">{{post.body}}</textarea>
-        
+
+        <!-- ===== ハッシュタグ入力 ===== -->
+        <p>
+            <label for="hashtag_input">ハッシュタグ</label>
+            ※スペース・カンマ区切りで複数入力できます。「#」は付けても省略しても OK<br>
+            　例：<code>#Flask Python ブログ開発</code>
+        </p>
+        <div class="hashtag-input-wrapper">
+            <span class="hashtag-prefix">#</span>
+            <input type="text"
+                   name="hashtag_input"
+                   id="hashtag_input"
+                   class="hashtag-text-input"
+                   value="{{ existing_hashtag_str }}"
+                   placeholder="Flask Python ブログ開発 …"
+                   autocomplete="off"
+                   oninput="renderHashtagPreview(this.value)">
+        </div>
+        <div id="hashtag-preview" class="hashtag-preview-area">
+            {# 既存タグを初期表示 #}
+            {% for tag in post.hashtags %}
+                <span class="hashtag-badge-preview">#{{ tag.name }}</span>
+            {% endfor %}
+        </div>
+        <!-- ========================== -->
+
         {% if post.img_name %}
             <label>現在の画像</label>
             <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
@@ -91,57 +113,50 @@
             <label>画像を変更する（複数選択可 / 順番に [img1], [img2] になります）</label>
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
 
-
             <p>
                 <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
                 <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                     <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
-                    <option value="thumb_option1.jpg" {% if post.default_thumb == 'thumb_option1.jpg' %}selected{% endif %}>選択肢1：趣味（thumb_option1.jpg）</option>
-                    <option value="thumb_option2.jpg" {% if post.default_thumb == 'thumb_option2.jpg' %}selected{% endif %}>選択肢2：旅行（thumb_option2.jpg）</option>
-                    <option value="thumb_option3.jpg" {% if post.default_thumb == 'thumb_option3.jpg' %}selected{% endif %}>選択肢3：スポーツ（thumb_option3.jpg）</option>
-                    <option value="thumb_option4.jpg" {% if post.default_thumb == 'thumb_option4.jpg' %}selected{% endif %}>選択肢4：アニメ（thumb_option4.jpg）</option>
-                    <option value="thumb_option5.jpg" {% if post.default_thumb == 'thumb_option5.jpg' %}selected{% endif %}>選択肢5：本（thumb_option5.jpg）</option>
-                    <option value="thumb_option6.jpg" {% if post.default_thumb == 'thumb_option6.jpg' %}selected{% endif %}>選択肢6：ゲーム（thumb_option6.jpg）</option>
-                    <option value="thumb_option7.jpg" {% if post.default_thumb == 'thumb_option7.jpg' %}selected{% endif %}>選択肢7：音楽（thumb_option7.jpg）</option>
-                    <option value="thumb_option8.jpg" {% if post.default_thumb == 'thumb_option8.jpg' %}selected{% endif %}>選択肢8：映画（thumb_option8.jpg）</option>
-                    <option value="thumb_option9.jpg" {% if post.default_thumb == 'thumb_option9.jpg' %}selected{% endif %}>選択肢9：ドラマ（thumb_option9.jpg）</option>
-                    <option value="thumb_option10.jpg" {% if post.default_thumb == 'thumb_option10.jpg' %}selected{% endif %}>選択肢10：開発（thumb_option10.jpg）</option>
-                    <option value="thumb_option11.jpg" {% if post.default_thumb == 'thumb_option11.jpg' %}selected{% endif %}>選択肢11：勉強（thumb_option11.jpg）</option>
+                    <option value="thumb_option1.jpg"  {% if post.default_thumb == 'thumb_option1.jpg'  %}selected{% endif %}>選択肢1：趣味</option>
+                    <option value="thumb_option2.jpg"  {% if post.default_thumb == 'thumb_option2.jpg'  %}selected{% endif %}>選択肢2：旅行</option>
+                    <option value="thumb_option3.jpg"  {% if post.default_thumb == 'thumb_option3.jpg'  %}selected{% endif %}>選択肢3：スポーツ</option>
+                    <option value="thumb_option4.jpg"  {% if post.default_thumb == 'thumb_option4.jpg'  %}selected{% endif %}>選択肢4：アニメ</option>
+                    <option value="thumb_option5.jpg"  {% if post.default_thumb == 'thumb_option5.jpg'  %}selected{% endif %}>選択肢5：本</option>
+                    <option value="thumb_option6.jpg"  {% if post.default_thumb == 'thumb_option6.jpg'  %}selected{% endif %}>選択肢6：ゲーム</option>
+                    <option value="thumb_option7.jpg"  {% if post.default_thumb == 'thumb_option7.jpg'  %}selected{% endif %}>選択肢7：音楽</option>
+                    <option value="thumb_option8.jpg"  {% if post.default_thumb == 'thumb_option8.jpg'  %}selected{% endif %}>選択肢8：映画</option>
+                    <option value="thumb_option9.jpg"  {% if post.default_thumb == 'thumb_option9.jpg'  %}selected{% endif %}>選択肢9：ドラマ</option>
+                    <option value="thumb_option10.jpg" {% if post.default_thumb == 'thumb_option10.jpg' %}selected{% endif %}>選択肢10：開発</option>
+                    <option value="thumb_option11.jpg" {% if post.default_thumb == 'thumb_option11.jpg' %}selected{% endif %}>選択肢11：勉強</option>
                 </select>
             </p>
 
             {% if post.default_thumb %}
                 <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
-                    <div class="preview-item" style="max-width: 200px;">
-                        <img id="default-thumb-preview-img" src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
-                        <div class="preview-label">選択中のサムネイル</div>
-                    </div>
-                </div>
             {% else %}
                 <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
-                    <div class="preview-item" style="max-width: 200px;">
-                        <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
-                        <div class="preview-label">選択中のサムネイル</div>
-                    </div>
-                </div>
             {% endif %}
+                <div class="preview-item" style="max-width: 200px;">
+                    <img id="default-thumb-preview-img"
+                         src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) if post.default_thumb else '' }}"
+                         alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                    <div class="preview-label">選択中のサムネイル</div>
+                </div>
+            </div>
 
             <script>
             function previewDefaultThumb(select) {
                 const previewArea = document.getElementById('default-thumb-preview-area');
-                const previewImg = document.getElementById('default-thumb-preview-img');
-                
+                const previewImg  = document.getElementById('default-thumb-preview-img');
                 if (select.value === 'none') {
                     previewArea.style.display = 'none';
                     previewImg.src = '';
                 } else {
                     previewArea.style.display = 'block';
-                    // 💡【修正3】JavaScriptで切り替えた際のプレビューパスを 'thbnails/' に変更
                     previewImg.src = "/static/img/thbnails/" + select.value;
                 }
             }
             </script>
-
 
             <div id="preview-area" style="display: none; margin-top: 14px;">
                 <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
@@ -157,13 +172,11 @@
 </div>
 
 
-
 <script>
 function toggleNewGenreInput() {
     const selectBox = document.getElementById('genre_select');
     const newGenreWrapper = document.getElementById('new_genre_wrapper');
-    const newGenreInput = document.getElementById('genre_new');
-
+    const newGenreInput   = document.getElementById('genre_new');
     if (selectBox.value === '__NEW__') {
         newGenreWrapper.style.display = 'block';
         newGenreInput.required = true;
@@ -177,46 +190,42 @@ function toggleNewGenreInput() {
 function previewImages(input) {
     const previewArea = document.getElementById('preview-area');
     const previewList = document.getElementById('preview-list');
-
     previewList.innerHTML = '';
-
     const files = Array.from(input.files);
-
-    if (files.length === 0) {
-        previewArea.style.display = 'none';
-        return;
-    }
-
+    if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
-
     files.forEach((file, index) => {
         const reader = new FileReader();
-
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
-
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
-
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
-
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
-
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
             previewList.appendChild(item);
         };
-
         reader.readAsDataURL(file);
     });
+}
+
+/* ハッシュタグ入力プレビュー */
+function renderHashtagPreview(value) {
+    const area   = document.getElementById('hashtag-preview');
+    const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+    area.innerHTML = tokens.map(t => {
+        const name = t.replace(/^#+/, '');
+        return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
+    }).join('');
 }
 </script>
 

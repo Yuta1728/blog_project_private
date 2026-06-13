@@ -5,14 +5,35 @@
 
 <div class="page-wrapper">
 
-    {% if selected_genre or search_word %}
+    {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
             🔍 
             {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
+            {% if selected_hashtag %}ハッシュタグ「#{{ selected_hashtag }}」{% endif %}
             {% if search_word %}キーワード「{{ search_word }}」{% endif %}
             を表示中
         </p>
     {% endif %}
+
+    {# ===== ハッシュタグ絞り込みバー（ジャンル選択中のみ表示） ===== #}
+    {% if selected_genre and hashtags_in_genre %}
+        <div class="hashtag-filter-bar">
+            <span class="hashtag-filter-label">🏷️ タグで絞り込む：</span>
+            <div class="hashtag-filter-list">
+                {% for tag in hashtags_in_genre %}
+                    <a href="{{ url_for('blog.index', genre=selected_genre, hashtag=tag.name) }}"
+                       class="hashtag-filter-badge {% if selected_hashtag == tag.name %}active{% endif %}">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+                {% if selected_hashtag %}
+                    <a href="{{ url_for('blog.index', genre=selected_genre) }}"
+                       class="hashtag-filter-clear">✕ タグ解除</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+    {# ========================================================= #}
 
     {% for post in posts %}
         <article class="post-card">
@@ -20,10 +41,8 @@
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
                     <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
-                
                 {% elif post.default_thumb %}
                     <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
-                
                 {% else %}
                     <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
                 {% endif %}
@@ -32,7 +51,18 @@
             <div class="post-content">
                 <div class="post-header-meta">
                     <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-                    
+                    {# ===== ハッシュタグバッジ ===== #}
+                    {% if post.hashtags %}
+                        <div class="post-hashtags">
+                            {% for tag in post.hashtags %}
+                                <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                                class="hashtag-badge">
+                                    #{{ tag.name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {# ============================= #}
                     {% if not post.is_published %}
                         <span class="badge-private">🔒 非公開</span>
                     {% endif %}
@@ -47,7 +77,6 @@
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
                         <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            
                             <button type="submit" class="btn-delete">削除</button>
                         </form>
                     </div>
@@ -61,6 +90,10 @@
                 </p>
             </div>
         </article>
+    {% else %}
+        <p style="text-align:center; color:#aaa; margin-top:60px;">
+            該当する記事が見つかりませんでした。
+        </p>
     {% endfor %}
 
 </div>

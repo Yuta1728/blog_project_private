@@ -45,14 +45,12 @@
             const text = btn.querySelector('.status-text');
 
             if (hiddenInput.value === 'false') {
-                // 全体公開に切り替え
                 hiddenInput.value = 'true';
                 btn.classList.remove('private');
                 btn.classList.add('published');
                 icon.textContent = '🔓';
                 text.textContent = '全体公開';
             } else {
-                // 非公開に切り替え
                 hiddenInput.value = 'false';
                 btn.classList.remove('published');
                 btn.classList.add('private');
@@ -73,12 +71,30 @@
         <p>
             <textarea name="body" rows="17" required placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
         </p>
-            
+
+        <!-- ===== ハッシュタグ入力 ===== -->
+        <p>
+            <label for="hashtag_input">ハッシュタグ</label>
+            ※スペース・カンマ区切りで複数入力できます。「#」は付けても省略しても OK<br>
+            　例：<code>#Flask Python ブログ開発</code>
+        </p>
+        <div class="hashtag-input-wrapper">
+            <span class="hashtag-prefix">#</span>
+            <input type="text"
+                   name="hashtag_input"
+                   id="hashtag_input"
+                   class="hashtag-text-input"
+                   placeholder="Flask Python ブログ開発 …"
+                   autocomplete="off"
+                   oninput="renderHashtagPreview(this.value)">
+        </div>
+        <div id="hashtag-preview" class="hashtag-preview-area"></div>
+        <!-- ========================== -->
+
         <p>
             <label for="fileUpload">画像（複数選択可 / 順番に [img1], [img2] になります）</label>
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
         </p>
-
 
         <p>
             <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
@@ -106,22 +122,18 @@
         </div>
 
         <script>
-        // 選んだデフォルト画像をその場でプレビューするJavaScript
         function previewDefaultThumb(select) {
             const previewArea = document.getElementById('default-thumb-preview-area');
-            const previewImg = document.getElementById('default-thumb-preview-img');
-            
+            const previewImg  = document.getElementById('default-thumb-preview-img');
             if (select.value === 'none') {
                 previewArea.style.display = 'none';
                 previewImg.src = '';
             } else {
                 previewArea.style.display = 'block';
-                // 💡【修正】読み込みパスを "/static/img/" から "/static/img/thbnails/" に変更
                 previewImg.src = "/static/img/thbnails/" + select.value;
             }
         }
         </script>
-
 
         <div id="preview-area" style="display: none;">
             <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
@@ -139,7 +151,7 @@
 function toggleNewGenreInput() {
     const selectBox = document.getElementById('genre_select');
     const newGenreWrapper = document.getElementById('new_genre_wrapper');
-    const newGenreInput = document.getElementById('genre_new');
+    const newGenreInput   = document.getElementById('genre_new');
 
     if (selectBox.value === '__NEW__') {
         newGenreWrapper.style.display = 'block';
@@ -154,47 +166,42 @@ function toggleNewGenreInput() {
 function previewImages(input) {
     const previewArea = document.getElementById('preview-area');
     const previewList = document.getElementById('preview-list');
-
-    // 前回のプレビューをリセット
     previewList.innerHTML = '';
-
     const files = Array.from(input.files);
-
-    if (files.length === 0) {
-        previewArea.style.display = 'none';
-        return;
-    }
-
+    if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
-
     files.forEach((file, index) => {
         const reader = new FileReader();
-
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
-
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
-
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
-
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
-            filename.title = file.name; // ホバーでフルネーム表示
-
+            filename.title = file.name;
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
             previewList.appendChild(item);
         };
-
         reader.readAsDataURL(file);
     });
+}
+
+/* ハッシュタグ入力プレビュー */
+function renderHashtagPreview(value) {
+    const area = document.getElementById('hashtag-preview');
+    const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+    area.innerHTML = tokens.map(t => {
+        const name = t.replace(/^#+/, '');
+        return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
+    }).join('');
 }
 </script>
 
