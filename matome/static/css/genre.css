@@ -121,7 +121,7 @@ details[open] .group-title {
 
 .sub-genre-list li a:hover {
     background: #dff0fb;
-    color: #1a7aad;
+    color: #095984;
     text-decoration: none;
 }
 
@@ -143,7 +143,7 @@ details[open] .group-title {
 
 .genre-footer a:hover {
     border-color: #1a7aad;
-    color: #1a7aad;
+    color: #0c5b86;
     background: #dff0fb;
 }
 

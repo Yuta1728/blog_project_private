@@ -29,7 +29,7 @@ h1 {
 
 /* ジャンルバッジ */
 .genre-badge {
-    background-color: #d0eaf8;
+    background-color: #e7f7ff;
     color: #1a5f85;            /* 十分な濃さ */
     padding: 4px 10px;
     border-radius: 8px;
@@ -58,12 +58,12 @@ h1 {
     gap: 8px;
     color: #1a5f85;            /* 投稿者名は濃くして目立たせる */
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .post-user-info img {
-    width: 24px;
-    height: 24px;
+    width: 21px;
+    height: 21px;
     border-radius: 50%;
     background: #dff0fb;
     border: 1px solid #c5dff0;
@@ -73,7 +73,7 @@ h1 {
 /* 日付テキスト（視認性改善） */
 .post-time {
     color: #5a8ba8;            /* #7aaec8→#5a8ba8 で読みやすく */
-    font-size: 13px;
+    font-size: 12px;
 }
 
 /* ===========================

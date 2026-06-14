@@ -117,10 +117,10 @@ a:hover {
 .header-search-box form {
     display: flex;
     align-items: center;
-    background-color: #eef6fb;
+    background-color: #edf8ff;
     border-radius: 20px;
     padding: 4px 14px;
-    border: 1px solid #8cc8e8;
+    border: 1px solid #8ccff3;
     transition: all 0.3s ease;
     width: 100%;
     max-width: 350px;
@@ -142,14 +142,14 @@ a:hover {
 }
 
 .header-search-box input[type="text"]::placeholder {
-    color: #7aaec8;
+    color: #4a86a8;
 }
 
 .search-submit-btn {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #5a8ba8;            /* アイコンを少し濃く */
+    color: #1273b0;            /* アイコンを少し濃く */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -160,12 +160,12 @@ a:hover {
 
 .search-submit-btn:hover {
     color: #1a7aad;
-    background-color: #dff0fb;
+    background-color: #d0ecff;
 }
 
 /* 検索クリア（×）ボタン：視認性改善 */
 .search-clear-btn {
-    color: #c0392b;            /* 赤系で目立つ・×の意味と一致 */
+    color: #c12c1c;            /* 赤系で目立つ・×の意味と一致 */
     text-decoration: none;
     margin-left: 8px;
     font-size: 14px;
@@ -174,7 +174,7 @@ a:hover {
 }
 
 .search-clear-btn:hover {
-    color: #a93226;
+    color: #c63022;
     text-decoration: none;
 }
 

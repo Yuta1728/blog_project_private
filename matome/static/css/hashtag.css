@@ -6,10 +6,10 @@
 .hashtag-badge {
     display: inline-block;
     padding: 3px 10px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #0086cf;            /* 濃くして背景(#dff0fb)との差を確保 */
-    background-color: #efefef;
+    background-color: #eeeeee;
     border-radius: 7px;
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
@@ -220,7 +220,7 @@
     }
 
     .hashtag-badge {
-        font-size: 11px;
+        font-size: 12px;
         padding: 2px 8px;
     }
 
