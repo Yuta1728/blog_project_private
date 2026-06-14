@@ -1,20 +1,14 @@
-/* static/css/create_update.css - 水色×白 爽やかテーマ版 */
+/* static/css/create_update.css - 水色×白 爽やかテーマ版（文字色修正済み） */
 
-/* ===========================
-   ページレイアウト
-   =========================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     margin: 36px 0 24px;
-    color: #0d3a52;
+    color: #1a1a1a;
     letter-spacing: -0.01em;
 }
 
-/* ===========================
-   フォームコンテナ
-   =========================== */
 .post-form {
     max-width: 720px;
     margin: 0 auto 60px;
@@ -26,21 +20,15 @@ h1 {
     box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
-/* ===========================
-   ラベル
-   =========================== */
 .post-form label {
     display: block;
     font-weight: 700;
     font-size: 14px;
     margin-bottom: 8px;
-    color: #2a6f94;
+    color: #333;
     letter-spacing: 0.02em;
 }
 
-/* ===========================
-   入力フィールド
-   =========================== */
 .post-form input[type="text"],
 .post-form select {
     width: 100% !important;
@@ -52,7 +40,7 @@ h1 {
     margin-bottom: 22px;
     outline: none;
     background-color: #f5f9fd;
-    color: #0d3a52;
+    color: #1a1a1a;
     transition: border-color 0.18s, background 0.18s;
     font-family: inherit;
 }
@@ -63,9 +51,6 @@ h1 {
     background-color: #fff;
 }
 
-/* ===========================
-   テキストエリア（本文）
-   =========================== */
 .post-form textarea {
     width: 100% !important;
     padding: 18px !important;
@@ -79,7 +64,7 @@ h1 {
     margin-bottom: 22px !important;
     outline: none !important;
     background-color: #f5f9fd !important;
-    color: #0d3a52 !important;
+    color: #1a1a1a !important;
     min-height: 520px !important;
     resize: vertical !important;
     transition: border-color 0.18s, background 0.18s !important;
@@ -90,30 +75,22 @@ h1 {
     background-color: #fff !important;
 }
 
-/* ===========================
-   説明テキスト
-   =========================== */
+/* 説明テキスト */
 .post-form p {
     font-size: 15px;
-    color: #7aaec8;
+    color: #555;
     margin: 0 0 8px;
     line-height: 1.5;
 }
 
-/* ===========================
-   ファイル入力
-   =========================== */
 .post-form input[type="file"] {
     display: block;
     margin-bottom: 24px;
     font-size: 13px;
-    color: #2a6f94;
+    color: #333;
     width: 100%;
 }
 
-/* ===========================
-   送信・更新ボタン
-   =========================== */
 .post-form input[type="submit"] {
     display: block;
     width: 100%;
@@ -158,7 +135,7 @@ h1 {
     text-align: center;
     font-size: 11px;
     font-weight: 700;
-    color: #2a6f94;
+    color: #333;
     padding: 5px 0 3px;
     background: #dff0fb;
     border-top: 1px solid #c5dff0;
@@ -168,7 +145,7 @@ h1 {
 .preview-filename {
     text-align: center;
     font-size: 10px;
-    color: #7aaec8;
+    color: #888;
     padding: 2px 6px 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -197,7 +174,7 @@ h1 {
 
 .toggle-status-btn.private {
     background-color: #eef6fb;
-    color: #2a6f94;
+    color: #333;
     border-color: #c5dff0;
 }
 
@@ -234,7 +211,7 @@ h1 {
     padding: 7px 13px;
     font-size: 13px;
     font-weight: 600;
-    color: #2a6f94;
+    color: #333;
     background: #fff;
     border: 1.5px solid #c5dff0;
     border-radius: 6px;
@@ -251,7 +228,7 @@ h1 {
 .md-btn:active {
     background: #dff0fb;
     border-color: #5aaedc;
-    color: #0d3a52;
+    color: #1a1a1a;
 }
 
 #bodyTextarea {
@@ -280,7 +257,6 @@ h1 {
 
     .post-form p {
         font-size: 13px;
-        color: #7aaec8;
         margin: 0 0 6px;
         line-height: 1.5;
     }

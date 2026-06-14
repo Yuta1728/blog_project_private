@@ -1,8 +1,5 @@
-/* static/css/detail.css - 水色×白 爽やかテーマ版 */
+/* static/css/detail.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
-/* ===========================
-   ページレイアウト
-   =========================== */
 .detail-container {
     max-width: 720px !important;
     margin: 0 auto;
@@ -10,9 +7,6 @@
     box-sizing: border-box;
 }
 
-/* ===========================
-   記事本体
-   =========================== */
 article {
     background: #fff;
     padding: 48px 52px;
@@ -35,13 +29,14 @@ h1 {
 
 /* ジャンルバッジ */
 .genre-badge {
-    background-color: #dff0fb;
-    color: #1a7aad;
+    background-color: #d0eaf8;
+    color: #1a5f85;            /* 十分な濃さ */
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 13px;
     margin-bottom: 8px;
-    font-weight: 500;
+    font-weight: 600;
+    border: 1px solid #9fd0ec;
 }
 
 /* メタ情報エリア */
@@ -50,7 +45,7 @@ h1 {
     flex-direction: column;
     gap: 8px;
     font-size: 13px;
-    color: #7aaec8;
+    color: #5a8ba8;            /* #7aaec8より濃く、読みやすく */
     margin-bottom: 36px;
     padding-bottom: 24px;
     border-bottom: 1px solid #dff0fb;
@@ -61,9 +56,9 @@ h1 {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #2a6f94;
+    color: #1a5f85;            /* 投稿者名は濃くして目立たせる */
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .post-user-info img {
@@ -75,18 +70,20 @@ h1 {
     margin: 0 !important;
 }
 
+/* 日付テキスト（視認性改善） */
 .post-time {
-    color: #7aaec8;
-    font-size: 12px;
+    color: #5a8ba8;            /* #7aaec8→#5a8ba8 で読みやすく */
+    font-size: 13px;
 }
 
 /* ===========================
-   目次（TOC）
+   目次（TOC）視覚的差別化
    =========================== */
 .post-toc,
 .detail-article-body .toc {
     background-color: #f0f8fd !important;
-    border: 1px solid #c5dff0 !important;
+    border: 1px solid #b0d5ec !important;  /* 少し濃いボーダーで存在感 */
+    border-left: 4px solid #1a7aad !important;  /* 左アクセントライン */
     border-radius: 8px;
     padding: 20px 24px;
     margin: 36px 0;
@@ -132,6 +129,7 @@ h1 {
     display: block !important;
 }
 
+/* 大見出しリスト：文字を濃くして読みやすく */
 .post-toc > ul > li,
 .post-toc .toc > ul > li,
 .detail-article-body .toc > ul > li {
@@ -144,6 +142,7 @@ h1 {
     background: none !important;
     border: none !important;
     border-bottom: 1px solid #c5dff0 !important;
+    color: #0d3a52 !important;
 }
 
 .post-toc ul ul,
@@ -155,6 +154,7 @@ h1 {
     display: block !important;
 }
 
+/* 中見出し：黒に近い色で本文との差別化 */
 .post-toc ul ul li,
 .post-toc .toc ul ul li,
 .detail-article-body .toc ul ul li {
@@ -164,13 +164,14 @@ h1 {
     border-bottom: none !important;
     position: relative !important;
     display: block !important;
+    color: #2a4a5e !important;  /* 読みやすい中間色 */
 }
 
 .post-toc ul ul li::before,
 .post-toc .toc ul ul li::before,
 .detail-article-body .toc ul ul li::before {
     content: "•" !important;
-    color: #7aaec8 !important;
+    color: #5a8ba8 !important;  /* 少し濃くして見えやすく */
     margin-right: 6px !important;
     font-size: 13px !important;
 }
@@ -189,9 +190,10 @@ h1 {
     padding-top: 4px !important;
 }
 
+/* 目次リンク */
 .post-toc a,
 .detail-article-body .toc a {
-    color: #2a6f94 !important;
+    color: #1a6a96 !important;  /* 明るすぎない青、リンクとして認識しやすい */
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
@@ -200,11 +202,11 @@ h1 {
 .post-toc a:hover,
 .detail-article-body .toc a:hover {
     color: #1a7aad !important;
-    text-decoration: none !important;
+    text-decoration: underline !important;
 }
 
 /* ===========================
-   本文
+   本文（読みやすさ優先）
    =========================== */
 .detail-article-body {
     font-size: 18px;
@@ -212,7 +214,7 @@ h1 {
     word-break: break-word;
     text-align: left;
     white-space: normal;
-    color: #2a4a5e;
+    color: #1e3a4f;            /* 本文は最も濃い色で読みやすく */
 }
 
 .detail-article-body strong {
@@ -229,7 +231,7 @@ h1 {
 .detail-article-body h2 {
     font-size: 23px;
     font-weight: 700;
-    border-bottom: 2px solid #c5dff0;
+    border-bottom: 2px solid #b0d5ec;
     padding-bottom: 6px;
     margin: 40px 0 16px;
     text-align: left;
@@ -242,6 +244,8 @@ h1 {
     margin: 28px 0 0;
     text-align: left;
     color: #0d3a52;
+    border-left: 3px solid #5aaedc;  /* H3に左ライン追加で差別化 */
+    padding-left: 10px;
 }
 
 article img {
@@ -279,7 +283,7 @@ hr {
 
 .detail-ul-li-a {
     font-size: 14px;
-    color: #2a6f94;
+    color: #1a5f85;
     text-decoration: none;
     padding: 10px 22px;
     border: 1.5px solid #8cc8e8;
@@ -362,6 +366,7 @@ hr {
     .detail-article-body h3 {
         font-size: 17px;
         margin: 24px 0 0;
+        padding-left: 8px;
     }
 
     .post-toc,

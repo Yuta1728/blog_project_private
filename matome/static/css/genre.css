@@ -1,14 +1,11 @@
-/* static/css/genre.css - 水色×白 爽やかテーマ版 */
+/* static/css/genre.css - 水色×白 爽やかテーマ版（文字色修正済み） */
 
-/* ===========================
-   ページレイアウト
-   =========================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     margin: 36px 0 20px;
-    color: #0d3a52;
+    color: #1a1a1a;
     letter-spacing: -0.01em;
 }
 
@@ -22,9 +19,6 @@ h1 {
     box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
-/* ===========================
-   リストリセット
-   =========================== */
 .genre-list, .sub-genre-list {
     list-style: none;
     padding: 0;
@@ -37,7 +31,7 @@ h1 {
     padding: 16px 24px;
     font-size: 15px !important;
     font-weight: 700;
-    color: #1a7aad;
+    color: #1a1a1a;
     text-decoration: none;
     border-bottom: 1px solid #dff0fb;
     transition: background 0.15s;
@@ -45,10 +39,10 @@ h1 {
 
 .genre-item-all a:hover {
     background: #f0f8fd;
+    color: #1a7aad;
     text-decoration: none;
 }
 
-/* 各グループ */
 .genre-group {
     border-bottom: 1px solid #dff0fb;
 }
@@ -57,7 +51,6 @@ h1 {
     border-bottom: none;
 }
 
-/* アコーディオンタイトル */
 .group-title {
     display: flex;
     justify-content: space-between;
@@ -65,7 +58,7 @@ h1 {
     padding: 15px 24px;
     font-size: 15px;
     font-weight: 600;
-    color: #2a4a5e;
+    color: #1a1a1a;
     cursor: pointer;
     user-select: none;
     outline: none;
@@ -83,7 +76,6 @@ h1 {
     display: none;
 }
 
-/* 矢印 */
 .group-title .arrow {
     font-size: 10px;
     color: #8cc8e8;
@@ -98,12 +90,11 @@ details[open] .group-title .arrow {
 }
 
 details[open] .group-title {
-    color: #0d3a52;
+    color: #1a1a1a;
     background: #f0f8fd;
     border-bottom: 1px solid #dff0fb;
 }
 
-/* 子ジャンルリスト */
 .sub-genre-list {
     background: #f8fbfe;
     padding: 4px 0;
@@ -114,7 +105,7 @@ details[open] .group-title {
     align-items: center;
     padding: 12px 24px 12px 36px;
     font-size: 14px !important;
-    color: #2a6f94;
+    color: #333;
     text-decoration: none;
     transition: background 0.15s, color 0.15s;
     min-height: 44px;
@@ -134,9 +125,6 @@ details[open] .group-title {
     text-decoration: none;
 }
 
-/* ===========================
-   フッター
-   =========================== */
 .genre-footer {
     text-align: center;
     margin: 20px 0 48px;
@@ -144,7 +132,7 @@ details[open] .group-title {
 
 .genre-footer a {
     font-size: 14px;
-    color: #2a6f94;
+    color: #333;
     text-decoration: none;
     padding: 10px 22px;
     border: 1.5px solid #8cc8e8;
@@ -159,11 +147,7 @@ details[open] .group-title {
     background: #dff0fb;
 }
 
-/* ===========================
-   スマホ（〜767px）
-   =========================== */
 @media (max-width: 767px) {
-
     h1 {
         font-size: 18px;
         margin: 24px 0 16px;

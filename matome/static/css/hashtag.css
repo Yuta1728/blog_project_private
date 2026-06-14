@@ -1,18 +1,16 @@
-/* static/css/hashtag.css - 水色×白 爽やかテーマ版 */
-
+/* static/css/hashtag.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
 /* ===========================================================
    1. 投稿カード・詳細ページ共通：ハッシュタグバッジ
    =========================================================== */
 .hashtag-badge {
     display: inline-block;
-    padding: 2px 10px;
-    font-size: 12px;
+    padding: 3px 10px;
+    font-size: 13px;
     font-weight: 600;
-    color: #1a7aad;
-    background-color: #dff0fb;
-    border: 1px solid #8cc8e8;
-    border-radius: 20px;
+    color: #0086cf;            /* 濃くして背景(#dff0fb)との差を確保 */
+    background-color: #efefef;
+    border-radius: 7px;
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
     white-space: nowrap;
@@ -21,11 +19,10 @@
 .hashtag-badge:hover {
     background-color: #c5dff0;
     border-color: #5aaedc;
-    color: #155f8a;
+    color: #0d3a52;
     text-decoration: none;
 }
 
-/* 投稿カード内バッジエリア */
 .post-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -33,7 +30,6 @@
     margin: 4px 0 10px;
 }
 
-/* 詳細ページ内バッジエリア */
 .detail-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -41,17 +37,16 @@
     margin-top: 4px;
 }
 
-
 /* ===========================================================
-   2. トップページ：ジャンル選択時のハッシュタグ絞り込みバー
+   2. ハッシュタグ絞り込みバー
    =========================================================== */
 .hashtag-filter-bar {
     display: flex;
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 10px;
-    background: #f0f8fd;
-    border: 1px solid #c5dff0;
+    background: #fcffff;
+    border: 1px solid #72c9ff;
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 24px;
@@ -60,7 +55,7 @@
 .hashtag-filter-label {
     font-size: 13px;
     font-weight: 700;
-    color: #2a6f94;
+    color: #1a5f85;            /* 濃くして読みやすく */
     white-space: nowrap;
     padding-top: 2px;
     flex-shrink: 0;
@@ -73,15 +68,14 @@
     align-items: center;
 }
 
-/* フィルターバー内バッジ */
 .hashtag-filter-badge {
     display: inline-block;
     padding: 4px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #1a7aad;
-    background-color: #fff;
-    border: 1.5px solid #8cc8e8;
+    color: #0e5e8a;
+    background-color: #f5ffff;
+    border: 1.5px solid #74cdfd;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -91,6 +85,7 @@
 .hashtag-filter-badge:hover {
     background-color: #dff0fb;
     border-color: #5aaedc;
+    color: #0d3a52;
     text-decoration: none;
 }
 
@@ -107,15 +102,15 @@
     color: #fff;
 }
 
-/* タグ解除ボタン */
+/* タグ解除（×）ボタン：赤系で削除の意味を明示 */
 .hashtag-filter-clear {
     display: inline-block;
     padding: 4px 12px;
     font-size: 12px;
-    font-weight: 600;
-    color: #2a6f94;
+    font-weight: 700;
+    color: #c0392b;            /* 警告赤 */
     background-color: #fff;
-    border: 1.5px solid #c5dff0;
+    border: 1.5px solid #f5b7b1;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -123,12 +118,11 @@
 }
 
 .hashtag-filter-clear:hover {
-    background-color: #dff0fb;
-    border-color: #5aaedc;
-    color: #1a7aad;
+    background-color: #fff0ee;
+    border-color: #e74c3c;
+    color: #a93226;
     text-decoration: none;
 }
-
 
 /* ===========================================================
    3. 投稿フォーム：ハッシュタグ入力エリア
@@ -174,7 +168,6 @@
     font-family: inherit;
 }
 
-/* 入力中プレビューエリア */
 .hashtag-preview-area {
     display: flex;
     flex-wrap: wrap;
@@ -183,13 +176,12 @@
     margin-bottom: 22px;
 }
 
-/* プレビューバッジ（入力中リアルタイム） */
 .hashtag-badge-preview {
     display: inline-block;
     padding: 3px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #1a7aad;
+    color: #1a5f85;
     background-color: #dff0fb;
     border: 1px solid #8cc8e8;
     border-radius: 20px;
@@ -200,7 +192,6 @@
     from { transform: scale(0.85); opacity: 0.6; }
     to   { transform: scale(1);    opacity: 1;   }
 }
-
 
 /* ===========================================================
    4. レスポンシブ（〜767px）
