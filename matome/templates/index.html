@@ -51,18 +51,7 @@
             <div class="post-content">
                 <div class="post-header-meta">
                     <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-                    {# ===== ハッシュタグバッジ ===== #}
-                    {% if post.hashtags %}
-                        <div class="post-hashtags">
-                            {% for tag in post.hashtags %}
-                                <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
-                                class="hashtag-badge">
-                                    #{{ tag.name }}
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    {# ============================= #}
+
                     {% if not post.is_published %}
                         <span class="badge-private">🔒 非公開</span>
                     {% endif %}
@@ -71,6 +60,18 @@
                 <h2 class="post-title">
                     <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
                 </h2>
+
+                {# ===== ハッシュタグバッジ ===== #}
+                {% if post.hashtags %}
+                    <div class="post-hashtags">
+                        {% for tag in post.hashtags %}
+                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
+                                #{{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {# ============================= #}
 
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
                     <div class="post-actions">

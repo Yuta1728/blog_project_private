@@ -127,7 +127,7 @@ a[role="button"]:hover {
 
 /* 記事タイトル */
 .post-title {
-    margin: 0 0 15px 0;
+    margin: 10px 0 10px 0;
     font-size: 1.30rem;
     line-height: 1.4;
     text-align: left !important;
