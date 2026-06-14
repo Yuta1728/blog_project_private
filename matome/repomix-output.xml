@@ -102,6 +102,39 @@ views/blog.py
 <files>
 This section contains the contents of the repository's files.
 
+<file path=".gitignore">
+# Python関連
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 仮想環境（venvを使用している場合）
+venv/
+.venv/
+env/
+
+# 環境変数・シークレット情報
+# config.pyでOS環境変数を読み込む運用が基本ですが、
+# もし .env ファイルを作成して管理している場合は必須です
+.env
+.env.*
+
+# データベース関連
+# SQLiteを使用している場合は、そのファイルを除外（PostgreSQLなら不要）
+*.db
+*.sqlite3
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+
+# アップロードされた画像（static/img/ 以下を丸ごと除外したい場合）
+# もし初期設定画像以外をgit管理したくない場合は以下を追加
+# static/img/uploads/
+</file>
 
 <file path="app.py">
 import os
@@ -231,7 +264,6 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 </file>
-
 
 <file path="migrations/alembic.ini">
 # A generic, single database configuration.
@@ -605,7 +637,6 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(60), nullable=True)
 </file>
 
-
 <file path="requirements.txt">
 alembic==1.16.5                                                                         
 blinker==1.9.0
@@ -638,9 +669,8 @@ WTForms==3.2.1
 zipp==3.23.1
 </file>
 
-
 <file path="static/css/auth.css">
-/* static/css/auth.css - note風レスポンシブ対応版 */
+/* static/css/auth.css - 水色×白 爽やかテーマ版 */
 
 /* ===========================
    ログインコンテナ
@@ -651,14 +681,14 @@ zipp==3.23.1
     padding: 40px 40px 36px;
     background-color: #fff;
     border-radius: 12px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     box-sizing: border-box;
     font-family: inherit;
 }
 
 h2 {
     text-align: center;
-    color: #1a1a1a;
+    color: #0d3a52;
     margin: 0 0 20px;
     font-size: 24px;
     font-weight: 800;
@@ -674,7 +704,7 @@ label {
     margin-bottom: 8px;
     font-weight: 700;
     font-size: 13px;
-    color: #777;
+    color: #7aaec8;
     letter-spacing: 0.03em;
 }
 
@@ -682,27 +712,27 @@ input[type="text"],
 input[type="password"] {
     width: 100%;
     padding: 12px 16px;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
     box-sizing: border-box;
     font-size: 16px;
     outline: none;
-    background: #fafafa;
-    color: #1a1a1a;
+    background: #f5f9fd;
+    color: #0d3a52;
     transition: border-color 0.18s, background 0.18s;
     font-family: inherit;
 }
 
 input[type="text"]:focus,
 input[type="password"]:focus {
-    border-color: #888;
+    border-color: #1a7aad;
     background: #fff;
 }
 
 .submit-btn {
     width: 100%;
     padding: 13px;
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -715,14 +745,14 @@ input[type="password"]:focus {
 }
 
 .submit-btn:hover {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 .footer-link {
     text-align: center;
     margin-top: 18px;
     font-size: 13px;
-    color: #aaa;
+    color: #7aaec8;
 }
 
 /* ===========================
@@ -753,19 +783,16 @@ input[type="password"]:focus {
 </file>
 
 <file path="static/css/base.css">
-/* static/css/base.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/base.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
-/* ===========================
-   リセット & ベース
-   =========================== */
 *, *::before, *::after {
     box-sizing: border-box;
 }
 
 body {
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #333;
-    background-color: #f5f5f5;
+    color: #2a4a5e;
+    background-color: #e1f4ff;
     line-height: 1.7;
     margin: 0;
     padding: 0;
@@ -778,16 +805,16 @@ h2 {
     letter-spacing: 0.02em;
     margin: 24px 0;
     text-align: center;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 a {
-    color: #333;
+    color: #2a4a5e;
     text-decoration: none;
 }
 
 a:hover {
-    color: #000;
+    color: #1a7aad;
     text-decoration: underline;
 }
 
@@ -802,22 +829,30 @@ a:hover {
     text-align: center;
 }
 
+/* success / info → 水色系 */
 .flash-messages li {
     font-size: 14px;
-    color: #d73a49;
-    background-color: #fff5f5;
-    border: 1px solid #fca5a5;
+    color: #05517a;            /* 十分な濃さで視認性確保 */
+    background-color: #edf8ff;
+    border: 1px solid #77c6ed;
     padding: 10px 16px;
     margin-bottom: 8px;
     border-radius: 6px;
 }
 
+/* danger カテゴリ（Flaskの flash(..., 'danger')）*/
+.flash-messages li.danger {
+    color: #922b21;
+    background-color: #fff0ee;
+    border: 1px solid #f5b7b1;
+}
+
 /* ===========================
-   ヘッダー（noteスタイル）
+   ヘッダー
    =========================== */
 .main-header {
-    background-color: #fff;
-    border-bottom: 1px solid #e8e8e8;
+    background-color: #ffffff;
+    border-bottom: 1px solid #c5dff0;
     width: 100%;
     position: sticky;
     top: 0;
@@ -825,23 +860,24 @@ a:hover {
 }
 
 .header-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
     height: 72px;
     gap: 24px;
 }
 
 /* ロゴ */
 .header-logo {
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
 
 .header-logo a {
-    color: #1a1a1a !important;
+    color: #0062b3 !important;
     text-decoration: none !important;
     font-size: 28px;
     font-weight: 800;
@@ -851,13 +887,85 @@ a:hover {
 }
 
 .header-logo a:hover {
-    color: #555 !important;
+    color: #0092e7 !important;
     text-decoration: none !important;
+}
+
+/* 検索バーエリア */
+.header-search-box {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.header-search-box form {
+    display: flex;
+    align-items: center;
+    background-color: #edf8ff;
+    border-radius: 20px;
+    padding: 4px 14px;
+    border: 1px solid #8ccff3;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 350px;
+}
+
+.header-search-box form:focus-within {
+    background-color: #ffffff;
+    border-color: #1a7aad;
+}
+
+.header-search-box input[type="text"] {
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 6px 4px;
+    font-size: 14px;
+    color: #0d3a52;            /* 濃くしてプレースホルダー等と差別化 */
+    width: 100%;
+}
+
+.header-search-box input[type="text"]::placeholder {
+    color: #4a86a8;
+}
+
+.search-submit-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #1273b0;            /* アイコンを少し濃く */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 50%;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.search-submit-btn:hover {
+    color: #1a7aad;
+    background-color: #d0ecff;
+}
+
+/* 検索クリア（×）ボタン：視認性改善 */
+.search-clear-btn {
+    color: #c12c1c;            /* 赤系で目立つ・×の意味と一致 */
+    text-decoration: none;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    transition: color 0.15s;
+}
+
+.search-clear-btn:hover {
+    color: #c63022;
+    text-decoration: none;
 }
 
 /* PCナビ */
 .header-nav {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -878,36 +986,36 @@ a:hover {
 }
 
 .header-nav ul li a {
-    color: #555;
+    color: #1a5f85;            /* 濃くして白背景上での視認性UP */
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
     padding: 8px 16px;
     border-radius: 20px;
     background-color: transparent;
-    border: 1.5px solid #a7a7a7;
+    border: 1.5px solid #8cc8e8;
     transition: all 0.18s ease;
     display: inline-block;
     white-space: nowrap;
 }
 
 .header-nav ul li a:hover {
-    color: #1a1a1a;
-    border-color: #999;
-    background-color: #f8f8f8;
+    color: #0d3a52;
+    border-color: #5aaedc;
+    background-color: #dff0fb;
     text-decoration: none;
 }
 
-/* 「新規投稿」だけアクセントカラー */
+/* 「新規投稿」アクセントカラー */
 .header-nav ul li:first-child a {
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
-    border-color: #1a1a1a;
+    border-color: #1a7aad;
 }
 
 .header-nav ul li:first-child a:hover {
-    background-color: #333;
-    border-color: #333;
+    background-color: #155f8a;
+    border-color: #155f8a;
     color: #fff;
 }
 
@@ -917,9 +1025,9 @@ a:hover {
 .hamburger-btn {
     display: none;
     background: none;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
-    padding: 10px 12px; 
+    padding: 10px 12px;
     cursor: pointer;
     flex-direction: column;
     gap: 5px;
@@ -930,7 +1038,7 @@ a:hover {
     display: block;
     width: 20px;
     height: 2px;
-    background-color: #333;
+    background-color: #1a6a96;
     border-radius: 2px;
     transition: all 0.25s ease;
 }
@@ -942,7 +1050,7 @@ a:hover {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45); /* コントラストを上げてタッチしやすく */
+    background: rgba(13, 58, 82, 0.45);
     z-index: 999;
 }
 
@@ -956,12 +1064,12 @@ a:hover {
     right: -290px;
     width: 270px;
     height: 100dvh;
-    background: #fff;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+    background: #ffffff;
+    box-shadow: -4px 0 20px rgba(26, 122, 173, 0.15);
     z-index: 1000;
     transition: right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
-    overflow-y: auto; /* スクロール可能を保証 */
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -974,28 +1082,28 @@ a:hover {
     align-items: center;
     justify-content: space-between;
     padding: 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
 }
 
 .mobile-nav-header-logo {
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: #1a1a1a;
+    color: #1a7aad;
 }
 
 .mobile-nav-close {
     background: none;
     border: none;
-    font-size: 24px; 
+    font-size: 24px;
     cursor: pointer;
-    color: #888;
+    color: #5a8ba8;
     padding: 4px;
     line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px; 
+    width: 44px;
     height: 44px;
     border-radius: 50%;
     transition: background 0.15s;
@@ -1003,7 +1111,7 @@ a:hover {
 
 .mobile-nav-close:hover,
 .mobile-nav-close:active {
-    background: #f5f5f5;
+    background: #eef6fb;
 }
 
 .mobile-nav-drawer ul {
@@ -1015,29 +1123,28 @@ a:hover {
 .mobile-nav-drawer ul li {
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 6px; 
+    margin-bottom: 6px;
 }
 
 .mobile-nav-drawer ul li a {
     display: block;
-    padding: 14px 16px; 
-    color: #333;
+    padding: 14px 16px;
+    color: #1a5f85;
     text-decoration: none;
-    font-size: 16px; 
+    font-size: 16px;
     font-weight: 500;
     transition: background 0.15s;
     border-radius: 8px;
-    min-height: 48px; 
+    min-height: 48px;
 }
 
 .mobile-nav-drawer ul li a:hover,
 .mobile-nav-drawer ul li a:active {
-    background: #f5f5f5;
+    background: #dff0fb;
 }
 
-/* 新規投稿ボタン（スマホドロワー内） */
 .mobile-nav-drawer ul li:first-child a {
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     margin-bottom: 12px;
     text-align: center;
@@ -1045,101 +1152,13 @@ a:hover {
 
 .mobile-nav-drawer ul li:first-child a:hover,
 .mobile-nav-drawer ul li:first-child a:active {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 .clear { clear: both; }
 
 /* ==========================================================================
-   ヘッダー三分割・中央検索バーのレイアウトスタイル
-   ========================================================================== */
-.header-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-/* 1. ロゴエリア */
-.header-logo {
-    flex: 0 0 auto;
-}
-
-/* 2. 検索バーエリア */
-.header-search-box {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    padding: 0 20px;
-}
-
-.header-search-box form {
-    display: flex;
-    align-items: center;
-    background-color: #f7f7f7;
-    border-radius: 20px;
-    padding: 4px 14px;
-    border: 1px solid #a7a7a7;
-    transition: all 0.3s ease;
-    width: 100%;
-    max-width: 350px;
-}
-
-.header-search-box form:focus-within {
-    background-color: #fff;
-    border-color: #888;
-}
-
-.header-search-box input[type="text"] {
-    border: none;
-    background: transparent;
-    outline: none;
-    padding: 6px 4px;
-    font-size: 14px;
-    color: #495057;
-    width: 100%;
-}
-
-.search-submit-btn {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: #868e96;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px; 
-    border-radius: 50%;
-    transition: color 0.2s, background-color 0.2s;
-}
-
-.search-submit-btn:hover {
-    color: #212529;
-    background-color: #e9ecef;
-}
-
-.search-clear-btn {
-    color: #ff5c5c;
-    text-decoration: none;
-    margin-left: 8px;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.search-clear-btn:hover {
-    color: #fd1d1d;
-}
-
-/* 3. ナビゲーションエリア */
-.header-nav {
-    flex: 0 0 auto;
-}
-
-/* ==========================================================================
-   レスポンシブ対応（スマホ画面で検索バーをコンパクトに収める）
+   レスポンシブ（スマホ）
    ========================================================================== */
 @media (max-width: 767px) {
     .header-container {
@@ -1179,25 +1198,25 @@ a:hover {
         display: flex;
         justify-content: center;
     }
-    
+
     .header-search-box form {
         width: 100%;
         max-width: 160px;
         padding: 2px 8px;
         border-radius: 15px;
-        background-color: #f1f3f5;
+        background-color: #eef6fb;
     }
-    
+
     .header-search-box input[type="text"] {
         font-size: 12px;
         padding: 3px 2px;
     }
-    
+
     .search-submit-btn svg {
         width: 14px;
         height: 14px;
     }
-    
+
     .search-clear-btn {
         margin-left: 4px;
         font-size: 11px;
@@ -1206,9 +1225,9 @@ a:hover {
 
 @media (max-width: 480px) {
     .header-search-box form {
-        max-width: 145px; 
+        max-width: 145px;
     }
-    
+
     .header-search-box input[type="text"]::placeholder {
         font-size: 12px;
     }
@@ -1216,11 +1235,8 @@ a:hover {
 </file>
 
 <file path="static/css/create_update.css">
-/* static/css/create_update.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/create_update.css - 水色×白 爽やかテーマ版（文字色修正済み） */
 
-/* ===========================
-   ページレイアウト
-   =========================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
@@ -1230,45 +1246,37 @@ h1 {
     letter-spacing: -0.01em;
 }
 
-/* ===========================
-   フォームコンテナ
-   =========================== */
 .post-form {
     max-width: 720px;
     margin: 0 auto 60px;
     background: #fff;
     padding: 40px 44px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     box-sizing: border-box;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
-/* ===========================
-   ラベル
-   =========================== */
 .post-form label {
     display: block;
     font-weight: 700;
     font-size: 14px;
     margin-bottom: 8px;
-    color: #555;
+    color: #333;
     letter-spacing: 0.02em;
 }
 
-/* ===========================
-   入力フィールド
-   =========================== */
 .post-form input[type="text"],
 .post-form select {
     width: 100% !important;
     padding: 10px 14px;
     font-size: 15px;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
     box-sizing: border-box;
     margin-bottom: 22px;
     outline: none;
-    background-color: #fafafa;
+    background-color: #f5f9fd;
     color: #1a1a1a;
     transition: border-color 0.18s, background 0.18s;
     font-family: inherit;
@@ -1276,13 +1284,10 @@ h1 {
 
 .post-form input[type="text"]:focus,
 .post-form select:focus {
-    border-color: #888;
+    border-color: #1a7aad;
     background-color: #fff;
 }
 
-/* ===========================
-   テキストエリア（本文）
-   =========================== */
 .post-form textarea {
     width: 100% !important;
     padding: 18px !important;
@@ -1290,12 +1295,12 @@ h1 {
     line-height: 1.9 !important;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Noto Sans JP", "MS Gothic", monospace !important;
     letter-spacing: normal !important;
-    border: 1.5px solid #e0e0e0 !important;
+    border: 1.5px solid #c5dff0 !important;
     border-radius: 8px !important;
     box-sizing: border-box !important;
     margin-bottom: 22px !important;
     outline: none !important;
-    background-color: #fafafa !important;
+    background-color: #f5f9fd !important;
     color: #1a1a1a !important;
     min-height: 520px !important;
     resize: vertical !important;
@@ -1303,39 +1308,31 @@ h1 {
 }
 
 .post-form textarea:focus {
-    border-color: #888 !important;
+    border-color: #1a7aad !important;
     background-color: #fff !important;
 }
 
-/* ===========================
-   説明テキスト
-   =========================== */
+/* 説明テキスト */
 .post-form p {
     font-size: 15px;
-    color: #747474;
+    color: #555;
     margin: 0 0 8px;
     line-height: 1.5;
 }
 
-/* ===========================
-   ファイル入力
-   =========================== */
 .post-form input[type="file"] {
     display: block;
     margin-bottom: 24px;
     font-size: 13px;
-    color: #666;
+    color: #333;
     width: 100%;
 }
 
-/* ===========================
-   送信・更新ボタン
-   =========================== */
 .post-form input[type="submit"] {
     display: block;
     width: 100%;
     padding: 14px;
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -1348,7 +1345,7 @@ h1 {
 }
 
 .post-form input[type="submit"]:hover {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 /* ===========================
@@ -1356,12 +1353,12 @@ h1 {
    =========================== */
 .preview-item {
     position: relative;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 8px;
     overflow: hidden;
-    background: #fafafa;
+    background: #f5f9fd;
     width: 150px;
-    margin-bottom: 8px; /* Androidでの複数並び時の折り返し隙間を確保 */
+    margin-bottom: 8px;
 }
 
 .preview-item img {
@@ -1375,17 +1372,17 @@ h1 {
     text-align: center;
     font-size: 11px;
     font-weight: 700;
-    color: #777;
+    color: #333;
     padding: 5px 0 3px;
-    background: #f5f5f5;
-    border-top: 1px solid #eee;
+    background: #dff0fb;
+    border-top: 1px solid #c5dff0;
     letter-spacing: 0.03em;
 }
 
 .preview-filename {
     text-align: center;
     font-size: 10px;
-    color: #aaa;
+    color: #888;
     padding: 2px 6px 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -1413,23 +1410,23 @@ h1 {
 }
 
 .toggle-status-btn.private {
-    background-color: #f0f0f0;
-    color: #555;
-    border-color: #e0e0e0;
+    background-color: #eef6fb;
+    color: #333;
+    border-color: #c5dff0;
 }
 
 .toggle-status-btn.private:hover {
-    background-color: #e5e5e5;
+    background-color: #dff0fb;
 }
 
 .toggle-status-btn.published {
-    background-color: #e6f4ea;
-    color: #137333;
-    border-color: #ceead6;
+    background-color: #dff0fb;
+    color: #1a7aad;
+    border-color: #8cc8e8;
 }
 
 .toggle-status-btn.published:hover {
-    background-color: #d2e9d6;
+    background-color: #c5dff0;
 }
 
 /* ===========================
@@ -1440,8 +1437,8 @@ h1 {
     flex-wrap: wrap;
     gap: 6px;
     padding: 10px 12px;
-    background: #f5f5f5;
-    border: 1.5px solid #e0e0e0;
+    background: #eef6fb;
+    border: 1.5px solid #c5dff0;
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     margin-bottom: 0 !important;
@@ -1451,9 +1448,9 @@ h1 {
     padding: 7px 13px;
     font-size: 13px;
     font-weight: 600;
-    color: #444;
+    color: #333;
     background: #fff;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #c5dff0;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s;
@@ -1466,9 +1463,9 @@ h1 {
 
 .md-btn:hover,
 .md-btn:active {
-    background: #e8e8e8;
-    border-color: #aaa;
-    color: #111;
+    background: #dff0fb;
+    border-color: #5aaedc;
+    color: #1a1a1a;
 }
 
 #bodyTextarea {
@@ -1491,15 +1488,14 @@ h1 {
         border-left: none;
         border-right: none;
         margin-bottom: 0;
-        width: 100% !important; /* 横ぶれを絶対防止 */
+        width: 100% !important;
         box-sizing: border-box;
     }
 
     .post-form p {
-    font-size: 13px;
-    color: #747474;
-    margin: 0 0 6px;
-    line-height: 1.5;
+        font-size: 13px;
+        margin: 0 0 6px;
+        line-height: 1.5;
     }
 
     .post-form label {
@@ -1508,17 +1504,17 @@ h1 {
 
     .post-form input[type="text"],
     .post-form select {
-        font-size: 16px !important; /* Android/iOSズーム回避ルール */
+        font-size: 16px !important;
         padding: 12px !important;
         border-radius: 6px;
         margin-bottom: 16px;
     }
 
     .post-form textarea {
-        font-size: 16px !important; /* Android/iOSズーム回避ルール */
+        font-size: 16px !important;
         line-height: 1.75 !important;
         padding: 14px !important;
-        min-height: 320px !important; /* モバイルに適したエディタ領域の確保 */
+        min-height: 320px !important;
         border-radius: 6px !important;
         margin-bottom: 16px !important;
     }
@@ -1527,10 +1523,9 @@ h1 {
         padding: 14px;
         font-size: 15px;
         border-radius: 8px;
-        min-height: 48px; 
+        min-height: 48px;
     }
 
-    /* アップロード画像プレビューのAndroid崩れ対応 */
     #preview-list,
     .post-form div[style*="display: flex"] {
         gap: 12px !important;
@@ -1538,39 +1533,36 @@ h1 {
     }
 
     .preview-item {
-        width: calc(50% - 6px); /* スマホ画面で綺麗に二列配置 */
+        width: calc(50% - 6px);
         box-sizing: border-box;
         margin-bottom: 12px;
     }
 
     .preview-item img {
         width: 100%;
-        height: 110px; /* アスペクト比を維持しつつ崩さない */
+        height: 110px;
     }
 
     .toggle-status-btn {
-        padding: 12px 20px; 
+        padding: 12px 20px;
         font-size: 14px;
         margin-bottom: 16px;
-        width: 100%; /* スマホ時は100%幅で誤タップ防止 */
+        width: 100%;
         box-sizing: border-box;
     }
 
     .md-btn {
         padding: 10px 12px;
         font-size: 14px;
-        min-width: 48px; 
+        min-width: 48px;
         min-height: 44px;
     }
 }
 </file>
 
 <file path="static/css/detail.css">
-/* static/css/detail.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/detail.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
-/* ===========================
-   ページレイアウト
-   =========================== */
 .detail-container {
     max-width: 720px !important;
     margin: 0 auto;
@@ -1578,22 +1570,20 @@ h1 {
     box-sizing: border-box;
 }
 
-/* ===========================
-   記事本体
-   =========================== */
 article {
     background: #fff;
     padding: 48px 52px;
-    border: 1px solid #dedede;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     margin-bottom: 32px;
     box-sizing: border-box;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
 h1 {
     font-size: 25px;
     font-weight: 800;
-    color: #1a1a1a;
+    color: #0d3a52;
     margin: 0 0 20px;
     text-align: left;
     line-height: 1.4;
@@ -1602,13 +1592,14 @@ h1 {
 
 /* ジャンルバッジ */
 .genre-badge {
-    background-color: #f0f0f0;
-    color: #474747;
+    background-color: #e7f7ff;
+    color: #1a5f85;            /* 十分な濃さ */
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 13px;
     margin-bottom: 8px;
-    font-weight: 500;
+    font-weight: 600;
+    border: 1px solid #9fd0ec;
 }
 
 /* メタ情報エリア */
@@ -1617,10 +1608,10 @@ h1 {
     flex-direction: column;
     gap: 8px;
     font-size: 13px;
-    color: #aaa;
+    color: #5a8ba8;            /* #7aaec8より濃く、読みやすく */
     margin-bottom: 36px;
     padding-bottom: 24px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
     width: 100%;
 }
 
@@ -1628,46 +1619,47 @@ h1 {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #555;
+    color: #1a5f85;            /* 投稿者名は濃くして目立たせる */
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .post-user-info img {
-    width: 24px;
-    height: 24px;
+    width: 21px;
+    height: 21px;
     border-radius: 50%;
-    background: #e9ecef;
-    border: 1px solid #e0e0e0;
+    background: #dff0fb;
+    border: 1px solid #c5dff0;
     margin: 0 !important;
 }
 
+/* 日付テキスト（視認性改善） */
 .post-time {
-    color: #8d8d8d;
+    color: #5a8ba8;            /* #7aaec8→#5a8ba8 で読みやすく */
     font-size: 12px;
 }
 
 /* ===========================
-   目次（TOC）：上部固定・本文内埋め込み共通デザイン
+   目次（TOC）視覚的差別化
    =========================== */
 .post-toc,
 .detail-article-body .toc {
-    background-color: #f6f6f6 !important;
-    border: 1px solid #dbdbdb !important;
+    background-color: #f0f8fd !important;
+    border: 1px solid #b0d5ec !important;  /* 少し濃いボーダーで存在感 */
+    border-left: 4px solid #1a7aad !important;  /* 左アクセントライン */
     border-radius: 8px;
     padding: 20px 24px;
     margin: 36px 0;
     box-sizing: border-box;
 }
 
-/* 埋め込み用「目次」タイトル設定 */
 .detail-article-body .toc::before {
     content: "目次" !important;
     display: block !important;
     font-weight: 700 !important;
     font-size: 15px !important;
     margin: 0 0 14px !important;
-    color: #3c3c3c !important;
+    color: #0d3a52 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -1675,7 +1667,6 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* 埋め込み目次の「目次」タイトルデザイン同期 */
 .post-toc .toc-title,
 .toc-fixed .toc-title,
 .toc-sticky .toc-title {
@@ -1683,7 +1674,7 @@ h1 {
     font-weight: 700 !important;
     font-size: 17px !important;
     margin: 0 0 14px !important;
-    color: #3c3c3c !important;
+    color: #0d3a52 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -1691,7 +1682,6 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* 大見出しリスト */
 .post-toc > ul,
 .post-toc .toc > ul,
 .detail-article-body .toc > ul {
@@ -1702,7 +1692,7 @@ h1 {
     display: block !important;
 }
 
-/* 各大見出し行 */
+/* 大見出しリスト：文字を濃くして読みやすく */
 .post-toc > ul > li,
 .post-toc .toc > ul > li,
 .detail-article-body .toc > ul > li {
@@ -1714,10 +1704,10 @@ h1 {
     display: block !important;
     background: none !important;
     border: none !important;
-    border-bottom: 1px solid #dbdbdb !important;
+    border-bottom: 1px solid #c5dff0 !important;
+    color: #0d3a52 !important;
 }
 
-/* 中見出し（字下げ設定） */
 .post-toc ul ul,
 .post-toc .toc ul ul,
 .detail-article-body .toc ul ul {
@@ -1727,6 +1717,7 @@ h1 {
     display: block !important;
 }
 
+/* 中見出し：黒に近い色で本文との差別化 */
 .post-toc ul ul li,
 .post-toc .toc ul ul li,
 .detail-article-body .toc ul ul li {
@@ -1736,13 +1727,14 @@ h1 {
     border-bottom: none !important;
     position: relative !important;
     display: block !important;
+    color: #2a4a5e !important;  /* 読みやすい中間色 */
 }
 
 .post-toc ul ul li::before,
 .post-toc .toc ul ul li::before,
 .detail-article-body .toc ul ul li::before {
     content: "•" !important;
-    color: #8d8d8d !important;
+    color: #5a8ba8 !important;  /* 少し濃くして見えやすく */
     margin-right: 6px !important;
     font-size: 13px !important;
 }
@@ -1761,9 +1753,10 @@ h1 {
     padding-top: 4px !important;
 }
 
+/* 目次リンク */
 .post-toc a,
 .detail-article-body .toc a {
-    color: #515151 !important;
+    color: #1a6a96 !important;  /* 明るすぎない青、リンクとして認識しやすい */
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
@@ -1771,25 +1764,25 @@ h1 {
 
 .post-toc a:hover,
 .detail-article-body .toc a:hover {
-    color: #000 !important;
-    text-decoration: none !important;
+    color: #1a7aad !important;
+    text-decoration: underline !important;
 }
 
 /* ===========================
-   本文
+   本文（読みやすさ優先）
    =========================== */
 .detail-article-body {
     font-size: 18px;
     line-height: 1.8;
-    word-break: break-word; /* はみ出し対策 */
+    word-break: break-word;
     text-align: left;
     white-space: normal;
-    color: #2a2a2a;
+    color: #1e3a4f;            /* 本文は最も濃い色で読みやすく */
 }
 
 .detail-article-body strong {
     font-weight: 700 !important;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 .detail-article-body p {
@@ -1801,11 +1794,11 @@ h1 {
 .detail-article-body h2 {
     font-size: 23px;
     font-weight: 700;
-    border-bottom: 2px solid #e8e8e8;
+    border-bottom: 2px solid #b0d5ec;
     padding-bottom: 6px;
     margin: 40px 0 16px;
     text-align: left;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 .detail-article-body h3 {
@@ -1813,7 +1806,9 @@ h1 {
     font-weight: 700;
     margin: 28px 0 0;
     text-align: left;
-    color: #1a1a1a;
+    color: #0d3a52;
+    border-left: 3px solid #5aaedc;  /* H3に左ライン追加で差別化 */
+    padding-left: 10px;
 }
 
 article img {
@@ -1829,7 +1824,7 @@ article img {
    =========================== */
 hr {
     border: 0;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #dff0fb;
     margin: 0 0 24px;
 }
 
@@ -1851,19 +1846,22 @@ hr {
 
 .detail-ul-li-a {
     font-size: 14px;
-    color: #4e4e4e;
+    color: #1a5f85;
     text-decoration: none;
     padding: 10px 22px;
-    border: 1.5px solid #c9c9c9;
+    border: 1.5px solid #8cc8e8;
     border-radius: 20px;
     display: inline-block;
     transition: all 0.18s;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .detail-ul-li-a:hover {
-    border-color: #999;
-    color: #1a1a1a;
-    background: #f8f8f8;
+    border-color: #1a7aad;
+    color: #1a7aad;
+    background: #dff0fb;
     text-decoration: none;
 }
 
@@ -1874,11 +1872,11 @@ hr {
     .detail-container {
         padding: 16px 0 48px !important;
         width: 100% !important;
-        overflow-x: hidden; /* Androidの横揺れを絶対に回避 */
+        overflow-x: hidden;
     }
 
     article {
-        padding: 28px 16px; /* 横余白を縮めて記事を広げ、読みやすく */
+        padding: 28px 16px;
         border-radius: 0;
         border-left: none;
         border-right: none;
@@ -1902,11 +1900,10 @@ hr {
         font-size: 13px;
     }
 
-    /* はみ出し徹底対策：Android用 */
     .detail-article-body {
         font-size: 16px !important;
         line-height: 1.75 !important;
-        word-break: break-all; /* URL長文のはみ出し切り裂き防止 */
+        word-break: break-all;
     }
 
     .detail-article-body p {
@@ -1915,7 +1912,6 @@ hr {
         font-size: 16px;
     }
 
-    /* マークダウンコードブロック/テーブル/数式のスマホスクロール保証 */
     .detail-article-body pre,
     .detail-article-body code,
     .detail-article-body table {
@@ -1933,9 +1929,9 @@ hr {
     .detail-article-body h3 {
         font-size: 17px;
         margin: 24px 0 0;
+        padding-left: 8px;
     }
 
-    /* スマホ用の目次（上部・埋め込み共通） */
     .post-toc,
     .detail-article-body .toc {
         padding: 16px !important;
@@ -1943,7 +1939,6 @@ hr {
         margin: 24px 0 !important;
     }
 
-    /* 大見出しスマホ用目次 */
     .post-toc > ul > li,
     .post-toc .toc > ul > li,
     .detail-article-body .toc > ul > li {
@@ -1951,7 +1946,6 @@ hr {
         padding: 10px 0 !important;
     }
 
-    /* 中見出しスマホ内側リスト */
     .post-toc ul ul,
     .post-toc .toc ul ul,
     .detail-article-body .toc ul ul {
@@ -1959,7 +1953,6 @@ hr {
         margin: 4px 0 0 !important;
     }
 
-    /* 中見出しスマホ用目次 */
     .post-toc ul ul li,
     .post-toc .toc ul ul li,
     .detail-article-body .toc ul ul li {
@@ -1992,7 +1985,7 @@ hr {
 
     .detail-ul-li-a {
         font-size: 15px;
-        padding: 13px 24px; /* タップしやすく厚めに調整 */
+        padding: 13px 24px;
         display: block;
         text-align: center;
         width: 100%;
@@ -2003,11 +1996,8 @@ hr {
 </file>
 
 <file path="static/css/genre.css">
-/* static/css/genre.css - note風レスポンシブ対応版 */
+/* static/css/genre.css - 水色×白 爽やかテーマ版（文字色修正済み） */
 
-/* ===========================
-   ページレイアウト
-   =========================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
@@ -2021,14 +2011,12 @@ h1 {
     max-width: 480px;
     margin: 0 auto 60px;
     background: #fff;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
-/* ===========================
-   リストリセット
-   =========================== */
 .genre-list, .sub-genre-list {
     list-style: none;
     padding: 0;
@@ -2043,25 +2031,24 @@ h1 {
     font-weight: 700;
     color: #1a1a1a;
     text-decoration: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
     transition: background 0.15s;
 }
 
 .genre-item-all a:hover {
-    background: #fafafa;
+    background: #f0f8fd;
+    color: #1a7aad;
     text-decoration: none;
 }
 
-/* 各グループ */
 .genre-group {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #dff0fb;
 }
 
 .genre-group:last-child {
     border-bottom: none;
 }
 
-/* アコーディオンタイトル */
 .group-title {
     display: flex;
     justify-content: space-between;
@@ -2069,7 +2056,7 @@ h1 {
     padding: 15px 24px;
     font-size: 15px;
     font-weight: 600;
-    color: #333;
+    color: #1a1a1a;
     cursor: pointer;
     user-select: none;
     outline: none;
@@ -2080,17 +2067,16 @@ h1 {
 }
 
 .group-title:hover {
-    background: #fafafa;
+    background: #f0f8fd;
 }
 
 .group-title::-webkit-details-marker {
     display: none;
 }
 
-/* 矢印 */
 .group-title .arrow {
     font-size: 10px;
-    color: #bbb;
+    color: #8cc8e8;
     display: inline-block;
     transition: transform 0.22s ease, color 0.22s;
     flex-shrink: 0;
@@ -2098,18 +2084,17 @@ h1 {
 
 details[open] .group-title .arrow {
     transform: rotate(90deg);
-    color: #777;
+    color: #1a7aad;
 }
 
 details[open] .group-title {
     color: #1a1a1a;
-    background: #fafafa;
-    border-bottom: 1px solid #f0f0f0;
+    background: #f0f8fd;
+    border-bottom: 1px solid #dff0fb;
 }
 
-/* 子ジャンルリスト */
 .sub-genre-list {
-    background: #fafafa;
+    background: #f8fbfe;
     padding: 4px 0;
 }
 
@@ -2118,7 +2103,7 @@ details[open] .group-title {
     align-items: center;
     padding: 12px 24px 12px 36px;
     font-size: 14px !important;
-    color: #555;
+    color: #333;
     text-decoration: none;
     transition: background 0.15s, color 0.15s;
     min-height: 44px;
@@ -2128,19 +2113,16 @@ details[open] .group-title {
 .sub-genre-list li a::before {
     content: "–";
     margin-right: 8px;
-    color: #ccc;
+    color: #8cc8e8;
     flex-shrink: 0;
 }
 
 .sub-genre-list li a:hover {
-    background: #efefef;
-    color: #1a1a1a;
+    background: #dff0fb;
+    color: #095984;
     text-decoration: none;
 }
 
-/* ===========================
-   フッター
-   =========================== */
 .genre-footer {
     text-align: center;
     margin: 20px 0 48px;
@@ -2148,26 +2130,22 @@ details[open] .group-title {
 
 .genre-footer a {
     font-size: 14px;
-    color: #666;
+    color: #333;
     text-decoration: none;
     padding: 10px 22px;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #8cc8e8;
     border-radius: 20px;
     display: inline-block;
     transition: all 0.18s;
 }
 
 .genre-footer a:hover {
-    border-color: #999;
-    color: #1a1a1a;
-    background: #f8f8f8;
+    border-color: #1a7aad;
+    color: #0c5b86;
+    background: #dff0fb;
 }
 
-/* ===========================
-   スマホ（〜767px）
-   =========================== */
 @media (max-width: 767px) {
-
     h1 {
         font-size: 18px;
         margin: 24px 0 16px;
@@ -2198,37 +2176,31 @@ details[open] .group-title {
 </file>
 
 <file path="static/css/hashtag.css">
-/* static/css/hashtag.css
-   ハッシュタグ関連スタイル（全ページ共通）
-   base.css の後に読み込むこと
-   =========================================================== */
-
+/* static/css/hashtag.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
 /* ===========================================================
    1. 投稿カード・詳細ページ共通：ハッシュタグバッジ
    =========================================================== */
 .hashtag-badge {
     display: inline-block;
-    padding: 2px 10px;
+    padding: 3px 10px;
     font-size: 12px;
     font-weight: 600;
-    color: #0969da;
-    background-color: #ddf4ff;
-    border: 1px solid #b6e3ff;
-    border-radius: 20px;
+    color: #0086cf;            /* 濃くして背景(#dff0fb)との差を確保 */
+    background-color: #eeeeee;
+    border-radius: 7px;
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
     white-space: nowrap;
 }
 
 .hashtag-badge:hover {
-    background-color: #b6e3ff;
-    border-color: #79c0ff;
-    color: #0550ae;
+    background-color: #c5dff0;
+    border-color: #5aaedc;
+    color: #0d3a52;
     text-decoration: none;
 }
 
-/* 投稿カード内バッジエリア */
 .post-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -2236,7 +2208,6 @@ details[open] .group-title {
     margin: 4px 0 10px;
 }
 
-/* 詳細ページ内バッジエリア */
 .detail-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -2244,17 +2215,16 @@ details[open] .group-title {
     margin-top: 4px;
 }
 
-
 /* ===========================================================
-   2. トップページ：ジャンル選択時のハッシュタグ絞り込みバー
+   2. ハッシュタグ絞り込みバー
    =========================================================== */
 .hashtag-filter-bar {
     display: flex;
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 10px;
-    background: #f6f8fa;
-    border: 1px solid #d0d7de;
+    background: #fcffff;
+    border: 1px solid #72c9ff;
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 24px;
@@ -2263,7 +2233,7 @@ details[open] .group-title {
 .hashtag-filter-label {
     font-size: 13px;
     font-weight: 700;
-    color: #57606a;
+    color: #1a5f85;            /* 濃くして読みやすく */
     white-space: nowrap;
     padding-top: 2px;
     flex-shrink: 0;
@@ -2276,15 +2246,14 @@ details[open] .group-title {
     align-items: center;
 }
 
-/* フィルターバー内バッジ */
 .hashtag-filter-badge {
     display: inline-block;
     padding: 4px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #0969da;
-    background-color: #fff;
-    border: 1.5px solid #b6e3ff;
+    color: #0e5e8a;
+    background-color: #f5ffff;
+    border: 1.5px solid #74cdfd;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -2292,33 +2261,34 @@ details[open] .group-title {
 }
 
 .hashtag-filter-badge:hover {
-    background-color: #ddf4ff;
-    border-color: #79c0ff;
+    background-color: #dff0fb;
+    border-color: #5aaedc;
+    color: #0d3a52;
     text-decoration: none;
 }
 
 /* 選択中バッジ */
 .hashtag-filter-badge.active {
-    background-color: #0969da;
-    border-color: #0969da;
+    background-color: #1a7aad;
+    border-color: #1a7aad;
     color: #fff;
 }
 
 .hashtag-filter-badge.active:hover {
-    background-color: #0550ae;
-    border-color: #0550ae;
+    background-color: #155f8a;
+    border-color: #155f8a;
     color: #fff;
 }
 
-/* タグ解除ボタン */
+/* タグ解除（×）ボタン：赤系で削除の意味を明示 */
 .hashtag-filter-clear {
     display: inline-block;
     padding: 4px 12px;
     font-size: 12px;
-    font-weight: 600;
-    color: #cf222e;
+    font-weight: 700;
+    color: #c0392b;            /* 警告赤 */
     background-color: #fff;
-    border: 1.5px solid #ffcdd2;
+    border: 1.5px solid #f5b7b1;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -2326,11 +2296,11 @@ details[open] .group-title {
 }
 
 .hashtag-filter-clear:hover {
-    background-color: #ffebee;
-    border-color: #ef9a9a;
+    background-color: #fff0ee;
+    border-color: #e74c3c;
+    color: #a93226;
     text-decoration: none;
 }
-
 
 /* ===========================================================
    3. 投稿フォーム：ハッシュタグ入力エリア
@@ -2338,10 +2308,10 @@ details[open] .group-title {
 .hashtag-input-wrapper {
     display: flex;
     align-items: center;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 8px;
     padding: 8px 14px;
-    background: #fafafa;
+    background: #f5f9fd;
     margin-bottom: 10px;
     transition: border-color 0.18s, background 0.18s;
     box-sizing: border-box;
@@ -2349,14 +2319,14 @@ details[open] .group-title {
 }
 
 .hashtag-input-wrapper:focus-within {
-    border-color: #888;
+    border-color: #1a7aad;
     background: #fff;
 }
 
 .hashtag-prefix {
     font-size: 16px;
     font-weight: 700;
-    color: #0969da;
+    color: #1a7aad;
     margin-right: 6px;
     user-select: none;
     flex-shrink: 0;
@@ -2368,7 +2338,7 @@ details[open] .group-title {
     outline: none !important;
     background: transparent !important;
     font-size: 15px;
-    color: #1a1a1a;
+    color: #0d3a52;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -2376,7 +2346,6 @@ details[open] .group-title {
     font-family: inherit;
 }
 
-/* 入力中プレビューエリア */
 .hashtag-preview-area {
     display: flex;
     flex-wrap: wrap;
@@ -2385,15 +2354,14 @@ details[open] .group-title {
     margin-bottom: 22px;
 }
 
-/* プレビューバッジ（入力中リアルタイム） */
 .hashtag-badge-preview {
     display: inline-block;
     padding: 3px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #0969da;
-    background-color: #ddf4ff;
-    border: 1px solid #b6e3ff;
+    color: #1a5f85;
+    background-color: #dff0fb;
+    border: 1px solid #8cc8e8;
     border-radius: 20px;
     animation: badgePop 0.15s ease;
 }
@@ -2402,7 +2370,6 @@ details[open] .group-title {
     from { transform: scale(0.85); opacity: 0.6; }
     to   { transform: scale(1);    opacity: 1;   }
 }
-
 
 /* ===========================================================
    4. レスポンシブ（〜767px）
@@ -2431,7 +2398,7 @@ details[open] .group-title {
     }
 
     .hashtag-badge {
-        font-size: 11px;
+        font-size: 12px;
         padding: 2px 8px;
     }
 
@@ -2440,13 +2407,13 @@ details[open] .group-title {
     }
 
     .hashtag-text-input {
-        font-size: 16px !important; /* Android ズーム防止 */
+        font-size: 16px !important;
     }
 }
 </file>
 
 <file path="static/css/index.css">
-/* static/css/index.css - 全域タップ完全対応版 */
+/* static/css/index.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
 /* ===========================
    メインレイアウト
@@ -2457,35 +2424,64 @@ details[open] .group-title {
     padding: 32px 24px 60px;
 }
 
-/* 編集ボタンレイアウト */
+/* 編集ボタン */
 .btn-edit {
     display: inline-block;
-    padding: 2px 12px;       
+    padding: 2px 12px;
     font-size: 14px;
     font-weight: 500;
-    color: #545454;
-    border: 1.2px solid #858585;
+    color: #1a6a96;          /* 濃くして視認性UP */
+    border: 1.2px solid #7ab8d8;
     border-radius: 4px;
     margin-right: 7px;
-}
-
-a[role="button"]:hover {
-    color: #000000;
-    border-color: #070707;
-    background: #f4f4f4;
+    background: transparent;
     text-decoration: none;
 }
 
-/* フィルター表示テキスト */
+a[role="button"]:hover {
+    color: #0d5580;
+    border-color: #5aaedc;
+    background: #dff0fb;
+    text-decoration: none;
+}
+
+/* ===========================
+   フィルター表示テキスト（視認性改善）
+   =========================== */
 .filter-label {
-    font-size: 13px;
-    color: #777;
-    font-weight: 500;
+    font-size: 15px;
+    color: #094260;          /* #2a6f94より濃く、背景(#dff0fb)との差を確保 */
+    font-weight: 600;
     margin-bottom: 20px;
-    padding: 8px 14px;
-    background: #f0f0f0;
-    border-radius: 6px;
     display: inline-block;
+}
+
+/* ===========================
+   ジャンルバッジ（視認性改善）
+   =========================== */
+.badge-genre {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a5f85;          /* 薄い水色背景の上でも読める濃さ */
+    background: #f0faff;
+    border: 1px solid #45a3d8;
+    border-radius: 12px;
+    padding: 2px 10px;
+    white-space: nowrap;
+}
+
+/* ===========================
+   非公開バッジ（差し色：暖色警告）
+   =========================== */
+.badge-private {
+    font-size: 12px;
+    font-weight: 700;
+    color: #c0392b;          /* 警告赤 */
+    background: #fff0ee;
+    border: 1.2px solid #f5b7b1;
+    border-radius: 12px;
+    padding: 2px 10px;
+    white-space: nowrap;
 }
 
 /* ===========================
@@ -2493,32 +2489,30 @@ a[role="button"]:hover {
    =========================== */
 .post-card {
     display: flex;
-    gap: 32px; 
+    gap: 32px;
     background: #ffffff;
-    border: 1px solid #cbcfd4;
-    border-radius: 10px; 
-    padding: 28px; 
-    margin-bottom: 20px; 
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.02);
+    border: 1px solid #c5dff0;
+    border-radius: 10px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 8px rgba(26, 122, 173, 0.06);
     transition: transform 0.2s, box-shadow 0.2s;
-    
-    /* ★ リンク領域(::after)をカード全体に広げるための絶対基準位置に設定 */
     position: relative;
     cursor: pointer;
 }
 
 .post-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 16px rgba(26, 122, 173, 0.12);
 }
 
-/* 左側: サムネイル */
+/* サムネイル */
 .post-thumbnail {
     flex: 0 0 280px;
     height: 170px;
     border-radius: 6px;
     overflow: hidden;
-    background-color: #f7fafc;
+    background-color: #dff0fb;
 }
 
 .thumb-img {
@@ -2528,7 +2522,7 @@ a[role="button"]:hover {
     object-position: center;
 }
 
-/* 右側: コンテンツエリア */
+/* コンテンツエリア */
 .post-content {
     flex: 1;
     display: flex;
@@ -2539,29 +2533,28 @@ a[role="button"]:hover {
 /* メタ情報 */
 .post-header-meta {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     margin-bottom: 6px;
     font-size: 0.95rem;
+    flex-wrap: wrap;
 }
 
 /* 記事タイトル */
 .post-title {
-    margin: 0 0 15px 0;
+    margin: 10px 0 10px 0;
     font-size: 1.30rem;
     line-height: 1.4;
     text-align: left !important;
 }
 
 .post-title a {
-    color: #2d3748;
+    color: #050505;
     text-decoration: none;
     display: inline-block;
 }
 
-/* ★ 魔法の全域タップ化（マクロリンク）
-   親の .post-card に対して上下左右いっぱい(inset: 0)に広げます。
-*/
+/* 全域タップ化 */
 .post-title a::after {
     content: "";
     position: absolute;
@@ -2570,40 +2563,47 @@ a[role="button"]:hover {
 }
 
 .post-card:hover .post-title a {
-    color: #005cfa;
+    color: #006cd0;
 }
 
-/* ★ ボタンを全域リンクから保護する
-   z-index: 2 を指定し、透明なリンクカバー(z-index: 1)より前面に配置します。
-*/
+/* ボタン保護 */
 .post-actions {
     position: relative;
     z-index: 2;
 }
 
+/* ===========================
+   削除ボタン（差し色：珊瑚系警告）
+   =========================== */
 .btn-delete {
     background: transparent;
-    border: 1.2px solid #e53e3e;
-    color: #e53e3e;
+    border: 1.2px solid #f5b7b1;  /* パステル赤ボーダー */
+    color: #c0392b;                /* 警告赤の文字 */
     padding: 2px 12px;
     font-size: 14px;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 500;
+    transition: all 0.18s;
 }
 
 .btn-delete:hover {
-    background-color: #fff5f5;
-}
-
-/* 投稿日時 */
-.post-date {
-    margin: 8px 0 0 0;
-    font-size: 0.80rem;
-    color: #718096;
+    background-color: #fff0ee;     /* パステル赤背景 */
+    border-color: #e74c3c;
+    color: #a93226;
 }
 
 /* ===========================
-   📱 スマホ対応（レスポンシブ）
+   投稿日時（視認性改善）
+   =========================== */
+.post-date {
+    margin: 8px 0 0 0;
+    font-size: 0.80rem;
+    color: #3a82ac;              /* #7aaec8より濃く、爽やかさ維持 */
+}
+
+/* ===========================
+   📱 スマホ対応
    =========================== */
 @media (max-width: 600px) {
     .page-wrapper {
@@ -2616,10 +2616,10 @@ a[role="button"]:hover {
         padding: 12px;
         margin-top: 5px;
     }
-    
+
     .post-thumbnail {
         flex: none;
-        width: 100%; 
+        width: 100%;
         height: 190px;
     }
 
@@ -2630,7 +2630,6 @@ a[role="button"]:hover {
     .post-header-meta {
         font-size: 0.85rem;
         margin-bottom: 4px;
-        flex-wrap: wrap;
     }
 
     .post-title {
@@ -2660,7 +2659,6 @@ a[role="button"]:hover {
         margin-top: 6px;
     }
 
-    /* スマホ時も全域リンクを維持 */
     .post-title a::after {
         inset: 0;
         z-index: 1;
@@ -2669,11 +2667,8 @@ a[role="button"]:hover {
 </file>
 
 <file path="static/css/mypage.css">
-/* static/css/mypage.css - note風レスポンシブ対応版（Android / Windows完全最適化） */
+/* static/css/mypage.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
-/* ===========================
-   ページレイアウト（中央カラム）
-   =========================== */
 .mypage-container {
     max-width: 720px;
     margin: 0 auto;
@@ -2689,31 +2684,32 @@ a[role="button"]:hover {
     padding: 28px 28px 24px;
     border-radius: 12px;
     margin-bottom: 28px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
 .profile-title {
     font-size: 22px;
     font-weight: 700;
     margin: 0 0 8px 0;
-    color: #1a1a1a;
+    color: #0d3a52;
     letter-spacing: -0.01em;
 }
 
 .profile-username {
     margin: 4px 0 0;
-    color: #aaa;
+    color: #5a8ba8;
     font-size: 13px;
 }
 
 .profile-post-count {
     margin: 10px 0 0;
-    color: #777;
+    color: #2a4a5e;
     font-size: 14px;
 }
 
 .profile-post-count strong {
-    color: #1a1a1a;
+    color: #1a7aad;
     font-weight: 700;
 }
 
@@ -2723,13 +2719,13 @@ a[role="button"]:hover {
 .nickname-form-wrapper {
     margin-top: 20px;
     padding-top: 18px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid #dff0fb;
 }
 
 .nickname-form-wrapper > p,
 .nickname-form label {
     font-size: 13px;
-    color: #8c8c8c;
+    color: #5a8ba8;
     margin: 0 0 8px;
     font-weight: 500;
 }
@@ -2744,22 +2740,23 @@ a[role="button"]:hover {
     flex: 1;
     min-width: 0;
     padding: 8px 14px;
-    border: 1.5px solid #cccccc;
+    border: 1.5px solid #c5dff0;
     border-radius: 20px;
     font-size: 14px;
     outline: none;
     transition: border-color 0.18s;
-    background: #fafafa;
+    background: #f5f9fd;
+    color: #0d3a52;
 }
 
 .nickname-input:focus {
-    border-color: #aaa;
+    border-color: #1a7aad;
     background: #fff;
 }
 
 .nickname-submit-btn {
     padding: 8px 18px;
-    background-color: #1a1a1a;
+    background-color: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 20px;
@@ -2772,7 +2769,7 @@ a[role="button"]:hover {
 }
 
 .nickname-submit-btn:hover {
-    background-color: #333;
+    background-color: #155f8a;
 }
 
 /* ===========================
@@ -2782,8 +2779,8 @@ a[role="button"]:hover {
 .section-title-posts {
     font-size: 16px;
     font-weight: 700;
-    color: #1a1a1a;
-    border-bottom: 2px solid #1a1a1a;
+    color: #0d3a52;
+    border-bottom: 2px solid #1a7aad;
     padding-bottom: 10px;
     margin: 36px 0 20px;
     letter-spacing: 0.02em;
@@ -2807,7 +2804,7 @@ a[role="button"]:hover {
 
 .genre-tag-item {
     background: #ffffff;
-    border: 1px solid #cdcdcd;
+    border: 1px solid #8cc8e8;
     padding: 4px 14px;
     border-radius: 15px;
     display: inline-block;
@@ -2815,13 +2812,13 @@ a[role="button"]:hover {
 }
 
 .genre-tag-item:hover {
-    background: #eee;
-    border-color: #ccc;
+    background: #dff0fb;
+    border-color: #5aaedc;
 }
 
 .genre-tag-link {
     text-decoration: none;
-    color: #444;
+    color: #1a5f85;            /* 濃くして読みやすく */
     font-size: 13px;
     font-weight: 500;
 }
@@ -2838,14 +2835,14 @@ a[role="button"]:hover {
     gap: 8px;
     align-items: center;
     background: #fff;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #c5dff0;
     border-radius: 24px;
     padding: 8px 16px;
     transition: border-color 0.2s;
 }
 
 .search-box form:focus-within {
-    border-color: #999;
+    border-color: #1a7aad;
 }
 
 .search-box input[type="text"] {
@@ -2854,17 +2851,17 @@ a[role="button"]:hover {
     outline: none;
     font-size: 14px;
     background: transparent;
-    color: #333;
+    color: #0d3a52;
     padding: 4px 0;
     min-width: 0;
 }
 
 .search-box input[type="text"]::placeholder {
-    color: #bbb;
+    color: #7aaec8;
 }
 
 .search-box button {
-    background: #1a1a1a;
+    background: #1a7aad;
     color: #fff;
     border: none;
     border-radius: 16px;
@@ -2878,16 +2875,16 @@ a[role="button"]:hover {
 }
 
 .search-box button:hover {
-    background: #333;
+    background: #155f8a;
 }
 
 .search-box a[role="button"] {
     display: inline-block;
     padding: 6px 14px;
     font-size: 13px;
-    color: #666;
+    color: #1a5f85;
     background: transparent;
-    border: 1.5px solid #ddd;
+    border: 1.5px solid #8cc8e8;
     border-radius: 16px;
     text-decoration: none;
     transition: all 0.18s;
@@ -2896,9 +2893,9 @@ a[role="button"]:hover {
 }
 
 .search-box a[role="button"]:hover {
-    color: #333;
-    border-color: #aaa;
-    background: #f8f8f8;
+    color: #1a7aad;
+    border-color: #5aaedc;
+    background: #dff0fb;
 }
 
 /* ===========================
@@ -2906,7 +2903,7 @@ a[role="button"]:hover {
    =========================== */
 article {
     background: #fff;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #c5dff0;
     border-radius: 12px;
     padding: 22px 24px;
     margin-bottom: 14px;
@@ -2914,8 +2911,8 @@ article {
 }
 
 article:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-    border-color: #d0d0d0;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.1);
+    border-color: #8cc8e8;
 }
 
 article h2 {
@@ -2926,30 +2923,44 @@ article h2 {
     line-height: 1.45;
     display: flex;
     flex-wrap: wrap;
-    align-items: center; 
+    align-items: center;
     gap: 8px;
-    color: #1a1a1a;
+    color: #0d3a52;
 }
 
 article h2 a {
     text-decoration: none;
-    color: #1a1a1a;
+    color: #0d3a52;
     flex: 1;
     min-width: 0;
 }
 
 article h2 a:hover {
     text-decoration: underline;
+    color: #1a7aad;
 }
 
-/* マイページ編集・削除ボタン */
+/* 非公開バッジ（差し色：暖色警告） */
+.badge-private {
+    font-size: 12px;
+    font-weight: 700;
+    color: #c0392b;
+    background: #fff0ee;
+    border: 1.2px solid #f5b7b1;
+    border-radius: 12px;
+    padding: 2px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 編集ボタン */
 article a[role="button"] {
     display: inline-block;
     font-size: 12px;
     padding: 4px 12px;
-    color: #555;
+    color: #1a5f85;
     background: transparent;
-    border: 1.5px solid #bababa;
+    border: 1.5px solid #8cc8e8;
     border-radius: 8px;
     text-decoration: none;
     transition: all 0.15s;
@@ -2957,39 +2968,43 @@ article a[role="button"] {
 }
 
 article a[role="button"]:hover {
-    border-color: #aaa;
-    background: #f8f8f8;
+    border-color: #5aaedc;
+    background: #dff0fb;
+    color: #1a7aad;
 }
 
 article form {
     display: inline;
 }
 
+/* 削除ボタン（差し色：珊瑚系警告） */
 article form button {
     font-size: 12px;
     padding: 5px 12px;
     background: transparent;
     color: #c0392b;
-    border: 1.5px solid #e8bebe;
+    border: 1.5px solid #f5b7b1;
     border-radius: 14px;
     cursor: pointer;
     transition: all 0.15s;
+    font-weight: 500;
 }
 
 article form button:hover {
-    background: #fef2f2;
-    border-color: #e06060;
+    background: #fff0ee;
+    border-color: #e74c3c;
+    color: #a93226;
 }
 
 article p {
     font-size: 12px;
-    color: #bbb;
+    color: #5a8ba8;            /* 日付等の補足テキスト：読みやすい中間青 */
     margin: 10px 0 0;
     line-height: 1.5;
 }
 
 .empty-message {
-    color: #aaa;
+    color: #5a8ba8;
     text-align: center;
     margin-top: 48px;
     font-size: 15px;
@@ -2997,7 +3012,7 @@ article p {
 }
 
 .empty-message a {
-    color: #555;
+    color: #1a7aad;
     text-decoration: underline;
 }
 
@@ -3028,7 +3043,7 @@ article p {
     }
 
     .nickname-input {
-        font-size: 16px; 
+        font-size: 16px;
         width: 100% !important;
         box-sizing: border-box;
     }
@@ -3049,17 +3064,16 @@ article p {
         margin: 28px 0 16px;
     }
 
-    /* 💡 スマホ用検索ボックスの修正点 */
     .search-box form {
         padding: 8px 12px;
-        flex-wrap: wrap; 
+        flex-wrap: wrap;
         gap: 8px;
-        justify-content: flex-end; /* ボタンを右寄せに配置 */
+        justify-content: flex-end;
     }
 
     .search-box input[type="text"] {
-        font-size: 16px; 
-        width: 100%; /* インプットフィールドは1行を広く使う */
+        font-size: 16px;
+        width: 100%;
         margin-bottom: 0;
     }
 
@@ -3067,7 +3081,7 @@ article p {
     .search-box a[role="button"] {
         padding: 6px 16px;
         font-size: 13px;
-        flex: none; /* ←【重要】均等割当てを解除し、文字幅に応じたコンパクトなサイズに縮小 */
+        flex: none;
         width: auto;
         min-height: 36px;
         display: inline-flex;
@@ -3075,7 +3089,6 @@ article p {
         justify-content: center;
     }
 
-    /* 投稿リストAndroid重なり完全防止 */
     article {
         padding: 16px;
         border-radius: 10px;
@@ -3084,7 +3097,7 @@ article p {
 
     article h2 {
         font-size: 15px;
-        flex-direction: column; 
+        flex-direction: column;
         align-items: flex-start;
         gap: 6px;
     }
@@ -3093,13 +3106,11 @@ article p {
         width: 100%;
     }
 
-    /* バッジ類のスマホ専用余白調整 */
     article h2 span {
         margin-left: 0 !important;
         display: inline-block !important;
     }
 
-    /* スマホアクションエリアのタッチ調整 */
     article a[role="button"],
     article form button {
         padding: 8px 16px;
@@ -3468,7 +3479,7 @@ function renderHashtagPreview(value) {
         
         <div class="post-meta" style="flex-direction: column; align-items: flex-start; gap: 5px;">
             <span class="genre-badge">
-                {{ post.genre if post.genre else '未分類' }}
+                📂 {{ post.genre if post.genre else '未分類' }}
             </span>
 
             <div class="post-user-info">
@@ -3711,18 +3722,7 @@ function goBack() {
             <div class="post-content">
                 <div class="post-header-meta">
                     <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-                    {# ===== ハッシュタグバッジ ===== #}
-                    {% if post.hashtags %}
-                        <div class="post-hashtags">
-                            {% for tag in post.hashtags %}
-                                <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
-                                class="hashtag-badge">
-                                    #{{ tag.name }}
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    {# ============================= #}
+
                     {% if not post.is_published %}
                         <span class="badge-private">🔒 非公開</span>
                     {% endif %}
@@ -3731,6 +3731,18 @@ function goBack() {
                 <h2 class="post-title">
                     <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
                 </h2>
+
+                {# ===== ハッシュタグバッジ ===== #}
+                {% if post.hashtags %}
+                    <div class="post-hashtags">
+                        {% for tag in post.hashtags %}
+                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
+                                #{{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {# ============================= #}
 
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
                     <div class="post-actions">

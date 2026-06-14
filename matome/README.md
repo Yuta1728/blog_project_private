@@ -1,48 +1,66 @@
-# 個人ブログ アプリケーション
+# 個人ブログアプリ
 
-Flask + PostgreSQL で構築した個人用ブログシステムです。Markdown 記法による記事投稿、ハッシュタグ管理、画像アップロードなどの機能を備えています。
+Flask + PostgreSQL で構築した個人向けブログシステムです。管理者が記事を投稿・管理し、一般訪問者が閲覧できるシンプルな構成になっています。
 
 ---
 
-## 技術スタック
+## 目次
 
-| 分類 | 使用技術 |
-|------|----------|
-| バックエンド | Python 3 / Flask 3.1 |
-| データベース | PostgreSQL 18 |
-| ORM | SQLAlchemy 2.0 / Flask-SQLAlchemy |
-| マイグレーション | Alembic / Flask-Migrate |
-| 認証 | Flask-Login |
-| セキュリティ | Flask-WTF (CSRF保護) |
-| インフラ | Docker / Docker Compose |
-| フロントエンド | Jinja2 テンプレート / バニラ CSS・JS |
+- [個人ブログアプリ](#個人ブログアプリ)
+  - [目次](#目次)
+  - [機能一覧](#機能一覧)
+    - [一般訪問者向け](#一般訪問者向け)
+    - [管理者向け](#管理者向け)
+  - [技術スタック](#技術スタック)
+  - [ディレクトリ構成](#ディレクトリ構成)
+  - [環境構築](#環境構築)
+    - [前提条件](#前提条件)
+    - [手順](#手順)
+  - [環境変数の設定](#環境変数の設定)
+  - [データベースのセットアップ](#データベースのセットアップ)
+  - [起動方法](#起動方法)
+  - [使い方](#使い方)
+    - [記事の投稿](#記事の投稿)
+    - [Markdown 記法](#markdown-記法)
+    - [ハッシュタグの入力](#ハッシュタグの入力)
+  - [セキュリティについて](#セキュリティについて)
 
 ---
 
 ## 機能一覧
 
-### 公開機能（ログイン不要）
-- 記事一覧表示（公開記事のみ）
-- ジャンル・キーワードによる絞り込み検索
+### 一般訪問者向け
+- 記事一覧の閲覧（公開記事のみ）
+- キーワード検索
+- ジャンルによる絞り込み
 - ハッシュタグによる絞り込み
-- ジャンル一覧ページ
-- 記事詳細表示（Markdown レンダリング・目次自動生成）
+- 記事詳細の閲覧（Markdown レンダリング / 目次自動生成）
 
-### 管理者機能（ログイン必要）
+### 管理者向け
+- 秘密URLによるログイン / ログアウト
 - 記事の新規投稿・編集・削除
 - 公開 / 非公開の切り替え
-- ハッシュタグの付与・編集
-- 画像アップロード（複数枚対応、`[img1]` プレースホルダーで本文内に配置）
-- デフォルトサムネイル選択（11種類）
-- ジャンルの新規作成
-- マイページ（投稿一覧・ニックネーム変更）
+- ジャンルの選択・新規作成
+- ハッシュタグの付与（複数可）
+- 画像の複数アップロード（`[img1]` 形式で本文に埋め込み）
+- デフォルトサムネイル画像の選択（11種類）
+- ニックネームの変更
 
-### セキュリティ対策
-- 秘密URLによる管理者ログイン（URLをランダムな文字列に設定可能）
-- CSRF トークン保護（全フォーム）
-- ファイルアップロード検証（拡張子チェック＋マジックナンバー検証）
-- アップロード上限 30 MB（超過時は 413 エラーハンドラーで制御）
-- 本番環境での `SECRET_KEY` 未設定時は起動拒否
+---
+
+## 技術スタック
+
+| カテゴリ | 使用技術 |
+|---|---|
+| バックエンド | Python 3 / Flask 3.1 |
+| データベース | PostgreSQL（Docker）|
+| ORM | Flask-SQLAlchemy 3.1 / Alembic（Flask-Migrate） |
+| 認証 | Flask-Login |
+| セキュリティ | Flask-WTF（CSRF保護）/ Werkzeug（パスワードハッシュ）|
+| Markdown | Python-Markdown（toc・nl2br 拡張） |
+| ファイル検証 | filetype（マジックナンバー検証） |
+| フロントエンド | Jinja2 テンプレート / 素の CSS（レスポンシブ対応） |
+| コンテナ | Docker / Docker Compose |
 
 ---
 
@@ -51,148 +69,152 @@ Flask + PostgreSQL で構築した個人用ブログシステムです。Markdow
 ```
 .
 ├── app.py                  # アプリケーションファクトリ
-├── config.py               # 環境変数ロード
-├── extensions.py           # Flask 拡張機能の初期化
-├── models.py               # データベースモデル（Post / User / Hashtag）
+├── config.py               # 環境変数の読み込み
+├── extensions.py           # db / login_manager / migrate の初期化
+├── models.py               # User / Post / Hashtag モデル定義
 ├── requirements.txt
-├── docker-compose.yml
-├── views/
-│   ├── auth.py             # 認証 Blueprint（ログイン・ログアウト）
-│   ├── blog.py             # 公開 Blueprint（一覧・詳細・ジャンル）
-│   └── admin.py            # 管理 Blueprint（投稿・編集・削除・マイページ）
-├── templates/              # Jinja2 テンプレート
+├── docker-compose.yml      # PostgreSQL コンテナ定義
+├── init/                   # DB 初期化 SQL（初回起動時に自動実行）
+│   ├── 01_login.sql        # 管理者ユーザーの作成
+│   └── 02_post.sql         # サンプルデータ（任意）
+├── migrations/             # Alembic マイグレーションファイル
 ├── static/
 │   ├── css/                # スタイルシート（ページ別）
 │   └── img/
-│       ├── posts/          # アップロード画像
-│       └── thbnails/       # デフォルトサムネイル
-├── migrations/             # Alembic マイグレーションファイル
-└── init/                   # PostgreSQL 初期化 SQL
+│       ├── posts/          # アップロード画像の保存先
+│       └── thbnails/       # デフォルトサムネイル画像（11種＋system-default）
+├── templates/              # Jinja2 テンプレート
+│   ├── base.html
+│   ├── index.html
+│   ├── detail.html
+│   ├── create.html
+│   ├── update.html
+│   ├── mypage.html
+│   ├── genre.html
+│   └── login.html
+└── views/
+    ├── auth.py             # ログイン / ログアウト
+    ├── blog.py             # 記事一覧 / 詳細 / ジャンル一覧
+    └── admin.py            # 投稿 / 編集 / 削除 / マイページ
 ```
 
 ---
 
-## セットアップ手順
+## 環境構築
 
-### 1. リポジトリのクローン
+### 前提条件
+
+- Python 3.11 以上
+- Docker / Docker Compose
+- pip
+
+### 手順
 
 ```bash
+# 1. リポジトリのクローン
 git clone <repository-url>
-cd <repository-directory>
+cd <repository-dir>
+
+# 2. 仮想環境の作成・有効化
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+
+# 3. 依存ライブラリのインストール
+pip install -r requirements.txt
+
+# 4. PostgreSQL コンテナの起動
+docker compose up -d
 ```
 
-### 2. 環境変数の設定
+---
 
-`.env` ファイルをプロジェクトルートに作成してください。
+## 環境変数の設定
+
+プロジェクトルートに `.env` ファイルを作成し、以下の変数を設定してください。
 
 ```env
-# PostgreSQL
+# PostgreSQL 接続情報
 POSTGRES_USER=your_db_user
 POSTGRES_PASSWORD=your_db_password
 POSTGRES_DB=your_db_name
 
-# Flask
-SECRET_KEY=your-very-secret-key
+# Flask セッション用シークレットキー（本番環境では必ず設定）
+SECRET_KEY=your-strong-secret-key
 
-# 管理者アカウント
+# 管理者アカウント情報
 ADMIN_USERNAME=your_admin_username
-ADMIN_PASSWORD=your_hashed_password   # Werkzeug でハッシュ化した文字列
+ADMIN_PASSWORD=your_admin_password   # ハッシュ化済みパスワードを init/01_login.sql に記載
+
+# ログインページの秘密パス（例: "admin-login-abc123"）
 ADMIN_LOGIN_PATH=your-secret-login-path
 ```
 
-> **`ADMIN_PASSWORD` のハッシュ化方法**
-> ```python
-> from werkzeug.security import generate_password_hash
-> print(generate_password_hash("your_plain_password"))
-> ```
+> **注意**: `ADMIN_PASSWORD` は Werkzeug の `generate_password_hash()` でハッシュ化した値を `init/01_login.sql` に記載する必要があります。
 
-### 3. Docker で PostgreSQL を起動
+---
+
+## データベースのセットアップ
 
 ```bash
-docker compose up -d
-```
-
-### 4. Python 仮想環境とパッケージのインストール
-
-```bash
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 5. データベースのマイグレーション
-
-```bash
+# マイグレーションの適用
 flask db upgrade
 ```
 
-### 6. アプリケーションの起動
+PostgreSQL コンテナの初回起動時に `init/` ディレクトリ内の SQL ファイルが自動実行され、管理者ユーザーが作成されます。
+
+---
+
+## 起動方法
 
 ```bash
+# 開発サーバーの起動
 python app.py
 ```
 
-ブラウザで `http://localhost:5000` にアクセスすると公開トップページが表示されます。
+ブラウザで `http://localhost:5000` にアクセスしてください。
 
-管理者ログインは `http://localhost:5000/<ADMIN_LOGIN_PATH>` からアクセスしてください。
-
----
-
-## データモデル
-
-```
-User
-├── id (PK)
-├── username
-├── password (ハッシュ化)
-└── nickname
-
-Post
-├── id (PK)
-├── title
-├── body (Markdown)
-├── genre
-├── is_published
-├── img_name (カンマ区切りファイル名)
-├── default_thumb
-├── created_at
-├── updated_at
-└── user_id (FK → User)
-
-Hashtag
-├── id (PK)
-└── name (unique)
-
-post_hashtags （中間テーブル）
-├── post_id (FK → Post)
-└── hashtag_id (FK → Hashtag)
-```
+ログインは `http://localhost:5000/<ADMIN_LOGIN_PATH>` から行います。
 
 ---
 
-## 記事の書き方
+## 使い方
 
-本文は Markdown 形式で記述します。
+### 記事の投稿
+
+1. ログイン後、「新規投稿」から投稿画面へ移動
+2. タイトル・本文（Markdown）・ジャンル・ハッシュタグ・画像を入力
+3. 公開 / 非公開を切り替えて「投稿する」をクリック
+
+### Markdown 記法
 
 | 記法 | 説明 |
-|------|------|
-| `## 見出し` | 大見出し（H2） |
-| `### 見出し` | 中見出し（H3） |
+|---|---|
+| `## 見出し` | 大見出し（目次に表示） |
+| `### 見出し` | 中見出し（目次に表示） |
+| `[toc]` | 目次の挿入位置を指定（省略時は本文冒頭に自動挿入） |
+| `[img1]` `[img2]` … | アップロード画像の埋め込み位置を指定 |
 | `**テキスト**` | 太字 |
-| `[toc]` | 目次の挿入位置を指定（省略時は自動で先頭に挿入） |
-| `[img1]` / `[img2]` … | アップロード画像の挿入位置（1枚目から順に対応） |
+
+### ハッシュタグの入力
+
+スペース・カンマ・読点で区切って複数入力できます。`#` は付けても省略しても構いません。
+
+```
+例: #Flask Python ブログ開発
+```
 
 ---
 
-## 本番デプロイ時の注意事項
+## セキュリティについて
 
-- 環境変数 `DATABASE_URL` または `FLASK_ENV=production` を設定すると本番モードで動作します。
-- 本番環境では `SECRET_KEY` の設定が必須です（未設定時は起動を拒否します）。
-- `debug=True` は開発環境専用です。本番環境では WSGI サーバー（Gunicorn 等）を使用してください。
-- `static/img/posts/` ディレクトリにはユーザーがアップロードした画像が保存されます。永続化の設定を忘れずに行ってください。
+本アプリでは以下のセキュリティ対策を実施しています。
 
----
-
-## ライセンス
-
-このプロジェクトは個人利用を目的として開発されています。
+- **CSRF 保護**: Flask-WTF による全フォームへの CSRF トークン付与
+- **秘密 URL**: ログインページを推測困難なパスに設定
+- **パスワードハッシュ**: Werkzeug の `check_password_hash` による検証
+- **ファイルアップロード検証**:
+  - 拡張子ホワイトリスト（PNG / JPG / GIF / WebP のみ）
+  - `filetype` ライブラリによるマジックナンバー検証（拡張子偽装の防止）
+  - ファイルサイズ上限 30MB
+  - `secure_filename` によるファイル名サニタイズ
+- **本番環境チェック**: `SECRET_KEY` が未設定の場合、本番環境では起動を拒否
