@@ -45,6 +45,7 @@
     </div>
 
     <h3 class="section-title-posts">📝 投稿一覧</h3>
+
     {% for post in posts %}
         <article class="post-card">
             <div class="post-thumbnail">
@@ -70,10 +71,23 @@
                     <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
                 </h2>
 
+                {# ===== ハッシュタグバッジ ===== #}
+                {% if post.hashtags %}
+                    <div class="post-hashtags">
+                        {% for tag in post.hashtags %}
+                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
+                                #{{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {# ============================= #}
+
                 <div class="post-actions">
                     <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
                     <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
-                        <button type="submit" class="btn-delete" style="cursor: pointer;">削除</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-delete">削除</button>
                     </form>
                 </div>
 

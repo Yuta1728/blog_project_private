@@ -81,8 +81,8 @@ h1 {
    =========================== */
 .post-toc,
 .detail-article-body .toc {
-    background-color: #f0f8fd !important;
-    border: 1px solid #b0d5ec !important;  /* 少し濃いボーダーで存在感 */
+    background-color: #f4fbff !important;
+    border: 1px solid #90c6e8 !important;  /* 少し濃いボーダーで存在感 */
     border-left: 4px solid #1a7aad !important;  /* 左アクセントライン */
     border-radius: 8px;
     padding: 20px 24px;
@@ -141,7 +141,7 @@ h1 {
     display: block !important;
     background: none !important;
     border: none !important;
-    border-bottom: 1px solid #c5dff0 !important;
+    border-bottom: 1px solid #9ccced !important;
     color: #0d3a52 !important;
 }
 
