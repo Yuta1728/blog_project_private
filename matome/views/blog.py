@@ -33,7 +33,12 @@ def index():
         query = Post.query.filter(Post.is_published == True)
 
     if search_word:
-        query = query.filter(Post.title.ilike(f'%{search_word}%'))
+        keyword = f'%{search_word}%'
+        # タイトル OR ハッシュタグ名 のどちらかにマッチする記事を返す
+        query = query.filter(
+            Post.title.ilike(keyword) |
+            Post.hashtags.any(Hashtag.name.ilike(keyword))
+        )
     if selected_genre:
         query = query.filter(Post.genre == selected_genre)
     if selected_hashtag:
@@ -107,7 +112,6 @@ def detail(id):
             caption = captions[index].strip() if index < len(captions) else ''
 
             if caption:
-                # キャプションあり：画像＋figcaption で figure タグにまとめる
                 img_tag = (
                     f'<figure class="post-figure">'
                     f'<img src="/static/img/posts/{img_file}" alt="{caption}" style="max-width:100%; height:auto;">'
@@ -115,7 +119,6 @@ def detail(id):
                     f'</figure>'
                 )
             else:
-                # キャプションなし：既存と同じ表示
                 img_tag = (
                     f'<span style="display:block; text-align:center; margin: 15px 0;">'
                     f'<img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;">'
