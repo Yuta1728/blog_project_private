@@ -67,6 +67,7 @@ static/css/detail.css
 static/css/genre.css
 static/css/hashtag.css
 static/css/index.css
+static/css/load_more.css
 static/css/mypage.css
 static/img/posts/01e73b9c-5b1d-41be-bbb3-a7d8fc729a46.jpg
 static/img/posts/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
@@ -257,7 +258,6 @@ services:
 volumes:
     personal_blog_data:
 </file>
-
 
 <file path="extensions.py">
 # extensions.py
@@ -2673,6 +2673,95 @@ a[role="button"]:hover {
 }
 </file>
 
+<file path="static/css/load_more.css">
+/* static/css/load_more.css
+   「もっと見る」ボタン共通スタイル
+   index.html / mypage.html の両方から読み込む
+   ================================================= */
+
+/* ===========================
+   ボタンラッパー
+   =========================== */
+.load-more-wrap {
+    display: none;          /* JS で block に切り替える */
+    text-align: center;
+    margin: 8px 0 40px;
+}
+
+/* ===========================
+   ボタン本体
+   =========================== */
+.load-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 40px;
+    background-color: #ffffff;
+    color: #1a5f85;
+    border: 1.5px solid #8cc8e8;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+                border-color     0.2s ease,
+                color            0.2s ease,
+                box-shadow       0.2s ease,
+                transform        0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.08);
+}
+
+.load-more-btn:hover {
+    background-color: #dff0fb;
+    border-color: #5aaedc;
+    color: #0d3a52;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.14);
+    transform: translateY(-1px);
+}
+
+.load-more-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #c5dff0;
+}
+
+/* ===========================
+   残件数バッジ
+   =========================== */
+.load-more-count {
+    display: inline-block;
+    background: #e4f3fb;
+    color: #1a7aad;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 10px;
+    min-width: 28px;
+    text-align: center;
+    line-height: 1.6;
+    transition: background-color 0.2s;
+}
+
+.load-more-btn:hover .load-more-count {
+    background-color: #c5dff0;
+}
+
+/* ===========================
+   スマホ（〜600px）
+   =========================== */
+@media (max-width: 600px) {
+    .load-more-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 24px;
+        font-size: 15px;
+        border-radius: 20px;
+    }
+}
+</file>
+
 <file path="static/css/mypage.css">
 /* static/css/mypage.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
@@ -3442,6 +3531,7 @@ function goBack() {
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
 
 <div class="page-wrapper">
 
@@ -3537,7 +3627,58 @@ function goBack() {
         </p>
     {% endfor %}
 
+    {# ===== 「もっと見る」ボタン ===== #}
+    <div class="load-more-wrap" id="index-load-more-wrap">
+        <button class="load-more-btn" id="index-load-more-btn" type="button"
+                onclick="indexLoadMore()">
+            もっと見る
+            <span class="load-more-count" id="index-load-more-count"></span>
+        </button>
+    </div>
+    {# ================================ #}
+
 </div>
+
+<script>
+(function () {
+    var INITIAL = 1;   /* 最初に表示する件数：最新1件のみ */
+    var STEP    = 5;   /* 「もっと見る」1回で追加する件数 */
+
+    var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
+    var total   = cards.length;
+    var shown   = 0;
+
+    var wrap    = document.getElementById('index-load-more-wrap');
+    var countEl = document.getElementById('index-load-more-count');
+
+    /* 全カードをいったん非表示にしてから必要枚数だけ開く */
+    cards.forEach(function (c) { c.style.display = 'none'; });
+
+    function showCards(n) {
+        var end = Math.min(shown + n, total);
+        for (var i = shown; i < end; i++) {
+            cards[i].style.display = '';  /* index.css の flex レイアウトに戻す */
+        }
+        shown = end;
+        updateBtn();
+    }
+
+    function updateBtn() {
+        var remaining = total - shown;
+        if (remaining <= 0) {
+            wrap.style.display = 'none';
+        } else {
+            wrap.style.display = 'block';
+            countEl.textContent = 'あと ' + remaining + ' 件';
+        }
+    }
+
+    window.indexLoadMore = function () { showCards(STEP); };
+
+    /* 初期表示：最新1件のみ */
+    showCards(INITIAL);
+})();
+</script>
 
 {% endblock %}
 </file>
@@ -3579,6 +3720,7 @@ function goBack() {
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
 
 <div class="mypage-container">
     
@@ -3678,7 +3820,59 @@ function goBack() {
     {% else %}
         <p class="empty-message">まだ投稿がありません。<br><a href="{{ url_for('admin.create') }}">最初の記事を書いてみましょう</a></p>
     {% endfor %}
+
+    {# ===== 「もっと見る」ボタン ===== #}
+    <div class="load-more-wrap" id="mypage-load-more-wrap">
+        <button class="load-more-btn" id="mypage-load-more-btn" type="button"
+                onclick="mypageLoadMore()">
+            もっと見る
+            <span class="load-more-count" id="mypage-load-more-count"></span>
+        </button>
+    </div>
+    {# ================================ #}
+
 </div>
+
+<script>
+(function () {
+    var INITIAL = 1;   /* 最初に表示する件数：最新1件のみ */
+    var STEP    = 5;   /* 「もっと見る」1回で追加する件数 */
+
+    var cards   = Array.from(document.querySelectorAll('.mypage-container > article.post-card'));
+    var total   = cards.length;
+    var shown   = 0;
+
+    var wrap    = document.getElementById('mypage-load-more-wrap');
+    var countEl = document.getElementById('mypage-load-more-count');
+
+    /* 全カードをいったん非表示にしてから必要枚数だけ開く */
+    cards.forEach(function (c) { c.style.display = 'none'; });
+
+    function showCards(n) {
+        var end = Math.min(shown + n, total);
+        for (var i = shown; i < end; i++) {
+            cards[i].style.display = '';  /* index.css の flex レイアウトに戻す */
+        }
+        shown = end;
+        updateBtn();
+    }
+
+    function updateBtn() {
+        var remaining = total - shown;
+        if (remaining <= 0) {
+            wrap.style.display = 'none';
+        } else {
+            wrap.style.display = 'block';
+            countEl.textContent = 'あと ' + remaining + ' 件';
+        }
+    }
+
+    window.mypageLoadMore = function () { showCards(STEP); };
+
+    /* 初期表示：最新1件のみ */
+    showCards(INITIAL);
+})();
+</script>
 
 {% endblock %}
 </file>
