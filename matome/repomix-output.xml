@@ -55,6 +55,7 @@ migrations/README
 migrations/script.py.mako
 migrations/versions/42dc0996903d_add_default_thumb_to_post.py
 migrations/versions/Add_hashtag_tables.py
+migrations/versions/add_img_captions_to_post.py
 migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
 models.py
 README.md
@@ -69,10 +70,11 @@ static/css/hashtag.css
 static/css/index.css
 static/css/load_more.css
 static/css/mypage.css
-static/img/posts/01e73b9c-5b1d-41be-bbb3-a7d8fc729a46.jpg
 static/img/posts/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
 static/img/posts/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
+static/img/posts/5df45f99-d421-4cc4-999f-bd75c4a8a30d.JPG
 static/img/posts/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
+static/img/posts/f1fc9388-4995-4bfc-bf17-6568fb7037ed.jpg
 static/img/posts/スクリーンショット 2025-02-01 222147.png
 static/img/posts/スクリーンショット 2025-02-01 222455.png
 static/img/thbnails/system-default.jpg
@@ -258,6 +260,7 @@ services:
 volumes:
     personal_blog_data:
 </file>
+
 
 <file path="extensions.py">
 # extensions.py
@@ -550,6 +553,34 @@ def downgrade():
     op.drop_table('hashtag')
 </file>
 
+<file path="migrations/versions/add_img_captions_to_post.py">
+"""Add img_captions to Post
+
+Revision ID: add_img_captions
+Revises: add_hashtag_tables
+Create Date: 2026-06-16 00:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+# revision identifiers, used by Alembic.
+revision = 'add_img_captions'
+down_revision = 'add_hashtag_tables'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('img_captions', sa.Text(), nullable=True))
+
+
+def downgrade():
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.drop_column('img_captions')
+</file>
+
 <file path="migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py">
 """initial revision after manual dbeaver fix
 
@@ -620,6 +651,9 @@ class Post(db.Model):
     user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     img_name     = db.Column(db.String(100), nullable=True)
     default_thumb = db.Column(db.String(100), nullable=True)
+
+    # ===== 画像キャプション（カンマ区切りで img_name と順番対応） =====
+    img_captions = db.Column(db.Text, nullable=True)
 
     # ユーザーIDとの紐付け
     user = db.relationship('User', backref=db.backref('posts', lazy=True))
@@ -1565,6 +1599,40 @@ h1 {
         min-height: 44px;
     }
 }
+
+
+
+/* ===========================
+   画像キャプション入力（create / update 共通）
+   =========================== */
+.preview-caption-wrapper {
+    padding: 15px 8px 2px;
+    background: #ecf5ff;
+    border-top: 1px solid #c0e6ff;
+}
+
+.preview-caption-input {
+    width: 100%;
+    padding: 5px 10px;
+    font-size: 12px;
+    border: 1.5px solid #b6e0fc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    outline: none;
+    background: #fff;
+    color: #1a1a1a;
+    font-family: inherit;
+    transition: border-color 0.18s;
+}
+
+.preview-caption-input:focus {
+    border-color: #1a7aad;
+}
+
+.preview-caption-input::placeholder {
+    color: #aac8dc;
+    font-size: 11px;
+}
 </file>
 
 <file path="static/css/detail.css">
@@ -1998,6 +2066,58 @@ hr {
         width: 100%;
         box-sizing: border-box;
         min-height: 48px;
+    }
+}
+
+
+/* ===========================
+   画像キャプション表示（detail）
+   =========================== */
+.post-figure {
+    display: block;
+    /* 上下余白：article img の 25px より小さく抑える */
+    margin: 16px auto 8px;
+    text-align: center;
+}
+
+.post-figure img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    /* article img の margin: 25px auto を上書きして figure 内では詰める */
+    margin: 0 auto !important;
+    border-radius: 5px;
+}
+
+.post-figcaption {
+    margin-top: 6px;
+    /* figure 自体が text-align:center なので継承されるが、
+       detail.css の .detail-article-body { text-align: left } を
+       明示的に上書きして確実に中央寄せにする */
+    text-align: center !important;
+    font-size: 15px;
+    color: #214f69;
+    line-height: 1.5;
+    display: block;
+    width: 100%;
+}
+
+/* figure の直後の段落との余白も詰める */
+.post-figure + p {
+    margin-top: 0.6em;
+}
+
+@media (max-width: 767px) {
+    .preview-caption-input {
+        font-size: 14px;
+    }
+
+    .post-figure {
+        margin: 12px auto 6px;
+    }
+
+    .post-figcaption {
+        font-size: 12px;
     }
 }
 </file>
@@ -3212,6 +3332,15 @@ a[role="button"]:hover {
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
         </p>
 
+        <!-- ===== 画像プレビュー＆キャプション入力エリア ===== -->
+        <div id="preview-area" style="display: none;">
+            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+                📸 アップロード画像プレビュー
+            </p>
+            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+        </div>
+        <!-- ================================================ -->
+
         <p>
             <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
             <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
@@ -3251,13 +3380,6 @@ a[role="button"]:hover {
         }
         </script>
 
-        <div id="preview-area" style="display: none;">
-            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
-                📸 アップロード画像プレビュー
-            </p>
-            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
-        </div>
-
         <input type="submit" value="投稿する">
     </form>
 </div>
@@ -3286,24 +3408,48 @@ function previewImages(input) {
     const files = Array.from(input.files);
     if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
+
     files.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
+            item.style.width = '200px';
+
+            // サムネイル画像
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
+
+            // [imgN] ラベル
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
+
+            // ファイル名
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
+
+            // ===== キャプション入力欄 =====
+            const captionWrapper = document.createElement('div');
+            captionWrapper.className = 'preview-caption-wrapper';
+
+            const captionInput = document.createElement('input');
+            captionInput.type        = 'text';
+            captionInput.name        = `img_caption_${index + 1}`;
+            captionInput.placeholder = '画像の説明（省略可）';
+            captionInput.className   = 'preview-caption-input';
+            captionInput.maxLength   = 100;
+
+            captionWrapper.appendChild(captionInput);
+            // ============================
+
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
+            item.appendChild(captionWrapper);
             previewList.appendChild(item);
         };
         reader.readAsDataURL(file);
@@ -3977,21 +4123,48 @@ function goBack() {
         <!-- ========================== -->
 
         {% if post.img_name %}
-            <label>現在の画像</label>
+            {# ===== 現在の画像＆キャプション編集 ===== #}
+            <label>現在の画像・キャプション</label>
+            <p style="font-size:13px; color:#555; margin: -8px 0 12px;">
+                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。
+            </p>
             <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
                 {% for img in post.img_name.split(',') %}
-                    <div class="preview-item">
+                    <div class="preview-item" style="width: 200px;">
                         <img src="{{ url_for('static', filename='img/posts/' + img) }}" alt="{{ img }}">
                         <div class="preview-label">[img{{ loop.index }}]（現在）</div>
                         <div class="preview-filename" title="{{ img }}">{{ img }}</div>
+                        {# ===== キャプション入力欄 ===== #}
+                        <div class="preview-caption-wrapper">
+                            <input type="text"
+                                   name="img_caption_{{ loop.index }}"
+                                   class="preview-caption-input"
+                                   placeholder="画像の説明（省略可）"
+                                   maxlength="100"
+                                   value="{{ existing_captions[loop.index0] if loop.index0 < existing_captions|length else '' }}">
+                        </div>
+                        {# ============================ #}
                     </div>
                 {% endfor %}
             </div>
+            {# ======================================= #}
         {% endif %}
 
         <div>
             <label>画像を変更する（複数選択可 / 順番に [img1], [img2] になります）</label>
+            <p style="font-size:13px; color:#555; margin: 4px 0 10px;">
+                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。
+            </p>
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
+
+            <!-- ===== 新規アップロード時のプレビュー＆キャプション入力 ===== -->
+            <div id="preview-area" style="display: none; margin-top: 14px;">
+                <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+                    📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
+                </p>
+                <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+            </div>
+            <!-- =========================================================== -->
 
             <p>
                 <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
@@ -4038,13 +4211,6 @@ function goBack() {
             }
             </script>
 
-            <div id="preview-area" style="display: none; margin-top: 14px;">
-                <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
-                    📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
-                </p>
-                <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
-            </div>
-
             <input type="submit" value="更新">
         </div>
 
@@ -4074,24 +4240,45 @@ function previewImages(input) {
     const files = Array.from(input.files);
     if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
+
     files.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
+            item.style.width = '200px';
+
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
+
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
+
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
+
+            // ===== キャプション入力欄 =====
+            const captionWrapper = document.createElement('div');
+            captionWrapper.className = 'preview-caption-wrapper';
+
+            const captionInput = document.createElement('input');
+            captionInput.type        = 'text';
+            captionInput.name        = `img_caption_${index + 1}`;
+            captionInput.placeholder = '画像の説明（省略可）';
+            captionInput.className   = 'preview-caption-input';
+            captionInput.maxLength   = 100;
+
+            captionWrapper.appendChild(captionInput);
+            // ============================
+
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
+            item.appendChild(captionWrapper);
             previewList.appendChild(item);
         };
         reader.readAsDataURL(file);
@@ -4188,6 +4375,20 @@ def sync_hashtags(post: Post, tag_names: list[str]):
     post.hashtags = new_tags
 
 
+# ===== 画像キャプション用ヘルパー =====
+
+def parse_img_captions(files: list) -> list[str]:
+    """
+    フォームから img_caption_1, img_caption_2 ... を受け取りリストにする。
+    files と同じ件数分取得し、未入力は空文字で埋める。
+    """
+    captions = []
+    for i in range(1, len(files) + 1):
+        caption = request.form.get(f'img_caption_{i}', '').strip()
+        captions.append(caption)
+    return captions
+
+
 # ===== ジャンルリスト取得ヘルパー =====
 
 def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]:
@@ -4262,6 +4463,10 @@ def create():
 
         img_name_str = ",".join(filename_list) if filename_list else None
 
+        # ===== キャプション保存 =====
+        captions = parse_img_captions(filename_list)
+        img_captions_str = "\t".join(captions) if captions else None
+
         if not title or not body or title.strip() == '' or body.strip() == '':
             flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect('/create')
@@ -4277,6 +4482,7 @@ def create():
             default_thumb = selected_default_thumb,
             genre        = final_genre,
             is_published = is_published,
+            img_captions = img_captions_str,
         )
         db.session.add(post)
 
@@ -4310,8 +4516,11 @@ def update(id):
         genres = _get_genre_list(current_user.id, post.genre)
         # 編集画面用：既存ハッシュタグを「#name #name …」形式で渡す
         existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
+        # 既存キャプションをリストで渡す
+        existing_captions = post.img_captions.split('\t') if post.img_captions else []
         return render_template('update.html', post=post, genres=genres,
-                               existing_hashtag_str=existing_hashtag_str)
+                               existing_hashtag_str=existing_hashtag_str,
+                               existing_captions=existing_captions)
 
     else:
         post.title = request.form.get('title')
@@ -4373,6 +4582,20 @@ def update(id):
                     file.save(save_path)
                     filename_list.append(filename)
             post.img_name = ",".join(filename_list)
+
+            # 新しい画像に合わせてキャプション更新
+            captions = parse_img_captions(filename_list)
+            post.img_captions = "\t".join(captions) if captions else None
+
+        else:
+            # 画像変更なし → キャプションのみ更新（既存画像枚数分）
+            if post.img_name:
+                existing_imgs = post.img_name.split(',')
+                captions = []
+                for i in range(1, len(existing_imgs) + 1):
+                    caption = request.form.get(f'img_caption_{i}', '').strip()
+                    captions.append(caption)
+                post.img_captions = "\t".join(captions)
 
         post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
         db.session.commit()
@@ -4531,7 +4754,7 @@ DEFAULT_GENRES = [
 def index():
     selected_genre   = request.args.get('genre')
     search_word      = request.args.get('search')
-    selected_hashtag = request.args.get('hashtag')   # ← 追加
+    selected_hashtag = request.args.get('hashtag')
 
     if current_user.is_authenticated:
         query = Post.query.filter(
@@ -4545,7 +4768,6 @@ def index():
     if selected_genre:
         query = query.filter(Post.genre == selected_genre)
     if selected_hashtag:
-        # ハッシュタグ名で JOIN して絞り込む
         query = query.join(Post.hashtags).filter(Hashtag.name == selected_hashtag)
 
     posts = query.order_by(Post.created_at.desc()).all()
@@ -4553,7 +4775,6 @@ def index():
     # ===== ジャンル一覧ページ用：選択ジャンル配下のハッシュタグを取得 =====
     hashtags_in_genre = []
     if selected_genre:
-        # 選択ジャンルの公開記事に紐付くハッシュタグを重複なしで取得
         if current_user.is_authenticated:
             genre_posts = Post.query.filter(
                 Post.genre == selected_genre,
@@ -4578,7 +4799,7 @@ def index():
         selected_genre   = selected_genre,
         search_word      = search_word,
         selected_hashtag = selected_hashtag,
-        hashtags_in_genre = hashtags_in_genre,   # ← 追加
+        hashtags_in_genre = hashtags_in_genre,
     )
 
 
@@ -4610,9 +4831,28 @@ def detail(id):
     toc_html = md.toc if not has_toc_marker else None
 
     if post.img_name:
-        images = post.img_name.split(',')
+        images   = post.img_name.split(',')
+        captions = post.img_captions.split('\t') if post.img_captions else []
+
         for index, img_file in enumerate(images):
-            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;"></span>'
+            caption = captions[index].strip() if index < len(captions) else ''
+
+            if caption:
+                # キャプションあり：画像＋figcaption で figure タグにまとめる
+                img_tag = (
+                    f'<figure class="post-figure">'
+                    f'<img src="/static/img/posts/{img_file}" alt="{caption}" style="max-width:100%; height:auto;">'
+                    f'<figcaption class="post-figcaption">{caption}</figcaption>'
+                    f'</figure>'
+                )
+            else:
+                # キャプションなし：既存と同じ表示
+                img_tag = (
+                    f'<span style="display:block; text-align:center; margin: 15px 0;">'
+                    f'<img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;">'
+                    f'</span>'
+                )
+
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
 
     display_body = re.sub(r'\[img\d+\]', '', display_body)
