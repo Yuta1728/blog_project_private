@@ -2,6 +2,7 @@
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
 
 <div class="page-wrapper">
 
@@ -97,6 +98,57 @@
         </p>
     {% endfor %}
 
+    {# ===== 「もっと見る」ボタン ===== #}
+    <div class="load-more-wrap" id="index-load-more-wrap">
+        <button class="load-more-btn" id="index-load-more-btn" type="button"
+                onclick="indexLoadMore()">
+            もっと見る
+            <span class="load-more-count" id="index-load-more-count"></span>
+        </button>
+    </div>
+    {# ================================ #}
+
 </div>
+
+<script>
+(function () {
+    var INITIAL = 1;   /* 最初に表示する件数：最新1件のみ */
+    var STEP    = 5;   /* 「もっと見る」1回で追加する件数 */
+
+    var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
+    var total   = cards.length;
+    var shown   = 0;
+
+    var wrap    = document.getElementById('index-load-more-wrap');
+    var countEl = document.getElementById('index-load-more-count');
+
+    /* 全カードをいったん非表示にしてから必要枚数だけ開く */
+    cards.forEach(function (c) { c.style.display = 'none'; });
+
+    function showCards(n) {
+        var end = Math.min(shown + n, total);
+        for (var i = shown; i < end; i++) {
+            cards[i].style.display = '';  /* index.css の flex レイアウトに戻す */
+        }
+        shown = end;
+        updateBtn();
+    }
+
+    function updateBtn() {
+        var remaining = total - shown;
+        if (remaining <= 0) {
+            wrap.style.display = 'none';
+        } else {
+            wrap.style.display = 'block';
+            countEl.textContent = 'あと ' + remaining + ' 件';
+        }
+    }
+
+    window.indexLoadMore = function () { showCards(STEP); };
+
+    /* 初期表示：最新1件のみ */
+    showCards(INITIAL);
+})();
+</script>
 
 {% endblock %}

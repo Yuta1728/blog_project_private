@@ -1,0 +1,86 @@
+/* static/css/load_more.css
+   「もっと見る」ボタン共通スタイル
+   index.html / mypage.html の両方から読み込む
+   ================================================= */
+
+/* ===========================
+   ボタンラッパー
+   =========================== */
+.load-more-wrap {
+    display: none;          /* JS で block に切り替える */
+    text-align: center;
+    margin: 8px 0 40px;
+}
+
+/* ===========================
+   ボタン本体
+   =========================== */
+.load-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 40px;
+    background-color: #ffffff;
+    color: #1a5f85;
+    border: 1.5px solid #8cc8e8;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+                border-color     0.2s ease,
+                color            0.2s ease,
+                box-shadow       0.2s ease,
+                transform        0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.08);
+}
+
+.load-more-btn:hover {
+    background-color: #dff0fb;
+    border-color: #5aaedc;
+    color: #0d3a52;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.14);
+    transform: translateY(-1px);
+}
+
+.load-more-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #c5dff0;
+}
+
+/* ===========================
+   残件数バッジ
+   =========================== */
+.load-more-count {
+    display: inline-block;
+    background: #e4f3fb;
+    color: #1a7aad;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 10px;
+    min-width: 28px;
+    text-align: center;
+    line-height: 1.6;
+    transition: background-color 0.2s;
+}
+
+.load-more-btn:hover .load-more-count {
+    background-color: #c5dff0;
+}
+
+/* ===========================
+   スマホ（〜600px）
+   =========================== */
+@media (max-width: 600px) {
+    .load-more-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 24px;
+        font-size: 15px;
+        border-radius: 20px;
+    }
+}
