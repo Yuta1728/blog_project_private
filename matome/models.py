@@ -29,6 +29,9 @@ class Post(db.Model):
     img_name     = db.Column(db.String(100), nullable=True)
     default_thumb = db.Column(db.String(100), nullable=True)
 
+    # ===== 画像キャプション（カンマ区切りで img_name と順番対応） =====
+    img_captions = db.Column(db.Text, nullable=True)
+
     # ユーザーIDとの紐付け
     user = db.relationship('User', backref=db.backref('posts', lazy=True))
 

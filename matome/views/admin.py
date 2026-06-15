@@ -73,6 +73,20 @@ def sync_hashtags(post: Post, tag_names: list[str]):
     post.hashtags = new_tags
 
 
+# ===== 画像キャプション用ヘルパー =====
+
+def parse_img_captions(files: list) -> list[str]:
+    """
+    フォームから img_caption_1, img_caption_2 ... を受け取りリストにする。
+    files と同じ件数分取得し、未入力は空文字で埋める。
+    """
+    captions = []
+    for i in range(1, len(files) + 1):
+        caption = request.form.get(f'img_caption_{i}', '').strip()
+        captions.append(caption)
+    return captions
+
+
 # ===== ジャンルリスト取得ヘルパー =====
 
 def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]:
@@ -147,6 +161,10 @@ def create():
 
         img_name_str = ",".join(filename_list) if filename_list else None
 
+        # ===== キャプション保存 =====
+        captions = parse_img_captions(filename_list)
+        img_captions_str = "\t".join(captions) if captions else None
+
         if not title or not body or title.strip() == '' or body.strip() == '':
             flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect('/create')
@@ -162,6 +180,7 @@ def create():
             default_thumb = selected_default_thumb,
             genre        = final_genre,
             is_published = is_published,
+            img_captions = img_captions_str,
         )
         db.session.add(post)
 
@@ -195,8 +214,11 @@ def update(id):
         genres = _get_genre_list(current_user.id, post.genre)
         # 編集画面用：既存ハッシュタグを「#name #name …」形式で渡す
         existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
+        # 既存キャプションをリストで渡す
+        existing_captions = post.img_captions.split('\t') if post.img_captions else []
         return render_template('update.html', post=post, genres=genres,
-                               existing_hashtag_str=existing_hashtag_str)
+                               existing_hashtag_str=existing_hashtag_str,
+                               existing_captions=existing_captions)
 
     else:
         post.title = request.form.get('title')
@@ -258,6 +280,20 @@ def update(id):
                     file.save(save_path)
                     filename_list.append(filename)
             post.img_name = ",".join(filename_list)
+
+            # 新しい画像に合わせてキャプション更新
+            captions = parse_img_captions(filename_list)
+            post.img_captions = "\t".join(captions) if captions else None
+
+        else:
+            # 画像変更なし → キャプションのみ更新（既存画像枚数分）
+            if post.img_name:
+                existing_imgs = post.img_name.split(',')
+                captions = []
+                for i in range(1, len(existing_imgs) + 1):
+                    caption = request.form.get(f'img_caption_{i}', '').strip()
+                    captions.append(caption)
+                post.img_captions = "\t".join(captions)
 
         post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
         db.session.commit()

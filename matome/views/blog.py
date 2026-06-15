@@ -23,7 +23,7 @@ DEFAULT_GENRES = [
 def index():
     selected_genre   = request.args.get('genre')
     search_word      = request.args.get('search')
-    selected_hashtag = request.args.get('hashtag')   # ← 追加
+    selected_hashtag = request.args.get('hashtag')
 
     if current_user.is_authenticated:
         query = Post.query.filter(
@@ -37,7 +37,6 @@ def index():
     if selected_genre:
         query = query.filter(Post.genre == selected_genre)
     if selected_hashtag:
-        # ハッシュタグ名で JOIN して絞り込む
         query = query.join(Post.hashtags).filter(Hashtag.name == selected_hashtag)
 
     posts = query.order_by(Post.created_at.desc()).all()
@@ -45,7 +44,6 @@ def index():
     # ===== ジャンル一覧ページ用：選択ジャンル配下のハッシュタグを取得 =====
     hashtags_in_genre = []
     if selected_genre:
-        # 選択ジャンルの公開記事に紐付くハッシュタグを重複なしで取得
         if current_user.is_authenticated:
             genre_posts = Post.query.filter(
                 Post.genre == selected_genre,
@@ -70,7 +68,7 @@ def index():
         selected_genre   = selected_genre,
         search_word      = search_word,
         selected_hashtag = selected_hashtag,
-        hashtags_in_genre = hashtags_in_genre,   # ← 追加
+        hashtags_in_genre = hashtags_in_genre,
     )
 
 
@@ -102,9 +100,28 @@ def detail(id):
     toc_html = md.toc if not has_toc_marker else None
 
     if post.img_name:
-        images = post.img_name.split(',')
+        images   = post.img_name.split(',')
+        captions = post.img_captions.split('\t') if post.img_captions else []
+
         for index, img_file in enumerate(images):
-            img_tag = f'<span style="display:block; text-align:center; margin: 15px 0;"><img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;"></span>'
+            caption = captions[index].strip() if index < len(captions) else ''
+
+            if caption:
+                # キャプションあり：画像＋figcaption で figure タグにまとめる
+                img_tag = (
+                    f'<figure class="post-figure">'
+                    f'<img src="/static/img/posts/{img_file}" alt="{caption}" style="max-width:100%; height:auto;">'
+                    f'<figcaption class="post-figcaption">{caption}</figcaption>'
+                    f'</figure>'
+                )
+            else:
+                # キャプションなし：既存と同じ表示
+                img_tag = (
+                    f'<span style="display:block; text-align:center; margin: 15px 0;">'
+                    f'<img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;">'
+                    f'</span>'
+                )
+
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
 
     display_body = re.sub(r'\[img\d+\]', '', display_body)

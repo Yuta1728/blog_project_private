@@ -321,3 +321,37 @@ h1 {
         min-height: 44px;
     }
 }
+
+
+
+/* ===========================
+   画像キャプション入力（create / update 共通）
+   =========================== */
+.preview-caption-wrapper {
+    padding: 15px 8px 2px;
+    background: #ecf5ff;
+    border-top: 1px solid #c0e6ff;
+}
+
+.preview-caption-input {
+    width: 100%;
+    padding: 5px 10px;
+    font-size: 12px;
+    border: 1.5px solid #b6e0fc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    outline: none;
+    background: #fff;
+    color: #1a1a1a;
+    font-family: inherit;
+    transition: border-color 0.18s;
+}
+
+.preview-caption-input:focus {
+    border-color: #1a7aad;
+}
+
+.preview-caption-input::placeholder {
+    color: #aac8dc;
+    font-size: 11px;
+}

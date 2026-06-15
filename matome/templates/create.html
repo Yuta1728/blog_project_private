@@ -96,6 +96,15 @@
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
         </p>
 
+        <!-- ===== 画像プレビュー＆キャプション入力エリア ===== -->
+        <div id="preview-area" style="display: none;">
+            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+                📸 アップロード画像プレビュー
+            </p>
+            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+        </div>
+        <!-- ================================================ -->
+
         <p>
             <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
             <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
@@ -135,13 +144,6 @@
         }
         </script>
 
-        <div id="preview-area" style="display: none;">
-            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
-                📸 アップロード画像プレビュー
-            </p>
-            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
-        </div>
-
         <input type="submit" value="投稿する">
     </form>
 </div>
@@ -170,24 +172,48 @@ function previewImages(input) {
     const files = Array.from(input.files);
     if (files.length === 0) { previewArea.style.display = 'none'; return; }
     previewArea.style.display = 'block';
+
     files.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function(e) {
             const item = document.createElement('div');
             item.className = 'preview-item';
+            item.style.width = '200px';
+
+            // サムネイル画像
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
+
+            // [imgN] ラベル
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
+
+            // ファイル名
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
+
+            // ===== キャプション入力欄 =====
+            const captionWrapper = document.createElement('div');
+            captionWrapper.className = 'preview-caption-wrapper';
+
+            const captionInput = document.createElement('input');
+            captionInput.type        = 'text';
+            captionInput.name        = `img_caption_${index + 1}`;
+            captionInput.placeholder = '画像の説明（省略可）';
+            captionInput.className   = 'preview-caption-input';
+            captionInput.maxLength   = 100;
+
+            captionWrapper.appendChild(captionInput);
+            // ============================
+
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
+            item.appendChild(captionWrapper);
             previewList.appendChild(item);
         };
         reader.readAsDataURL(file);

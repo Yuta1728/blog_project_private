@@ -430,3 +430,55 @@ hr {
         min-height: 48px;
     }
 }
+
+
+/* ===========================
+   画像キャプション表示（detail）
+   =========================== */
+.post-figure {
+    display: block;
+    /* 上下余白：article img の 25px より小さく抑える */
+    margin: 16px auto 8px;
+    text-align: center;
+}
+
+.post-figure img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    /* article img の margin: 25px auto を上書きして figure 内では詰める */
+    margin: 0 auto !important;
+    border-radius: 5px;
+}
+
+.post-figcaption {
+    margin-top: 6px;
+    /* figure 自体が text-align:center なので継承されるが、
+       detail.css の .detail-article-body { text-align: left } を
+       明示的に上書きして確実に中央寄せにする */
+    text-align: center !important;
+    font-size: 15px;
+    color: #214f69;
+    line-height: 1.5;
+    display: block;
+    width: 100%;
+}
+
+/* figure の直後の段落との余白も詰める */
+.post-figure + p {
+    margin-top: 0.6em;
+}
+
+@media (max-width: 767px) {
+    .preview-caption-input {
+        font-size: 14px;
+    }
+
+    .post-figure {
+        margin: 12px auto 6px;
+    }
+
+    .post-figcaption {
+        font-size: 12px;
+    }
+}
