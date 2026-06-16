@@ -60,17 +60,48 @@
         }
         </script>
 
-        <p>
-            <label for="body">内容</label>
-            ※見出しの作り方：大見出し <b>## 見出し</b>、中見出し <b>### 見出し</b> …<br>
-            ※目次の挟み方： <b>[toc]</b> と半角で入力（未入力の場合は一番上に自動挿入）<br>
-            ※画像の挟み方： <b>[img1]…</b> と半角で入力（選択した画像の1枚目の順に対応）<br>
-            ※文字の太字化： <b>**太字にする文字**</b> アスタリスクで囲んでください
-        </p>
+        <label for="bodyTextarea">内容</label>
 
-        <p>
-            <textarea name="body" rows="17" required placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
-        </p>
+        <!-- ===== マークダウンツールバー ===== -->
+        <div class="md-toolbar" id="md-toolbar">
+            <button type="button" class="md-btn" onclick="mdInsertHeading2()">H2 見出し</button>
+            <button type="button" class="md-btn" onclick="mdInsertHeading3()">H3 見出し</button>
+            <button type="button" class="md-btn" onclick="mdWrapBold()"><b>太字</b></button>
+            <button type="button" class="md-btn" onclick="mdInsertToc()">[toc] 目次</button>
+            <span class="md-btn-separator"></span>
+            <button type="button" class="md-btn md-btn-map" onclick="openMapModal()">🗺️ 地図</button>
+            <span class="md-btn-separator"></span>
+            <span id="img-btn-group"></span>
+        </div>
+        <!-- ================================ -->
+
+        <!-- ===== 地図挿入モーダル ===== -->
+        <div id="map-modal-overlay" class="map-modal-overlay" onclick="closeMapModal()"></div>
+        <div id="map-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="地図挿入">
+            <div class="map-modal-header">
+                <span class="map-modal-title">🗺️ 地図を挿入</span>
+                <button type="button" class="map-modal-close" onclick="closeMapModal()">✕</button>
+            </div>
+            <div class="map-modal-body">
+                <label class="map-modal-label" for="map-place-input">場所・住所を入力</label>
+                <input type="text" id="map-place-input" class="map-modal-input"
+                       placeholder="例：東京スカイツリー、京都市伏見稲荷大社"
+                       autocomplete="off"
+                       oninput="updateMapPreview(this.value)">
+                <div class="map-preview-area" id="map-preview-area">
+                    <p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>
+                </div>
+            </div>
+            <div class="map-modal-footer">
+                <button type="button" class="map-modal-cancel" onclick="closeMapModal()">キャンセル</button>
+                <button type="button" class="map-modal-insert" id="map-insert-btn"
+                        onclick="insertMapTag()" disabled>本文に挿入</button>
+            </div>
+        </div>
+        <!-- ============================ -->
+
+        <textarea name="body" id="bodyTextarea" rows="17" required
+                  placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
 
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
@@ -92,7 +123,7 @@
         <!-- ========================== -->
 
         <p>
-            <label for="fileUpload">画像（複数選択可 / 順番に [img1], [img2] になります）</label>
+            <label for="imgUpload">画像（複数選択可 / 順番に [img1], [img2] になります）</label>
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
         </p>
 
@@ -130,26 +161,15 @@
             </div>
         </div>
 
-        <script>
-        function previewDefaultThumb(select) {
-            const previewArea = document.getElementById('default-thumb-preview-area');
-            const previewImg  = document.getElementById('default-thumb-preview-img');
-            if (select.value === 'none') {
-                previewArea.style.display = 'none';
-                previewImg.src = '';
-            } else {
-                previewArea.style.display = 'block';
-                previewImg.src = "/static/img/thbnails/" + select.value;
-            }
-        }
-        </script>
-
         <input type="submit" value="投稿する">
     </form>
 </div>
 
 
 <script>
+/* =========================================================
+   ジャンル入力切替
+   ========================================================= */
 function toggleNewGenreInput() {
     const selectBox = document.getElementById('genre_select');
     const newGenreWrapper = document.getElementById('new_genre_wrapper');
@@ -165,12 +185,30 @@ function toggleNewGenreInput() {
     }
 }
 
+/* =========================================================
+   デフォルトサムネイルプレビュー
+   ========================================================= */
+function previewDefaultThumb(select) {
+    const previewArea = document.getElementById('default-thumb-preview-area');
+    const previewImg  = document.getElementById('default-thumb-preview-img');
+    if (select.value === 'none') {
+        previewArea.style.display = 'none';
+        previewImg.src = '';
+    } else {
+        previewArea.style.display = 'block';
+        previewImg.src = "/static/img/thbnails/" + select.value;
+    }
+}
+
+/* =========================================================
+   画像プレビュー＆[imgN]ボタン生成
+   ========================================================= */
 function previewImages(input) {
     const previewArea = document.getElementById('preview-area');
     const previewList = document.getElementById('preview-list');
     previewList.innerHTML = '';
     const files = Array.from(input.files);
-    if (files.length === 0) { previewArea.style.display = 'none'; return; }
+    if (files.length === 0) { previewArea.style.display = 'none'; rebuildImgBtns(0); return; }
     previewArea.style.display = 'block';
 
     files.forEach((file, index) => {
@@ -180,23 +218,19 @@ function previewImages(input) {
             item.className = 'preview-item';
             item.style.width = '200px';
 
-            // サムネイル画像
             const img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
 
-            // [imgN] ラベル
             const label = document.createElement('div');
             label.className = 'preview-label';
             label.textContent = `[img${index + 1}]`;
 
-            // ファイル名
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
 
-            // ===== キャプション入力欄 =====
             const captionWrapper = document.createElement('div');
             captionWrapper.className = 'preview-caption-wrapper';
 
@@ -208,8 +242,6 @@ function previewImages(input) {
             captionInput.maxLength   = 100;
 
             captionWrapper.appendChild(captionInput);
-            // ============================
-
             item.appendChild(img);
             item.appendChild(label);
             item.appendChild(filename);
@@ -218,9 +250,102 @@ function previewImages(input) {
         };
         reader.readAsDataURL(file);
     });
+
+    rebuildImgBtns(files.length);
 }
 
-/* ハッシュタグ入力プレビュー */
+/* =========================================================
+   マークダウンツールバー共通ユーティリティ
+   ========================================================= */
+
+/** textarea のカーソル位置にテキストを挿入し、カーソルを末尾に移動 */
+function mdInsertAt(ta, text, selectFrom, selectTo) {
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const before = ta.value.substring(0, start);
+    const after  = ta.value.substring(end);
+    ta.value = before + text + after;
+    // カーソル位置を調整
+    const newPos = selectFrom !== undefined ? start + selectFrom : start + text.length;
+    const newEnd = selectTo   !== undefined ? start + selectTo   : newPos;
+    ta.setSelectionRange(newPos, newEnd);
+    ta.focus();
+}
+
+/** カーソルがある行の行頭にプレフィックスを挿入する */
+function mdInsertLinePrefix(ta, prefix) {
+    const start = ta.selectionStart;
+    const val   = ta.value;
+    // 行頭を探す
+    const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+    const before = val.substring(0, lineStart);
+    const after  = val.substring(lineStart);
+    ta.value = before + prefix + after;
+    const newPos = start + prefix.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+}
+
+/* =========================================================
+   各ボタンのハンドラ
+   ========================================================= */
+function mdInsertHeading2() {
+    const ta = document.getElementById('bodyTextarea');
+    mdInsertLinePrefix(ta, '## ');
+}
+
+function mdInsertHeading3() {
+    const ta = document.getElementById('bodyTextarea');
+    mdInsertLinePrefix(ta, '### ');
+}
+
+function mdWrapBold() {
+    const ta    = document.getElementById('bodyTextarea');
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const selected = ta.value.substring(start, end);
+    if (selected.length > 0) {
+        // 選択テキストを ** で囲む
+        mdInsertAt(ta, `**${selected}**`, 2, 2 + selected.length);
+    } else {
+        // 未選択時はプレースホルダーを挿入してその部分を選択状態にする
+        mdInsertAt(ta, '**太字テキスト**', 2, 6);
+    }
+}
+
+function mdInsertToc() {
+    const ta  = document.getElementById('bodyTextarea');
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    // 行頭かどうかを確認して改行を補う
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const isLineHead = (pos === lineStart);
+    const insert = (isLineHead ? '' : '\n') + '[toc]\n';
+    mdInsertAt(ta, insert);
+}
+
+function mdInsertImg(n) {
+    const ta = document.getElementById('bodyTextarea');
+    mdInsertAt(ta, `[img${n}]`);
+}
+
+/** 画像ファイル選択枚数に合わせて [img1][img2]… ボタンを再構築 */
+function rebuildImgBtns(count) {
+    const group = document.getElementById('img-btn-group');
+    group.innerHTML = '';
+    for (let i = 1; i <= count; i++) {
+        const btn = document.createElement('button');
+        btn.type      = 'button';
+        btn.className = 'md-btn md-btn-img';
+        btn.textContent = `[img${i}]`;
+        btn.onclick   = (function(n){ return function(){ mdInsertImg(n); }; })(i);
+        group.appendChild(btn);
+    }
+}
+
+/* =========================================================
+   ハッシュタグ入力プレビュー
+   ========================================================= */
 function renderHashtagPreview(value) {
     const area = document.getElementById('hashtag-preview');
     const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
@@ -229,6 +354,74 @@ function renderHashtagPreview(value) {
         return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
     }).join('');
 }
+
+/* =========================================================
+   地図挿入モーダル
+   ========================================================= */
+let _mapPreviewTimer = null;
+
+function openMapModal() {
+    // textarea のカーソル位置を記憶しておく（モーダルを開くとフォーカスが外れるため）
+    const ta = document.getElementById('bodyTextarea');
+    window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
+
+    document.getElementById('map-place-input').value = '';
+    document.getElementById('map-preview-area').innerHTML =
+        '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
+    document.getElementById('map-insert-btn').disabled = true;
+    document.getElementById('map-modal-overlay').classList.add('open');
+    document.getElementById('map-modal').classList.add('open');
+    setTimeout(() => document.getElementById('map-place-input').focus(), 80);
+}
+
+function closeMapModal() {
+    document.getElementById('map-modal-overlay').classList.remove('open');
+    document.getElementById('map-modal').classList.remove('open');
+}
+
+function updateMapPreview(value) {
+    const insertBtn = document.getElementById('map-insert-btn');
+    const previewArea = document.getElementById('map-preview-area');
+    clearTimeout(_mapPreviewTimer);
+    const place = value.trim();
+    if (!place) {
+        previewArea.innerHTML = '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
+        insertBtn.disabled = true;
+        return;
+    }
+    insertBtn.disabled = false;
+    // 入力が止まって 600ms 後にプレビューを更新（不要なリクエスト防止）
+    _mapPreviewTimer = setTimeout(() => {
+        const encoded = encodeURIComponent(place);
+        previewArea.innerHTML =
+            `<iframe class="map-preview-iframe"
+                src="https://maps.google.com/maps?q=${encoded}&output=embed&hl=ja"
+                loading="lazy" allowfullscreen></iframe>`;
+    }, 600);
+}
+
+function insertMapTag() {
+    const place = document.getElementById('map-place-input').value.trim();
+    if (!place) return;
+
+    const ta    = document.getElementById('bodyTextarea');
+    const pos   = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
+    const val   = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    const isLineHead = (pos.start === lineStart);
+    const tag   = (isLineHead ? '' : '\n') + `[map:${place}]\n`;
+
+    ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    const newPos = pos.start + tag.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+    closeMapModal();
+}
+
+// ESC キーでもモーダルを閉じる
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeMapModal();
+});
 </script>
 
 {% endblock %}

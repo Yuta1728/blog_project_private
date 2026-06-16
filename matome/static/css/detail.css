@@ -482,3 +482,40 @@ hr {
         font-size: 12px;
     }
 }
+
+
+/* ==============================================
+   detail.css への追記分
+   post.body 中の [map:場所名] が変換された
+   .post-map-wrapper / iframe のスタイル
+   ============================================== */
+
+.post-map-wrapper {
+    margin: 24px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #c5dff0;
+    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.09);
+}
+
+.post-map-label {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a5f85;
+    background: #f0faff;
+    border-bottom: 1px solid #c5dff0;
+}
+
+.post-map-iframe {
+    width: 100%;
+    height: 380px;
+    border: none;
+    display: block;
+}
+
+@media (max-width: 767px) {
+    .post-map-iframe {
+        height: 260px;
+    }
+}

@@ -355,3 +355,250 @@ h1 {
     color: #aac8dc;
     font-size: 11px;
 }
+
+
+/* ===========================
+   マークダウンツールバー追記分
+   =========================== */
+
+/* ボタン間の区切り線 */
+.md-btn-separator {
+    display: inline-block;
+    width: 1px;
+    height: 24px;
+    background: #c5dff0;
+    margin: 0 4px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* [imgN] ボタン：画像挿入系は色を変えて区別 */
+.md-btn-img {
+    color: #1a5f85;
+    background: #e7f7ff;
+    border-color: #8cc8e8;
+}
+
+.md-btn-img:hover,
+.md-btn-img:active {
+    background: #c5dff0;
+    border-color: #1a7aad;
+    color: #0d3a52;
+}
+
+/* ===========================
+   地図ボタン（ツールバー）
+   =========================== */
+.md-btn-map {
+    color: #1a5f85;
+    background: #e7f7e7;
+    border-color: #7bc87b;
+}
+
+.md-btn-map:hover,
+.md-btn-map:active {
+    background: #c8eec8;
+    border-color: #4caf50;
+    color: #1a3a1a;
+}
+
+/* ===========================
+   地図挿入モーダル — オーバーレイ
+   =========================== */
+.map-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 58, 82, 0.45);
+    z-index: 1100;
+}
+
+.map-modal-overlay.open {
+    display: block;
+}
+
+/* ===========================
+   地図挿入モーダル — 本体
+   =========================== */
+.map-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -48%);
+    width: min(560px, calc(100vw - 32px));
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(26, 122, 173, 0.18);
+    z-index: 1200;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.map-modal.open {
+    display: flex;
+}
+
+.map-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #dff0fb;
+    background: #f4fbff;
+}
+
+.map-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d3a52;
+}
+
+.map-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #5a8ba8;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    padding: 0;
+}
+
+.map-modal-close:hover {
+    background: #dff0fb;
+    color: #0d3a52;
+}
+
+.map-modal-body {
+    padding: 20px 20px 8px;
+}
+
+.map-modal-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a5f85;
+    margin-bottom: 8px;
+}
+
+.map-modal-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1.5px solid #c5dff0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    outline: none;
+    background: #f5f9fd;
+    color: #0d3a52;
+    font-family: inherit;
+    transition: border-color 0.18s, background 0.18s;
+    margin-bottom: 14px;
+}
+
+.map-modal-input:focus {
+    border-color: #1a7aad;
+    background: #fff;
+}
+
+/* プレビューエリア */
+.map-preview-area {
+    width: 100%;
+    height: 260px;
+    border: 1px solid #c5dff0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f8fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-preview-placeholder {
+    color: #7aaec8;
+    font-size: 14px;
+    text-align: center;
+    margin: 0;
+    padding: 0 20px;
+}
+
+.map-preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.map-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px 18px;
+    border-top: 1px solid #dff0fb;
+}
+
+.map-modal-cancel {
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    background: #fff;
+    color: #5a8ba8;
+    border: 1.5px solid #c5dff0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.map-modal-cancel:hover {
+    background: #eef6fb;
+}
+
+.map-modal-insert {
+    padding: 9px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    background: #1a7aad;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.18s;
+}
+
+.map-modal-insert:hover:not(:disabled) {
+    background: #155f8a;
+}
+
+.map-modal-insert:disabled {
+    background: #b0d5ec;
+    cursor: not-allowed;
+}
+
+/* ===========================
+   スマホ対応
+   =========================== */
+@media (max-width: 767px) {
+    .map-modal {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transform: none;
+        width: 100%;
+        border-radius: 16px 16px 0 0;
+        max-height: 90dvh;
+        overflow-y: auto;
+    }
+
+    .map-preview-area {
+        height: 200px;
+    }
+}

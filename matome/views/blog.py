@@ -94,6 +94,44 @@ def detail(id):
 
     body_content = post.body
 
+    # ===== 連続する空行を <br> に変換（Markdown変換前に処理） =====
+    # Markdownは \n\n 以上の連続空行を段落区切り1つとして扱い折りたたむため、
+    # 変換前に「空行2行以上」を <br> タグへ置き換えておく。
+    # ただし見出し（## / ###）やコードブロック(```)の前後は除外する。
+    def expand_blank_lines(text):
+        lines = text.split('\n')
+        result = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # 空行の連続をカウント
+            if line.strip() == '':
+                blank_count = 0
+                while i < len(lines) and lines[i].strip() == '':
+                    blank_count += 1
+                    i += 1
+                # 前後の行が見出し・コードブロック区切りなら通常の段落区切りとして残す
+                prev_line = result[-1].strip() if result else ''
+                next_line = lines[i].strip() if i < len(lines) else ''
+                is_structural = (
+                    prev_line.startswith('#') or next_line.startswith('#') or
+                    prev_line.startswith('```') or next_line.startswith('```')
+                )
+                if is_structural or blank_count == 1:
+                    # 通常の段落区切り：空行をそのまま出力
+                    result.extend([''] * blank_count)
+                else:
+                    # 2行以上の空行：1つの段落区切り + 余剰分を <br> で表現
+                    result.append('')
+                    result.extend(['<br>'] * (blank_count - 1))
+            else:
+                result.append(line)
+                i += 1
+        return '\n'.join(result)
+
+    body_content = expand_blank_lines(body_content)
+    # ============================================================
+
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
         extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
@@ -128,6 +166,21 @@ def detail(id):
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
 
     display_body = re.sub(r'\[img\d+\]', '', display_body)
+
+    # ===== [map:場所名] → Google Maps 埋め込み iframe に変換 =====
+    def replace_map(m):
+        place = m.group(1).strip()
+        encoded = place.replace(' ', '+')
+        return (
+            f'<div class="post-map-wrapper">'
+            f'<div class="post-map-label">📍 {place}</div>'
+            f'<iframe class="post-map-iframe"'
+            f' src="https://maps.google.com/maps?q={encoded}&output=embed&hl=ja"'
+            f' loading="lazy" allowfullscreen></iframe>'
+            f'</div>'
+        )
+    display_body = re.sub(r'\[map:([^\]]+)\]', replace_map, display_body)
+    # ============================================================
 
     return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
 
