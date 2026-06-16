@@ -70,11 +70,14 @@ static/css/hashtag.css
 static/css/index.css
 static/css/load_more.css
 static/css/mypage.css
+static/css/top_sections.css
 static/img/posts/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
+static/img/posts/2a26d4eb-e287-42b5-98f7-ea9053b3a73f.png
 static/img/posts/343c130f-ae1b-4809-9491-a1ae6dcee185.JPG
 static/img/posts/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
 static/img/posts/5df45f99-d421-4cc4-999f-bd75c4a8a30d.JPG
 static/img/posts/6893384b-ad61-45de-97dd-2a20d5688114.jpg
+static/img/posts/af7fb005-f864-4b46-8d33-09a8fcd53787.png
 static/img/posts/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
 static/img/posts/f1fc9388-4995-4bfc-bf17-6568fb7037ed.jpg
 static/img/posts/スクリーンショット 2025-02-01 222147.png
@@ -98,6 +101,10 @@ templates/genre.html
 templates/index.html
 templates/login.html
 templates/mypage.html
+templates/partials/about.html
+templates/partials/hero.html
+templates/partials/howto.html
+templates/partials/stats.html
 templates/update.html
 views/admin.py
 views/auth.py
@@ -263,7 +270,6 @@ volumes:
     personal_blog_data:
 </file>
 
-
 <file path="extensions.py">
 # extensions.py
 from flask_sqlalchemy import SQLAlchemy
@@ -274,7 +280,6 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 </file>
-
 
 <file path="migrations/alembic.ini">
 # A generic, single database configuration.
@@ -679,6 +684,7 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(60), nullable=True)
 </file>
 
+
 <file path="requirements.txt">
 alembic==1.16.5                                                                         
 blinker==1.9.0
@@ -711,6 +717,9 @@ WTForms==3.2.1
 zipp==3.23.1
 </file>
 
+<file path="save_path">
+
+</file>
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - 水色×白 爽やかテーマ版 */
@@ -2926,6 +2935,7 @@ a[role="button"]:hover {
     border-radius: 6px;
     overflow: hidden;
     background-color: #dff0fb;
+    border: 1.4px solid #38a1e2;
 }
 
 .thumb-img {
@@ -2956,7 +2966,7 @@ a[role="button"]:hover {
 /* 記事タイトル */
 .post-title {
     margin: 8px 0 8px 0;
-    font-size: 1.30rem;
+    font-size: 1.25rem;
     line-height: 1.4;
     text-align: left !important;
 }
@@ -3046,7 +3056,7 @@ a[role="button"]:hover {
     }
 
     .post-title {
-        font-size: 1.15rem;
+        font-size: 1.25rem;
         line-height: 1.4;
         margin-bottom: 10px;
     }
@@ -3389,6 +3399,403 @@ a[role="button"]:hover {
     .genre-tag-item {
         padding: 6px 14px;
         background-color: #ffffff;
+    }
+}
+</file>
+
+<file path="static/css/top_sections.css">
+/* static/css/top_sections.css
+   hero・howto・stats セクション共通スタイル
+   ================================================= */
+
+/* ===========================
+   共通：セクション間余白
+   =========================== */
+.hero-section,
+.howto-section,
+.stats-section {
+    margin-bottom: 28px;
+}
+
+/* ===========================
+   hero セクション
+   =========================== */
+.hero-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: #ffffff;
+    border: 1px solid #c5dff0;
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+}
+
+.hero-avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #c5dff0;
+    background: #edf8ff;
+    flex-shrink: 0;
+    display: block;
+}
+
+.hero-body {
+    flex: 1;
+}
+
+.hero-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0d3a52;
+    margin: 0 0 10px;
+    text-align: left;
+    letter-spacing: -0.01em;
+}
+
+.hero-bio {
+    font-size: 15px;
+    color: #2a4a5e;
+    line-height: 1.75;
+    margin: 0;
+}
+
+/* ===========================
+   howto セクション
+   =========================== */
+.howto-section {
+    background: #f4fbff;
+    border: 1px solid #c5dff0;
+    border-left: 4px solid #1a7aad;
+    border-radius: 12px;
+    padding: 24px 28px;
+}
+
+.howto-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d3a52;
+    margin: 0 0 16px;
+    text-align: left;
+}
+
+.howto-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.howto-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 14px;
+    color: #2a4a5e;
+    line-height: 1.65;
+}
+
+.howto-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    line-height: 1.4;
+}
+
+.howto-item strong {
+    color: #0d3a52;
+    font-weight: 700;
+}
+
+/* ===========================
+   stats セクション
+   =========================== */
+.stats-section {
+    display: flex;
+    gap: 16px;
+}
+
+.stats-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: #ffffff;
+    border: 1px solid #c5dff0;
+    border-radius: 12px;
+    padding: 20px 12px;
+    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.06);
+    text-align: center;
+}
+
+.stats-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.stats-number {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1a7aad;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+.stats-label {
+    font-size: 12px;
+    color: #5a8ba8;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+/* ===========================
+   記事一覧 見出し
+   =========================== */
+.posts-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d3a52;
+    border-bottom: 2px solid #1a7aad;
+    padding-bottom: 10px;
+    margin: 0 0 20px;
+    text-align: left;
+    letter-spacing: 0.02em;
+}
+
+/* ===========================
+   スマホ（〜600px）
+   =========================== */
+@media (max-width: 600px) {
+    .hero-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px 16px;
+    }
+
+    .hero-avatar img {
+        width: 64px;
+        height: 64px;
+    }
+
+    .hero-name {
+        font-size: 17px;
+    }
+
+    .hero-bio {
+        font-size: 14px;
+    }
+
+    .howto-section {
+        padding: 18px 16px;
+    }
+
+    .howto-title {
+        font-size: 15px;
+    }
+
+    .howto-item {
+        font-size: 13px;
+        gap: 10px;
+    }
+
+    .howto-icon {
+        font-size: 18px;
+    }
+
+    .stats-section {
+        gap: 10px;
+    }
+
+    .stats-card {
+        padding: 16px 8px;
+    }
+
+    .stats-icon {
+        font-size: 18px;
+    }
+
+    .stats-number {
+        font-size: 20px;
+    }
+
+    .stats-label {
+        font-size: 11px;
+    }
+}
+
+/* ===========================
+   hero セクション内リンクボタン
+   =========================== */
+.hero-links {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.hero-link-btn {
+    display: inline-block;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a5f85;
+    background: #edf8ff;
+    border: 1.5px solid #8cc8e8;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+
+.hero-link-btn:hover {
+    background: #dff0fb;
+    border-color: #1a7aad;
+    color: #0d3a52;
+    text-decoration: none;
+}
+
+/* ===========================
+   about / howto ページ共通
+   =========================== */
+.info-page-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 36px 24px 60px;
+    box-sizing: border-box;
+}
+
+.info-page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.info-page-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 3px solid #c5dff0;
+    background: #edf8ff;
+    flex-shrink: 0;
+}
+
+.info-page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0d3a52;
+    margin: 0;
+    text-align: left;
+    letter-spacing: -0.01em;
+}
+
+.info-page-body {
+    background: #ffffff;
+    border: 1px solid #c5dff0;
+    border-radius: 12px;
+    padding: 32px 36px;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    margin-bottom: 28px;
+}
+
+.info-section {
+    margin-bottom: 32px;
+}
+
+.info-section:last-child {
+    margin-bottom: 0;
+}
+
+.info-section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0d3a52;
+    border-left: 4px solid #1a7aad;
+    padding-left: 12px;
+    margin: 0 0 12px;
+    text-align: left;
+}
+
+.info-section p {
+    font-size: 15px;
+    color: #2a4a5e;
+    line-height: 1.8;
+    margin: 0;
+}
+
+.info-page-footer {
+    text-align: center;
+}
+
+.info-back-btn {
+    display: inline-block;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a5f85;
+    border: 1.5px solid #8cc8e8;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.18s;
+}
+
+.info-back-btn:hover {
+    background: #dff0fb;
+    border-color: #1a7aad;
+    color: #0d3a52;
+    text-decoration: none;
+}
+
+/* ===========================
+   スマホ対応（about / howto）
+   =========================== */
+@media (max-width: 600px) {
+    .hero-links {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .hero-link-btn {
+        text-align: center;
+    }
+
+    .info-page-container {
+        padding: 20px 0 48px;
+    }
+
+    .info-page-header {
+        padding: 0 16px;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .info-page-avatar {
+        width: 56px;
+        height: 56px;
+    }
+
+    .info-page-title {
+        font-size: 18px;
+    }
+
+    .info-page-body {
+        padding: 24px 16px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .info-section-title {
+        font-size: 15px;
+    }
+
+    .info-section p {
+        font-size: 14px;
     }
 }
 </file>
@@ -4171,8 +4578,16 @@ function goBack() {
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
 
 <div class="page-wrapper">
+
+    {# ===== フィルターなし（トップ表示）のときだけ hero・howto・stats を表示 ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag %}
+        {% include 'partials/hero.html' %}
+        {% include 'partials/stats.html' %}
+    {% endif %}
+    {# ======================================================================= #}
 
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
@@ -4203,6 +4618,12 @@ function goBack() {
         </div>
     {% endif %}
     {# ========================================================= #}
+
+    {# ===== 記事一覧の見出し ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag %}
+        <h3 class="posts-section-title">📋 最新の記事</h3>
+    {% endif %}
+    {# =========================== #}
 
     {% for post in posts %}
         <article class="post-card">
@@ -4280,8 +4701,8 @@ function goBack() {
 
 <script>
 (function () {
-    var INITIAL = 1;   /* 最初に表示する件数：最新1件のみ */
-    var STEP    = 5;   /* 「もっと見る」1回で追加する件数 */
+    var INITIAL = 1;
+    var STEP    = 5;
 
     var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
     var total   = cards.length;
@@ -4290,13 +4711,12 @@ function goBack() {
     var wrap    = document.getElementById('index-load-more-wrap');
     var countEl = document.getElementById('index-load-more-count');
 
-    /* 全カードをいったん非表示にしてから必要枚数だけ開く */
     cards.forEach(function (c) { c.style.display = 'none'; });
 
     function showCards(n) {
         var end = Math.min(shown + n, total);
         for (var i = shown; i < end; i++) {
-            cards[i].style.display = '';  /* index.css の flex レイアウトに戻す */
+            cards[i].style.display = '';
         }
         shown = end;
         updateBtn();
@@ -4314,7 +4734,6 @@ function goBack() {
 
     window.indexLoadMore = function () { showCards(STEP); };
 
-    /* 初期表示：最新1件のみ */
     showCards(INITIAL);
 })();
 </script>
@@ -4514,6 +4933,152 @@ function goBack() {
 </script>
 
 {% endblock %}
+</file>
+
+<file path="templates/partials/about.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
+
+<div class="info-page-container">
+    <div class="info-page-header">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
+             alt="管理者アバター" class="info-page-avatar">
+        <h1 class="info-page-title">
+            {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} について
+        </h1>
+    </div>
+
+    <div class="info-page-body">
+        <section class="info-section">
+            <h2 class="info-section-title">👤 自己紹介</h2>
+            <p>
+                はじめまして。このブログの管理者です。<br>
+                ここに自己紹介文を書いてください。趣味・職業・好きなことなど、
+                読者に伝えたいことを自由に記載できます。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">💡 興味・関心</h2>
+            <p>
+                ここには興味のある分野や取り組んでいることを書いてください。<br>
+                例：プログラミング、旅行、読書、映画鑑賞など。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📝 このブログについて</h2>
+            <p>
+                このブログでは、日々の出来事や学んだことを記録しています。<br>
+                気になる記事があればぜひ読んでいってください。
+            </p>
+        </section>
+    </div>
+
+    <div class="info-page-footer">
+        <a href="/" class="info-back-btn">← トップに戻る</a>
+    </div>
+</div>
+
+{% endblock %}
+</file>
+
+<file path="templates/partials/hero.html">
+{# templates/partials/hero.html #}
+<section class="hero-section">
+    <div class="hero-avatar">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
+             alt="管理者アバター">
+    </div>
+    <div class="hero-body">
+        <h2 class="hero-name">
+            {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} のブログ
+        </h2>
+        <p class="hero-bio">
+            はじめまして。日々の出来事や趣味・技術メモなどを気ままに発信しています。
+        </p>
+        <div class="hero-links">
+            <a href="paritials/about" class="hero-link-btn">👤 自己紹介を読む</a>
+            <a href="partials/howto" class="hero-link-btn">📖 使い方を見る</a>
+        </div>
+    </div>
+</section>
+</file>
+
+<file path="templates/partials/howto.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
+
+<div class="info-page-container">
+    <div class="info-page-header">
+        <h1 class="info-page-title">📖 このブログの使い方</h1>
+    </div>
+
+    <div class="info-page-body">
+        <section class="info-section">
+            <h2 class="info-section-title">🔍 キーワード検索</h2>
+            <p>
+                ヘッダーの検索バーからキーワードを入力すると、タイトルやハッシュタグを横断して記事を検索できます。<br>
+                気になるワードを入力して探してみてください。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📂 ジャンルで絞り込む</h2>
+            <p>
+                ヘッダーの「ジャンル一覧」から興味のあるカテゴリを選ぶと、そのジャンルの記事だけを表示できます。<br>
+                旅行・技術・日常など、テーマ別に読み進めたいときに便利です。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">🏷️ ハッシュタグで絞り込む</h2>
+            <p>
+                記事に付いているハッシュタグをクリックすると、同じタグが付いた記事をまとめて確認できます。<br>
+                ジャンルをさらに細かく絞りたいときに活用してください。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📜 もっと見る</h2>
+            <p>
+                一覧ページでは最新記事から順に表示されます。<br>
+                「もっと見る」ボタンを押すと、追加で記事が表示されます。
+            </p>
+        </section>
+    </div>
+
+    <div class="info-page-footer">
+        <a href="/" class="info-back-btn">← トップに戻る</a>
+    </div>
+</div>
+
+{% endblock %}
+</file>
+
+<file path="templates/partials/stats.html">
+{# templates/partials/stats.html #}
+<section class="stats-section">
+    <div class="stats-card">
+        <span class="stats-icon">📝</span>
+        <span class="stats-number">{{ stats.post_count }}</span>
+        <span class="stats-label">総投稿数</span>
+    </div>
+    <div class="stats-card">
+        <span class="stats-icon">🏷️</span>
+        <span class="stats-number">{{ stats.hashtag_count }}</span>
+        <span class="stats-label">ハッシュタグ数</span>
+    </div>
+    <div class="stats-card">
+        <span class="stats-icon">🕒</span>
+        <span class="stats-number">{{ stats.last_updated }}</span>
+        <span class="stats-label">最終更新日</span>
+    </div>
+</section>
 </file>
 
 <file path="templates/update.html">
@@ -5434,7 +5999,8 @@ from flask_login import current_user
 import markdown
 import re
 from extensions import db
-from models import Post, Hashtag
+from models import Post, Hashtag, User
+import config
 
 blog_bp = Blueprint('blog', __name__)
 
@@ -5464,7 +6030,6 @@ def index():
 
     if search_word:
         keyword = f'%{search_word}%'
-        # タイトル OR ハッシュタグ名 のどちらかにマッチする記事を返す
         query = query.filter(
             Post.title.ilike(keyword) |
             Post.hashtags.any(Hashtag.name.ilike(keyword))
@@ -5480,9 +6045,7 @@ def index():
     hashtags_in_genre = []
     if selected_genre:
         if current_user.is_authenticated:
-            genre_posts = Post.query.filter(
-                Post.genre == selected_genre,
-            ).all()
+            genre_posts = Post.query.filter(Post.genre == selected_genre).all()
         else:
             genre_posts = Post.query.filter(
                 Post.genre == selected_genre,
@@ -5497,14 +6060,58 @@ def index():
                     seen.add(tag.name)
         hashtags_in_genre.sort(key=lambda t: t.name)
 
+    # ===== 統計情報（フィルターなしのトップページ表示用） =====
+    stats = None
+    admin_user = None
+    if not selected_genre and not search_word and not selected_hashtag:
+        # 公開済み投稿数
+        post_count = Post.query.filter(Post.is_published == True).count()
+
+        # ハッシュタグ数（公開済み投稿に紐づくもの）
+        hashtag_count = db.session.query(Hashtag).join(Hashtag.posts).filter(
+            Post.is_published == True
+        ).distinct().count()
+
+        # 最終更新日（公開済み投稿の updated_at 最大値）
+        latest_post = Post.query.filter(
+            Post.is_published == True
+        ).order_by(Post.updated_at.desc()).first()
+        last_updated = latest_post.updated_at.strftime('%Y/%m/%d') if latest_post else '---'
+
+        stats = {
+            'post_count':    post_count,
+            'hashtag_count': hashtag_count,
+            'last_updated':  last_updated,
+        }
+
+        # 管理者ユーザー情報（hero セクション用）
+        admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
+
     return render_template(
         'index.html',
-        posts            = posts,
-        selected_genre   = selected_genre,
-        search_word      = search_word,
-        selected_hashtag = selected_hashtag,
+        posts             = posts,
+        selected_genre    = selected_genre,
+        search_word       = search_word,
+        selected_hashtag  = selected_hashtag,
         hashtags_in_genre = hashtags_in_genre,
+        stats             = stats,
+        admin_user        = admin_user,
     )
+
+
+# ===== 自己紹介ページ =====
+
+@blog_bp.route('/about')
+def about():
+    admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
+    return render_template('about.html', admin_user=admin_user)
+
+
+# ===== 使い方ページ =====
+
+@blog_bp.route('/howto')
+def howto():
+    return render_template('howto.html')
 
 
 # ===== 投稿詳細 =====
@@ -5523,13 +6130,9 @@ def detail(id):
             return redirect('/')
 
     body_content = post.body
-
-    # [toc] マーカーの有無は加工前のテキストで判定する
     has_toc_marker = '[toc]' in body_content
 
-    # ===== 連続する空行を <br> に変換（Markdown変換前に処理） =====
     def is_structural_line(s):
-        """見出し・コードブロック・[toc] など構造に関わる行かどうかを判定"""
         stripped = s.strip()
         return (
             stripped.startswith('#') or
@@ -5550,11 +6153,9 @@ def detail(id):
                     i += 1
                 prev_line = result[-1] if result else ''
                 next_line = lines[i] if i < len(lines) else ''
-                # 前後どちらかが構造行なら <br> 変換せず空行のままにする
                 if is_structural_line(prev_line) or is_structural_line(next_line) or blank_count == 1:
                     result.extend([''] * blank_count)
                 else:
-                    # 2行以上の空行：段落区切り1つ + 余剰分を <br> で表現
                     result.append('')
                     result.extend(['<br>'] * (blank_count - 1))
             else:
@@ -5563,7 +6164,6 @@ def detail(id):
         return '\n'.join(result)
 
     body_content = expand_blank_lines(body_content)
-    # ============================================================
 
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
@@ -5571,9 +6171,6 @@ def detail(id):
     )
 
     display_body = md.convert(body_content)
-
-    # [toc] あり → md.convert() が本文内に目次を展開済みなので toc_html は不要
-    # [toc] なし → md.toc を別枠（テンプレートの post-toc ブロック）に表示
     toc_html = None if has_toc_marker else md.toc
 
     if post.img_name:
@@ -5601,7 +6198,6 @@ def detail(id):
 
     display_body = re.sub(r'\[img\d+\]', '', display_body)
 
-    # ===== [map:場所名] → Google Maps 埋め込み iframe に変換 =====
     def replace_map(m):
         place = m.group(1).strip()
         encoded = place.replace(' ', '+')
@@ -5614,7 +6210,6 @@ def detail(id):
             f'</div>'
         )
     display_body = re.sub(r'\[map:([^\]]+)\]', replace_map, display_body)
-    # ============================================================
 
     return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
 

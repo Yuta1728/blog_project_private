@@ -1,0 +1,19 @@
+{# templates/partials/hero.html #}
+<section class="hero-section">
+    <div class="hero-avatar">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
+             alt="管理者アバター">
+    </div>
+    <div class="hero-body">
+        <h2 class="hero-name">
+            {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} のブログ
+        </h2>
+        <p class="hero-bio">
+            はじめまして。日々の出来事や趣味・技術メモなどを気ままに発信しています。
+        </p>
+        <div class="hero-links">
+            <a href="/about" class="hero-link-btn">👤 自己紹介を読む</a>
+            <a href="/howto" class="hero-link-btn">📖 使い方を見る</a>
+        </div>
+    </div>
+</section>

@@ -4,7 +4,8 @@ from flask_login import current_user
 import markdown
 import re
 from extensions import db
-from models import Post, Hashtag
+from models import Post, Hashtag, User
+import config
 
 blog_bp = Blueprint('blog', __name__)
 
@@ -34,7 +35,6 @@ def index():
 
     if search_word:
         keyword = f'%{search_word}%'
-        # タイトル OR ハッシュタグ名 のどちらかにマッチする記事を返す
         query = query.filter(
             Post.title.ilike(keyword) |
             Post.hashtags.any(Hashtag.name.ilike(keyword))
@@ -50,9 +50,7 @@ def index():
     hashtags_in_genre = []
     if selected_genre:
         if current_user.is_authenticated:
-            genre_posts = Post.query.filter(
-                Post.genre == selected_genre,
-            ).all()
+            genre_posts = Post.query.filter(Post.genre == selected_genre).all()
         else:
             genre_posts = Post.query.filter(
                 Post.genre == selected_genre,
@@ -67,14 +65,58 @@ def index():
                     seen.add(tag.name)
         hashtags_in_genre.sort(key=lambda t: t.name)
 
+    # ===== 統計情報（フィルターなしのトップページ表示用） =====
+    stats = None
+    admin_user = None
+    if not selected_genre and not search_word and not selected_hashtag:
+        # 公開済み投稿数
+        post_count = Post.query.filter(Post.is_published == True).count()
+
+        # ハッシュタグ数（公開済み投稿に紐づくもの）
+        hashtag_count = db.session.query(Hashtag).join(Hashtag.posts).filter(
+            Post.is_published == True
+        ).distinct().count()
+
+        # 最終更新日（公開済み投稿の updated_at 最大値）
+        latest_post = Post.query.filter(
+            Post.is_published == True
+        ).order_by(Post.updated_at.desc()).first()
+        last_updated = latest_post.updated_at.strftime('%Y/%m/%d') if latest_post else '---'
+
+        stats = {
+            'post_count':    post_count,
+            'hashtag_count': hashtag_count,
+            'last_updated':  last_updated,
+        }
+
+        # 管理者ユーザー情報（hero セクション用）
+        admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
+
     return render_template(
         'index.html',
-        posts            = posts,
-        selected_genre   = selected_genre,
-        search_word      = search_word,
-        selected_hashtag = selected_hashtag,
+        posts             = posts,
+        selected_genre    = selected_genre,
+        search_word       = search_word,
+        selected_hashtag  = selected_hashtag,
         hashtags_in_genre = hashtags_in_genre,
+        stats             = stats,
+        admin_user        = admin_user,
     )
+
+
+# ===== 自己紹介ページ =====
+
+@blog_bp.route('/about')
+def about():
+    admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
+    return render_template('about.html', admin_user=admin_user)
+
+
+# ===== 使い方ページ =====
+
+@blog_bp.route('/howto')
+def howto():
+    return render_template('howto.html')
 
 
 # ===== 投稿詳細 =====
@@ -93,13 +135,9 @@ def detail(id):
             return redirect('/')
 
     body_content = post.body
-
-    # [toc] マーカーの有無は加工前のテキストで判定する
     has_toc_marker = '[toc]' in body_content
 
-    # ===== 連続する空行を <br> に変換（Markdown変換前に処理） =====
     def is_structural_line(s):
-        """見出し・コードブロック・[toc] など構造に関わる行かどうかを判定"""
         stripped = s.strip()
         return (
             stripped.startswith('#') or
@@ -120,11 +158,9 @@ def detail(id):
                     i += 1
                 prev_line = result[-1] if result else ''
                 next_line = lines[i] if i < len(lines) else ''
-                # 前後どちらかが構造行なら <br> 変換せず空行のままにする
                 if is_structural_line(prev_line) or is_structural_line(next_line) or blank_count == 1:
                     result.extend([''] * blank_count)
                 else:
-                    # 2行以上の空行：段落区切り1つ + 余剰分を <br> で表現
                     result.append('')
                     result.extend(['<br>'] * (blank_count - 1))
             else:
@@ -133,7 +169,6 @@ def detail(id):
         return '\n'.join(result)
 
     body_content = expand_blank_lines(body_content)
-    # ============================================================
 
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
@@ -141,9 +176,6 @@ def detail(id):
     )
 
     display_body = md.convert(body_content)
-
-    # [toc] あり → md.convert() が本文内に目次を展開済みなので toc_html は不要
-    # [toc] なし → md.toc を別枠（テンプレートの post-toc ブロック）に表示
     toc_html = None if has_toc_marker else md.toc
 
     if post.img_name:
@@ -171,7 +203,6 @@ def detail(id):
 
     display_body = re.sub(r'\[img\d+\]', '', display_body)
 
-    # ===== [map:場所名] → Google Maps 埋め込み iframe に変換 =====
     def replace_map(m):
         place = m.group(1).strip()
         encoded = place.replace(' ', '+')
@@ -184,7 +215,6 @@ def detail(id):
             f'</div>'
         )
     display_body = re.sub(r'\[map:([^\]]+)\]', replace_map, display_body)
-    # ============================================================
 
     return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
 

@@ -1,0 +1,18 @@
+{# templates/partials/stats.html #}
+<section class="stats-section">
+    <div class="stats-card">
+        <span class="stats-icon">📝</span>
+        <span class="stats-number">{{ stats.post_count }}</span>
+        <span class="stats-label">総投稿数</span>
+    </div>
+    <div class="stats-card">
+        <span class="stats-icon">🏷️</span>
+        <span class="stats-number">{{ stats.hashtag_count }}</span>
+        <span class="stats-label">ハッシュタグ数</span>
+    </div>
+    <div class="stats-card">
+        <span class="stats-icon">🕒</span>
+        <span class="stats-number">{{ stats.last_updated }}</span>
+        <span class="stats-label">最終更新日</span>
+    </div>
+</section>

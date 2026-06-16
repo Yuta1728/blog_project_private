@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
+
+<div class="info-page-container">
+    <div class="info-page-header">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
+             alt="管理者アバター" class="info-page-avatar">
+        <h1 class="info-page-title">
+            {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} について
+        </h1>
+    </div>
+
+    <div class="info-page-body">
+        <section class="info-section">
+            <h2 class="info-section-title">👤 自己紹介</h2>
+            <p>
+                はじめまして。ブログの管理者 MITです。<br>
+                AIを活用したアプリ開発とデータ分析を学習中です。<br>
+                大学でプログラミング基礎知識を学んだことで、自分だけのアプリを作りたいという思いからMIT blogを作りました。
+                
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">💡 興味・関心</h2>
+            <p>
+                <br>
+                
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📝 このブログについて</h2>
+            <p>
+                このブログでは、日々の出来事や学んだことを記録しています。<br>
+                気になる記事があればぜひ読んでいってください。
+            </p>
+        </section>
+    </div>
+
+    <div class="info-page-footer">
+        <a href="/" class="info-back-btn">← トップに戻る</a>
+    </div>
+</div>
+
+{% endblock %}

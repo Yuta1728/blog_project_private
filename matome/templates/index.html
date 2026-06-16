@@ -3,8 +3,16 @@
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
 
 <div class="page-wrapper">
+
+    {# ===== フィルターなし（トップ表示）のときだけ hero・howto・stats を表示 ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag %}
+        {% include 'partials/hero.html' %}
+        {% include 'partials/stats.html' %}
+    {% endif %}
+    {# ======================================================================= #}
 
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
@@ -35,6 +43,12 @@
         </div>
     {% endif %}
     {# ========================================================= #}
+
+    {# ===== 記事一覧の見出し ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag %}
+        <h3 class="posts-section-title">📋 最新の記事</h3>
+    {% endif %}
+    {# =========================== #}
 
     {% for post in posts %}
         <article class="post-card">
@@ -112,8 +126,8 @@
 
 <script>
 (function () {
-    var INITIAL = 1;   /* 最初に表示する件数：最新1件のみ */
-    var STEP    = 5;   /* 「もっと見る」1回で追加する件数 */
+    var INITIAL = 1;
+    var STEP    = 5;
 
     var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
     var total   = cards.length;
@@ -122,13 +136,12 @@
     var wrap    = document.getElementById('index-load-more-wrap');
     var countEl = document.getElementById('index-load-more-count');
 
-    /* 全カードをいったん非表示にしてから必要枚数だけ開く */
     cards.forEach(function (c) { c.style.display = 'none'; });
 
     function showCards(n) {
         var end = Math.min(shown + n, total);
         for (var i = shown; i < end; i++) {
-            cards[i].style.display = '';  /* index.css の flex レイアウトに戻す */
+            cards[i].style.display = '';
         }
         shown = end;
         updateBtn();
@@ -146,7 +159,6 @@
 
     window.indexLoadMore = function () { showCards(STEP); };
 
-    /* 初期表示：最新1件のみ */
     showCards(INITIAL);
 })();
 </script>
