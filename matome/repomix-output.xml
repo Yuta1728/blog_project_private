@@ -94,16 +94,16 @@ static/img/thbnails/thumb_option6.jpg
 static/img/thbnails/thumb_option7.jpg
 static/img/thbnails/thumb_option8.jpg
 static/img/thbnails/thumb_option9.jpg
+templates/about.html
 templates/base.html
 templates/create.html
 templates/detail.html
 templates/genre.html
+templates/howto.html
 templates/index.html
 templates/login.html
 templates/mypage.html
-templates/partials/about.html
 templates/partials/hero.html
-templates/partials/howto.html
 templates/partials/stats.html
 templates/update.html
 views/admin.py
@@ -270,6 +270,7 @@ volumes:
     personal_blog_data:
 </file>
 
+
 <file path="extensions.py">
 # extensions.py
 from flask_sqlalchemy import SQLAlchemy
@@ -280,6 +281,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 </file>
+
 
 <file path="migrations/alembic.ini">
 # A generic, single database configuration.
@@ -717,9 +719,6 @@ WTForms==3.2.1
 zipp==3.23.1
 </file>
 
-<file path="save_path">
-
-</file>
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - 水色×白 爽やかテーマ版 */
@@ -3425,7 +3424,7 @@ a[role="button"]:hover {
     align-items: center;
     gap: 24px;
     background: #ffffff;
-    border: 1px solid #c5dff0;
+    border: 1px solid #7cb9e1;
     border-radius: 12px;
     padding: 28px 32px;
     box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
@@ -3514,7 +3513,8 @@ a[role="button"]:hover {
    =========================== */
 .stats-section {
     display: flex;
-    gap: 16px;
+    gap: 27px;
+    height: 70%;
 }
 
 .stats-card {
@@ -3525,20 +3525,20 @@ a[role="button"]:hover {
     justify-content: center;
     gap: 4px;
     background: #ffffff;
-    border: 1px solid #c5dff0;
+    border: 1px solid #7cb9e1;
     border-radius: 12px;
-    padding: 20px 12px;
+    padding: 12px 10px;
     box-shadow: 0 3px 10px rgba(26, 122, 173, 0.06);
     text-align: center;
 }
 
 .stats-icon {
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
 }
 
 .stats-number {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 800;
     color: #1a7aad;
     line-height: 1.2;
@@ -3757,7 +3757,7 @@ a[role="button"]:hover {
 @media (max-width: 600px) {
     .hero-links {
         flex-direction: column;
-        gap: 8px;
+        gap: 17px;
     }
 
     .hero-link-btn {
@@ -3798,6 +3798,57 @@ a[role="button"]:hover {
         font-size: 14px;
     }
 }
+</file>
+
+<file path="templates/about.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
+
+<div class="info-page-container">
+    <div class="info-page-header">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
+             alt="管理者アバター" class="info-page-avatar">
+        <h1 class="info-page-title">
+            {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} について
+        </h1>
+    </div>
+
+    <div class="info-page-body">
+        <section class="info-section">
+            <h2 class="info-section-title">👤 自己紹介</h2>
+            <p>
+                はじめまして。ブログの管理者 MITです。<br>
+                AIを活用したアプリ開発とデータ分析を学習中です。<br>
+                大学でプログラミング基礎知識を学んだことで、自分だけのアプリを作りたいという思いからMIT blogを作りました。
+                
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">💡 興味・関心</h2>
+            <p>
+                <br>
+                
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📝 このブログについて</h2>
+            <p>
+                このブログでは、日々の出来事や学んだことを記録しています。<br>
+                気になる記事があればぜひ読んでいってください。
+            </p>
+        </section>
+    </div>
+
+    <div class="info-page-footer">
+        <a href="/" class="info-back-btn">← トップに戻る</a>
+    </div>
+</div>
+
+{% endblock %}
 </file>
 
 <file path="templates/base.html">
@@ -4572,6 +4623,59 @@ function goBack() {
 {% endblock %}
 </file>
 
+<file path="templates/howto.html">
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
+
+<div class="info-page-container">
+    <div class="info-page-header">
+        <h1 class="info-page-title">📖 このブログの使い方</h1>
+    </div>
+
+    <div class="info-page-body">
+        <section class="info-section">
+            <h2 class="info-section-title">🔍 キーワード検索</h2>
+            <p>
+                ヘッダーの検索バーからキーワードを入力すると、タイトルやハッシュタグを横断して記事を検索できます。<br>
+                気になるワードを入力して探してみてください。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📂 ジャンルで絞り込む</h2>
+            <p>
+                ヘッダーの「ジャンル一覧」から興味のあるカテゴリを選ぶと、そのジャンルの記事だけを表示できます。<br>
+                旅行・技術・日常など、テーマ別に読み進めたいときに便利です。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">🏷️ ハッシュタグで絞り込む</h2>
+            <p>
+                記事に付いているハッシュタグをクリックすると、同じタグが付いた記事をまとめて確認できます。<br>
+                ジャンルをさらに細かく絞りたいときに活用してください。
+            </p>
+        </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">📜 もっと見る</h2>
+            <p>
+                一覧ページでは最新記事から順に表示されます。<br>
+                「もっと見る」ボタンを押すと、追加で記事が表示されます。
+            </p>
+        </section>
+    </div>
+
+    <div class="info-page-footer">
+        <a href="/" class="info-back-btn">← トップに戻る</a>
+    </div>
+</div>
+
+{% endblock %}
+</file>
+
 <file path="templates/index.html">
 {% extends "base.html" %}
 {% block content %}
@@ -4935,56 +5039,6 @@ function goBack() {
 {% endblock %}
 </file>
 
-<file path="templates/partials/about.html">
-{% extends "base.html" %}
-{% block content %}
-
-<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
-
-<div class="info-page-container">
-    <div class="info-page-header">
-        <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
-             alt="管理者アバター" class="info-page-avatar">
-        <h1 class="info-page-title">
-            {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} について
-        </h1>
-    </div>
-
-    <div class="info-page-body">
-        <section class="info-section">
-            <h2 class="info-section-title">👤 自己紹介</h2>
-            <p>
-                はじめまして。このブログの管理者です。<br>
-                ここに自己紹介文を書いてください。趣味・職業・好きなことなど、
-                読者に伝えたいことを自由に記載できます。
-            </p>
-        </section>
-
-        <section class="info-section">
-            <h2 class="info-section-title">💡 興味・関心</h2>
-            <p>
-                ここには興味のある分野や取り組んでいることを書いてください。<br>
-                例：プログラミング、旅行、読書、映画鑑賞など。
-            </p>
-        </section>
-
-        <section class="info-section">
-            <h2 class="info-section-title">📝 このブログについて</h2>
-            <p>
-                このブログでは、日々の出来事や学んだことを記録しています。<br>
-                気になる記事があればぜひ読んでいってください。
-            </p>
-        </section>
-    </div>
-
-    <div class="info-page-footer">
-        <a href="/" class="info-back-btn">← トップに戻る</a>
-    </div>
-</div>
-
-{% endblock %}
-</file>
-
 <file path="templates/partials/hero.html">
 {# templates/partials/hero.html #}
 <section class="hero-section">
@@ -5000,64 +5054,11 @@ function goBack() {
             はじめまして。日々の出来事や趣味・技術メモなどを気ままに発信しています。
         </p>
         <div class="hero-links">
-            <a href="paritials/about" class="hero-link-btn">👤 自己紹介を読む</a>
-            <a href="partials/howto" class="hero-link-btn">📖 使い方を見る</a>
+            <a href="/about" class="hero-link-btn">👤 自己紹介を読む</a>
+            <a href="/howto" class="hero-link-btn">📖 使い方を見る</a>
         </div>
     </div>
 </section>
-</file>
-
-<file path="templates/partials/howto.html">
-{% extends "base.html" %}
-{% block content %}
-
-<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
-
-<div class="info-page-container">
-    <div class="info-page-header">
-        <h1 class="info-page-title">📖 このブログの使い方</h1>
-    </div>
-
-    <div class="info-page-body">
-        <section class="info-section">
-            <h2 class="info-section-title">🔍 キーワード検索</h2>
-            <p>
-                ヘッダーの検索バーからキーワードを入力すると、タイトルやハッシュタグを横断して記事を検索できます。<br>
-                気になるワードを入力して探してみてください。
-            </p>
-        </section>
-
-        <section class="info-section">
-            <h2 class="info-section-title">📂 ジャンルで絞り込む</h2>
-            <p>
-                ヘッダーの「ジャンル一覧」から興味のあるカテゴリを選ぶと、そのジャンルの記事だけを表示できます。<br>
-                旅行・技術・日常など、テーマ別に読み進めたいときに便利です。
-            </p>
-        </section>
-
-        <section class="info-section">
-            <h2 class="info-section-title">🏷️ ハッシュタグで絞り込む</h2>
-            <p>
-                記事に付いているハッシュタグをクリックすると、同じタグが付いた記事をまとめて確認できます。<br>
-                ジャンルをさらに細かく絞りたいときに活用してください。
-            </p>
-        </section>
-
-        <section class="info-section">
-            <h2 class="info-section-title">📜 もっと見る</h2>
-            <p>
-                一覧ページでは最新記事から順に表示されます。<br>
-                「もっと見る」ボタンを押すと、追加で記事が表示されます。
-            </p>
-        </section>
-    </div>
-
-    <div class="info-page-footer">
-        <a href="/" class="info-back-btn">← トップに戻る</a>
-    </div>
-</div>
-
-{% endblock %}
 </file>
 
 <file path="templates/partials/stats.html">
