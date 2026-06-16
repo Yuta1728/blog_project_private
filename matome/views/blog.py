@@ -94,34 +94,37 @@ def detail(id):
 
     body_content = post.body
 
+    # [toc] マーカーの有無は加工前のテキストで判定する
+    has_toc_marker = '[toc]' in body_content
+
     # ===== 連続する空行を <br> に変換（Markdown変換前に処理） =====
-    # Markdownは \n\n 以上の連続空行を段落区切り1つとして扱い折りたたむため、
-    # 変換前に「空行2行以上」を <br> タグへ置き換えておく。
-    # ただし見出し（## / ###）やコードブロック(```)の前後は除外する。
+    def is_structural_line(s):
+        """見出し・コードブロック・[toc] など構造に関わる行かどうかを判定"""
+        stripped = s.strip()
+        return (
+            stripped.startswith('#') or
+            stripped.startswith('```') or
+            stripped == '[toc]'
+        )
+
     def expand_blank_lines(text):
         lines = text.split('\n')
         result = []
         i = 0
         while i < len(lines):
             line = lines[i]
-            # 空行の連続をカウント
             if line.strip() == '':
                 blank_count = 0
                 while i < len(lines) and lines[i].strip() == '':
                     blank_count += 1
                     i += 1
-                # 前後の行が見出し・コードブロック区切りなら通常の段落区切りとして残す
-                prev_line = result[-1].strip() if result else ''
-                next_line = lines[i].strip() if i < len(lines) else ''
-                is_structural = (
-                    prev_line.startswith('#') or next_line.startswith('#') or
-                    prev_line.startswith('```') or next_line.startswith('```')
-                )
-                if is_structural or blank_count == 1:
-                    # 通常の段落区切り：空行をそのまま出力
+                prev_line = result[-1] if result else ''
+                next_line = lines[i] if i < len(lines) else ''
+                # 前後どちらかが構造行なら <br> 変換せず空行のままにする
+                if is_structural_line(prev_line) or is_structural_line(next_line) or blank_count == 1:
                     result.extend([''] * blank_count)
                 else:
-                    # 2行以上の空行：1つの段落区切り + 余剰分を <br> で表現
+                    # 2行以上の空行：段落区切り1つ + 余剰分を <br> で表現
                     result.append('')
                     result.extend(['<br>'] * (blank_count - 1))
             else:
@@ -139,8 +142,9 @@ def detail(id):
 
     display_body = md.convert(body_content)
 
-    has_toc_marker = '[toc]' in body_content
-    toc_html = md.toc if not has_toc_marker else None
+    # [toc] あり → md.convert() が本文内に目次を展開済みなので toc_html は不要
+    # [toc] なし → md.toc を別枠（テンプレートの post-toc ブロック）に表示
+    toc_html = None if has_toc_marker else md.toc
 
     if post.img_name:
         images   = post.img_name.split(',')

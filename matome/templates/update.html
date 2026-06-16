@@ -346,12 +346,28 @@ function mdWrapBold() {
     }
 }
 function mdInsertToc() {
-    const ta        = document.getElementById('bodyTextarea');
-    const pos       = ta.selectionStart;
-    const val       = ta.value;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const insert    = (pos === lineStart ? '' : '\n') + '[toc]\n';
-    mdInsertAt(ta, insert);
+    const ta  = document.getElementById('bodyTextarea');
+    const pos = ta.selectionStart;
+    const val = ta.value;
+
+    // --- [toc] の前に必要な改行を決める ---
+    // カーソルより前の文字列を取得し、直前が空行かどうかを確認する
+    const before = val.substring(0, pos);
+    // 先頭 or 直前がすでに空行（\n\n）なら追加不要
+    const leadingNewlines = before.length === 0        ? ''
+                          : before.endsWith('\n\n') ? ''
+                          : before.endsWith('\n')    ? '\n'
+                          :                             '\n\n';
+
+    // --- [toc] の後に必要な改行を決める ---
+    const after = val.substring(pos);
+    // 末尾 or 直後がすでに空行（\n\n）なら追加不要
+    const trailingNewlines = after.length === 0        ? '\n'
+                           : after.startsWith('\n\n') ? ''
+                           : after.startsWith('\n')    ? '\n'
+                           :                              '\n\n';
+
+    mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
 }
 function mdInsertImg(n) {
     mdInsertAt(document.getElementById('bodyTextarea'), `[img${n}]`);
@@ -366,10 +382,21 @@ function rebuildImgBtns(count) {
         btn.type      = 'button';
         btn.className = 'md-btn md-btn-img';
         btn.textContent = `[img${i}]`;
-        btn.onclick   = (function(n){ return function(){ mdInsertImg(n); }; })(i);
+        btn.dataset.imgIndex = i;
         group.appendChild(btn);
     }
 }
+
+// Jinja2 でレンダリングされた既存画像の [imgN] ボタン + JS生成ボタン の両方に対応
+// data-img-index 属性からインデックスを取得してイベント登録する
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('img-btn-group').addEventListener('click', function (e) {
+        const btn = e.target.closest('.md-btn-img');
+        if (btn && btn.dataset.imgIndex) {
+            mdInsertImg(parseInt(btn.dataset.imgIndex));
+        }
+    });
+});
 
 /* =========================================================
    ハッシュタグ入力プレビュー
@@ -446,14 +473,6 @@ function insertMapTag() {
 
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeMapModal();
-});
-
-
-// [imgN] ボタンのクリックイベントを data属性から登録
-document.querySelectorAll('.md-btn-img[data-img-index]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        mdInsertImg(parseInt(this.dataset.imgIndex));
-    });
 });
 </script>
 

@@ -317,11 +317,25 @@ function mdInsertToc() {
     const ta  = document.getElementById('bodyTextarea');
     const pos = ta.selectionStart;
     const val = ta.value;
-    // 行頭かどうかを確認して改行を補う
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const isLineHead = (pos === lineStart);
-    const insert = (isLineHead ? '' : '\n') + '[toc]\n';
-    mdInsertAt(ta, insert);
+
+    // --- [toc] の前に必要な改行を決める ---
+    // カーソルより前の文字列を取得し、直前が空行かどうかを確認する
+    const before = val.substring(0, pos);
+    // 先頭 or 直前がすでに空行（\n\n）なら追加不要
+    const leadingNewlines = before.length === 0        ? ''
+                          : before.endsWith('\n\n') ? ''
+                          : before.endsWith('\n')    ? '\n'
+                          :                             '\n\n';
+
+    // --- [toc] の後に必要な改行を決める ---
+    const after = val.substring(pos);
+    // 末尾 or 直後がすでに空行（\n\n）なら追加不要
+    const trailingNewlines = after.length === 0        ? '\n'
+                           : after.startsWith('\n\n') ? ''
+                           : after.startsWith('\n')    ? '\n'
+                           :                              '\n\n';
+
+    mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
 }
 
 function mdInsertImg(n) {
