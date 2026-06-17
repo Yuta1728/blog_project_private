@@ -47,9 +47,9 @@ a:hover {
 /* success / info → 水色系 */
 .flash-messages li {
     font-size: 14px;
-    color: #05517a;            /* 十分な濃さで視認性確保 */
-    background-color: #edf8ff;
-    border: 1px solid #77c6ed;
+    color: #033f5f;            /* 十分な濃さで視認性確保 */
+    background-color: #f4fbff;
+    border: 1px solid #5db4e0;
     padding: 10px 16px;
     margin-bottom: 8px;
     border-radius: 6px;
