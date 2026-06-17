@@ -82,7 +82,7 @@ a:hover {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-    height: 72px;
+    height: 78px;
     gap: 24px;
 }
 
@@ -94,7 +94,7 @@ a:hover {
 .header-logo a {
     color: #0062b3 !important;
     text-decoration: none !important;
-    font-size: 28px;
+    font-size: 35px;
     font-weight: 800;
     letter-spacing: -0.03em;
     line-height: 1;
@@ -120,7 +120,7 @@ a:hover {
     background-color: #edf8ff;
     border-radius: 20px;
     padding: 4px 14px;
-    border: 1px solid #8ccff3;
+    border: 1px solid #3899ce;
     transition: all 0.3s ease;
     width: 100%;
     max-width: 350px;
@@ -203,7 +203,7 @@ a:hover {
 .header-nav ul li a {
     color: #1a5f85;            /* 濃くして白背景上での視認性UP */
     text-decoration: none;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
     padding: 8px 16px;
     border-radius: 20px;
@@ -377,13 +377,13 @@ a:hover {
    ========================================================================== */
 @media (max-width: 767px) {
     .header-container {
-        padding: 0 16px;
-        height: 56px;
+        padding: 0 15px;
+        height: 58px;
         gap: 12px;
     }
 
     .header-logo a {
-        font-size: 22px;
+        font-size: 24px;
     }
 
     .header-nav {
