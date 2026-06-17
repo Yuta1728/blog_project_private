@@ -9,8 +9,8 @@
 
     {# ===== フィルターなし（トップ表示）のときだけ hero・howto・stats を表示 ===== #}
     {% if not selected_genre and not search_word and not selected_hashtag %}
-        {% include 'partials/hero.html' %}
-        {% include 'partials/stats.html' %}
+        {% include 'hero.html' %}
+        {% include 'stats.html' %}
     {% endif %}
     {# ======================================================================= #}
 
