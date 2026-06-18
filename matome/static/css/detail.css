@@ -129,6 +129,14 @@ h1 {
     display: block !important;
 }
 
+/* 目次のリンク先となる見出し（h1, h2, h3など）に一括適用 */
+.detail-article-body h1,
+.detail-article-body h2,
+.detail-article-body h3 {
+    /* 100px の部分を、あなたのサイトの固定ヘッダーの高さ（＋少しの余白）に調整してください */
+    scroll-margin-top: 100px;
+}
+
 /* 大見出しリスト：文字を濃くして読みやすく */
 .post-toc > ul > li,
 .post-toc .toc > ul > li,
