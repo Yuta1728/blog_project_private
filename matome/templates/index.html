@@ -112,15 +112,19 @@
         </p>
     {% endfor %}
 
-    {# ===== 「もっと見る」ボタン ===== #}
+    {# ===== 「もっと見る」「表示を減らす」ボタン ===== #}
     <div class="load-more-wrap" id="index-load-more-wrap">
+        <button class="load-less-btn" id="index-load-less-btn" type="button"
+                onclick="indexLoadLess()">
+            ▲ 表示を減らす
+        </button>
         <button class="load-more-btn" id="index-load-more-btn" type="button"
                 onclick="indexLoadMore()">
             もっと見る
             <span class="load-more-count" id="index-load-more-count"></span>
         </button>
     </div>
-    {# ================================ #}
+    {# ================================================ #}
 
 </div>
 
@@ -133,8 +137,10 @@
     var total   = cards.length;
     var shown   = 0;
 
-    var wrap    = document.getElementById('index-load-more-wrap');
-    var countEl = document.getElementById('index-load-more-count');
+    var wrap      = document.getElementById('index-load-more-wrap');
+    var countEl   = document.getElementById('index-load-more-count');
+    var lessBtn   = document.getElementById('index-load-less-btn');
+    var moreBtn   = document.getElementById('index-load-more-btn');
 
     cards.forEach(function (c) { c.style.display = 'none'; });
 
@@ -147,17 +153,31 @@
         updateBtn();
     }
 
+    function hideCards(n) {
+        var end = Math.max(shown - n, INITIAL);
+        for (var i = end; i < shown; i++) {
+            cards[i].style.display = 'none';
+        }
+        shown = end;
+        updateBtn();
+    }
+
     function updateBtn() {
         var remaining = total - shown;
-        if (remaining <= 0) {
-            wrap.style.display = 'none';
-        } else {
-            wrap.style.display = 'block';
-            countEl.textContent = 'あと ' + remaining + ' 件';
-        }
+
+        /* ラッパー：初期1件のみ表示中は非表示、それ以外は常に表示 */
+        wrap.style.display = (shown <= INITIAL && remaining <= 0) ? 'none' : 'flex';
+
+        /* もっと見るボタン：残件数0なら非表示 */
+        moreBtn.style.display  = remaining > 0 ? 'inline-flex' : 'none';
+        countEl.textContent    = 'あと ' + remaining + ' 件';
+
+        /* 表示を減らすボタン：INITIAL件より多く表示中なら表示 */
+        lessBtn.style.display  = shown > INITIAL ? 'inline-flex' : 'none';
     }
 
     window.indexLoadMore = function () { showCards(STEP); };
+    window.indexLoadLess = function () { hideCards(STEP); };
 
     showCards(INITIAL);
 })();

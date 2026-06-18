@@ -1,5 +1,5 @@
 /* static/css/load_more.css
-   「もっと見る」ボタン共通スタイル
+   「もっと見る」「表示を減らす」ボタン共通スタイル
    index.html / mypage.html の両方から読み込む
    ================================================= */
 
@@ -7,33 +7,43 @@
    ボタンラッパー
    =========================== */
 .load-more-wrap {
-    display: none;          /* JS で block に切り替える */
-    text-align: center;
+    display: none;          /* JS で flex に切り替える */
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     margin: 8px 0 40px;
+    flex-wrap: wrap;
 }
 
 /* ===========================
-   ボタン本体
+   ボタン共通
    =========================== */
-.load-more-btn {
+.load-more-btn,
+.load-less-btn {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     padding: 13px 40px;
-    background-color: #ffffff;
-    color: #1a5f85;
-    border: 1.5px solid #8cc8e8;
     border-radius: 24px;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
     transition: background-color 0.2s ease,
                 border-color     0.2s ease,
                 color            0.2s ease,
                 box-shadow       0.2s ease,
                 transform        0.15s ease;
-    font-family: inherit;
-    letter-spacing: 0.02em;
+}
+
+/* ===========================
+   「もっと見る」ボタン
+   =========================== */
+.load-more-btn {
+    background-color: #ffffff;
+    color: #1a5f85;
+    border: 1.5px solid #8cc8e8;
     box-shadow: 0 2px 8px rgba(26, 122, 173, 0.08);
 }
 
@@ -49,6 +59,30 @@
     transform: translateY(0);
     box-shadow: none;
     background-color: #c5dff0;
+}
+
+/* ===========================
+   「表示を減らす」ボタン
+   =========================== */
+.load-less-btn {
+    background-color: #ffffff;
+    color: #5a8ba8;
+    border: 1.5px solid #c5dff0;
+    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.05);
+}
+
+.load-less-btn:hover {
+    background-color: #f4fbff;
+    border-color: #8cc8e8;
+    color: #0d3a52;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.10);
+    transform: translateY(-1px);
+}
+
+.load-less-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #e4f3fb;
 }
 
 /* ===========================
@@ -76,7 +110,13 @@
    スマホ（〜600px）
    =========================== */
 @media (max-width: 600px) {
-    .load-more-btn {
+    .load-more-wrap {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .load-more-btn,
+    .load-less-btn {
         width: 100%;
         justify-content: center;
         padding: 14px 24px;
