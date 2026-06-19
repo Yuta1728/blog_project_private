@@ -79,11 +79,12 @@
         </ul>
     </div>
 
-    {% with messages = get_flashed_messages() %}
+    {# [変更] with_categories=True でカテゴリを取得し、danger クラスを正しく付与する #}
+    {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
         <ul class="flash-messages">
-          {% for message in messages %}
-            <li>{{ message }}</li>
+          {% for category, message in messages %}
+            <li class="{{ category if category != 'message' else '' }}">{{ message }}</li>
           {% endfor %}
         </ul>
       {% endif %}

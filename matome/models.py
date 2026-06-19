@@ -19,17 +19,17 @@ class Hashtag(db.Model):
 
 
 class Post(db.Model):
-    id           = db.Column(db.Integer, primary_key=True)
-    title        = db.Column(db.TEXT, nullable=False)
-    body         = db.Column(db.TEXT, nullable=False)
-    genre        = db.Column(db.String(100), nullable=False, default='未分類')
-    created_at   = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    updated_at   = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    img_name     = db.Column(db.String(100), nullable=True)
+    id            = db.Column(db.Integer, primary_key=True)
+    title         = db.Column(db.TEXT, nullable=False)
+    body          = db.Column(db.TEXT, nullable=False)
+    genre         = db.Column(db.String(100), nullable=False, default='未分類')
+    created_at    = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    updated_at    = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    user_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    img_name      = db.Column(db.String(100), nullable=True)
     default_thumb = db.Column(db.String(100), nullable=True)
 
-    # ===== 画像キャプション（カンマ区切りで img_name と順番対応） =====
+    # ===== 画像キャプション（タブ区切りで img_name と順番対応） =====
     img_captions = db.Column(db.Text, nullable=True)
 
     # ユーザーIDとの紐付け
@@ -39,10 +39,14 @@ class Post(db.Model):
     is_published = db.Column(db.Boolean, nullable=False, default=True)
 
     # ===== ハッシュタグとの多対多リレーション =====
+    # [変更] lazy='subquery' → 'selectin'
+    # subquery は一覧表示など複数 Post をまとめてロードするケースで
+    # 不要な JOIN が膨らみやすい。selectin は Post の id リストを IN 句で
+    # 一括取得するため、一覧ページのクエリ数・負荷が大幅に削減される。
     hashtags = db.relationship(
         'Hashtag',
         secondary=post_hashtags,
-        lazy='subquery',
+        lazy='selectin',
         backref=db.backref('posts', lazy=True)
     )
 

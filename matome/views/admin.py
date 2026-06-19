@@ -1,33 +1,26 @@
+# views/admin.py
 from flask import Blueprint, render_template, request, redirect, flash, current_app
-from flask_login import current_user
-from flask_login import login_required
+from flask_login import current_user, login_required
 from datetime import datetime
 from urllib.parse import urlparse
 import os
 import uuid
 import pytz
-import filetype          # マジックナンバー検証用ライブラリ
-from werkzeug.utils import secure_filename  # ファイル名サニタイズ用
+import filetype
+from werkzeug.utils import secure_filename
 from extensions import db
 from models import Post, Hashtag
+from constants import DEFAULT_GENRES
 import config
 
 admin_bp = Blueprint('admin', __name__)
-
-# views/blog.py と同じ DEFAULT_GENRES を参照
-DEFAULT_GENRES = [
-    '日常', '健康', '旅行', '趣味', 'イラスト', 'ニュース', '経済', '投資',
-    'プログラミング学習', '開発記録', '資格勉強', '勉強', 'サッカー', '野球', '競馬',
-    'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
-    'バイト', '就活', '仕事'
-]
 
 # --- ファイル検証用ホワイトリスト ---
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 ALLOWED_MIME_TYPES  = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
 
 
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
     """拡張子がホワイトリストに含まれているかチェック"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -38,17 +31,13 @@ def parse_hashtag_input(raw: str) -> list[str]:
     """
     フォームから受け取った文字列をハッシュタグ名リストに変換する。
     入力例: "#Flask #Python ブログ" → ['Flask', 'Python', 'ブログ']
-    - '#' はあっても無くても OK
-    - 空白・全角空白・カンマ・読点 で区切り
-    - 重複は除去、50文字以内のみ受け付ける
     """
     import re
     raw = raw.strip()
     if not raw:
         return []
     tokens = re.split(r'[\s\u3000,、]+', raw)
-    names = []
-    seen  = set()
+    names, seen = [], set()
     for token in tokens:
         name = token.lstrip('#').strip()
         if name and name not in seen and len(name) <= 50:
@@ -57,11 +46,10 @@ def parse_hashtag_input(raw: str) -> list[str]:
     return names
 
 
-def sync_hashtags(post: Post, tag_names: list[str]):
+def sync_hashtags(post: Post, tag_names: list[str]) -> None:
     """
     post.hashtags を tag_names と同期する。
-    - 既存タグは使い回す（Hashtag テーブルに重複を作らない）
-    - 不要になったタグは post との紐付けを外す（Hashtag 行自体は残す）
+    既存タグは使い回し、Hashtag テーブルに重複を作らない。
     """
     new_tags = []
     for name in tag_names:
@@ -75,13 +63,14 @@ def sync_hashtags(post: Post, tag_names: list[str]):
 
 # ===== 画像キャプション用ヘルパー =====
 
-def parse_img_captions(files: list) -> list[str]:
+def parse_img_captions(file_count: int) -> list[str]:
     """
     フォームから img_caption_1, img_caption_2 ... を受け取りリストにする。
-    files と同じ件数分取得し、未入力は空文字で埋める。
+    [変更] 引数を files リストではなく件数（int）に変更し、
+    request への直接依存を最小化した。
     """
     captions = []
-    for i in range(1, len(files) + 1):
+    for i in range(1, file_count + 1):
         caption = request.form.get(f'img_caption_{i}', '').strip()
         captions.append(caption)
     return captions
@@ -90,12 +79,13 @@ def parse_img_captions(files: list) -> list[str]:
 # ===== ジャンルリスト取得ヘルパー =====
 
 def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]:
-    existing = db.session.query(Post.genre).filter(
-        Post.user_id == user_id,
-        Post.genre   != '未分類',
-        Post.genre   != None,
-        Post.genre   != ''
-    ).distinct().all()
+    existing = (
+        db.session.query(Post.genre)
+        .filter(Post.user_id == user_id, Post.genre != '未分類',
+                Post.genre != None, Post.genre != '')
+        .distinct()
+        .all()
+    )
     user_genres_list = [g[0] for g in existing]
 
     all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
@@ -109,6 +99,49 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     )
 
 
+# ===== 画像保存共通処理 =====
+
+def _save_images(files: list) -> list[str]:
+    """
+    アップロードファイルを検証・保存し、保存したファイル名リストを返す。
+    検証エラー時は ValueError を raise する。
+    """
+    filename_list = []
+    for file in files:
+        if not file or file.filename == '':
+            continue
+
+        if not allowed_file(file.filename):
+            raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
+
+        safe_filename = secure_filename(file.filename)
+        ext = os.path.splitext(safe_filename)[1]
+
+        header = file.stream.read(2048)
+        file.stream.seek(0)
+
+        kind = filetype.guess(header)
+        if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+            raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
+
+        filename  = f"{uuid.uuid4()}{ext}"
+        save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+        file.save(save_path)
+        filename_list.append(filename)
+
+    return filename_list
+
+
+def _delete_images(img_name_str: str) -> None:
+    """img_name カラムの値からファイルを物理削除する"""
+    if not img_name_str:
+        return
+    for img_file in img_name_str.split(','):
+        img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file.strip())
+        if os.path.exists(img_path):
+            os.remove(img_path)
+
+
 # ===== 新規投稿 =====
 
 @admin_bp.route('/create', methods=['GET', 'POST'])
@@ -118,83 +151,54 @@ def create():
         return redirect('/')
 
     if request.method == 'POST':
-        title        = request.form.get('title')
-        body         = request.form.get('body')
+        title         = request.form.get('title', '').strip()
+        body          = request.form.get('body', '').strip()
         selected_genre = request.form.get('genre_select')
-        new_genre      = request.form.get('genre_new')
+        new_genre      = request.form.get('genre_new', '').strip()
         hashtag_input  = request.form.get('hashtag_input', '')
 
-        final_genre = '未分類'
-        if new_genre and new_genre.strip():
-            final_genre = new_genre.strip()
-        elif selected_genre and selected_genre:
-            final_genre = selected_genre
+        if not title or not body:
+            flash('タイトルと内容はどちらも入力必須です。', 'danger')
+            return redirect('/create')
+
+        final_genre = new_genre if new_genre else (selected_genre or '未分類')
 
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':
             selected_default_thumb = None
 
-        files = request.files.getlist('img[]')
-
-        filename_list = []
-        for file in files:
-            if file and file.filename != '':
-                if not allowed_file(file.filename):
-                    flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
-                    return redirect('/create')
-
-                safe_filename = secure_filename(file.filename)
-                ext = os.path.splitext(safe_filename)[1]
-
-                header = file.stream.read(2048)
-                file.stream.seek(0)
-
-                kind = filetype.guess(header)
-                if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
-                    flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
-                    return redirect('/create')
-
-                filename  = f"{uuid.uuid4()}{ext}"
-                save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-                file.save(save_path)
-                filename_list.append(filename)
-
-        img_name_str = ",".join(filename_list) if filename_list else None
-
-        # ===== キャプション保存 =====
-        captions = parse_img_captions(filename_list)
-        img_captions_str = "\t".join(captions) if captions else None
-
-        if not title or not body or title.strip() == '' or body.strip() == '':
-            flash('タイトルと内容はどちらも入力必須です。', 'danger')
+        # 画像保存（共通ヘルパーに委譲）
+        try:
+            filename_list = _save_images(request.files.getlist('img[]'))
+        except ValueError as e:
+            flash(str(e), 'danger')
             return redirect('/create')
 
-        is_published_form = request.form.get('is_published')
-        is_published = (is_published_form == 'true') if is_published_form is not None else False
+        img_name_str     = ','.join(filename_list) if filename_list else None
+        captions         = parse_img_captions(len(filename_list))
+        img_captions_str = '\t'.join(captions) if captions else None
+
+        is_published = request.form.get('is_published') == 'true'
 
         post = Post(
-            title        = title,
-            body         = body,
-            user_id      = current_user.id,
-            img_name     = img_name_str,
+            title         = title,
+            body          = body,
+            user_id       = current_user.id,
+            img_name      = img_name_str,
             default_thumb = selected_default_thumb,
-            genre        = final_genre,
-            is_published = is_published,
-            img_captions = img_captions_str,
+            genre         = final_genre,
+            is_published  = is_published,
+            img_captions  = img_captions_str,
         )
         db.session.add(post)
+        db.session.flush()  # post.id を確定させてからハッシュタグを紐付け
 
-        # ハッシュタグの同期（flush で post.id を確定させてから）
-        db.session.flush()
-        tag_names = parse_hashtag_input(hashtag_input)
-        sync_hashtags(post, tag_names)
-
+        sync_hashtags(post, parse_hashtag_input(hashtag_input))
         db.session.commit()
         return redirect('/')
 
-    else:
-        genres = _get_genre_list(current_user.id)
-        return render_template('create.html', genres=genres)
+    genres = _get_genre_list(current_user.id)
+    return render_template('create.html', genres=genres)
 
 
 # ===== 編集 =====
@@ -211,93 +215,62 @@ def update(id):
         return redirect('/')
 
     if request.method == 'GET':
-        genres = _get_genre_list(current_user.id, post.genre)
-        # 編集画面用：既存ハッシュタグを「#name #name …」形式で渡す
+        genres               = _get_genre_list(current_user.id, post.genre)
         existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
-        # 既存キャプションをリストで渡す
-        existing_captions = post.img_captions.split('\t') if post.img_captions else []
+        existing_captions    = post.img_captions.split('\t') if post.img_captions else []
         return render_template('update.html', post=post, genres=genres,
                                existing_hashtag_str=existing_hashtag_str,
                                existing_captions=existing_captions)
 
-    else:
-        post.title = request.form.get('title')
-        post.body  = request.form.get('body')
+    # POST
+    title = request.form.get('title', '').strip()
+    body  = request.form.get('body', '').strip()
+    if not title or not body:
+        flash('タイトルと内容はどちらも入力必須です。', 'danger')
+        return redirect(f'/{id}/update')
 
-        selected_default_thumb = request.form.get('default_thumb_select')
-        post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
+    post.title = title
+    post.body  = body
 
-        is_published_form = request.form.get('is_published')
-        if is_published_form is not None:
-            post.is_published = (is_published_form == 'true')
+    selected_default_thumb = request.form.get('default_thumb_select')
+    post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
 
-        selected_genre = request.form.get('genre_select')
-        new_genre      = request.form.get('genre_new')
-        if new_genre and new_genre.strip():
-            post.genre = new_genre.strip()
-        elif selected_genre and selected_genre:
-            post.genre = selected_genre
-        else:
-            post.genre = '未分類'
+    is_published_form = request.form.get('is_published')
+    if is_published_form is not None:
+        post.is_published = (is_published_form == 'true')
 
-        if not post.title or not post.body or post.title.strip() == '' or post.body.strip() == '':
-            flash('タイトルと内容はどちらも入力必須です。', 'danger')
+    new_genre      = request.form.get('genre_new', '').strip()
+    selected_genre = request.form.get('genre_select')
+    post.genre = new_genre if new_genre else (selected_genre or '未分類')
+
+    sync_hashtags(post, parse_hashtag_input(request.form.get('hashtag_input', '')))
+
+    # 画像更新
+    files = request.files.getlist('img[]')
+    if files and files[0].filename != '':
+        try:
+            filename_list = _save_images(files)
+        except ValueError as e:
+            flash(str(e), 'danger')
             return redirect(f'/{id}/update')
 
-        # ハッシュタグ更新
-        hashtag_input = request.form.get('hashtag_input', '')
-        tag_names = parse_hashtag_input(hashtag_input)
-        sync_hashtags(post, tag_names)
+        _delete_images(post.img_name)   # 旧画像を物理削除
+        post.img_name    = ','.join(filename_list)
+        captions         = parse_img_captions(len(filename_list))
+        post.img_captions = '\t'.join(captions) if captions else None
 
-        # 画像更新
-        files = request.files.getlist('img[]')
-        if files and files[0].filename != '':
-            for file in files:
-                if file and file.filename != '':
-                    if not allowed_file(file.filename):
-                        flash('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)', 'danger')
-                        return redirect(f'/{id}/update')
-                    header = file.stream.read(2048)
-                    file.stream.seek(0)
-                    kind = filetype.guess(header)
-                    if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
-                        flash('ファイルの内容が不正です。画像偽装の可能性があります。', 'danger')
-                        return redirect(f'/{id}/update')
+    else:
+        # 画像変更なし → キャプションのみ更新
+        if post.img_name:
+            existing_imgs = post.img_name.split(',')
+            captions = []
+            for i in range(1, len(existing_imgs) + 1):
+                captions.append(request.form.get(f'img_caption_{i}', '').strip())
+            post.img_captions = '\t'.join(captions)
 
-            if post.img_name:
-                for old_img in post.img_name.split(','):
-                    old_path = os.path.join(current_app.static_folder, 'img', 'posts', old_img)
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-
-            filename_list = []
-            for file in files:
-                if file and file.filename != '':
-                    safe_filename = secure_filename(file.filename)
-                    ext  = os.path.splitext(safe_filename)[1]
-                    filename  = f"{uuid.uuid4()}{ext}"
-                    save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-                    file.save(save_path)
-                    filename_list.append(filename)
-            post.img_name = ",".join(filename_list)
-
-            # 新しい画像に合わせてキャプション更新
-            captions = parse_img_captions(filename_list)
-            post.img_captions = "\t".join(captions) if captions else None
-
-        else:
-            # 画像変更なし → キャプションのみ更新（既存画像枚数分）
-            if post.img_name:
-                existing_imgs = post.img_name.split(',')
-                captions = []
-                for i in range(1, len(existing_imgs) + 1):
-                    caption = request.form.get(f'img_caption_{i}', '').strip()
-                    captions.append(caption)
-                post.img_captions = "\t".join(captions)
-
-        post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
-        db.session.commit()
-        return redirect(f'/{id}/detail')
+    post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
+    db.session.commit()
+    return redirect(f'/{id}/detail')
 
 
 # ===== 削除 =====
@@ -313,20 +286,21 @@ def delete(id):
         flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
 
-    if post.img_name:
-        for img_file in post.img_name.split(','):
-            img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file)
-            if os.path.exists(img_path):
-                os.remove(img_path)
-
+    _delete_images(post.img_name)
     db.session.delete(post)
     db.session.commit()
 
+    # [変更前] netloc 比較のみ → サブドメインや http/https 差異で Open Redirect の余地
+    # [変更後] 同一オリジン（scheme + netloc）が一致する場合のみリダイレクト
     referrer = request.referrer
     if referrer:
         parsed_ref = urlparse(referrer)
         parsed_req = urlparse(request.url)
-        if parsed_ref.netloc == parsed_req.netloc:
+        same_origin = (
+            parsed_ref.scheme == parsed_req.scheme and
+            parsed_ref.netloc == parsed_req.netloc
+        )
+        if same_origin:
             return redirect(referrer)
 
     return redirect('/')
@@ -341,20 +315,16 @@ def mypage():
         return redirect('/')
 
     if request.method == 'POST':
-        new_nickname = request.form.get('nickname')
-        if new_nickname and new_nickname.strip():
-            current_user.nickname = new_nickname.strip()
-            flash('ニックネームを更新しました！', 'success')
-        else:
-            current_user.nickname = None
-            flash('ニックネームを解除しました。', 'info')
+        new_nickname = request.form.get('nickname', '').strip()
+        current_user.nickname = new_nickname or None
+        flash('ニックネームを更新しました！' if new_nickname else 'ニックネームを解除しました。', 'info')
         db.session.commit()
         return redirect('/mypage')
 
-    posts_query  = Post.query.filter(Post.user_id == current_user.id)
-    search_word  = request.args.get('search')
+    search_word    = request.args.get('search')
     selected_genre = request.args.get('genre')
 
+    posts_query = Post.query.filter(Post.user_id == current_user.id)
     if search_word and search_word.strip():
         posts_query = posts_query.filter(Post.title.contains(search_word.strip()))
     if selected_genre:
@@ -362,23 +332,21 @@ def mypage():
 
     user_posts = posts_query.order_by(Post.created_at.desc()).all()
 
-    existing_genres = db.session.query(Post.genre).filter(
-        Post.user_id == current_user.id,
-        Post.genre   != '未分類',
-        Post.genre   != None,
-        Post.genre   != ''
-    ).distinct().all()
-
-    user_genres = [g[0] for g in existing_genres]
-    if '未分類' in user_genres:
-        user_genres.remove('未分類')
-    user_genres = sorted(user_genres)
-    user_genres.append('未分類')
+    # [変更] Python 側での remove/append を廃止し、DB クエリ + sorted で整理
+    user_genres_raw = (
+        db.session.query(Post.genre)
+        .filter(Post.user_id == current_user.id, Post.genre != None, Post.genre != '')
+        .distinct()
+        .all()
+    )
+    user_genres = sorted({g[0] for g in user_genres_raw if g[0] != '未分類'})
+    if any(g[0] == '未分類' for g in user_genres_raw):
+        user_genres.append('未分類')
 
     return render_template(
         'mypage.html',
-        posts        = user_posts,
-        user_genres  = user_genres,
+        posts          = user_posts,
+        user_genres    = user_genres,
         selected_genre = selected_genre,
-        search_word  = search_word
+        search_word    = search_word,
     )
