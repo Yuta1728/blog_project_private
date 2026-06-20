@@ -48,8 +48,6 @@ constants.py
 docker-compose.yml
 docs/分岐前のapp.pyの処理コード
 extensions.py
-init/01_login.sql
-init/02_post.sql
 migrations/alembic.ini
 migrations/env.py
 migrations/README
@@ -150,109 +148,238 @@ Thumbs.db
 </file>
 
 <file path="app.py">
+# app.py
+#
+# 【役割】
+# Flask アプリケーションを生成・設定するエントリーポイント。
+# create_app() 関数でアプリを組み立てる「Application Factory パターン」を採用。
+#
+# Application Factory パターンのメリット:
+#   - テスト時に設定を変えた別アプリを簡単に作れる
+#   - extensions.py と組み合わせることで循環インポートを避けられる
+
 import os
 from flask import Flask, flash, redirect, url_for
-from flask_wtf.csrf import CSRFProtect  # CSRF保護用
+from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
 from extensions import db, login_manager, migrate
 from models import User
 import config
 
-# Blueprintの登録
-from views.auth import auth_bp
-from views.blog import blog_bp
-from views.admin import admin_bp
+# Blueprint: 機能ごとにルートをまとめたモジュール（別ファイルで定義）
+from views.auth  import auth_bp   # ログイン・ログアウト関連
+from views.blog  import blog_bp   # 一般公開ページ（一覧・詳細・ジャンル）
+from views.admin import admin_bp  # 管理者専用ページ（投稿・編集・削除・マイページ）
+
 
 def create_app():
+    """
+    Flask アプリインスタンスを生成して返すファクトリ関数。
+    直接 app = Flask(__name__) とグローバルに書かず、
+    関数の中で作ることで設定の柔軟性と循環インポート回避を実現する。
+    """
     app = Flask(__name__)
 
-    # ---SECRET_KEY の安全性強化 ---
-    # 開発用（ローカル）か本番用（DATABASE_URL等の有無）かを簡易判定
+    # ===================================================================
+    # SECRET_KEY の設定（セッション・CSRF トークンの署名に使用）
+    # ===================================================================
+    # 本番環境判定: DATABASE_URL または FLASK_ENV=production が設定されていれば本番とみなす
     is_production = os.getenv("DATABASE_URL") is not None or os.getenv("FLASK_ENV") == "production"
-    secret_key = os.getenv("SECRET_KEY")
+    secret_key    = os.getenv("SECRET_KEY")
 
     if not secret_key:
         if is_production:
-            # 本番環境で未設定なら、セッション切断やセキュリティリスクを防ぐため起動を拒否する
+            # 本番環境で SECRET_KEY が未設定のままだと
+            # セッション改ざんや CSRF 攻撃のリスクがあるため起動自体を拒否する
             raise ValueError("【重大なエラー】本番環境の環境変数 'SECRET_KEY' が設定されていません。")
         else:
-            # 開発環境であれば、開発のしやすさを優先して固定値をフォールバックにする
+            # 開発環境では固定値をフォールバックとして使用（利便性優先）
             secret_key = "dev-secret-key-for-local-use"
-            
+
     app.config['SECRET_KEY'] = secret_key
 
-    # --- 4層目の防御（ファイルアップロード30MB制限） ---
-    app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024
+    # ===================================================================
+    # ファイルアップロードサイズ制限
+    # ===================================================================
+    # 30MB を超えるリクエストは Werkzeug が 413 エラーを返す。
+    # 悪意あるユーザーによる大容量ファイル送信（DoS 攻撃）への対策。
+    app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 30MB
 
-    # PostgreSQL接続用URLの設定
-    local_db_url = f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}@localhost:54321/{config.postgre_DB}"
+    # ===================================================================
+    # データベース接続 URL の設定
+    # ===================================================================
+    # ローカル開発用 URL（docker-compose で 54321 番ポートにマッピングした PostgreSQL）
+    local_db_url = (
+        f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
+        f"@localhost:54321/{config.postgre_DB}"
+    )
+    # 本番環境では DATABASE_URL 環境変数を使用（Heroku / Render など PaaS が自動設定する）
+    # 未設定の場合はローカル用 URL にフォールバック
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", local_db_url)
+
+    # モデル変更のたびにイベントを発行する機能（使わないのでオフにしてメモリ節約）
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # 拡張機能の初期化
-    db.init_app(app)
-    migrate.init_app(app, db)
-    login_manager.init_app(app)
-    
-    # --- S-02: CSRF保護をアプリ全体に適用 ---
+    # ===================================================================
+    # 拡張機能の初期化（extensions.py で作ったインスタンスを app に紐付け）
+    # ===================================================================
+    db.init_app(app)           # SQLAlchemy を app に接続
+    migrate.init_app(app, db)  # Alembic マイグレーションを app + db に接続
+    login_manager.init_app(app)  # Flask-Login を app に接続
+
+    # ===================================================================
+    # CSRF 保護の適用
+    # ===================================================================
+    # CSRFProtect を init_app すると、POST/PUT/DELETE などの変更系リクエスト全てに
+    # csrf_token フィールドの検証が強制される。
+    # テンプレート側では {{ csrf_token() }} で hidden フィールドとして埋め込む。
     csrf = CSRFProtect()
     csrf.init_app(app)
-    
-    # 遷移先URLの設定
+
+    # ===================================================================
+    # Flask-Login の詳細設定
+    # ===================================================================
+    # 未ログイン状態で @login_required なページにアクセスした場合の
+    # リダイレクト先エンドポイント名（'auth.secret_login' は Blueprint名.関数名）
     login_manager.login_view = 'auth.secret_login'
     login_manager.login_message = "ログインしてください。"
-    login_manager.login_message_category = "info"  # フラッシュの色分け対応用にカテゴリーを追加
+    login_manager.login_message_category = "info"  # フラッシュメッセージのスタイル分類
 
+    # -------------------------------------------------------------------
+    # user_loader コールバック
+    # Flask-Login がリクエストのたびにセッションの user_id から
+    # User オブジェクトを復元するために呼ぶ関数。
+    # これがないと current_user が常に AnonymousUser になってしまう。
+    # -------------------------------------------------------------------
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ---  30MB容量オーバー(413エラー)発生時のカスタムハンドラー ---
+    # ===================================================================
+    # カスタムエラーハンドラー: 413 Request Entity Too Large
+    # ===================================================================
+    # MAX_CONTENT_LENGTH を超えるファイルがアップロードされたとき、
+    # デフォルトでは 413 エラーページが返るだけだが、
+    # このハンドラによりフラッシュメッセージ付きでマイページにリダイレクトする。
     @app.errorhandler(413)
     def request_entity_too_large(error):
-        # 'danger'(赤色)カテゴリーでフラッシュを送信
         flash("アップロードされたファイルの合計サイズが30MBを超えています。", "danger")
-        # 安全にマイページ（またはトップページ）へリダイレクト
         return redirect(url_for('admin.mypage'))
 
-    # Blueprintの登録
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(blog_bp)
-    app.register_blueprint(admin_bp)
+    # ===================================================================
+    # Blueprint の登録
+    # ===================================================================
+    # 各 Blueprint が持つルート定義をアプリに組み込む。
+    # 登録後は Blueprint 内の @xxx_bp.route() が有効になる。
+    app.register_blueprint(auth_bp)   # /login, /logout 系
+    app.register_blueprint(blog_bp)   # /, /about, /howto, /genre, /<id>/detail 系
+    app.register_blueprint(admin_bp)  # /create, /<id>/update, /<id>/delete, /mypage 系
 
     return app
 
+
+# ===================================================================
+# 直接実行時のエントリポイント（python app.py で起動）
+# ===================================================================
+# `flask run` コマンドではなく python app.py で直接実行する場合に使われる。
+# debug=True にすると:
+#   - コード変更時にサーバーが自動リロードされる
+#   - エラー発生時にブラウザ上でトレースバックが確認できる
+# 本番環境では debug=True にしてはいけない（内部情報が漏洩するリスクあり）
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
 </file>
 
 <file path="config.py">
-"""環境変数を管理するモジュール"""
+"""
+config.py
+
+【役割】
+.env ファイルから環境変数を読み込み、アプリ全体で使いやすい変数名で提供するモジュール。
+
+【なぜ環境変数を使うのか】
+パスワードや接続情報などの機密情報をソースコードに直書きすると
+Git で管理した際に情報漏洩のリスクがある。
+.env ファイルは .gitignore に登録してリポジトリに含めないことで
+ソースコードを公開しても機密情報が漏れない設計にしている。
+"""
 
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # python-dotenv: .env ファイルを読み込むライブラリ
 
+# -------------------------------------------------------------------
+# load_dotenv()
+# プロジェクトルートの .env ファイルを探して、
+# 記載された KEY=VALUE を os の環境変数として登録する。
+# この行より後の os.getenv() で .env の値が取得できるようになる。
+# -------------------------------------------------------------------
 load_dotenv()
-postgre_user = os.getenv("POSTGRES_USER")
-postgre_password = os.getenv("POSTGRES_PASSWORD")
-postgre_DB = os.getenv("POSTGRES_DB")
 
-# .envから管理者情報と秘密のURLを取得
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+# -------------------------------------------------------------------
+# PostgreSQL 接続情報
+# docker-compose.yml の environment セクションと同じキー名で .env に記載する。
+#
+# app.py でこれらを使って接続 URL を組み立てる：
+#   f"postgresql+psycopg://{postgre_user}:{postgre_password}@localhost:54321/{postgre_DB}"
+# -------------------------------------------------------------------
+postgre_user     = os.getenv("POSTGRES_USER")      # DB ユーザー名
+postgre_password = os.getenv("POSTGRES_PASSWORD")  # DB パスワード
+postgre_DB       = os.getenv("POSTGRES_DB")        # DB 名
+
+# -------------------------------------------------------------------
+# 管理者認証情報
+#
+# ADMIN_USERNAME : ログインフォームで入力するユーザー名
+# ADMIN_PASSWORD : DB に保存するためのハッシュ化済みパスワード
+#                  （views/auth.py で check_password_hash() と照合する）
+# ADMIN_LOGIN_PATH : ログインページの URL パス
+#                    例: "secret-login-abc123" → /secret-login-abc123 でアクセス
+#                    推測されにくいランダムな文字列にすることで
+#                    ログインページの存在自体を隠蔽するセキュリティ対策
+# -------------------------------------------------------------------
+ADMIN_USERNAME   = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD")
 ADMIN_LOGIN_PATH = os.getenv("ADMIN_LOGIN_PATH")
 </file>
 
 <file path="constants.py">
 # constants.py
-# [新規追加]
-# admin.py と blog.py に重複していた DEFAULT_GENRES をここに一元管理する。
-# 両モジュールから `from constants import DEFAULT_GENRES` で参照する。
+#
+# 【役割】
+# アプリ全体で共有する「定数」を一元管理するファイル。
+#
+# 【なぜ定数ファイルを分けるのか】
+# もし admin.py と blog.py にそれぞれ同じリストを書くと、
+# ジャンルを追加・削除したいときに 2 か所を修正しなければならず
+# 片方だけ更新するバグが起きやすい。
+# ここに一か所まとめることで「変更は 1 か所だけ」になる（DRY 原則）。
+#
+# 使用箇所:
+#   views/admin.py  → _get_genre_list() で新規ジャンル選択肢の母集合として使用
+#   views/blog.py   → genre_list() でジャンル一覧ページの表示に使用
 
+# -------------------------------------------------------------------
+# DEFAULT_GENRES: アプリがデフォルトで用意するジャンルの一覧
+#
+# - 順番がそのままジャンル選択 UI の表示順になる
+# - ユーザーが記事に使ったジャンルはこのリストに追加されることはなく、
+#   あくまで「選択肢のひな形」として機能する
+# - ユーザーが「+ 新しいジャンルを作成する」を選んで独自のジャンルを
+#   追加することも可能（その場合 DB の Post.genre に直接保存される）
+# -------------------------------------------------------------------
 DEFAULT_GENRES = [
-    '日常', '健康', '旅行', '趣味', 'イラスト', 'ニュース', '経済', '投資',
-    'プログラミング学習', '開発記録', '資格勉強', '勉強', 'サッカー', '野球', '競馬',
-    'アニメ', '漫画', '本', 'ゲーム', '音楽', '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
+    # ライフスタイル系
+    '日常', '健康', '旅行', '趣味', 'イラスト',
+    # 社会・経済系
+    'ニュース', '経済', '投資',
+    # 技術・勉強系
+    'プログラミング学習', '開発記録', '資格勉強', '勉強',
+    # スポーツ系
+    'サッカー', '野球', '競馬',
+    # 娯楽系
+    'アニメ', '漫画', '本', 'ゲーム', '音楽',
+    '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
+    # 仕事系
     'バイト', '就活', '仕事',
 ]
 </file>
@@ -281,14 +408,55 @@ volumes:
     personal_blog_data:
 </file>
 
+
 <file path="extensions.py">
 # extensions.py
+#
+# 【役割】
+# Flask の拡張機能（プラグイン）を「インスタンスだけ先に作っておく」ファイル。
+#
+# なぜ app.py に直接書かないのか？
+#   → app.py で from extensions import db と書けば
+#     app.py と models.py の双方から同じ db オブジェクトを参照できる。
+#     app.py 内で db = SQLAlchemy(app) と書いてしまうと
+#     models.py が app.py を import して循環インポートが発生するため、
+#     このファイルで「中立な場所」に置いている。（Application Factory パターン）
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
+# -------------------------------------------------------------------
+# db: データベース操作の中心オブジェクト
+#
+# SQLAlchemy の ORM（Object-Relational Mapping）インスタンス。
+# models.py で db.Column / db.relationship などを使ってテーブル定義し、
+# views/ 内で db.session.add() / db.session.commit() などを使って
+# データの読み書きを行う。
+# 実際の DB への接続は app.py の db.init_app(app) 時に行われる。
+# -------------------------------------------------------------------
 db = SQLAlchemy()
+
+# -------------------------------------------------------------------
+# login_manager: ログイン状態の管理オブジェクト
+#
+# Flask-Login が提供するセッション管理の中心。
+# - @login_required デコレータで未ログイン時のアクセスを制御
+# - current_user でテンプレート・ビューから現在のユーザー情報を取得
+# - login_manager.login_view でログインページの URL を指定（app.py で設定）
+# - login_manager.user_loader でセッションから User を復元するコールバックを登録
+# -------------------------------------------------------------------
 login_manager = LoginManager()
+
+# -------------------------------------------------------------------
+# migrate: データベーススキーマのバージョン管理オブジェクト
+#
+# Alembic（マイグレーションツール）を Flask と連携させるラッパー。
+# models.py でテーブル定義を変更した後に
+#   flask db migrate -m "変更内容"  → 差分を検出して migrations/versions/ にファイル生成
+#   flask db upgrade                → 実際の DB に変更を適用
+# というワークフローで使用する。
+# -------------------------------------------------------------------
 migrate = Migrate()
 </file>
 
@@ -640,50 +808,114 @@ def downgrade():
 
 <file path="models.py">
 # models.py
-from extensions import db
-from flask_login import UserMixin
-from datetime import datetime
-import pytz
+#
+# 【役割】
+# データベースのテーブル構造を Python クラスで定義するファイル（ORM モデル）。
+# SQLAlchemy が各クラスを DB のテーブルに対応させる。
+#
+# テーブル構成:
+#   user         ← User クラス     （管理者情報）
+#   post         ← Post クラス     （ブログ記事）
+#   hashtag      ← Hashtag クラス  （ハッシュタグ）
+#   post_hashtags ← post_hashtags  （Post と Hashtag の中間テーブル）
 
-# ===== Post ↔ Hashtag 中間テーブル =====
+from extensions import db          # extensions.py で作成した db インスタンスを使う
+from flask_login import UserMixin  # ログイン機能に必要なメソッドを User に追加するミックスイン
+from datetime import datetime
+import pytz                        # タイムゾーン指定（Asia/Tokyo）に使用
+
+
+# ===================================================================
+# 中間テーブル: post_hashtags
+# ===================================================================
+# Post と Hashtag は「多対多」の関係（1つの記事に複数タグ、1つのタグが複数記事に付く）。
+# SQLAlchemy では多対多を表現するために「中間テーブル」が必要。
+#
+# db.Table() で定義すると「モデルクラスを持たない純粋な関連テーブル」になる。
+# Post モデルの hashtags リレーションが secondary=post_hashtags を参照することで
+# Post ↔ Hashtag 間の JOIN が自動で行われる。
+# -------------------------------------------------------------------
 post_hashtags = db.Table(
     'post_hashtags',
+    # post_id: post テーブルの id を外部キーとして参照
     db.Column('post_id',    db.Integer, db.ForeignKey('post.id'),    primary_key=True),
+    # hashtag_id: hashtag テーブルの id を外部キーとして参照
     db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True)
+    # 2カラムの組み合わせが主キー → 同じ (post_id, hashtag_id) の重複を防ぐ
 )
 
 
+# ===================================================================
+# Hashtag モデル
+# ===================================================================
 class Hashtag(db.Model):
-    __tablename__ = 'hashtag'
+    __tablename__ = 'hashtag'  # DB 上のテーブル名を明示的に指定
+
     id   = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)   # '#' を除いた文字列で保存
+    # name: '#' を除いたタグ文字列で保存（例: "Flask", "Python"）
+    #   unique=True → 同じ名前のタグは 1 件だけ存在できる
+    #   nullable=False → 必須項目
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
+    # posts リレーションは Post モデル側の backref で自動定義される（下記参照）
 
 
+# ===================================================================
+# Post モデル（ブログ記事）
+# ===================================================================
 class Post(db.Model):
-    id            = db.Column(db.Integer, primary_key=True)
-    title         = db.Column(db.TEXT, nullable=False)
-    body          = db.Column(db.TEXT, nullable=False)
-    genre         = db.Column(db.String(100), nullable=False, default='未分類')
-    created_at    = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    updated_at    = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    user_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # __tablename__ を省略すると SQLAlchemy がクラス名を小文字化した 'post' をテーブル名にする
+
+    # --- 基本カラム ---
+    id         = db.Column(db.Integer, primary_key=True)  # 記事の一意な識別子（自動採番）
+    title      = db.Column(db.TEXT, nullable=False)        # 記事タイトル（必須）
+    body       = db.Column(db.TEXT, nullable=False)        # 記事本文（マークダウン形式、必須）
+    genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
+
+    # --- 日時カラム ---
+    # lambda を使うことで、インスタンス生成時に「その瞬間の時刻」が入る
+    # （モジュール読み込み時の固定値にならないよう lambda 経由にする）
+    created_at = db.Column(db.DateTime, nullable=False,
+                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    updated_at = db.Column(db.DateTime, nullable=False,
+                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+
+    # --- ユーザー紐付け ---
+    # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # --- 画像関連カラム ---
+    # img_name: アップロード画像のファイル名をカンマ区切りで保存
+    #   例: "uuid1.jpg,uuid2.png"
+    #   複数画像に対応するため 1 カラムにまとめて格納している
     img_name      = db.Column(db.String(100), nullable=True)
+
+    # default_thumb: 画像未アップロード時に使うデフォルトサムネイルのファイル名
+    #   例: "thumb_option1.jpg"（static/img/thbnails/ 以下に配置済みの画像）
     default_thumb = db.Column(db.String(100), nullable=True)
 
-    # ===== 画像キャプション（タブ区切りで img_name と順番対応） =====
-    img_captions = db.Column(db.Text, nullable=True)
+    # img_captions: 各画像のキャプションをタブ区切りで保存
+    #   例: "東京タワー全景\t夜景のアップ"
+    #   img_name のカンマ区切りと順番が対応する（img_name[0] → captions[0]）
+    img_captions  = db.Column(db.Text, nullable=True)
 
-    # ユーザーIDとの紐付け
-    user = db.relationship('User', backref=db.backref('posts', lazy=True))
-
-    # 公開・非公開設定（デフォルトは True = 公開）
+    # --- 公開設定 ---
+    # True = 全体公開 / False = 非公開（管理者だけ閲覧可）
     is_published = db.Column(db.Boolean, nullable=False, default=True)
 
-    # ===== ハッシュタグとの多対多リレーション =====
-    # [変更] lazy='subquery' → 'selectin'
-    # subquery は一覧表示など複数 Post をまとめてロードするケースで
-    # 不要な JOIN が膨らみやすい。selectin は Post の id リストを IN 句で
-    # 一括取得するため、一覧ページのクエリ数・負荷が大幅に削減される。
+    # --- リレーション ---
+    # user: Post → User への多対一リレーション
+    #   backref='posts' により User インスタンスから user.posts で
+    #   その管理者の全記事リストが取得できる
+    user = db.relationship('User', backref=db.backref('posts', lazy=True))
+
+    # hashtags: Post ↔ Hashtag の多対多リレーション
+    #   secondary=post_hashtags → 中間テーブルを経由して結合
+    #   lazy='selectin' → Post の id リストを IN 句で一括取得するロード戦略。
+    #                      一覧ページで複数の Post をまとめてロードする際に
+    #                      N+1 問題（記事ごとに個別クエリが走る問題）を防ぐ。
+    #   backref → Hashtag インスタンスから hashtag.posts で
+    #             そのタグが付いた全記事リストが取得できる
     hashtags = db.relationship(
         'Hashtag',
         secondary=post_hashtags,
@@ -692,11 +924,20 @@ class Post(db.Model):
     )
 
 
+# ===================================================================
+# User モデル（管理者）
+# ===================================================================
 class User(UserMixin, db.Model):
+    # UserMixin が提供するメソッド:
+    #   is_authenticated → ログイン済みかどうか（常に True を返す）
+    #   is_active        → アカウントが有効か（常に True を返す）
+    #   is_anonymous     → 匿名ユーザーかどうか（常に False を返す）
+    #   get_id()         → Flask-Login がセッションに保存する一意のID文字列を返す
+
     id       = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(30), unique=True)
-    password = db.Column(db.String(200))
-    nickname = db.Column(db.String(60), nullable=True)
+    username = db.Column(db.String(30), unique=True)   # ログイン時に使うユーザー名（重複不可）
+    password = db.Column(db.String(200))               # Werkzeug でハッシュ化したパスワード
+    nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
 </file>
 
 
@@ -731,6 +972,7 @@ Werkzeug==3.1.8
 WTForms==3.2.1
 zipp==3.23.1
 </file>
+
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - 水色×白 爽やかテーマ版 */
@@ -5667,15 +5909,25 @@ document.addEventListener('keydown', function(e) {
 
 <file path="views/admin.py">
 # views/admin.py
+#
+# 【役割】
+# 管理者専用ページ（ログイン必須）のルートとロジックを担うビューファイル。
+#
+# 担当機能:
+#   /create          → 新規記事投稿
+#   /<id>/update     → 記事編集
+#   /<id>/delete     → 記事削除
+#   /mypage          → マイページ（投稿一覧・ニックネーム変更）
+
 from flask import Blueprint, render_template, request, redirect, flash, current_app
 from flask_login import current_user, login_required
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse  # Open Redirect 対策のための URL パース
 import os
-import uuid
+import uuid        # 画像ファイル名を UUID でユニーク化するため
 import pytz
-import filetype
-from werkzeug.utils import secure_filename
+import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
+from werkzeug.utils import secure_filename  # アップロードファイル名のサニタイズ
 from extensions import db
 from models import Post, Hashtag
 from constants import DEFAULT_GENRES
@@ -5683,59 +5935,114 @@ import config
 
 admin_bp = Blueprint('admin', __name__)
 
-# --- ファイル検証用ホワイトリスト ---
+# ===================================================================
+# ファイルアップロード検証用ホワイトリスト
+# ===================================================================
+# 拡張子チェック（第 1 層の防御）: ファイル名の末尾を確認
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+# MIME タイプチェック（第 2 層の防御）: ファイルの先頭バイトを読んで実際の形式を確認
+# 拡張子を偽装した悪意あるファイル（例: malware.exe を image.jpg にリネーム）を弾く
 ALLOWED_MIME_TYPES  = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
 
 
+# ===================================================================
+# ファイル検証ヘルパー
+# ===================================================================
 def allowed_file(filename: str) -> bool:
-    """拡張子がホワイトリストに含まれているかチェック"""
+    """
+    ファイル名の拡張子がホワイトリストに含まれているかチェックする。
+    '.' を含み、かつ最後の '.' 以降が許可リストにあれば True を返す。
+    （例: 'photo.jpg' → True, 'script.php' → False）
+    """
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# ===== ハッシュタグ用ヘルパー =====
+# ===================================================================
+# ハッシュタグ関連ヘルパー
+# ===================================================================
 
 def parse_hashtag_input(raw: str) -> list[str]:
     """
-    フォームから受け取った文字列をハッシュタグ名リストに変換する。
-    入力例: "#Flask #Python ブログ" → ['Flask', 'Python', 'ブログ']
+    フォームから受け取ったハッシュタグ入力文字列を
+    「# なしのタグ名リスト」に変換する。
+
+    対応する入力形式（ユーザーにとって入力しやすい形式を幅広く受け付ける）:
+      "#Flask #Python ブログ" → ['Flask', 'Python', 'ブログ']
+      "Flask,Python,ブログ"   → ['Flask', 'Python', 'ブログ']
+      "Flask　Python"         → ['Flask', 'Python']  （全角スペースも対応）
+
+    処理の流れ:
+      1. 全角スペース・半角スペース・カンマ・読点 で分割
+      2. 先頭の '#' を除去
+      3. 空文字列・50文字超・重複 を排除
+
+    @param raw: フォームの hashtag_input フィールドの値
+    @return: タグ名文字列のリスト（'#' なし）
     """
     import re
     raw = raw.strip()
     if not raw:
         return []
+
+    # 区切り文字: 半角スペース・全角スペース・カンマ・読点 のいずれか 1 文字以上
     tokens = re.split(r'[\s\u3000,、]+', raw)
+
     names, seen = [], set()
     for token in tokens:
-        name = token.lstrip('#').strip()
+        name = token.lstrip('#').strip()  # 先頭の # を除去
         if name and name not in seen and len(name) <= 50:
             names.append(name)
-            seen.add(name)
+            seen.add(name)  # 重複チェック用セットに追加
+
     return names
 
 
 def sync_hashtags(post: Post, tag_names: list[str]) -> None:
     """
-    post.hashtags を tag_names と同期する。
-    既存タグは使い回し、Hashtag テーブルに重複を作らない。
+    post.hashtags リレーションを tag_names リストと同期する。
+
+    【なぜ「同期」が必要か】
+    単純に post.hashtags = [new_tag1, new_tag2, ...] と上書きすると
+    編集前に付いていたタグが外れ、新しいタグが追加されるが、
+    すでに DB に存在する同名タグが重複登録されるリスクがある。
+    この関数では「既存タグがあれば再利用、なければ新規作成」を行う。
+
+    【処理の流れ】
+    1. tag_names の各タグ名を Hashtag テーブルで検索
+    2. 存在すれば既存の Hashtag オブジェクトを使う
+    3. 存在しなければ新規 Hashtag を作成して db.session.add()
+    4. post.hashtags を新しいリストで上書き
+       （SQLAlchemy が差分を検出して post_hashtags 中間テーブルを更新する）
+
+    @param post: 同期対象の Post オブジェクト
+    @param tag_names: 新しいタグ名リスト（'#' なし）
     """
     new_tags = []
     for name in tag_names:
         tag = Hashtag.query.filter_by(name=name).first()
         if not tag:
+            # DB に存在しない新タグ → 新規作成
             tag = Hashtag(name=name)
             db.session.add(tag)
         new_tags.append(tag)
-    post.hashtags = new_tags
+
+    post.hashtags = new_tags  # リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
 
 
-# ===== 画像キャプション用ヘルパー =====
+# ===================================================================
+# 画像キャプション関連ヘルパー
+# ===================================================================
 
 def parse_img_captions(file_count: int) -> list[str]:
     """
-    フォームから img_caption_1, img_caption_2 ... を受け取りリストにする。
-    [変更] 引数を files リストではなく件数（int）に変更し、
-    request への直接依存を最小化した。
+    フォームから各画像のキャプションを取得してリストにまとめる。
+
+    フォームの入力フィールド名の命名規則:
+      img_caption_1, img_caption_2, img_caption_3, ...
+    （create.html / update.html の JavaScript で動的に生成される）
+
+    @param file_count: アップロードされた画像の枚数
+    @return: キャプション文字列のリスト（インデックスが画像の順番と対応）
     """
     captions = []
     for i in range(1, file_count + 1):
@@ -5744,54 +6051,99 @@ def parse_img_captions(file_count: int) -> list[str]:
     return captions
 
 
-# ===== ジャンルリスト取得ヘルパー =====
+# ===================================================================
+# ジャンルリスト生成ヘルパー
+# ===================================================================
 
 def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]:
+    """
+    投稿フォームのジャンル選択肢リストを生成する。
+
+    生成ロジック:
+      1. DEFAULT_GENRES（constants.py のプリセット）を取得
+      2. このユーザーが既存記事で使っているジャンルを DB から取得
+      3. 1 + 2 の和集合を取る（重複は除去）
+      4. 編集中の記事のジャンルが上記にない場合も必ず含める
+      5. DEFAULT_GENRES の順番を優先して並べ替え
+
+    @param user_id: 現在ログイン中のユーザー ID
+    @param current_genre: 編集中の記事のジャンル名（update 時のみ指定）
+    @return: ジャンル名のソート済みリスト
+    """
+    # ユーザーが過去に使ったジャンル名を DB から取得（重複なし）
     existing = (
         db.session.query(Post.genre)
-        .filter(Post.user_id == user_id, Post.genre != '未分類',
-                Post.genre != None, Post.genre != '')
+        .filter(Post.user_id == user_id,
+                Post.genre != '未分類',
+                Post.genre != None,
+                Post.genre != '')
         .distinct()
         .all()
     )
     user_genres_list = [g[0] for g in existing]
 
+    # プリセット + ユーザー既存ジャンルの和集合を作成
     all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
+
+    # 編集中の記事のジャンルが選択肢にない場合も追加（データの整合性を保つ）
     if current_genre:
         all_genres_set.add(current_genre)
-    all_genres_set.discard('未分類')
 
+    all_genres_set.discard('未分類')  # '未分類' は select の先頭に固定で置くので除外
+
+    # DEFAULT_GENRES の順番を優先してソート（プリセット外のジャンルは末尾）
     return sorted(
         list(all_genres_set),
         key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
     )
 
 
-# ===== 画像保存共通処理 =====
+# ===================================================================
+# 画像ファイル操作ヘルパー
+# ===================================================================
 
 def _save_images(files: list) -> list[str]:
     """
-    アップロードファイルを検証・保存し、保存したファイル名リストを返す。
-    検証エラー時は ValueError を raise する。
+    アップロードされた画像ファイルを検証・保存し、
+    保存したファイル名のリストを返す。
+
+    【セキュリティの多層防御】
+    第 1 層: allowed_file() で拡張子チェック
+    第 2 層: filetype.guess() で MIME タイプチェック（ファイルの中身を確認）
+    第 3 層: secure_filename() でファイル名のサニタイズ（パストラバーサル対策）
+    第 4 層: UUID でファイル名をランダム化（既存ファイルの上書き防止、URL 推測防止）
+    （第 5 層: app.py で 30MB の容量制限）
+
+    @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
+    @return: 保存したファイル名のリスト
+    @raises ValueError: 検証エラー時（拡張子不正・MIME タイプ不正）
     """
     filename_list = []
     for file in files:
+        # ファイルが選択されていない場合はスキップ
         if not file or file.filename == '':
             continue
 
+        # --- 第 1 層: 拡張子チェック ---
         if not allowed_file(file.filename):
             raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
 
+        # ファイル名のサニタイズ（第 3 層）
+        # secure_filename() は '../../../etc/passwd' のような危険なパスを除去する
         safe_filename = secure_filename(file.filename)
-        ext = os.path.splitext(safe_filename)[1]
+        ext = os.path.splitext(safe_filename)[1]  # 拡張子部分（例: ".jpg"）を取得
 
+        # --- 第 2 層: MIME タイプチェック ---
+        # ファイルの先頭 2048 バイトを読み込んでマジックナンバーで実際の形式を判定
         header = file.stream.read(2048)
-        file.stream.seek(0)
-
+        file.stream.seek(0)  # ストリーム位置をリセット（後で save() が読めるように）
         kind = filetype.guess(header)
         if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
             raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
 
+        # --- 第 4 層: UUID でファイル名をランダム化 ---
+        # uuid4() は 128 bit のランダムな識別子を生成する
+        # これにより元のファイル名・アップロード順が URL から推測できなくなる
         filename  = f"{uuid.uuid4()}{ext}"
         save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
         file.save(save_path)
@@ -5801,7 +6153,15 @@ def _save_images(files: list) -> list[str]:
 
 
 def _delete_images(img_name_str: str) -> None:
-    """img_name カラムの値からファイルを物理削除する"""
+    """
+    post.img_name カラムの値（カンマ区切りファイル名）をもとに
+    static/img/posts/ 以下の実ファイルを物理削除する。
+
+    記事削除・画像更新時に呼ばれ、サーバー上の孤立ファイルを防ぐ。
+    ファイルが存在しない場合はスキップする（エラーにしない）。
+
+    @param img_name_str: post.img_name の値（例: "uuid1.jpg,uuid2.png"）
+    """
     if not img_name_str:
         return
     for img_file in img_name_str.split(','):
@@ -5810,44 +6170,58 @@ def _delete_images(img_name_str: str) -> None:
             os.remove(img_path)
 
 
-# ===== 新規投稿 =====
+# ===================================================================
+# 新規投稿
+# ===================================================================
 
 @admin_bp.route('/create', methods=['GET', 'POST'])
-@login_required
+@login_required  # 未ログイン時は login_manager.login_view へリダイレクト
 def create():
+    # 管理者以外のユーザー（将来的なマルチユーザー対応時の保険）はトップへ
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
 
     if request.method == 'POST':
-        title         = request.form.get('title', '').strip()
-        body          = request.form.get('body', '').strip()
-        selected_genre = request.form.get('genre_select')
-        new_genre      = request.form.get('genre_new', '').strip()
+        # --- フォーム入力値の取得 ---
+        title          = request.form.get('title', '').strip()
+        body           = request.form.get('body', '').strip()
+        selected_genre = request.form.get('genre_select')       # プリセットから選択したジャンル
+        new_genre      = request.form.get('genre_new', '').strip()  # 新規入力したジャンル名
         hashtag_input  = request.form.get('hashtag_input', '')
 
+        # --- バリデーション ---
         if not title or not body:
             flash('タイトルと内容はどちらも入力必須です。', 'danger')
             return redirect('/create')
 
+        # ジャンルの優先順位: 新規入力 > プリセット選択 > デフォルト（未分類）
         final_genre = new_genre if new_genre else (selected_genre or '未分類')
 
+        # --- デフォルトサムネイルの設定 ---
+        # フォームで 'none' が選ばれた場合は NULL（サムネイル画像なし）
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':
             selected_default_thumb = None
 
-        # 画像保存（共通ヘルパーに委譲）
+        # --- 画像の保存 ---
+        # _save_images() は検証エラー時に ValueError を raise するので try/except で受ける
         try:
             filename_list = _save_images(request.files.getlist('img[]'))
         except ValueError as e:
             flash(str(e), 'danger')
             return redirect('/create')
 
-        img_name_str     = ','.join(filename_list) if filename_list else None
+        # ファイル名をカンマ区切りで 1 つの文字列に結合して DB に保存
+        img_name_str = ','.join(filename_list) if filename_list else None
+
+        # キャプションをタブ区切りで 1 つの文字列に結合
         captions         = parse_img_captions(len(filename_list))
         img_captions_str = '\t'.join(captions) if captions else None
 
+        # 公開設定: hidden フィールド is_published の値が 'true' なら True
         is_published = request.form.get('is_published') == 'true'
 
+        # --- DB への保存 ---
         post = Post(
             title         = title,
             body          = body,
@@ -5859,17 +6233,25 @@ def create():
             img_captions  = img_captions_str,
         )
         db.session.add(post)
-        db.session.flush()  # post.id を確定させてからハッシュタグを紐付け
 
+        # flush(): まだ commit せずに post.id だけを確定させる
+        # ハッシュタグの中間テーブルに post_id を設定するために必要
+        db.session.flush()
+
+        # ハッシュタグの同期（入力文字列 → Hashtag オブジェクト → 中間テーブル登録）
         sync_hashtags(post, parse_hashtag_input(hashtag_input))
-        db.session.commit()
+
+        db.session.commit()  # ここで全変更を DB に書き込む
         return redirect('/')
 
+    # GET: 投稿フォームを表示
     genres = _get_genre_list(current_user.id)
     return render_template('create.html', genres=genres)
 
 
-# ===== 編集 =====
+# ===================================================================
+# 記事編集
+# ===================================================================
 
 @admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
 @login_required
@@ -5877,20 +6259,28 @@ def update(id):
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
 
+    # 記事の取得と権限チェック
     post = db.session.get(Post, id)
     if not post or post.user_id != current_user.id:
         flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
 
     if request.method == 'GET':
-        genres               = _get_genre_list(current_user.id, post.genre)
+        # --- 編集フォームの初期値を設定 ---
+        genres = _get_genre_list(current_user.id, post.genre)
+
+        # 既存ハッシュタグを "#Flask #Python" 形式の文字列に変換
+        # （フォームの value に設定してユーザーが編集しやすいように）
         existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
-        existing_captions    = post.img_captions.split('\t') if post.img_captions else []
+
+        # 既存キャプションをタブ区切りから配列に変換（テンプレートでインデックスアクセスするため）
+        existing_captions = post.img_captions.split('\t') if post.img_captions else []
+
         return render_template('update.html', post=post, genres=genres,
                                existing_hashtag_str=existing_hashtag_str,
                                existing_captions=existing_captions)
 
-    # POST
+    # --- POST: 記事の更新処理 ---
     title = request.form.get('title', '').strip()
     body  = request.form.get('body', '').strip()
     if not title or not body:
@@ -5900,35 +6290,41 @@ def update(id):
     post.title = title
     post.body  = body
 
+    # デフォルトサムネイルの更新
     selected_default_thumb = request.form.get('default_thumb_select')
     post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
 
+    # 公開設定の更新（フォームで値が送られた場合のみ更新する）
     is_published_form = request.form.get('is_published')
     if is_published_form is not None:
         post.is_published = (is_published_form == 'true')
 
+    # ジャンルの更新
     new_genre      = request.form.get('genre_new', '').strip()
     selected_genre = request.form.get('genre_select')
     post.genre = new_genre if new_genre else (selected_genre or '未分類')
 
+    # ハッシュタグの同期（フォームの最新入力で上書き）
     sync_hashtags(post, parse_hashtag_input(request.form.get('hashtag_input', '')))
 
-    # 画像更新
+    # --- 画像の更新 ---
     files = request.files.getlist('img[]')
     if files and files[0].filename != '':
+        # 新しい画像が選択された場合 → 旧画像を削除して新画像で置き換え
         try:
             filename_list = _save_images(files)
         except ValueError as e:
             flash(str(e), 'danger')
             return redirect(f'/{id}/update')
 
-        _delete_images(post.img_name)   # 旧画像を物理削除
-        post.img_name    = ','.join(filename_list)
-        captions         = parse_img_captions(len(filename_list))
+        _delete_images(post.img_name)       # 旧画像ファイルを物理削除
+        post.img_name = ','.join(filename_list)
+        captions = parse_img_captions(len(filename_list))
         post.img_captions = '\t'.join(captions) if captions else None
 
     else:
-        # 画像変更なし → キャプションのみ更新
+        # 画像変更なし → キャプションのみ更新する
+        # 既存画像の枚数分だけフォームを読んでキャプションを更新
         if post.img_name:
             existing_imgs = post.img_name.split(',')
             captions = []
@@ -5936,16 +6332,23 @@ def update(id):
                 captions.append(request.form.get(f'img_caption_{i}', '').strip())
             post.img_captions = '\t'.join(captions)
 
+    # 更新日時を現在時刻（日本時間）に更新
     post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
     db.session.commit()
+
     return redirect(f'/{id}/detail')
 
 
-# ===== 削除 =====
+# ===================================================================
+# 記事削除
+# ===================================================================
 
 @admin_bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):
+    # POST メソッドのみ受け付ける（GET でアクセスできないようにする）
+    # → URL を直接叩いただけでは削除できない（CSRF トークンも必要）
+
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
 
@@ -5954,12 +6357,23 @@ def delete(id):
         flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
 
+    # 関連する画像ファイルをサーバーから物理削除（DB 削除前に行う）
     _delete_images(post.img_name)
+
+    # DB から記事を削除（post_hashtags 中間テーブルのレコードも CASCADE で削除される）
     db.session.delete(post)
     db.session.commit()
 
-    # [変更前] netloc 比較のみ → サブドメインや http/https 差異で Open Redirect の余地
-    # [変更後] 同一オリジン（scheme + netloc）が一致する場合のみリダイレクト
+    # -------------------------------------------------------------------
+    # 削除後のリダイレクト先決定（Open Redirect 対策）
+    #
+    # 単純に return redirect(request.referrer) とすると
+    # 攻撃者が referer ヘッダを偽造して外部サイトへリダイレクトさせる
+    # Open Redirect 攻撃が可能になる。
+    #
+    # 対策: scheme（http/https）と netloc（ドメイン名）が
+    #       リクエスト元と同じオリジンかどうかを検証してからリダイレクト。
+    # -------------------------------------------------------------------
     referrer = request.referrer
     if referrer:
         parsed_ref = urlparse(referrer)
@@ -5971,10 +6385,12 @@ def delete(id):
         if same_origin:
             return redirect(referrer)
 
-    return redirect('/')
+    return redirect('/')  # referer がない or 別オリジンならトップへ
 
 
-# ===== マイページ =====
+# ===================================================================
+# マイページ
+# ===================================================================
 
 @admin_bp.route('/mypage', methods=['GET', 'POST'])
 @login_required
@@ -5983,31 +6399,52 @@ def mypage():
         return redirect('/')
 
     if request.method == 'POST':
+        # --- ニックネーム変更処理 ---
         new_nickname = request.form.get('nickname', '').strip()
+        # 空欄の場合は None にして「ニックネームなし」に戻す
         current_user.nickname = new_nickname or None
         flash('ニックネームを更新しました！' if new_nickname else 'ニックネームを解除しました。', 'info')
         db.session.commit()
         return redirect('/mypage')
 
+    # --- GET: マイページの表示 ---
+
+    # マイページ内でも絞り込み・検索ができる（URL クエリパラメータを使用）
     search_word    = request.args.get('search')
     selected_genre = request.args.get('genre')
 
+    # 自分の記事だけを対象にクエリを構築
     posts_query = Post.query.filter(Post.user_id == current_user.id)
+
+    # キーワード検索（タイトルに含まれているか）
     if search_word and search_word.strip():
         posts_query = posts_query.filter(Post.title.contains(search_word.strip()))
+
+    # ジャンル絞り込み
     if selected_genre:
         posts_query = posts_query.filter(Post.genre == selected_genre)
 
+    # 作成日時の降順（新しい記事が先頭）
     user_posts = posts_query.order_by(Post.created_at.desc()).all()
 
-    # [変更] Python 側での remove/append を廃止し、DB クエリ + sorted で整理
+    # -------------------------------------------------------------------
+    # 使用ジャンル一覧の生成（サイドバー表示用）
+    #
+    # DB クエリで DISTINCT なジャンル名を取得し、
+    # Python 側で set → sorted で整理する。
+    # '未分類' は特別扱いで末尾に移動する。
+    # -------------------------------------------------------------------
     user_genres_raw = (
         db.session.query(Post.genre)
-        .filter(Post.user_id == current_user.id, Post.genre != None, Post.genre != '')
+        .filter(Post.user_id == current_user.id,
+                Post.genre != None,
+                Post.genre != '')
         .distinct()
         .all()
     )
+    # 重複除去 + ソート（'未分類' を除いたもの）
     user_genres = sorted({g[0] for g in user_genres_raw if g[0] != '未分類'})
+    # '未分類' が存在する場合のみ末尾に追加
     if any(g[0] == '未分類' for g in user_genres_raw):
         user_genres.append('未分類')
 
@@ -6022,101 +6459,168 @@ def mypage():
 
 <file path="views/auth.py">
 # views/auth.py
+#
+# 【役割】
+# 管理者のログイン・ログアウト機能を担うビューファイル。
+#
+# セキュリティ設計のポイント:
+#   1. ログインページ URL を .env で隠蔽（秘密の URL = Security through obscurity）
+#   2. ブルートフォース攻撃対策（連続失敗でセッションロックアウト）
+#   3. パスワードはハッシュ値と照合（平文比較は行わない）
+
 from flask import Blueprint, render_template, request, redirect, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash  # ハッシュ済みパスワードとの照合
 from extensions import db
 from models import User
 import config
-import time
+import time  # ロックアウト時間計算に使用
 
+# Blueprint 定義: 'auth' という名前空間でルートを管理
+# url_for('auth.secret_login') のように参照される
 auth_bp = Blueprint('auth', __name__)
 
-# ===== ブルートフォース対策用定数 =====
-_MAX_ATTEMPTS   = 5    # 許容失敗回数
-_LOCKOUT_SECONDS = 300  # ロック時間（秒）
+# ===================================================================
+# ブルートフォース対策用定数
+# ===================================================================
+_MAX_ATTEMPTS    = 5    # この回数を超えてログイン失敗するとロックアウト
+_LOCKOUT_SECONDS = 300  # ロック継続時間（秒）= 5分
 
 
+# ===================================================================
+# ロックアウト判定ヘルパー関数
+# ===================================================================
 def _is_locked_out() -> bool:
     """
     セッションに記録された失敗回数・タイムスタンプを確認し、
-    ロックアウト状態かどうかを返す。
-    [新規追加] ブルートフォース攻撃への対策。
-    Flask セッション（サーバー側署名済み Cookie）を使用するため
-    外部ストレージ不要で導入できる。
-    本番では Flask-Limiter + Redis による IP ベース制限を推奨。
+    現在ロックアウト中かどうかを返す。
+
+    【仕組み】
+    session['login_attempts'] : 連続失敗回数（int）
+    session['login_locked_at']: ロック開始時刻（Unix タイムスタンプ）
+
+    Flask のセッションはサーバー側で署名済み Cookie として保存されるため
+    クライアントから改ざんできない。また外部ストレージ（Redis など）不要で
+    シンプルに実装できる。
+
+    【本番運用での注意】
+    セッションベースのロックは「ブラウザを変える」と回避できる。
+    より強固にするには Flask-Limiter + Redis による IP ベースの制限を推奨。
     """
     attempts  = session.get('login_attempts', 0)
     locked_at = session.get('login_locked_at')
 
     if locked_at:
-        elapsed = time.time() - locked_at
+        elapsed   = time.time() - locked_at
+        remaining = int(_LOCKOUT_SECONDS - elapsed)
+
         if elapsed < _LOCKOUT_SECONDS:
-            remaining = int(_LOCKOUT_SECONDS - elapsed)
+            # まだロック中 → 残り時間をユーザーに通知してリダイレクト
             flash(f'ログイン試行が多すぎます。{remaining} 秒後に再試行してください。', 'danger')
             return True
         else:
-            # ロック解除
+            # ロック時間が経過したのでセッションをリセットしてロック解除
             session.pop('login_attempts', None)
             session.pop('login_locked_at', None)
 
-    return False
+    return False  # ロック中ではない
 
 
-# ===== ログイン =====
-
+# ===================================================================
+# ログインビュー
+# ===================================================================
+# URL は config.ADMIN_LOGIN_PATH の値を使って動的に設定される（秘密のパス）
+# 例: ADMIN_LOGIN_PATH=secret-xyz なら /secret-xyz でアクセス可能になる
 @auth_bp.route(f'/{config.ADMIN_LOGIN_PATH}', methods=['GET', 'POST'])
 def secret_login():
+    # すでにログイン済みの場合はトップページへリダイレクト（二重ログイン防止）
     if current_user.is_authenticated:
         return redirect('/')
 
     if request.method == 'POST':
+        # ロックアウト中であればフラッシュを出してリダイレクト（認証処理を行わない）
         if _is_locked_out():
             return redirect(f'/{config.ADMIN_LOGIN_PATH}')
 
+        # フォームから入力値を取得
         username = request.form.get('username', '')
         password = request.form.get('password', '')
 
+        # DB から管理者ユーザーを検索
+        # config.ADMIN_USERNAME と一致するユーザーのみ検索対象
+        # （このアプリは単一管理者を想定しているため）
         user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
 
+        # check_password_hash: DB に保存されたハッシュ値と入力パスワードを安全に比較
+        # （平文パスワードは保存されておらず、ハッシュ値からは元のパスワードを復元できない）
         if user and check_password_hash(user.password, password):
-            # 認証成功 → セッションリセット
+            # ===== 認証成功 =====
+            # ロックアウト用のセッション変数をクリア（次回以降の失敗カウントをリセット）
             session.pop('login_attempts', None)
             session.pop('login_locked_at', None)
+
+            # Flask-Login のセッションにユーザー情報を記録
+            # これにより以降のリクエストで current_user が User オブジェクトになる
             login_user(user)
+
             flash('管理者としてログインしました。')
             return redirect('/mypage')
+
         else:
-            # 認証失敗 → 試行回数を記録
+            # ===== 認証失敗 =====
+            # 失敗回数をセッションに記録（セッションがなければ 0 から始める）
             attempts = session.get('login_attempts', 0) + 1
             session['login_attempts'] = attempts
+
             if attempts >= _MAX_ATTEMPTS:
+                # 上限回数に達したらロック開始時刻を記録してロックアウト
                 session['login_locked_at'] = time.time()
                 flash(f'ログイン試行が {_MAX_ATTEMPTS} 回を超えました。'
                       f'{_LOCKOUT_SECONDS // 60} 分間ロックされます。', 'danger')
             else:
+                # まだ余裕があれば汎用エラーメッセージを表示
+                # 「ユーザー名が違う」「パスワードが違う」と個別に教えると
+                # 攻撃者に存在するユーザー名を特定されるリスクがあるため
+                # 意図的に「どちらが違うか」を明かさない書き方にしている
                 flash('ユーザー名またはパスワードが正しくありません。')
+
             return redirect(f'/{config.ADMIN_LOGIN_PATH}')
 
+    # GET リクエスト: ログインフォームを表示するだけ
     return render_template('login.html')
 
 
-# ===== ログアウト =====
-
+# ===================================================================
+# ログアウトビュー
+# ===================================================================
 @auth_bp.route('/logout')
-@login_required
+@login_required  # 未ログイン状態でのアクセスを拒否（login_manager.login_view へリダイレクト）
 def logout():
+    # Flask-Login のセッションからユーザー情報を削除する
+    # これにより current_user が AnonymousUser に戻る
     logout_user()
     flash('ログアウトしました。')
+    # ログアウト後はログインフォームを表示（リダイレクトではなく直接レンダリング）
     return render_template('login.html')
 </file>
 
 <file path="views/blog.py">
 # views/blog.py
+#
+# 【役割】
+# 一般公開ページ（誰でも閲覧できるページ）のルートとロジックを担うビューファイル。
+#
+# 担当ページ:
+#   /            → トップ（記事一覧）
+#   /about       → 管理者自己紹介ページ
+#   /howto       → このブログの使い方ページ
+#   /<id>/detail → 記事詳細ページ
+#   /genre       → ジャンル一覧ページ
+
 from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import current_user
-import markdown
-import re
+import markdown    # マークダウン → HTML 変換ライブラリ
+import re          # 正規表現（[img1], [map:xxx] の置換に使用）
 from sqlalchemy import func
 from extensions import db
 from models import Post, Hashtag, User
@@ -6126,14 +6630,28 @@ import config
 blog_bp = Blueprint('blog', __name__)
 
 
-# ===== トップ画面 =====
-
+# ===================================================================
+# トップページ（記事一覧）
+# ===================================================================
 @blog_bp.route('/', methods=['GET'])
 def index():
+    """
+    記事の一覧を表示する。
+    クエリパラメータで絞り込み・検索が可能：
+      ?genre=xxx      → ジャンルで絞り込み
+      ?search=xxx     → タイトル・ハッシュタグをキーワード検索
+      ?hashtag=xxx    → ハッシュタグで絞り込み
+    """
+    # URL クエリパラメータの取得
     selected_genre   = request.args.get('genre')
     search_word      = request.args.get('search')
     selected_hashtag = request.args.get('hashtag')
 
+    # -------------------------------------------------------------------
+    # 表示対象記事の決定
+    # 管理者ログイン中: 公開記事 + 自分の非公開記事 を表示
+    # 未ログイン:       公開記事のみ表示
+    # -------------------------------------------------------------------
     if current_user.is_authenticated:
         query = Post.query.filter(
             (Post.is_published == True) | (Post.user_id == current_user.id)
@@ -6141,56 +6659,79 @@ def index():
     else:
         query = Post.query.filter(Post.is_published == True)
 
-    # --- 検索フィルター ---
+    # -------------------------------------------------------------------
+    # キーワード検索フィルター
+    # タイトルまたはハッシュタグ名がキーワードを含む記事を返す。
+    # any() を使うことで EXISTS サブクエリになり、
+    # join() との混在による重複行・カーテシアン積を防いでいる。
+    # ilike() は大文字・小文字を区別しない LIKE 検索。
+    # -------------------------------------------------------------------
     if search_word:
         keyword = f'%{search_word.strip()}%'
-        # [変更前] any() と join() を同一クエリに混在 → 重複行・カーテシアン積のリスク
-        # [変更後] any() を OR の両辺で統一。EXISTS サブクエリになるため安全かつ効率的
         query = query.filter(
             Post.title.ilike(keyword) |
             Post.hashtags.any(Hashtag.name.ilike(keyword))
         )
 
+    # -------------------------------------------------------------------
+    # ジャンルフィルター
+    # -------------------------------------------------------------------
     if selected_genre:
         query = query.filter(Post.genre == selected_genre)
 
+    # -------------------------------------------------------------------
+    # ハッシュタグフィルター
+    # JOIN を使って hashtag テーブルと結合し、指定タグの記事だけに絞る。
+    # search フィルターの any() とは異なり join() を使うが、
+    # search と hashtag が同時に指定されるケースは UI 設計上ないため問題なし。
+    # -------------------------------------------------------------------
     if selected_hashtag:
-        # [変更] search との混在を分離し、hashtag 絞り込み専用 join を後から適用
         query = query.join(Post.hashtags).filter(Hashtag.name == selected_hashtag)
 
+    # 最終的なクエリ実行: 作成日時の降順（新しい記事が先頭）
     posts = query.order_by(Post.created_at.desc()).all()
 
-    # ===== ジャンル内ハッシュタグ一覧（絞り込みバー用） =====
+    # -------------------------------------------------------------------
+    # ジャンル内ハッシュタグ一覧（絞り込みバー用）
+    # ジャンルが選択されているときのみ、そのジャンルに属する記事の
+    # ハッシュタグ一覧を取得してフィルターバーに表示する。
+    # DB 側で JOIN + DISTINCT + ORDER BY を一括処理して N+1 問題を防ぐ。
+    # -------------------------------------------------------------------
     hashtags_in_genre = []
     if selected_genre:
-        # [変更前] genre_posts を Python 側で全件ループ → N+1 に近い問題
-        # [変更後] DB 側で JOIN + DISTINCT + ORDER BY を一括処理
         pub_filter = [] if current_user.is_authenticated else [Post.is_published == True]
         hashtags_in_genre = (
             db.session.query(Hashtag)
-            .join(Hashtag.posts)
+            .join(Hashtag.posts)           # hashtag → post_hashtags → post と JOIN
             .filter(Post.genre == selected_genre, *pub_filter)
-            .distinct()
-            .order_by(Hashtag.name)
+            .distinct()                    # 同じタグが複数記事に付いていても 1 件だけ返す
+            .order_by(Hashtag.name)        # 名前順で並べる
             .all()
         )
 
-    # ===== 統計情報（トップページのみ、毎回 DB から取得） =====
+    # -------------------------------------------------------------------
+    # 統計情報（トップページのみ表示）
+    # ジャンル・検索・タグ絞り込みがない = トップ表示のときだけ計算する。
+    # -------------------------------------------------------------------
     stats      = None
     admin_user = None
     if not selected_genre and not search_word and not selected_hashtag:
+
+        # 公開記事の総数
         post_count = Post.query.filter(Post.is_published == True).count()
 
-        # [変更前] .distinct().count() を別クエリで実行
-        # [変更後] func.count(func.distinct()) で 1 クエリに集約
+        # 公開記事に付いているハッシュタグの種類数
+        # func.count(func.distinct()) で 1 クエリにまとめて効率化
         hashtag_count = (
             db.session.query(func.count(func.distinct(Hashtag.id)))
             .join(Hashtag.posts)
             .filter(Post.is_published == True)
-            .scalar()
+            .scalar()  # 単一の数値だけ取得（リストではなく int が返る）
         )
 
-        # [変更] with_entities で updated_at のみ取得し転送データ削減
+        # 最終更新日: updated_at の最大値を持つ記事の日付
+        # with_entities(Post.updated_at) で updated_at カラムのみ取得し
+        # 全カラムを転送する無駄を省いている
         latest = (
             Post.query
             .filter(Post.is_published == True)
@@ -6205,6 +6746,8 @@ def index():
             'hashtag_count': hashtag_count,
             'last_updated':  last_updated,
         }
+
+        # ヒーローセクションに管理者の表示名を出すために取得
         admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
 
     return render_template(
@@ -6219,60 +6762,92 @@ def index():
     )
 
 
-# ===== 自己紹介ページ =====
-
+# ===================================================================
+# 自己紹介ページ
+# ===================================================================
 @blog_bp.route('/about')
 def about():
+    # テンプレートで管理者のニックネームを表示するために User オブジェクトを渡す
     admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
     return render_template('about.html', admin_user=admin_user)
 
 
-# ===== 使い方ページ =====
-
+# ===================================================================
+# 使い方ページ
+# ===================================================================
 @blog_bp.route('/howto')
 def howto():
     return render_template('howto.html')
 
 
-# ===== 投稿詳細 =====
-
+# ===================================================================
+# 記事詳細ページ
+# ===================================================================
 @blog_bp.route('/<int:id>/detail', methods=['GET'])
 def detail(id):
+    """
+    記事を取得し、マークダウン変換・画像埋め込み・地図埋め込みを行って表示する。
+    非公開記事は管理者のみ閲覧可能。
+    """
+    # DB から記事を取得（存在しない id の場合は None が返る）
     post = db.session.get(Post, id)
 
     if not post:
         flash("指定された記事が見つかりません。")
         return redirect('/')
 
+    # 非公開記事へのアクセス制御
+    # 非公開 かつ（未ログイン または 他人の記事）の場合はアクセス拒否
     if not post.is_published:
         if not current_user.is_authenticated or post.user_id != current_user.id:
             flash("この記事は非公開に設定されているため閲覧できません。")
             return redirect('/')
 
     body_content   = post.body
+    # [toc] マーカーが本文に含まれているか事前にチェック
+    # （マークダウン変換後に md.toc を使うかどうかの判定に使う）
     has_toc_marker = '[toc]' in body_content
 
+    # -------------------------------------------------------------------
+    # 空行の正規化（マークダウン変換前処理）
+    # 連続する空行を適切な <br> タグや改行に変換して
+    # 意図した段落間隔がレンダリングされるようにする
+    # -------------------------------------------------------------------
     body_content = _expand_blank_lines(body_content)
 
+    # -------------------------------------------------------------------
+    # マークダウン → HTML 変換
+    # 使用拡張:
+    #   toc    → ## / ### 見出しから目次を自動生成し [toc] マーカーを目次 HTML に置換
+    #   nl2br  → 改行文字を <br> タグに変換（通常のマークダウンは改行を無視する）
+    # toc_depth='2-3' → H2 と H3 だけを目次に含める（H1 は記事タイトルと被るため除外）
+    # -------------------------------------------------------------------
     md = markdown.Markdown(
         extensions=['toc', 'nl2br'],
         extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
     )
 
-    display_body = md.convert(body_content)
-    toc_html     = None if has_toc_marker else md.toc
+    display_body = md.convert(body_content)  # マークダウン → HTML 文字列
 
+    # [toc] マーカーがなかった場合は md.toc（生成された目次 HTML）を別途渡す
+    # テンプレート側で記事本文の上に目次ブロックとして表示する
+    toc_html = None if has_toc_marker else md.toc
+
+    # -------------------------------------------------------------------
+    # 画像タグの埋め込み（[img1], [img2] → <img> タグ or <figure> タグ）
+    # -------------------------------------------------------------------
     if post.img_name:
-        images   = post.img_name.split(',')
-        captions = post.img_captions.split('\t') if post.img_captions else []
+        images   = post.img_name.split(',')          # カンマ区切りのファイル名リストに分割
+        captions = post.img_captions.split('\t') if post.img_captions else []  # タブ区切りキャプション
 
         for index, img_file in enumerate(images):
-            # [追加] ファイル名のディレクトリトラバーサルをブロック
-            # DB に保存済みの値だが、念のためパス区切り文字を除去する
+            # ディレクトリトラバーサル対策: ファイル名に / や \ が含まれていても無害化
+            # DB に保存済みの値だが、念のため除去する（多層防御）
             img_file = re.sub(r'[/\\]', '', img_file.strip())
             caption  = captions[index].strip() if index < len(captions) else ''
 
             if caption:
+                # キャプションあり → <figure> + <figcaption> で意味的にマークアップ
                 img_tag = (
                     f'<figure class="post-figure">'
                     f'<img src="/static/img/posts/{img_file}" alt="{caption}" style="max-width:100%; height:auto;">'
@@ -6280,81 +6855,139 @@ def detail(id):
                     f'</figure>'
                 )
             else:
+                # キャプションなし → シンプルな <img> タグで表示
                 img_tag = (
                     f'<span style="display:block; text-align:center; margin: 15px 0;">'
                     f'<img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;">'
                     f'</span>'
                 )
 
+            # 本文中の [img1], [img2] ... をそれぞれ対応する <img> タグに置換
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
 
+    # 画像が少ない場合など、余った [imgN] マーカーを除去（空文字に置換）
     display_body = re.sub(r'\[img\d+\]', '', display_body)
+
+    # -------------------------------------------------------------------
+    # 地図タグの変換（[map:場所名] → Google Maps iframe）
+    # _replace_map() ヘルパーに変換処理を委譲
+    # -------------------------------------------------------------------
     display_body = re.sub(r'\[map:([^\]]+)\]', _replace_map, display_body)
 
     return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
 
 
-# ===== ジャンル一覧 =====
-
+# ===================================================================
+# ジャンル一覧ページ
+# ===================================================================
 @blog_bp.route('/genre', methods=['GET'])
 def genre_list():
+    """
+    constants.py の DEFAULT_GENRES をアルファベット順（五十音順）に並べて表示する。
+    '未分類' は特別扱いでリストの末尾に移動する。
+    """
     genres_list = sorted(DEFAULT_GENRES)
     if '未分類' in genres_list:
         genres_list.remove('未分類')
-        genres_list.append('未分類')
+        genres_list.append('未分類')  # 末尾に移動
     return render_template('genre.html', genres=genres_list)
 
 
-# ===== 内部ヘルパー =====
+# ===================================================================
+# 内部ヘルパー関数群
+# ===================================================================
 
 def _is_structural_line(s: str) -> bool:
+    """
+    指定した行が「構造的な行」かどうかを判定する。
+    構造的な行: マークダウンの見出し（#）、コードブロック（```）、TOC マーカー（[toc]）
+    _expand_blank_lines() が空行の扱いを決定するために使用する。
+    """
     stripped = s.strip()
     return (
-        stripped.startswith('#') or
-        stripped.startswith('```') or
-        stripped == '[toc]'
+        stripped.startswith('#') or   # ## 見出し など
+        stripped.startswith('```') or # コードブロックの開始・終了
+        stripped == '[toc]'           # 目次マーカー
     )
 
 
 def _expand_blank_lines(text: str) -> str:
     """
-    連続する空行をマークダウン用に正規化する。
-    見出し・コードブロック・TOC マーカーに隣接する空行はそのまま維持し、
-    それ以外の連続空行は <br> タグに変換して段落間隔を保つ。
+    記事本文（マークダウン）中の連続する空行を適切に処理する前処理関数。
+
+    【目的】
+    通常のマークダウンでは複数の空行を入れても段落区切りは 1 つにまとめられる。
+    このブログでは「意図的に段落間を広げる」ために複数の空行を書くと
+    <br> タグに変換して間隔を広げる仕様にしている。
+
+    【処理ロジック】
+    - 空行が 1 行だけ: 通常の段落区切りなのでそのまま維持
+    - 連続する空行が 2 行以上 かつ 前後が構造的な行（見出し等）でない場合:
+      最初の空行 + 残りの空行を <br> に変換して見た目の間隔を再現する
+    - 前後が構造的な行の場合: そのまま維持（マークダウンの文法を壊さないため）
+
+    @param text: マークダウン本文の文字列
+    @return: 空行を正規化した文字列
     """
     lines  = text.split('\n')
     result = []
     i      = 0
+
     while i < len(lines):
         line = lines[i]
+
         if line.strip() == '':
+            # --- 連続する空行をまとめて処理 ---
             blank_count = 0
             while i < len(lines) and lines[i].strip() == '':
                 blank_count += 1
                 i += 1
+
             prev_line = result[-1] if result else ''
             next_line = lines[i] if i < len(lines) else ''
-            if _is_structural_line(prev_line) or _is_structural_line(next_line) or blank_count == 1:
+
+            if (_is_structural_line(prev_line) or
+                    _is_structural_line(next_line) or
+                    blank_count == 1):
+                # 構造的な行の隣 or 空行が 1 つだけ → そのまま維持
                 result.extend([''] * blank_count)
             else:
+                # 2 行以上の連続空行 → 最初の 1 行は通常の改行、残りは <br>
                 result.append('')
                 result.extend(['<br>'] * (blank_count - 1))
         else:
             result.append(line)
             i += 1
+
     return '\n'.join(result)
 
 
 def _replace_map(m: re.Match) -> str:
-    """[map:場所名] を Google Maps iFrame HTML に変換する"""
-    place   = m.group(1).strip()
-    encoded = place.replace(' ', '+')
+    """
+    正規表現のマッチオブジェクトを受け取り、
+    [map:場所名] を Google Maps の iframe 埋め込み HTML に変換する。
+
+    re.sub() のコールバックとして使用される（blog.py の detail() 内で呼び出し）。
+
+    例:
+      入力: [map:東京スカイツリー]
+      出力: <div class="post-map-wrapper">
+               <div class="post-map-label">📍 東京スカイツリー</div>
+               <iframe src="https://maps.google.com/maps?q=東京スカイツリー&output=embed&hl=ja" ...></iframe>
+            </div>
+
+    @param m: re.Match オブジェクト（グループ 1 が場所名）
+    @return: Google Maps iframe を含む HTML 文字列
+    """
+    place   = m.group(1).strip()           # [map:XXX] の XXX 部分を取得
+    encoded = place.replace(' ', '+')       # URL 用に空白を + に変換（シンプルな URL エンコード）
+
     return (
         f'<div class="post-map-wrapper">'
         f'<div class="post-map-label">📍 {place}</div>'
         f'<iframe class="post-map-iframe"'
         f' src="https://maps.google.com/maps?q={encoded}&output=embed&hl=ja"'
-        f' loading="lazy" allowfullscreen></iframe>'
+        f' loading="lazy" allowfullscreen></iframe>'  # loading="lazy" で初期表示を高速化
         f'</div>'
     )
 </file>
