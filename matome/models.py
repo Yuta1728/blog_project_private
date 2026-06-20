@@ -1,48 +1,112 @@
 # models.py
-from extensions import db
-from flask_login import UserMixin
-from datetime import datetime
-import pytz
+#
+# 【役割】
+# データベースのテーブル構造を Python クラスで定義するファイル（ORM モデル）。
+# SQLAlchemy が各クラスを DB のテーブルに対応させる。
+#
+# テーブル構成:
+#   user         ← User クラス     （管理者情報）
+#   post         ← Post クラス     （ブログ記事）
+#   hashtag      ← Hashtag クラス  （ハッシュタグ）
+#   post_hashtags ← post_hashtags  （Post と Hashtag の中間テーブル）
 
-# ===== Post ↔ Hashtag 中間テーブル =====
+from extensions import db          # extensions.py で作成した db インスタンスを使う
+from flask_login import UserMixin  # ログイン機能に必要なメソッドを User に追加するミックスイン
+from datetime import datetime
+import pytz                        # タイムゾーン指定（Asia/Tokyo）に使用
+
+
+# ===================================================================
+# 中間テーブル: post_hashtags
+# ===================================================================
+# Post と Hashtag は「多対多」の関係（1つの記事に複数タグ、1つのタグが複数記事に付く）。
+# SQLAlchemy では多対多を表現するために「中間テーブル」が必要。
+#
+# db.Table() で定義すると「モデルクラスを持たない純粋な関連テーブル」になる。
+# Post モデルの hashtags リレーションが secondary=post_hashtags を参照することで
+# Post ↔ Hashtag 間の JOIN が自動で行われる。
+# -------------------------------------------------------------------
 post_hashtags = db.Table(
     'post_hashtags',
+    # post_id: post テーブルの id を外部キーとして参照
     db.Column('post_id',    db.Integer, db.ForeignKey('post.id'),    primary_key=True),
+    # hashtag_id: hashtag テーブルの id を外部キーとして参照
     db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True)
+    # 2カラムの組み合わせが主キー → 同じ (post_id, hashtag_id) の重複を防ぐ
 )
 
 
+# ===================================================================
+# Hashtag モデル
+# ===================================================================
 class Hashtag(db.Model):
-    __tablename__ = 'hashtag'
+    __tablename__ = 'hashtag'  # DB 上のテーブル名を明示的に指定
+
     id   = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)   # '#' を除いた文字列で保存
+    # name: '#' を除いたタグ文字列で保存（例: "Flask", "Python"）
+    #   unique=True → 同じ名前のタグは 1 件だけ存在できる
+    #   nullable=False → 必須項目
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
+    # posts リレーションは Post モデル側の backref で自動定義される（下記参照）
 
 
+# ===================================================================
+# Post モデル（ブログ記事）
+# ===================================================================
 class Post(db.Model):
-    id            = db.Column(db.Integer, primary_key=True)
-    title         = db.Column(db.TEXT, nullable=False)
-    body          = db.Column(db.TEXT, nullable=False)
-    genre         = db.Column(db.String(100), nullable=False, default='未分類')
-    created_at    = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    updated_at    = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    user_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # __tablename__ を省略すると SQLAlchemy がクラス名を小文字化した 'post' をテーブル名にする
+
+    # --- 基本カラム ---
+    id         = db.Column(db.Integer, primary_key=True)  # 記事の一意な識別子（自動採番）
+    title      = db.Column(db.TEXT, nullable=False)        # 記事タイトル（必須）
+    body       = db.Column(db.TEXT, nullable=False)        # 記事本文（マークダウン形式、必須）
+    genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
+
+    # --- 日時カラム ---
+    # lambda を使うことで、インスタンス生成時に「その瞬間の時刻」が入る
+    # （モジュール読み込み時の固定値にならないよう lambda 経由にする）
+    created_at = db.Column(db.DateTime, nullable=False,
+                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+    updated_at = db.Column(db.DateTime, nullable=False,
+                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+
+    # --- ユーザー紐付け ---
+    # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # --- 画像関連カラム ---
+    # img_name: アップロード画像のファイル名をカンマ区切りで保存
+    #   例: "uuid1.jpg,uuid2.png"
+    #   複数画像に対応するため 1 カラムにまとめて格納している
     img_name      = db.Column(db.String(100), nullable=True)
+
+    # default_thumb: 画像未アップロード時に使うデフォルトサムネイルのファイル名
+    #   例: "thumb_option1.jpg"（static/img/thbnails/ 以下に配置済みの画像）
     default_thumb = db.Column(db.String(100), nullable=True)
 
-    # ===== 画像キャプション（タブ区切りで img_name と順番対応） =====
-    img_captions = db.Column(db.Text, nullable=True)
+    # img_captions: 各画像のキャプションをタブ区切りで保存
+    #   例: "東京タワー全景\t夜景のアップ"
+    #   img_name のカンマ区切りと順番が対応する（img_name[0] → captions[0]）
+    img_captions  = db.Column(db.Text, nullable=True)
 
-    # ユーザーIDとの紐付け
-    user = db.relationship('User', backref=db.backref('posts', lazy=True))
-
-    # 公開・非公開設定（デフォルトは True = 公開）
+    # --- 公開設定 ---
+    # True = 全体公開 / False = 非公開（管理者だけ閲覧可）
     is_published = db.Column(db.Boolean, nullable=False, default=True)
 
-    # ===== ハッシュタグとの多対多リレーション =====
-    # [変更] lazy='subquery' → 'selectin'
-    # subquery は一覧表示など複数 Post をまとめてロードするケースで
-    # 不要な JOIN が膨らみやすい。selectin は Post の id リストを IN 句で
-    # 一括取得するため、一覧ページのクエリ数・負荷が大幅に削減される。
+    # --- リレーション ---
+    # user: Post → User への多対一リレーション
+    #   backref='posts' により User インスタンスから user.posts で
+    #   その管理者の全記事リストが取得できる
+    user = db.relationship('User', backref=db.backref('posts', lazy=True))
+
+    # hashtags: Post ↔ Hashtag の多対多リレーション
+    #   secondary=post_hashtags → 中間テーブルを経由して結合
+    #   lazy='selectin' → Post の id リストを IN 句で一括取得するロード戦略。
+    #                      一覧ページで複数の Post をまとめてロードする際に
+    #                      N+1 問題（記事ごとに個別クエリが走る問題）を防ぐ。
+    #   backref → Hashtag インスタンスから hashtag.posts で
+    #             そのタグが付いた全記事リストが取得できる
     hashtags = db.relationship(
         'Hashtag',
         secondary=post_hashtags,
@@ -51,8 +115,17 @@ class Post(db.Model):
     )
 
 
+# ===================================================================
+# User モデル（管理者）
+# ===================================================================
 class User(UserMixin, db.Model):
+    # UserMixin が提供するメソッド:
+    #   is_authenticated → ログイン済みかどうか（常に True を返す）
+    #   is_active        → アカウントが有効か（常に True を返す）
+    #   is_anonymous     → 匿名ユーザーかどうか（常に False を返す）
+    #   get_id()         → Flask-Login がセッションに保存する一意のID文字列を返す
+
     id       = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(30), unique=True)
-    password = db.Column(db.String(200))
-    nickname = db.Column(db.String(60), nullable=True)
+    username = db.Column(db.String(30), unique=True)   # ログイン時に使うユーザー名（重複不可）
+    password = db.Column(db.String(200))               # Werkzeug でハッシュ化したパスワード
+    nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
