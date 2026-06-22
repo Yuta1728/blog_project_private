@@ -82,7 +82,7 @@ a:hover {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-    height: 78px;
+    height: 95px;
     gap: 24px;
 }
 
@@ -378,7 +378,7 @@ a:hover {
 @media (max-width: 767px) {
     .header-container {
         padding: 0 15px;
-        height: 58px;
+        height: 63px;
         gap: 12px;
     }
 
