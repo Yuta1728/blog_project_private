@@ -47,7 +47,7 @@ a:hover {
 /* success / info → 水色系 */
 .flash-messages li {
     font-size: 14px;
-    color: #033f5f;            /* 十分な濃さで視認性確保 */
+    color: #033f5f;
     background-color: #f4fbff;
     border: 1px solid #5db4e0;
     padding: 10px 16px;
@@ -69,9 +69,29 @@ a:hover {
     background-color: #ffffff;
     border-bottom: 1px solid #c5dff0;
     width: 100%;
-    position: sticky;
+
+    /* ===== スクロール連動の核心部分 ===== */
+    position: sticky;      /* スクロールに追従して画面上部に固定 */
     top: 0;
     z-index: 100;
+
+    /* transform で Y 方向に動かすことでヘッダーをスライドイン/アウトさせる。
+       visibility を合わせることでスクリーンリーダーや Tab キー移動からも隠す。
+       transition は cubic-bezier で自然な加速感を出している。 */
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0s;
+}
+
+/* JS が付与するクラス: ヘッダーを画面外（上方向）へ追い出す */
+.main-header.header-hidden {
+    transform: translateY(-100%);
+    /* visibility の遅延: transform アニメーションが終わってから hidden にする
+       （アニメーション中はまだ見えているので visibility=hidden にしてはいけない）*/
+    visibility: hidden;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0.2s;
 }
 
 .header-container {
@@ -82,7 +102,7 @@ a:hover {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-    height: 95px;
+    height: 85px;
     gap: 24px;
 }
 
@@ -137,7 +157,7 @@ a:hover {
     outline: none;
     padding: 6px 4px;
     font-size: 14px;
-    color: #0d3a52;            /* 濃くしてプレースホルダー等と差別化 */
+    color: #0d3a52;
     width: 100%;
 }
 
@@ -149,7 +169,7 @@ a:hover {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #1273b0;            /* アイコンを少し濃く */
+    color: #1273b0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -163,9 +183,8 @@ a:hover {
     background-color: #d0ecff;
 }
 
-/* 検索クリア（×）ボタン：視認性改善 */
 .search-clear-btn {
-    color: #c12c1c;            /* 赤系で目立つ・×の意味と一致 */
+    color: #c12c1c;
     text-decoration: none;
     margin-left: 8px;
     font-size: 14px;
@@ -201,7 +220,7 @@ a:hover {
 }
 
 .header-nav ul li a {
-    color: #1a5f85;            /* 濃くして白背景上での視認性UP */
+    color: #1a5f85;
     text-decoration: none;
     font-size: 16px;
     font-weight: 500;

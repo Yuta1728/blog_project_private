@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <header class="main-header">
+    <header class="main-header" id="mainHeader">
         <div class="header-container">
             <div class="header-logo">
                 <a href="{{ url_for('blog.index') }}">MIT Blog</a>
@@ -79,7 +79,6 @@
         </ul>
     </div>
 
-    {# [変更] with_categories=True でカテゴリを取得し、danger クラスを正しく付与する #}
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
         <ul class="flash-messages">
@@ -93,6 +92,9 @@
     {% block content %}{% endblock %}
 
     <script>
+        /* ============================================================
+           ドロワーナビ（スマホ）の開閉
+           ============================================================ */
         const hamburgerBtn = document.getElementById('hamburgerBtn');
         const navOverlay   = document.getElementById('navOverlay');
         const navDrawer    = document.getElementById('navDrawer');
@@ -119,6 +121,65 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeDrawer();
         });
+
+        /* ============================================================
+           スクロール連動ヘッダー表示 / 非表示
+           ============================================================
+           動作仕様:
+             - ページ最上部付近（scrollY < THRESHOLD）: 常に表示
+             - 下スクロール: ヘッダーを画面外（上方向）へスライドアウト
+             - 上スクロール: ヘッダーをスライドインして再表示
+
+           実装のポイント:
+             1. requestAnimationFrame でバッチ処理し、scroll イベントの
+                連続発火による過剰な DOM 操作（リフロー）を防ぐ。
+             2. ドロワーが開いているときは非表示にしない
+                （メニュー操作中にヘッダーが消えると UX が悪い）。
+             3. THRESHOLD を設けることで、ページ最上部で微妙に
+                上下した際にヘッダーが点滅するのを防ぐ。
+           ============================================================ */
+        (function () {
+            const header    = document.getElementById('mainHeader');
+            const THRESHOLD = 80;   // このスクロール量（px）以下では常に表示
+            const DELTA     = 5;    // この幅（px）未満の微細な動きは無視する
+
+            let lastScrollY  = window.scrollY;  // 前回の scrollY を記録
+            let ticking      = false;            // rAF のスロットリング用フラグ
+
+            function updateHeader() {
+                const currentScrollY = window.scrollY;
+                const diff           = currentScrollY - lastScrollY;
+
+                if (currentScrollY <= THRESHOLD) {
+                    // ページ最上部付近 → 必ず表示
+                    header.classList.remove('header-hidden');
+                } else if (Math.abs(diff) >= DELTA) {
+                    // DELTA 以上の変化があったときだけ方向を判定する
+                    if (diff > 0) {
+                        // 下スクロール → 非表示
+                        // ただしドロワーが開いているときは操作を邪魔しないよう維持
+                        if (!navDrawer.classList.contains('open')) {
+                            header.classList.add('header-hidden');
+                        }
+                    } else {
+                        // 上スクロール → 再表示
+                        header.classList.remove('header-hidden');
+                    }
+                }
+
+                lastScrollY = currentScrollY;
+                ticking     = false;
+            }
+
+            window.addEventListener('scroll', function () {
+                // rAF がまだ予約されていなければ新たに予約する
+                // これにより 1 フレームに最大 1 回だけ updateHeader() が走る
+                if (!ticking) {
+                    requestAnimationFrame(updateHeader);
+                    ticking = true;
+                }
+            }, { passive: true });  // passive:true でスクロールのブロッキングを防ぐ
+        })();
     </script>
 </body>
 </html>

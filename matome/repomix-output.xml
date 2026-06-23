@@ -1137,7 +1137,7 @@ a:hover {
 /* success / info → 水色系 */
 .flash-messages li {
     font-size: 14px;
-    color: #033f5f;            /* 十分な濃さで視認性確保 */
+    color: #033f5f;
     background-color: #f4fbff;
     border: 1px solid #5db4e0;
     padding: 10px 16px;
@@ -1159,9 +1159,29 @@ a:hover {
     background-color: #ffffff;
     border-bottom: 1px solid #c5dff0;
     width: 100%;
-    position: sticky;
+
+    /* ===== スクロール連動の核心部分 ===== */
+    position: sticky;      /* スクロールに追従して画面上部に固定 */
     top: 0;
     z-index: 100;
+
+    /* transform で Y 方向に動かすことでヘッダーをスライドイン/アウトさせる。
+       visibility を合わせることでスクリーンリーダーや Tab キー移動からも隠す。
+       transition は cubic-bezier で自然な加速感を出している。 */
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0s;
+}
+
+/* JS が付与するクラス: ヘッダーを画面外（上方向）へ追い出す */
+.main-header.header-hidden {
+    transform: translateY(-100%);
+    /* visibility の遅延: transform アニメーションが終わってから hidden にする
+       （アニメーション中はまだ見えているので visibility=hidden にしてはいけない）*/
+    visibility: hidden;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0.2s;
 }
 
 .header-container {
@@ -1172,7 +1192,7 @@ a:hover {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-    height: 78px;
+    height: 85px;
     gap: 24px;
 }
 
@@ -1227,7 +1247,7 @@ a:hover {
     outline: none;
     padding: 6px 4px;
     font-size: 14px;
-    color: #0d3a52;            /* 濃くしてプレースホルダー等と差別化 */
+    color: #0d3a52;
     width: 100%;
 }
 
@@ -1239,7 +1259,7 @@ a:hover {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #1273b0;            /* アイコンを少し濃く */
+    color: #1273b0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1253,9 +1273,8 @@ a:hover {
     background-color: #d0ecff;
 }
 
-/* 検索クリア（×）ボタン：視認性改善 */
 .search-clear-btn {
-    color: #c12c1c;            /* 赤系で目立つ・×の意味と一致 */
+    color: #c12c1c;
     text-decoration: none;
     margin-left: 8px;
     font-size: 14px;
@@ -1291,7 +1310,7 @@ a:hover {
 }
 
 .header-nav ul li a {
-    color: #1a5f85;            /* 濃くして白背景上での視認性UP */
+    color: #1a5f85;
     text-decoration: none;
     font-size: 16px;
     font-weight: 500;
@@ -1468,7 +1487,7 @@ a:hover {
 @media (max-width: 767px) {
     .header-container {
         padding: 0 15px;
-        height: 58px;
+        height: 63px;
         gap: 12px;
     }
 
@@ -3105,6 +3124,7 @@ details[open] .group-title {
     max-width: 845px;
     margin: 0 auto;
     padding: 32px 24px 60px;
+    margin-top: 15px;
 }
 
 /* 編集ボタン */
@@ -4165,7 +4185,7 @@ a[role="button"]:hover {
 </head>
 <body>
 
-    <header class="main-header">
+    <header class="main-header" id="mainHeader">
         <div class="header-container">
             <div class="header-logo">
                 <a href="{{ url_for('blog.index') }}">MIT Blog</a>
@@ -4235,7 +4255,6 @@ a[role="button"]:hover {
         </ul>
     </div>
 
-    {# [変更] with_categories=True でカテゴリを取得し、danger クラスを正しく付与する #}
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
         <ul class="flash-messages">
@@ -4249,6 +4268,9 @@ a[role="button"]:hover {
     {% block content %}{% endblock %}
 
     <script>
+        /* ============================================================
+           ドロワーナビ（スマホ）の開閉
+           ============================================================ */
         const hamburgerBtn = document.getElementById('hamburgerBtn');
         const navOverlay   = document.getElementById('navOverlay');
         const navDrawer    = document.getElementById('navDrawer');
@@ -4275,6 +4297,65 @@ a[role="button"]:hover {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeDrawer();
         });
+
+        /* ============================================================
+           スクロール連動ヘッダー表示 / 非表示
+           ============================================================
+           動作仕様:
+             - ページ最上部付近（scrollY < THRESHOLD）: 常に表示
+             - 下スクロール: ヘッダーを画面外（上方向）へスライドアウト
+             - 上スクロール: ヘッダーをスライドインして再表示
+
+           実装のポイント:
+             1. requestAnimationFrame でバッチ処理し、scroll イベントの
+                連続発火による過剰な DOM 操作（リフロー）を防ぐ。
+             2. ドロワーが開いているときは非表示にしない
+                （メニュー操作中にヘッダーが消えると UX が悪い）。
+             3. THRESHOLD を設けることで、ページ最上部で微妙に
+                上下した際にヘッダーが点滅するのを防ぐ。
+           ============================================================ */
+        (function () {
+            const header    = document.getElementById('mainHeader');
+            const THRESHOLD = 80;   // このスクロール量（px）以下では常に表示
+            const DELTA     = 5;    // この幅（px）未満の微細な動きは無視する
+
+            let lastScrollY  = window.scrollY;  // 前回の scrollY を記録
+            let ticking      = false;            // rAF のスロットリング用フラグ
+
+            function updateHeader() {
+                const currentScrollY = window.scrollY;
+                const diff           = currentScrollY - lastScrollY;
+
+                if (currentScrollY <= THRESHOLD) {
+                    // ページ最上部付近 → 必ず表示
+                    header.classList.remove('header-hidden');
+                } else if (Math.abs(diff) >= DELTA) {
+                    // DELTA 以上の変化があったときだけ方向を判定する
+                    if (diff > 0) {
+                        // 下スクロール → 非表示
+                        // ただしドロワーが開いているときは操作を邪魔しないよう維持
+                        if (!navDrawer.classList.contains('open')) {
+                            header.classList.add('header-hidden');
+                        }
+                    } else {
+                        // 上スクロール → 再表示
+                        header.classList.remove('header-hidden');
+                    }
+                }
+
+                lastScrollY = currentScrollY;
+                ticking     = false;
+            }
+
+            window.addEventListener('scroll', function () {
+                // rAF がまだ予約されていなければ新たに予約する
+                // これにより 1 フレームに最大 1 回だけ updateHeader() が走る
+                if (!ticking) {
+                    requestAnimationFrame(updateHeader);
+                    ticking = true;
+                }
+            }, { passive: true });  // passive:true でスクロールのブロッキングを防ぐ
+        })();
     </script>
 </body>
 </html>
