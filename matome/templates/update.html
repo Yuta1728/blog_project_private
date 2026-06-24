@@ -71,9 +71,10 @@
             <button type="button" class="md-btn" onclick="mdInsertToc()">[toc] 目次</button>
             <span class="md-btn-separator"></span>
             <button type="button" class="md-btn md-btn-map" onclick="openMapModal()">🗺️ 地図</button>
+            <!-- ★ YouTube 挿入ボタン（新規追加） -->
+            <button type="button" class="md-btn md-btn-youtube" onclick="openYoutubeModal()">▶ YouTube</button>
             <span class="md-btn-separator"></span>
             <span id="img-btn-group">
-                {# 既存画像がある場合は [imgN] ボタンを初期表示 #}
                 {% if post.img_name %}
                     {% for img in post.img_name.split(',') %}
                         <button type="button" class="md-btn md-btn-img"
@@ -108,6 +109,31 @@
             </div>
         </div>
         <!-- ============================ -->
+
+        <!-- ★ YouTube 挿入モーダル（新規追加） -->
+        <div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
+        <div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
+            <div class="map-modal-header">
+                <span class="map-modal-title">▶ YouTube 動画を挿入</span>
+                <button type="button" class="map-modal-close" onclick="closeYoutubeModal()">✕</button>
+            </div>
+            <div class="map-modal-body">
+                <label class="map-modal-label" for="youtube-url-input">YouTube URL または動画 ID を入力</label>
+                <input type="text" id="youtube-url-input" class="map-modal-input"
+                       placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                       autocomplete="off"
+                       oninput="updateYoutubePreview(this.value)">
+                <div class="map-preview-area" id="youtube-preview-area" style="background:#111;">
+                    <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
+                </div>
+            </div>
+            <div class="map-modal-footer">
+                <button type="button" class="map-modal-cancel" onclick="closeYoutubeModal()">キャンセル</button>
+                <button type="button" class="map-modal-insert" id="youtube-insert-btn"
+                        onclick="insertYoutubeTag()" disabled>本文に挿入</button>
+            </div>
+        </div>
+        <!-- ================================ -->
 
         <textarea name="body" id="bodyTextarea" rows="17">{{post.body}}</textarea>
 
@@ -325,15 +351,9 @@ function mdInsertLinePrefix(ta, prefix) {
     ta.focus();
 }
 
-/* =========================================================
-   各ボタンのハンドラ
-   ========================================================= */
-function mdInsertHeading2() {
-    mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## ');
-}
-function mdInsertHeading3() {
-    mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### ');
-}
+function mdInsertHeading2() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## '); }
+function mdInsertHeading3() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### '); }
+
 function mdWrapBold() {
     const ta       = document.getElementById('bodyTextarea');
     const start    = ta.selectionStart;
@@ -345,35 +365,26 @@ function mdWrapBold() {
         mdInsertAt(ta, '**太字テキスト**', 2, 6);
     }
 }
+
 function mdInsertToc() {
     const ta  = document.getElementById('bodyTextarea');
     const pos = ta.selectionStart;
     const val = ta.value;
-
-    // --- [toc] の前に必要な改行を決める ---
-    // カーソルより前の文字列を取得し、直前が空行かどうかを確認する
     const before = val.substring(0, pos);
-    // 先頭 or 直前がすでに空行（\n\n）なら追加不要
     const leadingNewlines = before.length === 0        ? ''
                           : before.endsWith('\n\n') ? ''
                           : before.endsWith('\n')    ? '\n'
                           :                             '\n\n';
-
-    // --- [toc] の後に必要な改行を決める ---
     const after = val.substring(pos);
-    // 末尾 or 直後がすでに空行（\n\n）なら追加不要
     const trailingNewlines = after.length === 0        ? '\n'
                            : after.startsWith('\n\n') ? ''
                            : after.startsWith('\n')    ? '\n'
                            :                              '\n\n';
-
     mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
 }
-function mdInsertImg(n) {
-    mdInsertAt(document.getElementById('bodyTextarea'), `[img${n}]`);
-}
 
-/** 新規アップロード枚数に合わせて [imgN] ボタンを再構築 */
+function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), `[img${n}]`); }
+
 function rebuildImgBtns(count) {
     const group = document.getElementById('img-btn-group');
     group.innerHTML = '';
@@ -387,8 +398,6 @@ function rebuildImgBtns(count) {
     }
 }
 
-// Jinja2 でレンダリングされた既存画像の [imgN] ボタン + JS生成ボタン の両方に対応
-// data-img-index 属性からインデックスを取得してイベント登録する
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('img-btn-group').addEventListener('click', function (e) {
         const btn = e.target.closest('.md-btn-img');
@@ -418,7 +427,6 @@ let _mapPreviewTimer = null;
 function openMapModal() {
     const ta = document.getElementById('bodyTextarea');
     window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-
     document.getElementById('map-place-input').value = '';
     document.getElementById('map-preview-area').innerHTML =
         '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
@@ -456,14 +464,12 @@ function updateMapPreview(value) {
 function insertMapTag() {
     const place = document.getElementById('map-place-input').value.trim();
     if (!place) return;
-
     const ta    = document.getElementById('bodyTextarea');
     const pos   = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
     const val   = ta.value;
     const lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
     const isLineHead = (pos.start === lineStart);
     const tag   = (isLineHead ? '' : '\n') + `[map:${place}]\n`;
-
     ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
     const newPos = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
@@ -471,8 +477,84 @@ function insertMapTag() {
     closeMapModal();
 }
 
+/* =========================================================
+   ★ YouTube 挿入モーダル（新規追加）
+   ========================================================= */
+let _ytPreviewTimer = null;
+
+function openYoutubeModal() {
+    const ta = document.getElementById('bodyTextarea');
+    window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
+    document.getElementById('youtube-url-input').value = '';
+    document.getElementById('youtube-preview-area').innerHTML =
+        '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
+    document.getElementById('youtube-insert-btn').disabled = true;
+    document.getElementById('youtube-modal-overlay').classList.add('open');
+    document.getElementById('youtube-modal').classList.add('open');
+    setTimeout(() => document.getElementById('youtube-url-input').focus(), 80);
+}
+
+function closeYoutubeModal() {
+    document.getElementById('youtube-modal-overlay').classList.remove('open');
+    document.getElementById('youtube-modal').classList.remove('open');
+}
+
+function extractYoutubeId(raw) {
+    raw = raw.trim();
+    let m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    m = raw.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    m = raw.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    m = raw.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+    return null;
+}
+
+function updateYoutubePreview(value) {
+    const insertBtn   = document.getElementById('youtube-insert-btn');
+    const previewArea = document.getElementById('youtube-preview-area');
+    clearTimeout(_ytPreviewTimer);
+    const videoId = extractYoutubeId(value);
+    if (!videoId) {
+        previewArea.innerHTML = '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
+        insertBtn.disabled = true;
+        return;
+    }
+    insertBtn.disabled = false;
+    _ytPreviewTimer = setTimeout(() => {
+        const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        previewArea.innerHTML =
+            `<img src="${thumbUrl}" alt="サムネイルプレビュー"
+                  style="width:100%; height:100%; object-fit:cover; display:block;"
+                  onerror="this.parentNode.innerHTML='<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>'">`;
+    }, 600);
+}
+
+function insertYoutubeTag() {
+    const rawUrl = document.getElementById('youtube-url-input').value.trim();
+    if (!rawUrl || !extractYoutubeId(rawUrl)) return;
+    const ta    = document.getElementById('bodyTextarea');
+    const pos   = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
+    const val   = ta.value;
+    const lineStart  = val.lastIndexOf('\n', pos.start - 1) + 1;
+    const isLineHead = (pos.start === lineStart);
+    const tag        = (isLineHead ? '' : '\n') + `[youtube:${rawUrl}]\n`;
+    ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    const newPos = pos.start + tag.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+    closeYoutubeModal();
+}
+
+// ESC キーでモーダルを閉じる
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeMapModal();
+    if (e.key === 'Escape') {
+        closeMapModal();
+        closeYoutubeModal();
+    }
 });
 </script>
 

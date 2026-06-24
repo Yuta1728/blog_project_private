@@ -67,6 +67,9 @@
 </div>
 
 <script>
+/* ============================================================
+   前の画面に戻る
+   ============================================================ */
 function goBack() {
     const referrer = document.referrer;
     if (referrer && new URL(referrer).origin === location.origin) {
@@ -75,5 +78,40 @@ function goBack() {
         history.back();
     }
 }
+
+/* ============================================================
+   ★ YouTube ファサード再生（新規追加）
+   
+   動作フロー:
+     1. ユーザーがサムネイル or 再生ボタンをクリック
+     2. ytPlay(facadeEl) が呼ばれる
+     3. 親の .post-youtube-wrapper から data-embed-url を取得
+     4. autoplay=1 付きの iframe を生成してラッパーに追加
+     5. ファサード（サムネイル）を非表示にして iframe だけ見せる
+   
+   なぜ最初から iframe を埋め込まないのか:
+     iframe は読み込み時に YouTube のスクリプト・スタイルを
+     まとめてダウンロードするため、記事に YouTube が複数あると
+     ページの初期表示が著しく遅くなる。
+     クリックされてから初めて iframe を生成する「ファサードパターン」
+     を採用することで、ページ速度を損なわず動画を埋め込める。
+   ============================================================ */
+function ytPlay(facadeEl) {
+    const wrapper  = facadeEl.closest('.post-youtube-wrapper');
+    const embedUrl = wrapper.dataset.embedUrl;
+
+    // iframe を生成して autoplay=1 付き URL をセット
+    const iframe = document.createElement('iframe');
+    iframe.src             = embedUrl;
+    iframe.className       = 'post-youtube-iframe';
+    iframe.allow           = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy  = 'strict-origin-when-cross-origin';
+
+    // ラッパーに iframe を追加してファサードを隠す
+    wrapper.appendChild(iframe);
+    facadeEl.style.display = 'none';
+}
 </script>
+
 {% endblock %}

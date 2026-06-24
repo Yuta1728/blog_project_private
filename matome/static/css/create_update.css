@@ -602,3 +602,22 @@ h1 {
         height: 200px;
     }
 }
+
+
+/* ===========================
+   ★ YouTube 挿入ボタン（ツールバー）新規追加
+   地図ボタン(.md-btn-map)と同じ構造でアクセントカラーのみ変更
+   =========================== */
+.md-btn-youtube {
+    color: #fff;
+    background: #ff000082;
+    border-color: #cc000078;
+    font-weight: 700;
+}
+
+.md-btn-youtube:hover,
+.md-btn-youtube:active {
+    background: #cc000096;
+    border-color: #99000094;
+    color: #fff;
+}
