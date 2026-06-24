@@ -56,6 +56,7 @@ migrations/versions/42dc0996903d_add_default_thumb_to_post.py
 migrations/versions/Add_hashtag_tables.py
 migrations/versions/add_img_captions_to_post.py
 migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
+migrations/versions/make_update_at_nullable.py
 models.py
 README.md
 requirements.txt
@@ -806,6 +807,60 @@ def downgrade():
     # ### end Alembic commands ###
 </file>
 
+<file path="migrations/versions/make_update_at_nullable.py">
+"""Make updated_at nullable
+
+Revision ID: make_updated_at_nullable
+Revises: add_img_captions
+Create Date: 2026-06-24 00:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+# revision identifiers, used by Alembic.
+revision = 'make_updated_at_nullable'
+down_revision = 'add_img_captions'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        # nullable=True に変更する
+        # existing_type を明示することで Alembic が型を再定義せずに属性だけ変更できる
+        batch_op.alter_column(
+            'updated_at',
+            existing_type=sa.DateTime(),
+            nullable=True,
+        )
+
+    # 既存レコードのうち updated_at == created_at のものは
+    # 「一度も編集されていない新規投稿」とみなして NULL に更新する。
+    # これにより移行後も detail.html で更新日時が誤表示されなくなる。
+    op.execute("""
+        UPDATE post
+        SET updated_at = NULL
+        WHERE updated_at = created_at
+    """)
+
+
+def downgrade():
+    # NULL を created_at で埋め戻してから NOT NULL 制約を復元する
+    op.execute("""
+        UPDATE post
+        SET updated_at = created_at
+        WHERE updated_at IS NULL
+    """)
+
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.alter_column(
+            'updated_at',
+            existing_type=sa.DateTime(),
+            nullable=False,
+        )
+</file>
+
 <file path="models.py">
 # models.py
 #
@@ -873,12 +928,17 @@ class Post(db.Model):
     genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
 
     # --- 日時カラム ---
-    # lambda を使うことで、インスタンス生成時に「その瞬間の時刻」が入る
-    # （モジュール読み込み時の固定値にならないよう lambda 経由にする）
+    # created_at: 投稿日時。lambda を使ってインスタンス生成時の時刻を設定する。
     created_at = db.Column(db.DateTime, nullable=False,
                            default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    updated_at = db.Column(db.DateTime, nullable=False,
-                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+
+    # updated_at: 更新日時。
+    #   nullable=True にすることで「まだ一度も更新されていない」状態を NULL で表現する。
+    #   これにより detail.html の「更新日時 != 投稿日時」という条件判定が
+    #   秒単位のズレで誤表示されるバグを防ぐ。
+    #   - 新規投稿時: NULL（テンプレート側で「更新なし」として扱う）
+    #   - 編集保存時: admin.py の update() で現在時刻をセット
+    updated_at = db.Column(db.DateTime, nullable=True)
 
     # --- ユーザー紐付け ---
     # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）
@@ -5027,6 +5087,10 @@ document.addEventListener('keydown', function(e) {
             <div class="post-time">
                 投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
                 &nbsp;
+                {# updated_at が NULL でない場合のみ更新日時を表示する。
+                   models.py で updated_at=nullable=True にしたことで
+                   新規投稿時は NULL になり、編集保存時に初めてセットされる。
+                   これにより「投稿直後に更新日時が表示される」バグを防いでいる。 #}
                 {% if post.updated_at %}
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
@@ -5085,15 +5149,15 @@ function goBack() {
 }
 
 /* ============================================================
-   ★ YouTube ファサード再生（新規追加）
-   
+   YouTube ファサード再生
+
    動作フロー:
      1. ユーザーがサムネイル or 再生ボタンをクリック
      2. ytPlay(facadeEl) が呼ばれる
      3. 親の .post-youtube-wrapper から data-embed-url を取得
      4. autoplay=1 付きの iframe を生成してラッパーに追加
      5. ファサード（サムネイル）を非表示にして iframe だけ見せる
-   
+
    なぜ最初から iframe を埋め込まないのか:
      iframe は読み込み時に YouTube のスクリプト・スタイルを
      まとめてダウンロードするため、記事に YouTube が複数あると
@@ -5421,7 +5485,7 @@ function ytPlay(facadeEl) {
 
                 <p class="post-date">
                     🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.created_at != post.updated_at %}
+                    {% if post.updated_at %}
                         <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
                     {% endif %}
                 </p>
@@ -5636,7 +5700,7 @@ function ytPlay(facadeEl) {
 
                 <p class="post-date">
                     🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.created_at != post.updated_at %}
+                    {% if post.updated_at %}
                         <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
                     {% endif %}
                 </p>
@@ -6427,6 +6491,27 @@ def sync_hashtags(post: Post, tag_names: list[str]) -> None:
     post.hashtags = new_tags  # リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
 
 
+def delete_orphaned_hashtags() -> None:
+    """
+    どの記事にも紐付いていない孤立ハッシュタグを一括削除する。
+
+    【呼び出しタイミング】
+    - 記事削除後（delete ビュー）
+    - 記事編集後（update ビュー）
+    どちらの操作でも「以前付いていたタグが外れる」可能性があるため、
+    commit 前にこの関数を呼んでセッションにまとめて乗せてから commit する。
+
+    【なぜ commit 前に呼ぶのか】
+    sync_hashtags() が post.hashtags を新しいリストで上書きした時点で
+    SQLAlchemy のセッション上では中間テーブルの削除が予約された状態になる。
+    この段階で Hashtag.posts.any() を評価すると、まだ DB には反映されていないが
+    セッション内の変更を考慮した結果が返るため、正確に孤立タグを検出できる。
+    """
+    orphaned = Hashtag.query.filter(~Hashtag.posts.any()).all()
+    for tag in orphaned:
+        db.session.delete(tag)
+
+
 # ===================================================================
 # 画像キャプション関連ヘルパー
 # ===================================================================
@@ -6620,6 +6705,7 @@ def create():
         is_published = request.form.get('is_published') == 'true'
 
         # --- DB への保存 ---
+        # updated_at は新規投稿時 NULL のまま（「まだ更新されていない」を明示）
         post = Post(
             title         = title,
             body          = body,
@@ -6629,6 +6715,7 @@ def create():
             genre         = final_genre,
             is_published  = is_published,
             img_captions  = img_captions_str,
+            updated_at    = None,
         )
         db.session.add(post)
 
@@ -6703,7 +6790,14 @@ def update(id):
     post.genre = new_genre if new_genre else (selected_genre or '未分類')
 
     # ハッシュタグの同期（フォームの最新入力で上書き）
+    # ※ sync_hashtags() の時点で post.hashtags が上書きされ、
+    #   セッション上では旧タグの中間テーブルレコードが削除予約される。
+    #   この後 delete_orphaned_hashtags() を呼ぶことで、
+    #   他のどの記事にも使われなくなったタグを同一トランザクション内で削除できる。
     sync_hashtags(post, parse_hashtag_input(request.form.get('hashtag_input', '')))
+
+    # 孤立ハッシュタグを削除（commit 前に呼ぶことでトランザクションをまとめる）
+    delete_orphaned_hashtags()
 
     # --- 画像の更新 ---
     files = request.files.getlist('img[]')
@@ -6758,7 +6852,16 @@ def delete(id):
     # 関連する画像ファイルをサーバーから物理削除（DB 削除前に行う）
     _delete_images(post.img_name)
 
-    # DB から記事を削除（post_hashtags 中間テーブルのレコードも CASCADE で削除される）
+    # ハッシュタグのリレーションを先にクリアしてから記事を削除する。
+    # post.hashtags = [] にすることで中間テーブルの行が削除予約され、
+    # その後 delete_orphaned_hashtags() で孤立タグ本体も削除できる。
+    post.hashtags = []
+    db.session.flush()  # 中間テーブルの削除をセッションに反映させてから孤立判定する
+
+    # 孤立ハッシュタグを削除（commit 前にまとめてセッションに乗せる）
+    delete_orphaned_hashtags()
+
+    # DB から記事を削除
     db.session.delete(post)
     db.session.commit()
 
@@ -7088,7 +7191,7 @@ def index():
             .with_entities(Post.updated_at)
             .first()
         )
-        last_updated = latest.updated_at.strftime('%Y/%m/%d') if latest else '---'
+        last_updated = latest.updated_at.strftime('%Y/%m/%d') if latest and latest.updated_at else '---'
         stats = {
             'post_count':    post_count,
             'hashtag_count': hashtag_count,
@@ -7187,6 +7290,9 @@ def detail(id):
 
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
 
+    # マークダウン変換後は [img1] が <p>[img1]</p> になっている場合があるため
+    # <p> タグごと除去してから、念のため素の [imgN] タグも除去する。
+    display_body = re.sub(r'<p>\[img\d+\]</p>\n?', '', display_body)
     display_body = re.sub(r'\[img\d+\]', '', display_body)
 
     # -------------------------------------------------------------------
@@ -7195,7 +7301,7 @@ def detail(id):
     display_body = re.sub(r'\[map:([^\]]+)\]', _replace_map, display_body)
 
     # -------------------------------------------------------------------
-    # ★ YouTube タグの変換（新規追加）
+    # YouTube タグの変換
     # 対応形式:
     #   [youtube:VIDEO_ID]
     #   [youtube:https://www.youtube.com/watch?v=VIDEO_ID]
@@ -7285,7 +7391,7 @@ def _replace_map(m: re.Match) -> str:
 
 
 # ===================================================================
-# ★ YouTube 埋め込みヘルパー（新規追加）
+# YouTube 埋め込みヘルパー
 # ===================================================================
 
 def _extract_youtube_id(raw: str) -> str | None:
