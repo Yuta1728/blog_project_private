@@ -64,12 +64,17 @@ class Post(db.Model):
     genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
 
     # --- 日時カラム ---
-    # lambda を使うことで、インスタンス生成時に「その瞬間の時刻」が入る
-    # （モジュール読み込み時の固定値にならないよう lambda 経由にする）
+    # created_at: 投稿日時。lambda を使ってインスタンス生成時の時刻を設定する。
     created_at = db.Column(db.DateTime, nullable=False,
                            default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
-    updated_at = db.Column(db.DateTime, nullable=False,
-                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+
+    # updated_at: 更新日時。
+    #   nullable=True にすることで「まだ一度も更新されていない」状態を NULL で表現する。
+    #   これにより detail.html の「更新日時 != 投稿日時」という条件判定が
+    #   秒単位のズレで誤表示されるバグを防ぐ。
+    #   - 新規投稿時: NULL（テンプレート側で「更新なし」として扱う）
+    #   - 編集保存時: admin.py の update() で現在時刻をセット
+    updated_at = db.Column(db.DateTime, nullable=True)
 
     # --- ユーザー紐付け ---
     # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）

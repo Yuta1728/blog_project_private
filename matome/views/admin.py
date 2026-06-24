@@ -119,6 +119,27 @@ def sync_hashtags(post: Post, tag_names: list[str]) -> None:
     post.hashtags = new_tags  # リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
 
 
+def delete_orphaned_hashtags() -> None:
+    """
+    どの記事にも紐付いていない孤立ハッシュタグを一括削除する。
+
+    【呼び出しタイミング】
+    - 記事削除後（delete ビュー）
+    - 記事編集後（update ビュー）
+    どちらの操作でも「以前付いていたタグが外れる」可能性があるため、
+    commit 前にこの関数を呼んでセッションにまとめて乗せてから commit する。
+
+    【なぜ commit 前に呼ぶのか】
+    sync_hashtags() が post.hashtags を新しいリストで上書きした時点で
+    SQLAlchemy のセッション上では中間テーブルの削除が予約された状態になる。
+    この段階で Hashtag.posts.any() を評価すると、まだ DB には反映されていないが
+    セッション内の変更を考慮した結果が返るため、正確に孤立タグを検出できる。
+    """
+    orphaned = Hashtag.query.filter(~Hashtag.posts.any()).all()
+    for tag in orphaned:
+        db.session.delete(tag)
+
+
 # ===================================================================
 # 画像キャプション関連ヘルパー
 # ===================================================================
@@ -312,6 +333,7 @@ def create():
         is_published = request.form.get('is_published') == 'true'
 
         # --- DB への保存 ---
+        # updated_at は新規投稿時 NULL のまま（「まだ更新されていない」を明示）
         post = Post(
             title         = title,
             body          = body,
@@ -321,6 +343,7 @@ def create():
             genre         = final_genre,
             is_published  = is_published,
             img_captions  = img_captions_str,
+            updated_at    = None,
         )
         db.session.add(post)
 
@@ -395,7 +418,14 @@ def update(id):
     post.genre = new_genre if new_genre else (selected_genre or '未分類')
 
     # ハッシュタグの同期（フォームの最新入力で上書き）
+    # ※ sync_hashtags() の時点で post.hashtags が上書きされ、
+    #   セッション上では旧タグの中間テーブルレコードが削除予約される。
+    #   この後 delete_orphaned_hashtags() を呼ぶことで、
+    #   他のどの記事にも使われなくなったタグを同一トランザクション内で削除できる。
     sync_hashtags(post, parse_hashtag_input(request.form.get('hashtag_input', '')))
+
+    # 孤立ハッシュタグを削除（commit 前に呼ぶことでトランザクションをまとめる）
+    delete_orphaned_hashtags()
 
     # --- 画像の更新 ---
     files = request.files.getlist('img[]')
@@ -450,7 +480,16 @@ def delete(id):
     # 関連する画像ファイルをサーバーから物理削除（DB 削除前に行う）
     _delete_images(post.img_name)
 
-    # DB から記事を削除（post_hashtags 中間テーブルのレコードも CASCADE で削除される）
+    # ハッシュタグのリレーションを先にクリアしてから記事を削除する。
+    # post.hashtags = [] にすることで中間テーブルの行が削除予約され、
+    # その後 delete_orphaned_hashtags() で孤立タグ本体も削除できる。
+    post.hashtags = []
+    db.session.flush()  # 中間テーブルの削除をセッションに反映させてから孤立判定する
+
+    # 孤立ハッシュタグを削除（commit 前にまとめてセッションに乗せる）
+    delete_orphaned_hashtags()
+
+    # DB から記事を削除
     db.session.delete(post)
     db.session.commit()
 

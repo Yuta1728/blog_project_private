@@ -95,7 +95,7 @@
 
                 <p class="post-date">
                     🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.created_at != post.updated_at %}
+                    {% if post.updated_at %}
                         <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
                     {% endif %}
                 </p>

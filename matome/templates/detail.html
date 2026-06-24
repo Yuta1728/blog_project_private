@@ -22,6 +22,10 @@
             <div class="post-time">
                 投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
                 &nbsp;
+                {# updated_at が NULL でない場合のみ更新日時を表示する。
+                   models.py で updated_at=nullable=True にしたことで
+                   新規投稿時は NULL になり、編集保存時に初めてセットされる。
+                   これにより「投稿直後に更新日時が表示される」バグを防いでいる。 #}
                 {% if post.updated_at %}
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
@@ -80,15 +84,15 @@ function goBack() {
 }
 
 /* ============================================================
-   ★ YouTube ファサード再生（新規追加）
-   
+   YouTube ファサード再生
+
    動作フロー:
      1. ユーザーがサムネイル or 再生ボタンをクリック
      2. ytPlay(facadeEl) が呼ばれる
      3. 親の .post-youtube-wrapper から data-embed-url を取得
      4. autoplay=1 付きの iframe を生成してラッパーに追加
      5. ファサード（サムネイル）を非表示にして iframe だけ見せる
-   
+
    なぜ最初から iframe を埋め込まないのか:
      iframe は読み込み時に YouTube のスクリプト・スタイルを
      まとめてダウンロードするため、記事に YouTube が複数あると

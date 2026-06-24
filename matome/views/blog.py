@@ -83,7 +83,7 @@ def index():
             .with_entities(Post.updated_at)
             .first()
         )
-        last_updated = latest.updated_at.strftime('%Y/%m/%d') if latest else '---'
+        last_updated = latest.updated_at.strftime('%Y/%m/%d') if latest and latest.updated_at else '---'
         stats = {
             'post_count':    post_count,
             'hashtag_count': hashtag_count,
@@ -182,6 +182,9 @@ def detail(id):
 
             display_body = display_body.replace(f'[img{index+1}]', img_tag)
 
+    # マークダウン変換後は [img1] が <p>[img1]</p> になっている場合があるため
+    # <p> タグごと除去してから、念のため素の [imgN] タグも除去する。
+    display_body = re.sub(r'<p>\[img\d+\]</p>\n?', '', display_body)
     display_body = re.sub(r'\[img\d+\]', '', display_body)
 
     # -------------------------------------------------------------------
@@ -190,7 +193,7 @@ def detail(id):
     display_body = re.sub(r'\[map:([^\]]+)\]', _replace_map, display_body)
 
     # -------------------------------------------------------------------
-    # ★ YouTube タグの変換（新規追加）
+    # YouTube タグの変換
     # 対応形式:
     #   [youtube:VIDEO_ID]
     #   [youtube:https://www.youtube.com/watch?v=VIDEO_ID]
@@ -280,7 +283,7 @@ def _replace_map(m: re.Match) -> str:
 
 
 # ===================================================================
-# ★ YouTube 埋め込みヘルパー（新規追加）
+# YouTube 埋め込みヘルパー
 # ===================================================================
 
 def _extract_youtube_id(raw: str) -> str | None:
