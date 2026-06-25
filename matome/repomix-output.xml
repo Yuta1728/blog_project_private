@@ -1230,7 +1230,7 @@ a:hover {
        transition は cubic-bezier で自然な加速感を出している。 */
     transform: translateY(0);
     visibility: visible;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s linear 0s;
 }
 
@@ -1240,7 +1240,7 @@ a:hover {
     /* visibility の遅延: transform アニメーションが終わってから hidden にする
        （アニメーション中はまだ見えているので visibility=hidden にしてはいけない）*/
     visibility: hidden;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s linear 0.2s;
 }
 
@@ -2867,6 +2867,283 @@ hr {
         margin: 16px 0;
     }
 }
+
+
+
+/* ==============================================
+   関連記事セクション（detail.css 追記分）
+   ============================================== */
+
+.related-section {
+    margin-top: 40px;
+    padding-top: 8px;
+}
+
+/* セクション見出し */
+.related-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0d3a52;
+    border-bottom: 2px solid #1a7aad;
+    padding-bottom: 10px;
+    margin: 32px 0 14px;
+    text-align: left;
+    letter-spacing: 0.02em;
+}
+
+.related-heading-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.related-heading-genre {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a5f85;
+    background: #e7f7ff;
+    border: 1px solid #9fd0ec;
+    border-radius: 8px;
+    padding: 2px 8px;
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
+/* カードリスト */
+.related-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 1件分のカード */
+.related-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid #c5dff0;
+    border-radius: 10px;
+    padding: 10px 14px 10px 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.18s, border-color 0.18s, transform 0.15s;
+    overflow: hidden;
+}
+
+.related-card:hover {
+    border-color: #5aaedc;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.12);
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: inherit;
+}
+
+/* サムネイル */
+.related-thumb {
+    flex: 0 0 88px;
+    width: 88px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #dff0fb;
+    border: 1px solid #c5dff0;
+}
+
+.related-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    /* detail.css の article img に上書きされないよう明示 */
+    margin: 0 !important;
+    border-radius: 0;
+}
+
+/* テキストエリア */
+.related-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.related-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0d3a52;
+    line-height: 1.45;
+    margin: 0;
+    /* 2行で切る */
+    overflow: hidden;
+    display: -webkit-box;       /* Safari / 旧 Chrome 向け（警告は無害） */
+    /* stylelint-disable-next-line */
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    /* stylelint-disable-next-line */
+    -webkit-box-orient: vertical;
+}
+
+.related-card:hover .related-title {
+    color: #1a7aad;
+}
+
+.related-date {
+    font-size: 11px;
+    color: #7aaec8;
+    margin: 0;
+}
+
+/* ===========================
+   スマホ（〜767px）
+   =========================== */
+@media (max-width: 767px) {
+    .related-section {
+        margin-top: 28px;
+        padding: 0 0 8px;
+    }
+
+    .related-heading {
+        font-size: 14px;
+        margin: 24px 0 12px;
+        padding-bottom: 8px;
+    }
+
+    .related-list {
+        gap: 8px;
+    }
+
+    .related-card {
+        gap: 10px;
+        padding: 8px 10px 8px 8px;
+        border-radius: 8px;
+    }
+
+    .related-thumb {
+        flex: 0 0 72px;
+        width: 72px;
+        height: 52px;
+    }
+
+    .related-title {
+        font-size: 13px;
+    }
+
+    .related-date {
+        font-size: 11px;
+    }
+}
+
+
+
+/* ==============================================
+   記事下部ボタンエリア（detail.css 追記分）
+   ============================================== */
+
+.detail-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 32px;
+    flex-wrap: wrap;
+}
+
+/* ボタン共通ベース */
+.detail-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: background-color 0.18s, border-color 0.18s,
+                color 0.18s, box-shadow 0.18s, transform 0.13s;
+    white-space: nowrap;
+    min-height: 44px;
+    line-height: 1;
+}
+
+.detail-btn-icon {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+
+/* 「前の画面に戻る」— アウトライン・グレー系 */
+.detail-btn-back {
+    background-color: #ffffff;
+    color: #4a7a96;
+    border: 1.5px solid #a8cfe0;
+    box-shadow: 0 1px 4px rgba(26, 122, 173, 0.07);
+}
+
+.detail-btn-back:hover {
+    background-color: #f0f8fd;
+    border-color: #5aaedc;
+    color: #0d3a52;
+    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.13);
+    transform: translateY(-1px);
+}
+
+.detail-btn-back:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #dff0fb;
+}
+
+/* 「この記事を編集する」— 塗りつぶし・アクセントブルー */
+.detail-btn-edit {
+    background-color: #1a7aad;
+    color: #ffffff;
+    border: 1.5px solid #1a7aad;
+    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.22);
+}
+
+.detail-btn-edit:hover {
+    background-color: #155f8a;
+    border-color: #155f8a;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.30);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.detail-btn-edit:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #0f4a6e;
+}
+
+/* スマホ（〜767px） */
+@media (max-width: 767px) {
+    .detail-actions {
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 16px 28px;
+    }
+
+    .detail-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 24px;
+        font-size: 15px;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+}
 </file>
 
 <file path="static/css/genre.css">
@@ -4313,7 +4590,7 @@ a[role="button"]:hover {
         <section class="info-section">
             <h2 class="info-section-title">👤 自己紹介</h2>
             <p>
-                はじめまして。「MIT Blog」管理者の MIT です。<br>
+                はじめまして!「MIT Blog」管理者の MIT です。<br>
                 普段は旅行や野球観戦、ゲーム、映画・作品鑑賞など、多趣味に楽しんでいます。<br>
                 最近は特にAIを活用したWebアプリ開発に挑戦中です。
             </p>
@@ -4322,17 +4599,17 @@ a[role="button"]:hover {
         <section class="info-section">
             <h2 class="info-section-title">💡 興味・関心</h2>
             <p>
-                現在は、データ分析やWebアプリ開発において必要になるAIの活用法をはじめ、フロントエンドデザイン、セキュリティの強化、
-                そして「効率的で処理速度も質も高いコードの構成」について関心があり、日々学習中です。
+                今後、大学の研究で必要になるデータ分析やWebアプリ開発に関連する知識や技術習得のため、
+                AIの活用法をはじめ、フロントエンドデザイン、セキュリティの強化、機械学習について学習中です。
             </p>
         </section>
 
         <section class="info-section">
             <h2 class="info-section-title">📝 このブログについて</h2>
             <p>
-                このブログは、今後様々な技術スタックを学び、開発を進めていく中での「アウトプットの場」として立ち上げました。
-                開発の記録や技術的な気づきに加え、自分の趣味についても発信していく予定です。
-                どうぞよろしくお願いします。
+                ここでは、自分の学習内容と趣味の発信、文章力向上を目的とした「アウトプットの場」として立ち上げました。
+                普段の開発記録や技術的な気づきに加え、自分の趣味についても発信していく予定です。
+                長文を書く習慣があまりないため、論文やエントリーシート作成に向けて、文章力を鍛えていきたいと思います。
             </p>
         </section>
     </div>
@@ -5087,16 +5364,11 @@ document.addEventListener('keydown', function(e) {
             <div class="post-time">
                 投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
                 &nbsp;
-                {# updated_at が NULL でない場合のみ更新日時を表示する。
-                   models.py で updated_at=nullable=True にしたことで
-                   新規投稿時は NULL になり、編集保存時に初めてセットされる。
-                   これにより「投稿直後に更新日時が表示される」バグを防いでいる。 #}
                 {% if post.updated_at %}
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
             </div>
 
-            {# ===== ハッシュタグ表示 ===== #}
             {% if post.hashtags %}
                 <div class="detail-hashtags">
                     {% for tag in post.hashtags %}
@@ -5107,7 +5379,6 @@ document.addEventListener('keydown', function(e) {
                     {% endfor %}
                 </div>
             {% endif %}
-            {# ========================== #}
         </div>
 
         {% if toc_html and '<li>' in toc_html %}
@@ -5121,18 +5392,98 @@ document.addEventListener('keydown', function(e) {
     </article>
 
     <hr>
-    <ul class="detail-ul" style="justify-content: center;">
-        <li class="detail-ul-li">
-            <button type="button" class="detail-ul-li-a" onclick="goBack();">
-                前の画面に戻る
-            </button>
-        </li>
+    <div class="detail-actions">
+        <button type="button" class="detail-btn detail-btn-back" onclick="goBack();">
+            <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            前の画面に戻る
+        </button>
         {% if current_user.is_authenticated and post.user_id == current_user.id %}
-            <li class="detail-ul-li">
-                <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-ul-li-a">この記事を編集する</a>
-            </li>
+            <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-btn detail-btn-edit">
+                <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M14.7 3.3a1 1 0 0 1 1.4 0l.6.6a1 1 0 0 1 0 1.4L5.5 16.5l-2.5.5.5-2.5L14.7 3.3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                この記事を編集する
+            </a>
         {% endif %}
-    </ul>
+    </div>
+
+    {# ================================================================
+       関連記事セクション
+       ================================================================ #}
+    {% if related_by_genre or related_by_tag %}
+        <section class="related-section">
+
+            {% if related_by_genre %}
+                <h2 class="related-heading">
+                    <span class="related-heading-icon">📂</span>
+                    同じジャンルの記事
+                    <span class="related-heading-genre">{{ post.genre }}</span>
+                </h2>
+                <ul class="related-list">
+                    {% for rel in related_by_genre %}
+                        <li class="related-item">
+                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                                <div class="related-thumb">
+                                    {% if rel.img_name %}
+                                        {% set first_img = rel.img_name.split(',')[0] %}
+                                        <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% elif rel.default_thumb %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% endif %}
+                                </div>
+                                <div class="related-body">
+                                    <p class="related-title">{{ rel.title }}</p>
+                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if related_by_tag %}
+                <h2 class="related-heading">
+                    <span class="related-heading-icon">🏷️</span>
+                    同じタグの記事
+                </h2>
+                <ul class="related-list">
+                    {% for rel in related_by_tag %}
+                        <li class="related-item">
+                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                                <div class="related-thumb">
+                                    {% if rel.img_name %}
+                                        {% set first_img = rel.img_name.split(',')[0] %}
+                                        <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% elif rel.default_thumb %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% endif %}
+                                </div>
+                                <div class="related-body">
+                                    <p class="related-title">{{ rel.title }}</p>
+                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+        </section>
+    {% endif %}
+    {# ================================================================ #}
+
 </div>
 
 <script>
@@ -5150,26 +5501,11 @@ function goBack() {
 
 /* ============================================================
    YouTube ファサード再生
-
-   動作フロー:
-     1. ユーザーがサムネイル or 再生ボタンをクリック
-     2. ytPlay(facadeEl) が呼ばれる
-     3. 親の .post-youtube-wrapper から data-embed-url を取得
-     4. autoplay=1 付きの iframe を生成してラッパーに追加
-     5. ファサード（サムネイル）を非表示にして iframe だけ見せる
-
-   なぜ最初から iframe を埋め込まないのか:
-     iframe は読み込み時に YouTube のスクリプト・スタイルを
-     まとめてダウンロードするため、記事に YouTube が複数あると
-     ページの初期表示が著しく遅くなる。
-     クリックされてから初めて iframe を生成する「ファサードパターン」
-     を採用することで、ページ速度を損なわず動画を埋め込める。
    ============================================================ */
 function ytPlay(facadeEl) {
     const wrapper  = facadeEl.closest('.post-youtube-wrapper');
     const embedUrl = wrapper.dataset.embedUrl;
 
-    // iframe を生成して autoplay=1 付き URL をセット
     const iframe = document.createElement('iframe');
     iframe.src             = embedUrl;
     iframe.className       = 'post-youtube-iframe';
@@ -5177,7 +5513,6 @@ function ytPlay(facadeEl) {
     iframe.allowFullscreen = true;
     iframe.referrerPolicy  = 'strict-origin-when-cross-origin';
 
-    // ラッパーに iframe を追加してファサードを隠す
     wrapper.appendChild(iframe);
     facadeEl.style.display = 'none';
 }
@@ -7302,14 +7637,6 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # YouTube タグの変換
-    # 対応形式:
-    #   [youtube:VIDEO_ID]
-    #   [youtube:https://www.youtube.com/watch?v=VIDEO_ID]
-    #   [youtube:https://youtu.be/VIDEO_ID]
-    #   [youtube:https://www.youtube.com/shorts/VIDEO_ID]
-    #
-    # マークダウン変換後の HTML に対して正規表現で置換する。
-    # <p>[youtube:...]</p> のように <p> タグで囲まれるケースも対応。
     # -------------------------------------------------------------------
     display_body = re.sub(
         r'(?:<p>)?\[youtube:([^\]]+)\](?:</p>)?',
@@ -7317,7 +7644,56 @@ def detail(id):
         display_body
     )
 
-    return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
+    # -------------------------------------------------------------------
+    # 関連記事の取得
+    #
+    # 「同じジャンルの記事」と「同じタグの記事」をそれぞれ最新3件取得する。
+    # ジャンル関連記事を先に取得してそのIDセットを除外リストに使うことで
+    # 2つのセクション間での重複表示を防ぐ。
+    # 非ログイン時は公開記事のみ、ログイン中は自分の非公開記事も含める。
+    # -------------------------------------------------------------------
+    if current_user.is_authenticated:
+        # 管理者は自分の非公開記事も関連表示に含める
+        pub_filter = (Post.is_published == True) | (Post.user_id == current_user.id)
+    else:
+        pub_filter = Post.is_published == True
+
+    # 現在の記事自身は除外
+    exclude = Post.id != post.id
+
+    # 同じジャンルの記事（最新2件）
+    related_by_genre = (
+        Post.query
+        .filter(pub_filter, exclude, Post.genre == post.genre)
+        .order_by(Post.created_at.desc())
+        .limit(2)
+        .all()
+    )
+
+    # 同じハッシュタグを持つ記事（最新2件・ジャンル関連済みを除外して重複防止）
+    genre_related_ids = {p.id for p in related_by_genre}
+    tag_names         = [t.name for t in post.hashtags]
+
+    if tag_names:
+        related_by_tag = (
+            Post.query
+            .filter(pub_filter, exclude, ~Post.id.in_(genre_related_ids))
+            .filter(Post.hashtags.any(Hashtag.name.in_(tag_names)))
+            .order_by(Post.created_at.desc())
+            .limit(2)
+            .all()
+        )
+    else:
+        related_by_tag = []
+
+    return render_template(
+        'detail.html',
+        post             = post,
+        display_body     = display_body,
+        toc_html         = toc_html,
+        related_by_genre = related_by_genre,
+        related_by_tag   = related_by_tag,
+    )
 
 
 # ===================================================================
@@ -7395,39 +7771,24 @@ def _replace_map(m: re.Match) -> str:
 # ===================================================================
 
 def _extract_youtube_id(raw: str) -> str | None:
-    """
-    [youtube:XXX] の XXX 部分から YouTube の動画 ID（11文字）を抽出する。
-
-    対応する入力パターン:
-      - 動画 ID 直接指定:   dQw4w9WgXcQ
-      - 通常 URL:           https://www.youtube.com/watch?v=dQw4w9WgXcQ
-      - 短縮 URL:           https://youtu.be/dQw4w9WgXcQ
-      - Shorts URL:         https://www.youtube.com/shorts/dQw4w9WgXcQ
-      - 埋め込み URL:       https://www.youtube.com/embed/dQw4w9WgXcQ
-    """
     raw = raw.strip()
 
-    # パターン1: watch?v= 形式
     m = re.search(r'[?&]v=([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン2: youtu.be/ 形式（短縮 URL）
     m = re.search(r'youtu\.be/([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン3: /shorts/ 形式
     m = re.search(r'/shorts/([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン4: /embed/ 形式
     m = re.search(r'/embed/([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン5: 動画 ID 直接指定（11文字英数字）
     m = re.fullmatch(r'[A-Za-z0-9_-]{11}', raw)
     if m:
         return raw
@@ -7436,23 +7797,13 @@ def _extract_youtube_id(raw: str) -> str | None:
 
 
 def _replace_youtube(m: re.Match) -> str:
-    """
-    [youtube:XXX] をサムネイル＋クリック再生の埋め込み HTML に変換する。
-
-    【表示の仕組み（ファサードパターン）】
-    1. 初期表示: YouTube サムネイル画像 + SVG 再生ボタンのオーバーレイを表示
-    2. クリック時: JS の ytPlay() が iframe を動的に挿入して autoplay=1 で再生開始
-       → 最初から iframe を埋め込まないことでページの読み込み速度を保つ
-    """
     raw      = m.group(1)
     video_id = _extract_youtube_id(raw)
 
     if not video_id:
         return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {raw}]</p>'
 
-    # YouTube が公開している高品質サムネイル（480×360）
     thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
-    # クリック時に挿入する embed URL（autoplay=1 で即再生）
     embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
 
     return (
