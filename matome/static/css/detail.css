@@ -636,6 +636,7 @@ hr {
 .related-heading {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     font-size: 15px;
     font-weight: 700;
@@ -652,16 +653,20 @@ hr {
     flex-shrink: 0;
 }
 
-.related-heading-genre {
+/* 見出し右側のサブラベル（「〇〇 を表示中」） */
+.related-heading-sub {
     font-size: 12px;
-    font-weight: 600;
-    color: #1a5f85;
-    background: #e7f7ff;
-    border: 1px solid #9fd0ec;
-    border-radius: 8px;
-    padding: 2px 8px;
+    font-weight: 500;
+    color: #5a8ba8;
+    background: #f0faff;
+    border: 1px solid #c5dff0;
+    border-radius: 20px;
+    padding: 2px 10px;
     margin-left: 4px;
     white-space: nowrap;
+    letter-spacing: 0;
+    line-height: 1.6;
+    flex-shrink: 0;
 }
 
 /* カードリスト */
@@ -734,9 +739,8 @@ hr {
     color: #0d3a52;
     line-height: 1.45;
     margin: 0;
-    /* 2行で切る */
     overflow: hidden;
-    display: -webkit-box;       /* Safari / 旧 Chrome 向け（警告は無害） */
+    display: -webkit-box;
     /* stylelint-disable-next-line */
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -769,6 +773,11 @@ hr {
         padding-bottom: 8px;
     }
 
+    .related-heading-sub {
+        margin-left: 0;
+        font-size: 11px;
+    }
+
     .related-list {
         gap: 8px;
     }
@@ -793,7 +802,6 @@ hr {
         font-size: 11px;
     }
 }
-
 
 
 /* ==============================================

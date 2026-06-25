@@ -68,75 +68,44 @@
     </div>
 
     {# ================================================================
-       関連記事セクション
+       関連記事セクション（単一ブロック、最大4件）
        ================================================================ #}
-    {% if related_by_genre or related_by_tag %}
+    {% if related_posts %}
         <section class="related-section">
 
-            {% if related_by_genre %}
-                <h2 class="related-heading">
-                    <span class="related-heading-icon">📂</span>
-                    同じジャンルの記事
-                    <span class="related-heading-genre">{{ post.genre }}</span>
-                </h2>
-                <ul class="related-list">
-                    {% for rel in related_by_genre %}
-                        <li class="related-item">
-                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
-                                <div class="related-thumb">
-                                    {% if rel.img_name %}
-                                        {% set first_img = rel.img_name.split(',')[0] %}
-                                        <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
-                                             alt="{{ rel.title }}" loading="lazy">
-                                    {% elif rel.default_thumb %}
-                                        <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
-                                             alt="{{ rel.title }}" loading="lazy">
-                                    {% else %}
-                                        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
-                                             alt="{{ rel.title }}" loading="lazy">
-                                    {% endif %}
-                                </div>
-                                <div class="related-body">
-                                    <p class="related-title">{{ rel.title }}</p>
-                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
-                                </div>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+            <h2 class="related-heading">
+                <span class="related-heading-icon">🔗</span>
+                関連記事
+                {% if related_sub_label %}
+                    <span class="related-heading-sub">{{ related_sub_label }}</span>
+                {% endif %}
+            </h2>
 
-            {% if related_by_tag %}
-                <h2 class="related-heading">
-                    <span class="related-heading-icon">🏷️</span>
-                    同じタグの記事
-                </h2>
-                <ul class="related-list">
-                    {% for rel in related_by_tag %}
-                        <li class="related-item">
-                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
-                                <div class="related-thumb">
-                                    {% if rel.img_name %}
-                                        {% set first_img = rel.img_name.split(',')[0] %}
-                                        <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
-                                             alt="{{ rel.title }}" loading="lazy">
-                                    {% elif rel.default_thumb %}
-                                        <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
-                                             alt="{{ rel.title }}" loading="lazy">
-                                    {% else %}
-                                        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
-                                             alt="{{ rel.title }}" loading="lazy">
-                                    {% endif %}
-                                </div>
-                                <div class="related-body">
-                                    <p class="related-title">{{ rel.title }}</p>
-                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
-                                </div>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+            <ul class="related-list">
+                {% for rel in related_posts %}
+                    <li class="related-item">
+                        <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                            <div class="related-thumb">
+                                {% if rel.img_name %}
+                                    {% set first_img = rel.img_name.split(',')[0] %}
+                                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
+                                         alt="{{ rel.title }}" loading="lazy">
+                                {% elif rel.default_thumb %}
+                                    <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
+                                         alt="{{ rel.title }}" loading="lazy">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+                                         alt="{{ rel.title }}" loading="lazy">
+                                {% endif %}
+                            </div>
+                            <div class="related-body">
+                                <p class="related-title">{{ rel.title }}</p>
+                                <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                            </div>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
 
         </section>
     {% endif %}

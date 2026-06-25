@@ -121,6 +121,111 @@ def howto():
 
 
 # ===================================================================
+# 関連記事取得ヘルパー
+# ===================================================================
+
+def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
+    """
+    指定した記事に対する関連記事を最大 max_count 件取得して返す。
+
+    取得は以下の優先順位で段階的に行い、合計が max_count に達した時点で終了する。
+
+    STEP1: 同じジャンル × 同じタグあり（最も関連度が高い）
+    STEP2: 同じタグのみ（ジャンル不問）
+    STEP3: 同じジャンルのみ（タグ不問）
+    STEP4: 最新記事（関連条件なし）
+
+    各 STEP 内では created_at DESC（新しい順）で取得する。
+    前の STEP で取得済みの記事は次の STEP 以降の候補から除外する（重複排除）。
+
+    @param post:       現在閲覧中の Post オブジェクト
+    @param pub_filter: 公開状態の絞り込み条件（SQLAlchemy フィルター式）
+    @param max_count:  最大取得件数（デフォルト 4）
+    @return:           STEP 順に並べた Post オブジェクトのリスト
+    """
+    results    = []          # 最終的に返すリスト（STEP 順を維持）
+    seen_ids   = {post.id}   # 現在の記事を最初から除外対象に追加
+    remaining  = max_count   # まだ取得が必要な件数
+    tag_names  = [t.name for t in post.hashtags]
+
+    # ------------------------------------------------------------------
+    # STEP 1: 同じジャンル × 同じタグあり
+    # ------------------------------------------------------------------
+    if remaining > 0:
+        step1 = (
+            Post.query
+            .filter(
+                pub_filter,
+                Post.id.notin_(seen_ids),
+                Post.genre == post.genre,
+                Post.hashtags.any(Hashtag.name.in_(tag_names)) if tag_names else False,
+            )
+            .order_by(Post.created_at.desc())
+            .limit(remaining)
+            .all()
+        )
+        results   += step1
+        seen_ids  |= {p.id for p in step1}
+        remaining  = max_count - len(results)
+
+    # ------------------------------------------------------------------
+    # STEP 2: 同じタグのみ（ジャンル不問）
+    # ------------------------------------------------------------------
+    if remaining > 0 and tag_names:
+        step2 = (
+            Post.query
+            .filter(
+                pub_filter,
+                Post.id.notin_(seen_ids),
+                Post.hashtags.any(Hashtag.name.in_(tag_names)),
+            )
+            .order_by(Post.created_at.desc())
+            .limit(remaining)
+            .all()
+        )
+        results   += step2
+        seen_ids  |= {p.id for p in step2}
+        remaining  = max_count - len(results)
+
+    # ------------------------------------------------------------------
+    # STEP 3: 同じジャンルのみ（タグ不問）
+    # ------------------------------------------------------------------
+    if remaining > 0:
+        step3 = (
+            Post.query
+            .filter(
+                pub_filter,
+                Post.id.notin_(seen_ids),
+                Post.genre == post.genre,
+            )
+            .order_by(Post.created_at.desc())
+            .limit(remaining)
+            .all()
+        )
+        results   += step3
+        seen_ids  |= {p.id for p in step3}
+        remaining  = max_count - len(results)
+
+    # ------------------------------------------------------------------
+    # STEP 4: 最新記事（関連条件なし）
+    # ------------------------------------------------------------------
+    if remaining > 0:
+        step4 = (
+            Post.query
+            .filter(
+                pub_filter,
+                Post.id.notin_(seen_ids),
+            )
+            .order_by(Post.created_at.desc())
+            .limit(remaining)
+            .all()
+        )
+        results += step4
+
+    return results
+
+
+# ===================================================================
 # 記事詳細ページ
 # ===================================================================
 @blog_bp.route('/<int:id>/detail', methods=['GET'])
@@ -204,52 +309,46 @@ def detail(id):
     # -------------------------------------------------------------------
     # 関連記事の取得
     #
-    # 「同じジャンルの記事」と「同じタグの記事」をそれぞれ最新3件取得する。
-    # ジャンル関連記事を先に取得してそのIDセットを除外リストに使うことで
-    # 2つのセクション間での重複表示を防ぐ。
-    # 非ログイン時は公開記事のみ、ログイン中は自分の非公開記事も含める。
+    # 公開条件:
+    #   ログイン中 → 自分の非公開記事も含める
+    #   非ログイン → 公開記事のみ
+    #
+    # 選定ロジック（_get_related_posts 参照）:
+    #   STEP1: 同ジャンル × 同タグ
+    #   STEP2: 同タグのみ
+    #   STEP3: 同ジャンルのみ
+    #   STEP4: 最新記事
     # -------------------------------------------------------------------
     if current_user.is_authenticated:
-        # 管理者は自分の非公開記事も関連表示に含める
         pub_filter = (Post.is_published == True) | (Post.user_id == current_user.id)
     else:
         pub_filter = Post.is_published == True
 
-    # 現在の記事自身は除外
-    exclude = Post.id != post.id
+    related_posts = _get_related_posts(post, pub_filter, max_count=4)
 
-    # 同じジャンルの記事（最新2件）
-    related_by_genre = (
-        Post.query
-        .filter(pub_filter, exclude, Post.genre == post.genre)
-        .order_by(Post.created_at.desc())
-        .limit(2)
-        .all()
-    )
-
-    # 同じハッシュタグを持つ記事（最新2件・ジャンル関連済みを除外して重複防止）
-    genre_related_ids = {p.id for p in related_by_genre}
-    tag_names         = [t.name for t in post.hashtags]
-
-    if tag_names:
-        related_by_tag = (
-            Post.query
-            .filter(pub_filter, exclude, ~Post.id.in_(genre_related_ids))
-            .filter(Post.hashtags.any(Hashtag.name.in_(tag_names)))
-            .order_by(Post.created_at.desc())
-            .limit(2)
-            .all()
-        )
+    # -------------------------------------------------------------------
+    # 関連記事セクションのサブラベル生成
+    #
+    # ジャンルとタグが両方ある場合は「ジャンル・タグを表示中」
+    # どちらかのみの場合はそれぞれの名称を表示
+    # -------------------------------------------------------------------
+    tag_names = [t.name for t in post.hashtags]
+    if post.genre and post.genre != '未分類' and tag_names:
+        related_sub_label = f'{post.genre}・{"、".join(f"#{n}" for n in tag_names[:2])} を表示中'
+    elif post.genre and post.genre != '未分類':
+        related_sub_label = f'{post.genre} を表示中'
+    elif tag_names:
+        related_sub_label = f'{"、".join(f"#{n}" for n in tag_names[:2])} を表示中'
     else:
-        related_by_tag = []
+        related_sub_label = '最新記事を表示中'
 
     return render_template(
         'detail.html',
-        post             = post,
-        display_body     = display_body,
-        toc_html         = toc_html,
-        related_by_genre = related_by_genre,
-        related_by_tag   = related_by_tag,
+        post              = post,
+        display_body      = display_body,
+        toc_html          = toc_html,
+        related_posts     = related_posts,
+        related_sub_label = related_sub_label,
     )
 
 
