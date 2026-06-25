@@ -22,16 +22,11 @@
             <div class="post-time">
                 投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
                 &nbsp;
-                {# updated_at が NULL でない場合のみ更新日時を表示する。
-                   models.py で updated_at=nullable=True にしたことで
-                   新規投稿時は NULL になり、編集保存時に初めてセットされる。
-                   これにより「投稿直後に更新日時が表示される」バグを防いでいる。 #}
                 {% if post.updated_at %}
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
             </div>
 
-            {# ===== ハッシュタグ表示 ===== #}
             {% if post.hashtags %}
                 <div class="detail-hashtags">
                     {% for tag in post.hashtags %}
@@ -42,7 +37,6 @@
                     {% endfor %}
                 </div>
             {% endif %}
-            {# ========================== #}
         </div>
 
         {% if toc_html and '<li>' in toc_html %}
@@ -56,18 +50,98 @@
     </article>
 
     <hr>
-    <ul class="detail-ul" style="justify-content: center;">
-        <li class="detail-ul-li">
-            <button type="button" class="detail-ul-li-a" onclick="goBack();">
-                前の画面に戻る
-            </button>
-        </li>
+    <div class="detail-actions">
+        <button type="button" class="detail-btn detail-btn-back" onclick="goBack();">
+            <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            前の画面に戻る
+        </button>
         {% if current_user.is_authenticated and post.user_id == current_user.id %}
-            <li class="detail-ul-li">
-                <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-ul-li-a">この記事を編集する</a>
-            </li>
+            <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-btn detail-btn-edit">
+                <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M14.7 3.3a1 1 0 0 1 1.4 0l.6.6a1 1 0 0 1 0 1.4L5.5 16.5l-2.5.5.5-2.5L14.7 3.3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                この記事を編集する
+            </a>
         {% endif %}
-    </ul>
+    </div>
+
+    {# ================================================================
+       関連記事セクション
+       ================================================================ #}
+    {% if related_by_genre or related_by_tag %}
+        <section class="related-section">
+
+            {% if related_by_genre %}
+                <h2 class="related-heading">
+                    <span class="related-heading-icon">📂</span>
+                    同じジャンルの記事
+                    <span class="related-heading-genre">{{ post.genre }}</span>
+                </h2>
+                <ul class="related-list">
+                    {% for rel in related_by_genre %}
+                        <li class="related-item">
+                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                                <div class="related-thumb">
+                                    {% if rel.img_name %}
+                                        {% set first_img = rel.img_name.split(',')[0] %}
+                                        <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% elif rel.default_thumb %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% endif %}
+                                </div>
+                                <div class="related-body">
+                                    <p class="related-title">{{ rel.title }}</p>
+                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if related_by_tag %}
+                <h2 class="related-heading">
+                    <span class="related-heading-icon">🏷️</span>
+                    同じタグの記事
+                </h2>
+                <ul class="related-list">
+                    {% for rel in related_by_tag %}
+                        <li class="related-item">
+                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                                <div class="related-thumb">
+                                    {% if rel.img_name %}
+                                        {% set first_img = rel.img_name.split(',')[0] %}
+                                        <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% elif rel.default_thumb %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+                                             alt="{{ rel.title }}" loading="lazy">
+                                    {% endif %}
+                                </div>
+                                <div class="related-body">
+                                    <p class="related-title">{{ rel.title }}</p>
+                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+        </section>
+    {% endif %}
+    {# ================================================================ #}
+
 </div>
 
 <script>
@@ -85,26 +159,11 @@ function goBack() {
 
 /* ============================================================
    YouTube ファサード再生
-
-   動作フロー:
-     1. ユーザーがサムネイル or 再生ボタンをクリック
-     2. ytPlay(facadeEl) が呼ばれる
-     3. 親の .post-youtube-wrapper から data-embed-url を取得
-     4. autoplay=1 付きの iframe を生成してラッパーに追加
-     5. ファサード（サムネイル）を非表示にして iframe だけ見せる
-
-   なぜ最初から iframe を埋め込まないのか:
-     iframe は読み込み時に YouTube のスクリプト・スタイルを
-     まとめてダウンロードするため、記事に YouTube が複数あると
-     ページの初期表示が著しく遅くなる。
-     クリックされてから初めて iframe を生成する「ファサードパターン」
-     を採用することで、ページ速度を損なわず動画を埋め込める。
    ============================================================ */
 function ytPlay(facadeEl) {
     const wrapper  = facadeEl.closest('.post-youtube-wrapper');
     const embedUrl = wrapper.dataset.embedUrl;
 
-    // iframe を生成して autoplay=1 付き URL をセット
     const iframe = document.createElement('iframe');
     iframe.src             = embedUrl;
     iframe.className       = 'post-youtube-iframe';
@@ -112,7 +171,6 @@ function ytPlay(facadeEl) {
     iframe.allowFullscreen = true;
     iframe.referrerPolicy  = 'strict-origin-when-cross-origin';
 
-    // ラッパーに iframe を追加してファサードを隠す
     wrapper.appendChild(iframe);
     facadeEl.style.display = 'none';
 }

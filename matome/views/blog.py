@@ -194,14 +194,6 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # YouTube タグの変換
-    # 対応形式:
-    #   [youtube:VIDEO_ID]
-    #   [youtube:https://www.youtube.com/watch?v=VIDEO_ID]
-    #   [youtube:https://youtu.be/VIDEO_ID]
-    #   [youtube:https://www.youtube.com/shorts/VIDEO_ID]
-    #
-    # マークダウン変換後の HTML に対して正規表現で置換する。
-    # <p>[youtube:...]</p> のように <p> タグで囲まれるケースも対応。
     # -------------------------------------------------------------------
     display_body = re.sub(
         r'(?:<p>)?\[youtube:([^\]]+)\](?:</p>)?',
@@ -209,7 +201,56 @@ def detail(id):
         display_body
     )
 
-    return render_template('detail.html', post=post, display_body=display_body, toc_html=toc_html)
+    # -------------------------------------------------------------------
+    # 関連記事の取得
+    #
+    # 「同じジャンルの記事」と「同じタグの記事」をそれぞれ最新3件取得する。
+    # ジャンル関連記事を先に取得してそのIDセットを除外リストに使うことで
+    # 2つのセクション間での重複表示を防ぐ。
+    # 非ログイン時は公開記事のみ、ログイン中は自分の非公開記事も含める。
+    # -------------------------------------------------------------------
+    if current_user.is_authenticated:
+        # 管理者は自分の非公開記事も関連表示に含める
+        pub_filter = (Post.is_published == True) | (Post.user_id == current_user.id)
+    else:
+        pub_filter = Post.is_published == True
+
+    # 現在の記事自身は除外
+    exclude = Post.id != post.id
+
+    # 同じジャンルの記事（最新2件）
+    related_by_genre = (
+        Post.query
+        .filter(pub_filter, exclude, Post.genre == post.genre)
+        .order_by(Post.created_at.desc())
+        .limit(2)
+        .all()
+    )
+
+    # 同じハッシュタグを持つ記事（最新2件・ジャンル関連済みを除外して重複防止）
+    genre_related_ids = {p.id for p in related_by_genre}
+    tag_names         = [t.name for t in post.hashtags]
+
+    if tag_names:
+        related_by_tag = (
+            Post.query
+            .filter(pub_filter, exclude, ~Post.id.in_(genre_related_ids))
+            .filter(Post.hashtags.any(Hashtag.name.in_(tag_names)))
+            .order_by(Post.created_at.desc())
+            .limit(2)
+            .all()
+        )
+    else:
+        related_by_tag = []
+
+    return render_template(
+        'detail.html',
+        post             = post,
+        display_body     = display_body,
+        toc_html         = toc_html,
+        related_by_genre = related_by_genre,
+        related_by_tag   = related_by_tag,
+    )
 
 
 # ===================================================================
@@ -287,39 +328,24 @@ def _replace_map(m: re.Match) -> str:
 # ===================================================================
 
 def _extract_youtube_id(raw: str) -> str | None:
-    """
-    [youtube:XXX] の XXX 部分から YouTube の動画 ID（11文字）を抽出する。
-
-    対応する入力パターン:
-      - 動画 ID 直接指定:   dQw4w9WgXcQ
-      - 通常 URL:           https://www.youtube.com/watch?v=dQw4w9WgXcQ
-      - 短縮 URL:           https://youtu.be/dQw4w9WgXcQ
-      - Shorts URL:         https://www.youtube.com/shorts/dQw4w9WgXcQ
-      - 埋め込み URL:       https://www.youtube.com/embed/dQw4w9WgXcQ
-    """
     raw = raw.strip()
 
-    # パターン1: watch?v= 形式
     m = re.search(r'[?&]v=([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン2: youtu.be/ 形式（短縮 URL）
     m = re.search(r'youtu\.be/([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン3: /shorts/ 形式
     m = re.search(r'/shorts/([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン4: /embed/ 形式
     m = re.search(r'/embed/([A-Za-z0-9_-]{11})', raw)
     if m:
         return m.group(1)
 
-    # パターン5: 動画 ID 直接指定（11文字英数字）
     m = re.fullmatch(r'[A-Za-z0-9_-]{11}', raw)
     if m:
         return raw
@@ -328,23 +354,13 @@ def _extract_youtube_id(raw: str) -> str | None:
 
 
 def _replace_youtube(m: re.Match) -> str:
-    """
-    [youtube:XXX] をサムネイル＋クリック再生の埋め込み HTML に変換する。
-
-    【表示の仕組み（ファサードパターン）】
-    1. 初期表示: YouTube サムネイル画像 + SVG 再生ボタンのオーバーレイを表示
-    2. クリック時: JS の ytPlay() が iframe を動的に挿入して autoplay=1 で再生開始
-       → 最初から iframe を埋め込まないことでページの読み込み速度を保つ
-    """
     raw      = m.group(1)
     video_id = _extract_youtube_id(raw)
 
     if not video_id:
         return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {raw}]</p>'
 
-    # YouTube が公開している高品質サムネイル（480×360）
     thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
-    # クリック時に挿入する embed URL（autoplay=1 で即再生）
     embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
 
     return (
