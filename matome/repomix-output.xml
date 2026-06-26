@@ -2240,6 +2240,82 @@ h1 {
     border-color: #99000094;
     color: #fff;
 }
+
+
+
+/* ============================================================
+   Sticky マークダウンツールバー
+   ============================================================
+   このブロックを create_update.css の末尾に追記してください。
+
+   仕組み:
+     .md-toolbar-wrapper が textarea を含むコンテナ全体をラップし、
+     .md-toolbar に position:sticky + top:0 を付与することで
+     textarea をスクロール中もツールバーが画面上部に吸着する。
+
+     main-header（height: 85px / スマホ 63px）が sticky のため、
+     top 値をヘッダー高さ分オフセットする。
+   ============================================================ */
+
+/* ── ラッパー（ツールバー＋textarea をまとめる位置基準） ── */
+.md-toolbar-wrapper {
+    position: relative; /* sticky の基準コンテナ */
+}
+
+/* ── ツールバー本体 sticky 化 ── */
+.md-toolbar {
+    /* ヘッダー(85px)分だけ下げて貼り付く */
+    position: sticky;
+    top: 85px;
+    z-index: 50;
+
+    /* 固定時の視認性向上 */
+    background: #eef6fb;            /* 既存色を維持 */
+    border: 1.5px solid #c5dff0;    /* 既存ボーダーを維持 */
+    border-bottom: none;            /* textarea と接する下辺は非表示（既存と同じ） */
+    border-radius: 8px 8px 0 0;     /* 既存と同じ */
+
+    /* 浮いて見えるよう影を追加 */
+    box-shadow: 0 4px 12px rgba(26, 122, 173, 0.12);
+
+    /* 下がひとつ前の要素の下に潜り込まないよう余白を保持 */
+    margin-bottom: 0 !important;
+
+    /* スムーズな影の変化 */
+    transition: box-shadow 0.2s ease;
+}
+
+/* ── スクロール追従中（JS でクラス付与）はより強調 ── */
+.md-toolbar.is-sticky {
+    box-shadow: 0 6px 20px rgba(26, 122, 173, 0.18);
+    border-color: #8cc8e8;
+}
+
+/* ── textarea との境界を自然に見せる ── */
+#bodyTextarea {
+    /* sticky ツールバーと面一に接続するため上の角丸だけ消す */
+    border-top: none !important;
+    border-radius: 0 0 8px 8px !important;
+    /* 上端が隠れないよう scroll-margin を設定 */
+    scroll-margin-top: calc(85px + 48px + 8px); /* ヘッダー + ツールバー + 余裕 */
+}
+
+/* ── スマホ（〜767px） ── */
+@media (max-width: 767px) {
+    .md-toolbar {
+        /* スマホヘッダーは 63px */
+        top: 63px;
+        /* ボタンが折り返せるよう flex-wrap は既存の wrap を維持 */
+        padding: 8px 10px;
+        gap: 5px;
+        /* 横はみ出し禁止 */
+        overflow-x: hidden;
+    }
+
+    #bodyTextarea {
+        scroll-margin-top: calc(63px + 56px + 8px);
+    }
+}
 </file>
 
 <file path="static/css/detail.css">
@@ -3807,7 +3883,7 @@ a[role="button"]:hover {
     }
 
     .btn-edit, .btn-delete {
-        padding: 6px 19px;
+        padding: 5px 17px;
         font-size: 13px;
         min-height: 36px;
         display: inline-flex;
@@ -4882,6 +4958,8 @@ a[role="button"]:hover {
 
         <label for="bodyTextarea">内容</label>
 
+        <div class="md-toolbar-wrapper">
+
         <!-- ===== マークダウンツールバー ===== -->
         <div class="md-toolbar" id="md-toolbar">
             <button type="button" class="md-btn" onclick="mdInsertHeading2()">H2 見出し</button>
@@ -4950,6 +5028,8 @@ a[role="button"]:hover {
 
         <textarea name="body" id="bodyTextarea" rows="17" required
                   placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
+
+        </div>
 
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
@@ -5341,6 +5421,67 @@ document.addEventListener('keydown', function(e) {
         closeYoutubeModal();
     }
 });
+
+/* ============================================================
+   Sticky ツールバー：スクロール時クラス付与
+   ============================================================
+   create.html / update.html の既存 <script> ブロックの末尾に
+   この関数を追記してください（ESC キーのリスナーの直前が推奨）。
+
+   役割:
+     ツールバーが sticky で画面上部に吸着したタイミングを
+     IntersectionObserver で検出し、.is-sticky クラスを付与する。
+     CSS の box-shadow / border-color トランジションで
+     「固定されている」ことを視覚的にフィードバックする。
+
+   IntersectionObserver を使う理由:
+     - scroll イベントより低コスト（rAF 不要）
+     - ツールバーが「元の位置から外れた」瞬間だけ発火するため
+       連続スクロール中にも余分な処理が走らない
+   ============================================================ */
+
+(function () {
+    'use strict';
+
+    const toolbar = document.getElementById('md-toolbar');
+    if (!toolbar) return;
+
+    // ツールバーの直上に 1px の番兵要素を挿入する。
+    // この要素が viewport 外に出た＝ツールバーが sticky 状態、と判定できる。
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
+    toolbar.parentElement.insertBefore(sentinel, toolbar);
+
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+            // isIntersecting が false → 番兵が画面外 → sticky 吸着中
+            toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+        },
+        {
+            // ヘッダー分だけ上を除外してウォッチする
+            rootMargin: '-85px 0px 0px 0px', // スマホでは後述の mediaQuery で切替
+            threshold: 0,
+        }
+    );
+
+    observer.observe(sentinel);
+
+    // スマホ（ヘッダー 63px）ではオフセットを切り替える
+    const mq = window.matchMedia('(max-width: 767px)');
+    function updateRootMargin(e) {
+        observer.disconnect();
+        const offset = e.matches ? '-63px' : '-85px';
+        const newObserver = new IntersectionObserver(
+            ([entry]) => {
+                toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+            },
+            { rootMargin: `${offset} 0px 0px 0px`, threshold: 0 }
+        );
+        newObserver.observe(sentinel);
+    }
+    mq.addEventListener('change', updateRootMargin);
+})();
+
 </script>
 
 {% endblock %}
@@ -6188,6 +6329,8 @@ function ytPlay(facadeEl) {
 
         <label for="bodyTextarea">内容</label>
 
+        <div class="md-toolbar-wrapper">
+
         <!-- ===== マークダウンツールバー ===== -->
         <div class="md-toolbar" id="md-toolbar">
             <button type="button" class="md-btn" onclick="mdInsertHeading2()">H2 見出し</button>
@@ -6261,6 +6404,8 @@ function ytPlay(facadeEl) {
         <!-- ================================ -->
 
         <textarea name="body" id="bodyTextarea" rows="17">{{post.body}}</textarea>
+
+        </div>
 
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
@@ -6681,6 +6826,67 @@ document.addEventListener('keydown', function(e) {
         closeYoutubeModal();
     }
 });
+
+/* ============================================================
+   Sticky ツールバー：スクロール時クラス付与
+   ============================================================
+   create.html / update.html の既存 <script> ブロックの末尾に
+   この関数を追記してください（ESC キーのリスナーの直前が推奨）。
+
+   役割:
+     ツールバーが sticky で画面上部に吸着したタイミングを
+     IntersectionObserver で検出し、.is-sticky クラスを付与する。
+     CSS の box-shadow / border-color トランジションで
+     「固定されている」ことを視覚的にフィードバックする。
+
+   IntersectionObserver を使う理由:
+     - scroll イベントより低コスト（rAF 不要）
+     - ツールバーが「元の位置から外れた」瞬間だけ発火するため
+       連続スクロール中にも余分な処理が走らない
+   ============================================================ */
+
+(function () {
+    'use strict';
+
+    const toolbar = document.getElementById('md-toolbar');
+    if (!toolbar) return;
+
+    // ツールバーの直上に 1px の番兵要素を挿入する。
+    // この要素が viewport 外に出た＝ツールバーが sticky 状態、と判定できる。
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
+    toolbar.parentElement.insertBefore(sentinel, toolbar);
+
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+            // isIntersecting が false → 番兵が画面外 → sticky 吸着中
+            toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+        },
+        {
+            // ヘッダー分だけ上を除外してウォッチする
+            rootMargin: '-85px 0px 0px 0px', // スマホでは後述の mediaQuery で切替
+            threshold: 0,
+        }
+    );
+
+    observer.observe(sentinel);
+
+    // スマホ（ヘッダー 63px）ではオフセットを切り替える
+    const mq = window.matchMedia('(max-width: 767px)');
+    function updateRootMargin(e) {
+        observer.disconnect();
+        const offset = e.matches ? '-63px' : '-85px';
+        const newObserver = new IntersectionObserver(
+            ([entry]) => {
+                toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+            },
+            { rootMargin: `${offset} 0px 0px 0px`, threshold: 0 }
+        );
+        newObserver.observe(sentinel);
+    }
+    mq.addEventListener('change', updateRootMargin);
+})();
+
 </script>
 
 {% endblock %}
