@@ -63,6 +63,8 @@
 
         <label for="bodyTextarea">内容</label>
 
+        <div class="md-toolbar-wrapper">
+
         <!-- ===== マークダウンツールバー ===== -->
         <div class="md-toolbar" id="md-toolbar">
             <button type="button" class="md-btn" onclick="mdInsertHeading2()">H2 見出し</button>
@@ -136,6 +138,8 @@
         <!-- ================================ -->
 
         <textarea name="body" id="bodyTextarea" rows="17">{{post.body}}</textarea>
+
+        </div>
 
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
@@ -556,6 +560,67 @@ document.addEventListener('keydown', function(e) {
         closeYoutubeModal();
     }
 });
+
+/* ============================================================
+   Sticky ツールバー：スクロール時クラス付与
+   ============================================================
+   create.html / update.html の既存 <script> ブロックの末尾に
+   この関数を追記してください（ESC キーのリスナーの直前が推奨）。
+
+   役割:
+     ツールバーが sticky で画面上部に吸着したタイミングを
+     IntersectionObserver で検出し、.is-sticky クラスを付与する。
+     CSS の box-shadow / border-color トランジションで
+     「固定されている」ことを視覚的にフィードバックする。
+
+   IntersectionObserver を使う理由:
+     - scroll イベントより低コスト（rAF 不要）
+     - ツールバーが「元の位置から外れた」瞬間だけ発火するため
+       連続スクロール中にも余分な処理が走らない
+   ============================================================ */
+
+(function () {
+    'use strict';
+
+    const toolbar = document.getElementById('md-toolbar');
+    if (!toolbar) return;
+
+    // ツールバーの直上に 1px の番兵要素を挿入する。
+    // この要素が viewport 外に出た＝ツールバーが sticky 状態、と判定できる。
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
+    toolbar.parentElement.insertBefore(sentinel, toolbar);
+
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+            // isIntersecting が false → 番兵が画面外 → sticky 吸着中
+            toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+        },
+        {
+            // ヘッダー分だけ上を除外してウォッチする
+            rootMargin: '-85px 0px 0px 0px', // スマホでは後述の mediaQuery で切替
+            threshold: 0,
+        }
+    );
+
+    observer.observe(sentinel);
+
+    // スマホ（ヘッダー 63px）ではオフセットを切り替える
+    const mq = window.matchMedia('(max-width: 767px)');
+    function updateRootMargin(e) {
+        observer.disconnect();
+        const offset = e.matches ? '-63px' : '-85px';
+        const newObserver = new IntersectionObserver(
+            ([entry]) => {
+                toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+            },
+            { rootMargin: `${offset} 0px 0px 0px`, threshold: 0 }
+        );
+        newObserver.observe(sentinel);
+    }
+    mq.addEventListener('change', updateRootMargin);
+})();
+
 </script>
 
 {% endblock %}

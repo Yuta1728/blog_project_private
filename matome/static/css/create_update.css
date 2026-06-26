@@ -621,3 +621,79 @@ h1 {
     border-color: #99000094;
     color: #fff;
 }
+
+
+
+/* ============================================================
+   Sticky マークダウンツールバー
+   ============================================================
+   このブロックを create_update.css の末尾に追記してください。
+
+   仕組み:
+     .md-toolbar-wrapper が textarea を含むコンテナ全体をラップし、
+     .md-toolbar に position:sticky + top:0 を付与することで
+     textarea をスクロール中もツールバーが画面上部に吸着する。
+
+     main-header（height: 85px / スマホ 63px）が sticky のため、
+     top 値をヘッダー高さ分オフセットする。
+   ============================================================ */
+
+/* ── ラッパー（ツールバー＋textarea をまとめる位置基準） ── */
+.md-toolbar-wrapper {
+    position: relative; /* sticky の基準コンテナ */
+}
+
+/* ── ツールバー本体 sticky 化 ── */
+.md-toolbar {
+    /* ヘッダー(85px)分だけ下げて貼り付く */
+    position: sticky;
+    top: 85px;
+    z-index: 50;
+
+    /* 固定時の視認性向上 */
+    background: #eef6fb;            /* 既存色を維持 */
+    border: 1.5px solid #c5dff0;    /* 既存ボーダーを維持 */
+    border-bottom: none;            /* textarea と接する下辺は非表示（既存と同じ） */
+    border-radius: 8px 8px 0 0;     /* 既存と同じ */
+
+    /* 浮いて見えるよう影を追加 */
+    box-shadow: 0 4px 12px rgba(26, 122, 173, 0.12);
+
+    /* 下がひとつ前の要素の下に潜り込まないよう余白を保持 */
+    margin-bottom: 0 !important;
+
+    /* スムーズな影の変化 */
+    transition: box-shadow 0.2s ease;
+}
+
+/* ── スクロール追従中（JS でクラス付与）はより強調 ── */
+.md-toolbar.is-sticky {
+    box-shadow: 0 6px 20px rgba(26, 122, 173, 0.18);
+    border-color: #8cc8e8;
+}
+
+/* ── textarea との境界を自然に見せる ── */
+#bodyTextarea {
+    /* sticky ツールバーと面一に接続するため上の角丸だけ消す */
+    border-top: none !important;
+    border-radius: 0 0 8px 8px !important;
+    /* 上端が隠れないよう scroll-margin を設定 */
+    scroll-margin-top: calc(85px + 48px + 8px); /* ヘッダー + ツールバー + 余裕 */
+}
+
+/* ── スマホ（〜767px） ── */
+@media (max-width: 767px) {
+    .md-toolbar {
+        /* スマホヘッダーは 63px */
+        top: 63px;
+        /* ボタンが折り返せるよう flex-wrap は既存の wrap を維持 */
+        padding: 8px 10px;
+        gap: 5px;
+        /* 横はみ出し禁止 */
+        overflow-x: hidden;
+    }
+
+    #bodyTextarea {
+        scroll-margin-top: calc(63px + 56px + 8px);
+    }
+}
