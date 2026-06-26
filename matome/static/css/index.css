@@ -10,6 +10,7 @@
     margin-top: 15px;
 }
 
+
 /* 編集ボタン */
 .btn-edit {
     display: inline-block;
@@ -41,6 +42,19 @@ a[role="button"]:hover {
     margin-bottom: 20px;
     display: inline-block;
 }
+
+
+/* ===========================
+   記事一覧セクション見出し
+   =========================== */
+.posts-section-title {
+    font-size: 1.4rem !important; 
+    font-weight: 700;
+    color: #0d3a52;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+}
+
 
 /* ===========================
    ジャンルバッジ（視認性改善）
