@@ -85,6 +85,13 @@
                 {% endif %}
                 {# ============================= #}
 
+                <p class="post-date">
+                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                    {% if post.updated_at %}
+                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
+                    {% endif %}
+                </p>
+
                 <div class="post-actions">
                     <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
                     <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
@@ -92,13 +99,6 @@
                         <button type="submit" class="btn-delete">削除</button>
                     </form>
                 </div>
-
-                <p class="post-date">
-                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.updated_at %}
-                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
-                    {% endif %}
-                </p>
             </div>
         </article>
     {% else %}
