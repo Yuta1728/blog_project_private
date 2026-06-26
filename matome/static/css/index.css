@@ -4,9 +4,9 @@
    メインレイアウト
    =========================== */
 .page-wrapper {
-    max-width: 845px;
+    max-width: 940px;
     margin: 0 auto;
-    padding: 32px 24px 60px;
+    padding: 32px 28px 60px;
     margin-top: 15px;
 }
 
@@ -75,7 +75,7 @@ a[role="button"]:hover {
    =========================== */
 .post-card {
     display: flex;
-    gap: 32px;
+    gap: 36px;
     background: #ffffff;
     border: 1px solid #80bfe9;
     border-radius: 10px;
@@ -94,8 +94,8 @@ a[role="button"]:hover {
 
 /* サムネイル */
 .post-thumbnail {
-    flex: 0 0 280px;
-    height: 170px;
+    flex: 0 0 300px;
+    height: 185px;
     border-radius: 6px;
     overflow: hidden;
     background-color: #dff0fb;
