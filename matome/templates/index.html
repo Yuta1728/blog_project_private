@@ -8,9 +8,8 @@
 
 <div class="page-wrapper">
 
-    {# ===== フィルターなし（トップ表示）のときだけ hero・howto・stats を表示 ===== #}
+    {# ===== フィルターなし（トップ表示）のときだけ stats を表示 ===== #}
     {% if not selected_genre and not search_word and not selected_hashtag %}
-        {% include 'hero.html' %}
         {% include 'stats.html' %}
     {% endif %}
     {# ======================================================================= #}
@@ -89,6 +88,13 @@
                 {% endif %}
                 {# ============================= #}
 
+                <p class="post-date">
+                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                    {% if post.updated_at %}
+                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
+                    {% endif %}
+                </p>
+
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
                     <div class="post-actions">
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
@@ -98,13 +104,6 @@
                         </form>
                     </div>
                 {% endif %}
-
-                <p class="post-date">
-                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.updated_at %}
-                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
-                    {% endif %}
-                </p>
             </div>
         </article>
     {% else %}
@@ -127,12 +126,19 @@
     </div>
     {# ================================================ #}
 
+
+    {# ===== フィルターなし（トップ表示）のときだけ hero・howtoを表示 ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag %}
+        {% include 'hero.html' %}
+    {% endif %}
+    {# ======================================================================= #}
+
 </div>
 
 <script>
 (function () {
-    var INITIAL = 1;
-    var STEP    = 5;
+    var INITIAL = 4;
+    var STEP    = 4;
 
     var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
     var total   = cards.length;
