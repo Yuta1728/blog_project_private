@@ -60,7 +60,7 @@ def create_app():
     # ローカル開発用 URL（docker-compose で 54321 番ポートにマッピングした PostgreSQL）
     local_db_url = (
         f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
-        f"@localhost:54321/{config.postgre_DB}"
+        f"@localhost:55432/{config.postgre_DB}"
     )
     # 本番環境では DATABASE_URL 環境変数を使用（Heroku / Render など PaaS が自動設定する）
     # 未設定の場合はローカル用 URL にフォールバック

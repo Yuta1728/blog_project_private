@@ -9,7 +9,7 @@ services:
             TZ: Asia/Tokyo
         ports:
             # ホスト : コンテナ(PostgreSQL)
-            - "54321:5432"
+            - "55432:5432"
         volumes:
             # データを永続化するための名前付きボリューム
             - personal_blog_data:/var/lib/postgresql
