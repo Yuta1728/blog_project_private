@@ -33,7 +33,7 @@ a[role="button"]:hover {
 }
 
 /* ===========================
-   フィルター表示テキスト（視認性改善）
+   検索フィルター表示テキスト（視認性改善）
    =========================== */
 .filter-label {
     font-size: 19px;
@@ -93,7 +93,7 @@ a[role="button"]:hover {
     background: #ffffff;
     border: 1px solid #80bfe9;
     border-radius: 10px;
-    padding: 28px;
+    padding: 24px;
     margin-bottom: 20px;
     box-shadow: 0 3px 8px rgba(26, 122, 173, 0.06);
     transition: transform 0.2s, box-shadow 0.2s;
@@ -225,7 +225,7 @@ a[role="button"]:hover {
 .post-thumbnail {
     flex: none;
     width: 100%;
-    height: 215px;
+    height: 210px;
 }
 
 .post-content {
@@ -257,10 +257,9 @@ a[role="button"]:hover {
 
 .btn-edit,
 .btn-delete {
-    padding: 5px 17px;
+    padding: 4px 17px;
     font-size: 13px;
-    min-height: 36px;
-
+    min-height: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -269,7 +268,8 @@ a[role="button"]:hover {
 .post-date {
     order: 0;
     font-size: 0.75rem;
-    margin-top: 2px;
+    margin-top: 3px;
+    margin-bottom: 3px;
 }
 
 .post-actions {
