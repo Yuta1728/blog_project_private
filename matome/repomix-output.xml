@@ -1031,6 +1031,9 @@ WTForms==3.2.1
 zipp==3.23.1
 </file>
 
+<file path="save_path">
+
+</file>
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - 水色×白 爽やかテーマ版 */
@@ -2314,6 +2317,51 @@ h1 {
 
     #bodyTextarea {
         scroll-margin-top: calc(63px + 56px + 8px);
+    }
+}
+
+
+/* ===========================
+   箇条書きボタン（ツールバー）
+   create_update.css への追記分
+   =========================== */
+
+/*
+ * .md-btn-list
+ * 既存の .md-btn スタイルを継承しつつ、
+ * リスト系操作であることをわずかにアイコン色で示す。
+ * ベースの背景・高さ・余白・ホバーは .md-btn と同一にして
+ * ツールバー全体の統一感を保つ。
+ */
+.md-btn-list {
+    /* SVG アイコンと「リスト」テキストを横並びで中央揃えに */
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    /* アイコン色を既存ボタン文字色に合わせる（currentColor を SVG に使用しているため） */
+    color: #333;
+}
+
+.md-btn-list:hover,
+.md-btn-list:active {
+    /* 既存 .md-btn:hover と同じ背景・ボーダー・文字色を使用 */
+    background: #dff0fb;
+    border-color: #5aaedc;
+    color: #1a1a1a;
+}
+
+/*
+ * スマホ対応
+ * .md-btn と同じく padding / min-height を拡大してタップしやすくする。
+ * .md-btn のスマホ用上書きに合わせた値を設定。
+ */
+@media (max-width: 767px) {
+    .md-btn-list {
+        padding: 10px 12px;
+        font-size: 14px;
+        min-width: 48px;
+        min-height: 44px;
+        gap: 4px;
     }
 }
 </file>
@@ -3631,7 +3679,7 @@ details[open] .group-title {
     }
 
     .hashtag-badge {
-        font-size: 12px;
+        font-size: 11px;
         padding: 2px 8px;
     }
 
@@ -3681,13 +3729,13 @@ a[role="button"]:hover {
 }
 
 /* ===========================
-   フィルター表示テキスト（視認性改善）
+   検索フィルター表示テキスト（視認性改善）
    =========================== */
 .filter-label {
-    font-size: 15px;
+    font-size: 19px;
     color: #094260;          /* #2a6f94より濃く、背景(#dff0fb)との差を確保 */
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 27px;
     display: inline-block;
 }
 
@@ -3741,7 +3789,7 @@ a[role="button"]:hover {
     background: #ffffff;
     border: 1px solid #80bfe9;
     border-radius: 10px;
-    padding: 28px;
+    padding: 24px;
     margin-bottom: 20px;
     box-shadow: 0 3px 8px rgba(26, 122, 173, 0.06);
     transition: transform 0.2s, box-shadow 0.2s;
@@ -3873,7 +3921,7 @@ a[role="button"]:hover {
 .post-thumbnail {
     flex: none;
     width: 100%;
-    height: 215px;
+    height: 210px;
 }
 
 .post-content {
@@ -3905,10 +3953,9 @@ a[role="button"]:hover {
 
 .btn-edit,
 .btn-delete {
-    padding: 5px 17px;
+    padding: 4px 17px;
     font-size: 13px;
-    min-height: 36px;
-
+    min-height: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3917,7 +3964,8 @@ a[role="button"]:hover {
 .post-date {
     order: 0;
     font-size: 0.75rem;
-    margin-top: 2px;
+    margin-top: 3px;
+    margin-bottom: 3px;
 }
 
 .post-actions {
@@ -4995,9 +5043,20 @@ a[role="button"]:hover {
             <button type="button" class="md-btn" onclick="mdInsertHeading3()">H3 見出し</button>
             <button type="button" class="md-btn" onclick="mdWrapBold()"><b>太字</b></button>
             <button type="button" class="md-btn" onclick="mdInsertToc()">[toc] 目次</button>
+            <!-- ★ 箇条書きボタン（新規追加） -->
+            <button type="button" class="md-btn md-btn-list" onclick="mdInsertList('bullet')" title="箇条書きリストを挿入">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="1.5" cy="3.5"  r="1.5" fill="currentColor"/>
+                    <rect   x="5"   y="2.5" width="10" height="2" rx="1" fill="currentColor"/>
+                    <circle cx="1.5" cy="7.5"  r="1.5" fill="currentColor"/>
+                    <rect   x="5"   y="6.5" width="10" height="2" rx="1" fill="currentColor"/>
+                    <circle cx="1.5" cy="11.5" r="1.5" fill="currentColor"/>
+                    <rect   x="5"   y="10.5" width="10" height="2" rx="1" fill="currentColor"/>
+                </svg>
+                リスト
+            </button>
             <span class="md-btn-separator"></span>
             <button type="button" class="md-btn md-btn-map" onclick="openMapModal()">🗺️ 地図</button>
-            <!-- ★ YouTube 挿入ボタン（新規追加） -->
             <button type="button" class="md-btn md-btn-youtube" onclick="openYoutubeModal()">▶ YouTube</button>
             <span class="md-btn-separator"></span>
             <span id="img-btn-group"></span>
@@ -5029,7 +5088,7 @@ a[role="button"]:hover {
         </div>
         <!-- ============================ -->
 
-        <!-- ★ YouTube 挿入モーダル（新規追加） -->
+        <!-- ===== YouTube 挿入モーダル ===== -->
         <div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
         <div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
             <div class="map-modal-header">
@@ -5042,7 +5101,6 @@ a[role="button"]:hover {
                        placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                        autocomplete="off"
                        oninput="updateYoutubePreview(this.value)">
-                <!-- サムネイルプレビューエリア（地図モーダルと同じ構造を流用） -->
                 <div class="map-preview-area" id="youtube-preview-area" style="background:#111;">
                     <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
                 </div>
@@ -5181,7 +5239,7 @@ function previewImages(input) {
 
             const label = document.createElement('div');
             label.className = 'preview-label';
-            label.textContent = `[img${index + 1}]`;
+            label.textContent = '[img' + (index + 1) + ']';
 
             const filename = document.createElement('div');
             filename.className = 'preview-filename';
@@ -5193,7 +5251,7 @@ function previewImages(input) {
 
             const captionInput = document.createElement('input');
             captionInput.type        = 'text';
-            captionInput.name        = `img_caption_${index + 1}`;
+            captionInput.name        = 'img_caption_' + (index + 1);
             captionInput.placeholder = '画像の説明（省略可）';
             captionInput.className   = 'preview-caption-input';
             captionInput.maxLength   = 100;
@@ -5239,13 +5297,11 @@ function mdInsertLinePrefix(ta, prefix) {
 }
 
 function mdInsertHeading2() {
-    const ta = document.getElementById('bodyTextarea');
-    mdInsertLinePrefix(ta, '## ');
+    mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## ');
 }
 
 function mdInsertHeading3() {
-    const ta = document.getElementById('bodyTextarea');
-    mdInsertLinePrefix(ta, '### ');
+    mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### ');
 }
 
 function mdWrapBold() {
@@ -5254,7 +5310,7 @@ function mdWrapBold() {
     const end   = ta.selectionEnd;
     const selected = ta.value.substring(start, end);
     if (selected.length > 0) {
-        mdInsertAt(ta, `**${selected}**`, 2, 2 + selected.length);
+        mdInsertAt(ta, '**' + selected + '**', 2, 2 + selected.length);
     } else {
         mdInsertAt(ta, '**太字テキスト**', 2, 6);
     }
@@ -5265,21 +5321,20 @@ function mdInsertToc() {
     const pos = ta.selectionStart;
     const val = ta.value;
     const before = val.substring(0, pos);
-    const leadingNewlines = before.length === 0        ? ''
-                          : before.endsWith('\n\n') ? ''
-                          : before.endsWith('\n')    ? '\n'
-                          :                             '\n\n';
+    const leadingNewlines = before.length === 0      ? ''
+                          : before.endsWith('\n\n')  ? ''
+                          : before.endsWith('\n')     ? '\n'
+                          :                              '\n\n';
     const after = val.substring(pos);
-    const trailingNewlines = after.length === 0        ? '\n'
+    const trailingNewlines = after.length === 0      ? '\n'
                            : after.startsWith('\n\n') ? ''
-                           : after.startsWith('\n')    ? '\n'
+                           : after.startsWith('\n')   ? '\n'
                            :                              '\n\n';
     mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
 }
 
 function mdInsertImg(n) {
-    const ta = document.getElementById('bodyTextarea');
-    mdInsertAt(ta, `[img${n}]`);
+    mdInsertAt(document.getElementById('bodyTextarea'), '[img' + n + ']');
 }
 
 function rebuildImgBtns(count) {
@@ -5289,40 +5344,145 @@ function rebuildImgBtns(count) {
         const btn = document.createElement('button');
         btn.type      = 'button';
         btn.className = 'md-btn md-btn-img';
-        btn.textContent = `[img${i}]`;
+        btn.textContent = '[img' + i + ']';
         btn.onclick   = (function(n){ return function(){ mdInsertImg(n); }; })(i);
         group.appendChild(btn);
     }
 }
 
 /* =========================================================
+   ★ 箇条書き / リスト挿入（新規追加）
+   ---------------------------------------------------------
+   LIST_PREFIXES にエントリを追加するだけで新種のリストを
+   拡張できる設計にしています。
+   例: ordered（番号付き）を将来追加する場合は
+       LIST_PREFIXES.ordered = (i) => (i + 1) + '. ';
+       のようにして _mdListInsertEmpty / _mdListWrapSelection
+       内の prefix の扱いを関数対応にするだけで済みます。
+
+   【動作仕様】
+   テキスト未選択時:
+     - 空行 → 「●」を挿入してカーソルを直後へ
+     - 非空行 → 行頭に「●」を付与（既存テキストを保持）
+     - 既に付いている場合 → 何もしない（重複防止）
+
+   テキスト選択時:
+     - 選択範囲を行ごとに分割し、空行以外の行頭に prefix を付与
+     - 変換後テキストで選択範囲を置換し選択状態を維持
+   ========================================================= */
+
+/** リスト種別ごとのプレフィックス定義（拡張ポイント） */
+var LIST_PREFIXES = {
+    bullet: '● '
+    // ordered を追加する例:
+    // ordered: '1. '
+};
+
+/**
+ * mdInsertList(type)
+ * ツールバーの「リスト」ボタンから呼ばれるメイン関数。
+ */
+function mdInsertList(type) {
+    var ta     = document.getElementById('bodyTextarea');
+    var prefix = LIST_PREFIXES[type];
+    if (!prefix) return;
+
+    var start        = ta.selectionStart;
+    var end          = ta.selectionEnd;
+    var hasSelection = (start !== end);
+
+    if (hasSelection) {
+        _mdListWrapSelection(ta, prefix, start, end);
+    } else {
+        _mdListInsertEmpty(ta, prefix, start);
+    }
+}
+
+/**
+ * _mdListInsertEmpty: 未選択時の挿入処理
+ */
+function _mdListInsertEmpty(ta, prefix, cursorPos) {
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', cursorPos - 1) + 1;
+    var lineEnd   = val.indexOf('\n', cursorPos);
+    var currentLine = val.substring(
+        lineStart,
+        lineEnd === -1 ? val.length : lineEnd
+    );
+
+    if (currentLine.trim() === '') {
+        /* 空行: prefix だけ挿入してカーソルを直後へ */
+        ta.value =
+            val.substring(0, cursorPos) +
+            prefix +
+            val.substring(cursorPos);
+        var newPos = cursorPos + prefix.length;
+        ta.setSelectionRange(newPos, newPos);
+    } else if (!currentLine.startsWith(prefix)) {
+        /* 非空行かつ未付与: 行頭に prefix を付与 */
+        ta.value =
+            val.substring(0, lineStart) +
+            prefix +
+            val.substring(lineStart);
+        var newPos2 = cursorPos + prefix.length;
+        ta.setSelectionRange(newPos2, newPos2);
+    } else {
+        /* 既付与: カーソル位置だけ保持 */
+        ta.setSelectionRange(cursorPos, cursorPos);
+    }
+    ta.focus();
+}
+
+/**
+ * _mdListWrapSelection: 選択範囲の各行に prefix を付与する処理
+ */
+function _mdListWrapSelection(ta, prefix, start, end) {
+    var val      = ta.value;
+    var selText  = val.substring(start, end);
+    var lines    = selText.split('\n');
+
+    var converted = lines.map(function(line) {
+        if (line.trim() === '')       return line;  /* 空行はスキップ */
+        if (line.startsWith(prefix)) return line;  /* 既付与行は重複防止 */
+        return prefix + line;
+    }).join('\n');
+
+    ta.value =
+        val.substring(0, start) +
+        converted +
+        val.substring(end);
+
+    ta.setSelectionRange(start, start + converted.length);
+    ta.focus();
+}
+
+/* =========================================================
    ハッシュタグ入力プレビュー
    ========================================================= */
 function renderHashtagPreview(value) {
-    const area = document.getElementById('hashtag-preview');
-    const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
-    area.innerHTML = tokens.map(t => {
-        const name = t.replace(/^#+/, '');
-        return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
+    var area   = document.getElementById('hashtag-preview');
+    var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+    area.innerHTML = tokens.map(function(t) {
+        var name = t.replace(/^#+/, '');
+        return name ? '<span class="hashtag-badge-preview">#' + name + '</span>' : '';
     }).join('');
 }
 
 /* =========================================================
    地図挿入モーダル
    ========================================================= */
-let _mapPreviewTimer = null;
+var _mapPreviewTimer = null;
 
 function openMapModal() {
-    const ta = document.getElementById('bodyTextarea');
+    var ta = document.getElementById('bodyTextarea');
     window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-
     document.getElementById('map-place-input').value = '';
     document.getElementById('map-preview-area').innerHTML =
         '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
     document.getElementById('map-insert-btn').disabled = true;
     document.getElementById('map-modal-overlay').classList.add('open');
     document.getElementById('map-modal').classList.add('open');
-    setTimeout(() => document.getElementById('map-place-input').focus(), 80);
+    setTimeout(function() { document.getElementById('map-place-input').focus(); }, 80);
 }
 
 function closeMapModal() {
@@ -5331,59 +5491,55 @@ function closeMapModal() {
 }
 
 function updateMapPreview(value) {
-    const insertBtn = document.getElementById('map-insert-btn');
-    const previewArea = document.getElementById('map-preview-area');
+    var insertBtn   = document.getElementById('map-insert-btn');
+    var previewArea = document.getElementById('map-preview-area');
     clearTimeout(_mapPreviewTimer);
-    const place = value.trim();
+    var place = value.trim();
     if (!place) {
         previewArea.innerHTML = '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
         insertBtn.disabled = true;
         return;
     }
     insertBtn.disabled = false;
-    _mapPreviewTimer = setTimeout(() => {
-        const encoded = encodeURIComponent(place);
+    _mapPreviewTimer = setTimeout(function() {
+        var encoded = encodeURIComponent(place);
         previewArea.innerHTML =
-            `<iframe class="map-preview-iframe"
-                src="https://maps.google.com/maps?q=${encoded}&output=embed&hl=ja"
-                loading="lazy" allowfullscreen></iframe>`;
+            '<iframe class="map-preview-iframe"' +
+            ' src="https://maps.google.com/maps?q=' + encoded + '&output=embed&hl=ja"' +
+            ' loading="lazy" allowfullscreen></iframe>';
     }, 600);
 }
 
 function insertMapTag() {
-    const place = document.getElementById('map-place-input').value.trim();
+    var place = document.getElementById('map-place-input').value.trim();
     if (!place) return;
-
-    const ta    = document.getElementById('bodyTextarea');
-    const pos   = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
-    const val   = ta.value;
-    const lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    const isLineHead = (pos.start === lineStart);
-    const tag   = (isLineHead ? '' : '\n') + `[map:${place}]\n`;
-
-    ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    const newPos = pos.start + tag.length;
+    var ta       = document.getElementById('bodyTextarea');
+    var pos      = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val      = ta.value;
+    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    var tag      = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
+    ta.value     = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos   = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
     closeMapModal();
 }
 
 /* =========================================================
-   ★ YouTube 挿入モーダル（新規追加）
+   YouTube 挿入モーダル
    ========================================================= */
-let _ytPreviewTimer = null;
+var _ytPreviewTimer = null;
 
 function openYoutubeModal() {
-    const ta = document.getElementById('bodyTextarea');
+    var ta = document.getElementById('bodyTextarea');
     window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-
     document.getElementById('youtube-url-input').value = '';
     document.getElementById('youtube-preview-area').innerHTML =
         '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
     document.getElementById('youtube-insert-btn').disabled = true;
     document.getElementById('youtube-modal-overlay').classList.add('open');
     document.getElementById('youtube-modal').classList.add('open');
-    setTimeout(() => document.getElementById('youtube-url-input').focus(), 80);
+    setTimeout(function() { document.getElementById('youtube-url-input').focus(); }, 80);
 }
 
 function closeYoutubeModal() {
@@ -5393,7 +5549,7 @@ function closeYoutubeModal() {
 
 function extractYoutubeId(raw) {
     raw = raw.trim();
-    let m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    var m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
     m = raw.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
@@ -5406,44 +5562,41 @@ function extractYoutubeId(raw) {
 }
 
 function updateYoutubePreview(value) {
-    const insertBtn   = document.getElementById('youtube-insert-btn');
-    const previewArea = document.getElementById('youtube-preview-area');
+    var insertBtn   = document.getElementById('youtube-insert-btn');
+    var previewArea = document.getElementById('youtube-preview-area');
     clearTimeout(_ytPreviewTimer);
-    const videoId = extractYoutubeId(value);
+    var videoId = extractYoutubeId(value);
     if (!videoId) {
         previewArea.innerHTML = '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
         insertBtn.disabled = true;
         return;
     }
     insertBtn.disabled = false;
-    _ytPreviewTimer = setTimeout(() => {
-        const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    _ytPreviewTimer = setTimeout(function() {
+        var thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
         previewArea.innerHTML =
-            `<img src="${thumbUrl}" alt="サムネイルプレビュー"
-                  style="width:100%; height:100%; object-fit:cover; display:block;"
-                  onerror="this.parentNode.innerHTML='<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>'">`;
+            '<img src="' + thumbUrl + '" alt="サムネイルプレビュー"' +
+            ' style="width:100%; height:100%; object-fit:cover; display:block;"' +
+            ' onerror="this.parentNode.innerHTML=\'<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>\'">';
     }, 600);
 }
 
 function insertYoutubeTag() {
-    const rawUrl = document.getElementById('youtube-url-input').value.trim();
+    var rawUrl = document.getElementById('youtube-url-input').value.trim();
     if (!rawUrl || !extractYoutubeId(rawUrl)) return;
-
-    const ta    = document.getElementById('bodyTextarea');
-    const pos   = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
-    const val   = ta.value;
-    const lineStart  = val.lastIndexOf('\n', pos.start - 1) + 1;
-    const isLineHead = (pos.start === lineStart);
-    const tag        = (isLineHead ? '' : '\n') + `[youtube:${rawUrl}]\n`;
-
-    ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    const newPos = pos.start + tag.length;
+    var ta       = document.getElementById('bodyTextarea');
+    var pos      = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val      = ta.value;
+    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    var tag      = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
+    ta.value     = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos   = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
     closeYoutubeModal();
 }
 
-// ESC キーでモーダルを閉じる
+/* ESC キーでモーダルを閉じる */
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeMapModal();
@@ -5453,64 +5606,39 @@ document.addEventListener('keydown', function(e) {
 
 /* ============================================================
    Sticky ツールバー：スクロール時クラス付与
-   ============================================================
-   create.html / update.html の既存 <script> ブロックの末尾に
-   この関数を追記してください（ESC キーのリスナーの直前が推奨）。
-
-   役割:
-     ツールバーが sticky で画面上部に吸着したタイミングを
-     IntersectionObserver で検出し、.is-sticky クラスを付与する。
-     CSS の box-shadow / border-color トランジションで
-     「固定されている」ことを視覚的にフィードバックする。
-
-   IntersectionObserver を使う理由:
-     - scroll イベントより低コスト（rAF 不要）
-     - ツールバーが「元の位置から外れた」瞬間だけ発火するため
-       連続スクロール中にも余分な処理が走らない
    ============================================================ */
-
 (function () {
     'use strict';
-
-    const toolbar = document.getElementById('md-toolbar');
+    var toolbar = document.getElementById('md-toolbar');
     if (!toolbar) return;
 
-    // ツールバーの直上に 1px の番兵要素を挿入する。
-    // この要素が viewport 外に出た＝ツールバーが sticky 状態、と判定できる。
-    const sentinel = document.createElement('div');
+    var sentinel = document.createElement('div');
     sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
     toolbar.parentElement.insertBefore(sentinel, toolbar);
 
-    const observer = new IntersectionObserver(
-        ([entry]) => {
-            // isIntersecting が false → 番兵が画面外 → sticky 吸着中
-            toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+    var observer = new IntersectionObserver(
+        function(entries) {
+            toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting);
         },
-        {
-            // ヘッダー分だけ上を除外してウォッチする
-            rootMargin: '-85px 0px 0px 0px', // スマホでは後述の mediaQuery で切替
-            threshold: 0,
-        }
+        { rootMargin: '-85px 0px 0px 0px', threshold: 0 }
     );
-
     observer.observe(sentinel);
 
-    // スマホ（ヘッダー 63px）ではオフセットを切り替える
-    const mq = window.matchMedia('(max-width: 767px)');
+    var mq = window.matchMedia('(max-width: 767px)');
     function updateRootMargin(e) {
         observer.disconnect();
-        const offset = e.matches ? '-63px' : '-85px';
-        const newObserver = new IntersectionObserver(
-            ([entry]) => {
-                toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+        var offset = e.matches ? '-63px' : '-85px';
+        var newObserver = new IntersectionObserver(
+            function(entries) {
+                toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting);
             },
-            { rootMargin: `${offset} 0px 0px 0px`, threshold: 0 }
+            { rootMargin: offset + ' 0px 0px 0px', threshold: 0 }
         );
         newObserver.observe(sentinel);
+        observer = newObserver;
     }
     mq.addEventListener('change', updateRootMargin);
 })();
-
 </script>
 
 {% endblock %}
@@ -5882,10 +6010,10 @@ function ytPlay(facadeEl) {
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
             🔍 
+            {% if search_word %}「{{ search_word }}」{% endif %}
             {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
             {% if selected_hashtag %}ハッシュタグ「#{{ selected_hashtag }}」{% endif %}
-            {% if search_word %}キーワード「{{ search_word }}」{% endif %}
-            を表示中
+            の検索結果
         </p>
     {% endif %}
 
@@ -6336,10 +6464,10 @@ function ytPlay(facadeEl) {
 
         <script>
         function handleStatusToggle() {
-            const hiddenInput = document.getElementById('is_published');
-            const btn  = document.getElementById('toggle_status_btn');
-            const icon = btn.querySelector('.status-icon');
-            const text = btn.querySelector('.status-text');
+            var hiddenInput = document.getElementById('is_published');
+            var btn  = document.getElementById('toggle_status_btn');
+            var icon = btn.querySelector('.status-icon');
+            var text = btn.querySelector('.status-text');
             if (hiddenInput.value === 'false') {
                 hiddenInput.value = 'true';
                 btn.classList.remove('private');
@@ -6366,9 +6494,20 @@ function ytPlay(facadeEl) {
             <button type="button" class="md-btn" onclick="mdInsertHeading3()">H3 見出し</button>
             <button type="button" class="md-btn" onclick="mdWrapBold()"><b>太字</b></button>
             <button type="button" class="md-btn" onclick="mdInsertToc()">[toc] 目次</button>
+            <!-- ★ 箇条書きボタン（新規追加） -->
+            <button type="button" class="md-btn md-btn-list" onclick="mdInsertList('bullet')" title="箇条書きリストを挿入">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="1.5" cy="3.5"  r="1.5" fill="currentColor"/>
+                    <rect   x="5"   y="2.5" width="10" height="2" rx="1" fill="currentColor"/>
+                    <circle cx="1.5" cy="7.5"  r="1.5" fill="currentColor"/>
+                    <rect   x="5"   y="6.5" width="10" height="2" rx="1" fill="currentColor"/>
+                    <circle cx="1.5" cy="11.5" r="1.5" fill="currentColor"/>
+                    <rect   x="5"   y="10.5" width="10" height="2" rx="1" fill="currentColor"/>
+                </svg>
+                リスト
+            </button>
             <span class="md-btn-separator"></span>
             <button type="button" class="md-btn md-btn-map" onclick="openMapModal()">🗺️ 地図</button>
-            <!-- ★ YouTube 挿入ボタン（新規追加） -->
             <button type="button" class="md-btn md-btn-youtube" onclick="openYoutubeModal()">▶ YouTube</button>
             <span class="md-btn-separator"></span>
             <span id="img-btn-group">
@@ -6407,7 +6546,7 @@ function ytPlay(facadeEl) {
         </div>
         <!-- ============================ -->
 
-        <!-- ★ YouTube 挿入モーダル（新規追加） -->
+        <!-- ===== YouTube 挿入モーダル ===== -->
         <div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
         <div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
             <div class="map-modal-header">
@@ -6541,9 +6680,9 @@ function ytPlay(facadeEl) {
    ジャンル入力切替
    ========================================================= */
 function toggleNewGenreInput() {
-    const selectBox = document.getElementById('genre_select');
-    const newGenreWrapper = document.getElementById('new_genre_wrapper');
-    const newGenreInput   = document.getElementById('genre_new');
+    var selectBox = document.getElementById('genre_select');
+    var newGenreWrapper = document.getElementById('new_genre_wrapper');
+    var newGenreInput   = document.getElementById('genre_new');
     if (selectBox.value === '__NEW__') {
         newGenreWrapper.style.display = 'block';
         newGenreInput.required = true;
@@ -6558,8 +6697,8 @@ function toggleNewGenreInput() {
    デフォルトサムネイルプレビュー
    ========================================================= */
 function previewDefaultThumb(select) {
-    const previewArea = document.getElementById('default-thumb-preview-area');
-    const previewImg  = document.getElementById('default-thumb-preview-img');
+    var previewArea = document.getElementById('default-thumb-preview-area');
+    var previewImg  = document.getElementById('default-thumb-preview-img');
     if (select.value === 'none') {
         previewArea.style.display = 'none';
         previewImg.src = '';
@@ -6573,39 +6712,39 @@ function previewDefaultThumb(select) {
    画像プレビュー＆[imgN]ボタン再構築
    ========================================================= */
 function previewImages(input) {
-    const previewArea = document.getElementById('preview-area');
-    const previewList = document.getElementById('preview-list');
+    var previewArea = document.getElementById('preview-area');
+    var previewList = document.getElementById('preview-list');
     previewList.innerHTML = '';
-    const files = Array.from(input.files);
+    var files = Array.from(input.files);
     if (files.length === 0) { previewArea.style.display = 'none'; rebuildImgBtns(0); return; }
     previewArea.style.display = 'block';
 
-    files.forEach((file, index) => {
-        const reader = new FileReader();
+    files.forEach(function(file, index) {
+        var reader = new FileReader();
         reader.onload = function(e) {
-            const item = document.createElement('div');
+            var item = document.createElement('div');
             item.className = 'preview-item';
             item.style.width = '200px';
 
-            const img = document.createElement('img');
+            var img = document.createElement('img');
             img.src = e.target.result;
             img.alt = file.name;
 
-            const label = document.createElement('div');
+            var label = document.createElement('div');
             label.className = 'preview-label';
-            label.textContent = `[img${index + 1}]`;
+            label.textContent = '[img' + (index + 1) + ']';
 
-            const filename = document.createElement('div');
+            var filename = document.createElement('div');
             filename.className = 'preview-filename';
             filename.textContent = file.name;
             filename.title = file.name;
 
-            const captionWrapper = document.createElement('div');
+            var captionWrapper = document.createElement('div');
             captionWrapper.className = 'preview-caption-wrapper';
 
-            const captionInput = document.createElement('input');
+            var captionInput = document.createElement('input');
             captionInput.type        = 'text';
-            captionInput.name        = `img_caption_${index + 1}`;
+            captionInput.name        = 'img_caption_' + (index + 1);
             captionInput.placeholder = '画像の説明（省略可）';
             captionInput.className   = 'preview-caption-input';
             captionInput.maxLength   = 100;
@@ -6627,25 +6766,25 @@ function previewImages(input) {
    マークダウンツールバー共通ユーティリティ
    ========================================================= */
 function mdInsertAt(ta, text, selectFrom, selectTo) {
-    const start  = ta.selectionStart;
-    const end    = ta.selectionEnd;
-    const before = ta.value.substring(0, start);
-    const after  = ta.value.substring(end);
+    var start  = ta.selectionStart;
+    var end    = ta.selectionEnd;
+    var before = ta.value.substring(0, start);
+    var after  = ta.value.substring(end);
     ta.value = before + text + after;
-    const newPos = selectFrom !== undefined ? start + selectFrom : start + text.length;
-    const newEnd = selectTo   !== undefined ? start + selectTo   : newPos;
+    var newPos = selectFrom !== undefined ? start + selectFrom : start + text.length;
+    var newEnd = selectTo   !== undefined ? start + selectTo   : newPos;
     ta.setSelectionRange(newPos, newEnd);
     ta.focus();
 }
 
 function mdInsertLinePrefix(ta, prefix) {
-    const start     = ta.selectionStart;
-    const val       = ta.value;
-    const lineStart = val.lastIndexOf('\n', start - 1) + 1;
-    const before    = val.substring(0, lineStart);
-    const after     = val.substring(lineStart);
+    var start     = ta.selectionStart;
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', start - 1) + 1;
+    var before    = val.substring(0, lineStart);
+    var after     = val.substring(lineStart);
     ta.value = before + prefix + after;
-    const newPos = start + prefix.length;
+    var newPos = start + prefix.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
 }
@@ -6654,44 +6793,44 @@ function mdInsertHeading2() { mdInsertLinePrefix(document.getElementById('bodyTe
 function mdInsertHeading3() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### '); }
 
 function mdWrapBold() {
-    const ta       = document.getElementById('bodyTextarea');
-    const start    = ta.selectionStart;
-    const end      = ta.selectionEnd;
-    const selected = ta.value.substring(start, end);
+    var ta       = document.getElementById('bodyTextarea');
+    var start    = ta.selectionStart;
+    var end      = ta.selectionEnd;
+    var selected = ta.value.substring(start, end);
     if (selected.length > 0) {
-        mdInsertAt(ta, `**${selected}**`, 2, 2 + selected.length);
+        mdInsertAt(ta, '**' + selected + '**', 2, 2 + selected.length);
     } else {
         mdInsertAt(ta, '**太字テキスト**', 2, 6);
     }
 }
 
 function mdInsertToc() {
-    const ta  = document.getElementById('bodyTextarea');
-    const pos = ta.selectionStart;
-    const val = ta.value;
-    const before = val.substring(0, pos);
-    const leadingNewlines = before.length === 0        ? ''
-                          : before.endsWith('\n\n') ? ''
-                          : before.endsWith('\n')    ? '\n'
-                          :                             '\n\n';
-    const after = val.substring(pos);
-    const trailingNewlines = after.length === 0        ? '\n'
-                           : after.startsWith('\n\n') ? ''
-                           : after.startsWith('\n')    ? '\n'
-                           :                              '\n\n';
+    var ta  = document.getElementById('bodyTextarea');
+    var pos = ta.selectionStart;
+    var val = ta.value;
+    var before = val.substring(0, pos);
+    var leadingNewlines = before.length === 0      ? ''
+                        : before.endsWith('\n\n')  ? ''
+                        : before.endsWith('\n')     ? '\n'
+                        :                              '\n\n';
+    var after = val.substring(pos);
+    var trailingNewlines = after.length === 0       ? '\n'
+                         : after.startsWith('\n\n') ? ''
+                         : after.startsWith('\n')   ? '\n'
+                         :                              '\n\n';
     mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
 }
 
-function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), `[img${n}]`); }
+function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), '[img' + n + ']'); }
 
 function rebuildImgBtns(count) {
-    const group = document.getElementById('img-btn-group');
+    var group = document.getElementById('img-btn-group');
     group.innerHTML = '';
-    for (let i = 1; i <= count; i++) {
-        const btn     = document.createElement('button');
+    for (var i = 1; i <= count; i++) {
+        var btn     = document.createElement('button');
         btn.type      = 'button';
         btn.className = 'md-btn md-btn-img';
-        btn.textContent = `[img${i}]`;
+        btn.textContent = '[img' + i + ']';
         btn.dataset.imgIndex = i;
         group.appendChild(btn);
     }
@@ -6699,7 +6838,7 @@ function rebuildImgBtns(count) {
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('img-btn-group').addEventListener('click', function (e) {
-        const btn = e.target.closest('.md-btn-img');
+        var btn = e.target.closest('.md-btn-img');
         if (btn && btn.dataset.imgIndex) {
             mdInsertImg(parseInt(btn.dataset.imgIndex));
         }
@@ -6707,24 +6846,126 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /* =========================================================
+   ★ 箇条書き / リスト挿入（新規追加）
+   ---------------------------------------------------------
+   LIST_PREFIXES にエントリを追加するだけで新種のリストを
+   拡張できる設計にしています。
+
+   【動作仕様】
+   テキスト未選択時:
+     - 空行 → 「●」を挿入してカーソルを直後へ
+     - 非空行 → 行頭に「●」を付与（既存テキストを保持）
+     - 既に付いている場合 → 何もしない（重複防止）
+
+   テキスト選択時:
+     - 選択範囲を行ごとに分割し、空行以外の行頭に prefix を付与
+     - 変換後テキストで選択範囲を置換し選択状態を維持
+   ========================================================= */
+
+/** リスト種別ごとのプレフィックス定義（拡張ポイント） */
+var LIST_PREFIXES = {
+    bullet: '● '
+    // ordered を追加する例:
+    // ordered: '1. '
+};
+
+/**
+ * mdInsertList(type)
+ * ツールバーの「リスト」ボタンから呼ばれるメイン関数。
+ */
+function mdInsertList(type) {
+    var ta     = document.getElementById('bodyTextarea');
+    var prefix = LIST_PREFIXES[type];
+    if (!prefix) return;
+
+    var start        = ta.selectionStart;
+    var end          = ta.selectionEnd;
+    var hasSelection = (start !== end);
+
+    if (hasSelection) {
+        _mdListWrapSelection(ta, prefix, start, end);
+    } else {
+        _mdListInsertEmpty(ta, prefix, start);
+    }
+}
+
+/**
+ * _mdListInsertEmpty: 未選択時の挿入処理
+ */
+function _mdListInsertEmpty(ta, prefix, cursorPos) {
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', cursorPos - 1) + 1;
+    var lineEnd   = val.indexOf('\n', cursorPos);
+    var currentLine = val.substring(
+        lineStart,
+        lineEnd === -1 ? val.length : lineEnd
+    );
+
+    if (currentLine.trim() === '') {
+        /* 空行: prefix だけ挿入してカーソルを直後へ */
+        ta.value =
+            val.substring(0, cursorPos) +
+            prefix +
+            val.substring(cursorPos);
+        var newPos = cursorPos + prefix.length;
+        ta.setSelectionRange(newPos, newPos);
+    } else if (!currentLine.startsWith(prefix)) {
+        /* 非空行かつ未付与: 行頭に prefix を付与 */
+        ta.value =
+            val.substring(0, lineStart) +
+            prefix +
+            val.substring(lineStart);
+        var newPos2 = cursorPos + prefix.length;
+        ta.setSelectionRange(newPos2, newPos2);
+    } else {
+        /* 既付与: カーソル位置だけ保持 */
+        ta.setSelectionRange(cursorPos, cursorPos);
+    }
+    ta.focus();
+}
+
+/**
+ * _mdListWrapSelection: 選択範囲の各行に prefix を付与する処理
+ */
+function _mdListWrapSelection(ta, prefix, start, end) {
+    var val      = ta.value;
+    var selText  = val.substring(start, end);
+    var lines    = selText.split('\n');
+
+    var converted = lines.map(function(line) {
+        if (line.trim() === '')       return line;  /* 空行はスキップ */
+        if (line.startsWith(prefix)) return line;  /* 既付与行は重複防止 */
+        return prefix + line;
+    }).join('\n');
+
+    ta.value =
+        val.substring(0, start) +
+        converted +
+        val.substring(end);
+
+    ta.setSelectionRange(start, start + converted.length);
+    ta.focus();
+}
+
+/* =========================================================
    ハッシュタグ入力プレビュー
    ========================================================= */
 function renderHashtagPreview(value) {
-    const area   = document.getElementById('hashtag-preview');
-    const tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
-    area.innerHTML = tokens.map(t => {
-        const name = t.replace(/^#+/, '');
-        return name ? `<span class="hashtag-badge-preview">#${name}</span>` : '';
+    var area   = document.getElementById('hashtag-preview');
+    var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+    area.innerHTML = tokens.map(function(t) {
+        var name = t.replace(/^#+/, '');
+        return name ? '<span class="hashtag-badge-preview">#' + name + '</span>' : '';
     }).join('');
 }
 
 /* =========================================================
    地図挿入モーダル
    ========================================================= */
-let _mapPreviewTimer = null;
+var _mapPreviewTimer = null;
 
 function openMapModal() {
-    const ta = document.getElementById('bodyTextarea');
+    var ta = document.getElementById('bodyTextarea');
     window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
     document.getElementById('map-place-input').value = '';
     document.getElementById('map-preview-area').innerHTML =
@@ -6732,7 +6973,7 @@ function openMapModal() {
     document.getElementById('map-insert-btn').disabled = true;
     document.getElementById('map-modal-overlay').classList.add('open');
     document.getElementById('map-modal').classList.add('open');
-    setTimeout(() => document.getElementById('map-place-input').focus(), 80);
+    setTimeout(function() { document.getElementById('map-place-input').focus(); }, 80);
 }
 
 function closeMapModal() {
@@ -6741,48 +6982,47 @@ function closeMapModal() {
 }
 
 function updateMapPreview(value) {
-    const insertBtn   = document.getElementById('map-insert-btn');
-    const previewArea = document.getElementById('map-preview-area');
+    var insertBtn   = document.getElementById('map-insert-btn');
+    var previewArea = document.getElementById('map-preview-area');
     clearTimeout(_mapPreviewTimer);
-    const place = value.trim();
+    var place = value.trim();
     if (!place) {
         previewArea.innerHTML = '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
         insertBtn.disabled = true;
         return;
     }
     insertBtn.disabled = false;
-    _mapPreviewTimer = setTimeout(() => {
-        const encoded = encodeURIComponent(place);
+    _mapPreviewTimer = setTimeout(function() {
+        var encoded = encodeURIComponent(place);
         previewArea.innerHTML =
-            `<iframe class="map-preview-iframe"
-                src="https://maps.google.com/maps?q=${encoded}&output=embed&hl=ja"
-                loading="lazy" allowfullscreen></iframe>`;
+            '<iframe class="map-preview-iframe"' +
+            ' src="https://maps.google.com/maps?q=' + encoded + '&output=embed&hl=ja"' +
+            ' loading="lazy" allowfullscreen></iframe>';
     }, 600);
 }
 
 function insertMapTag() {
-    const place = document.getElementById('map-place-input').value.trim();
+    var place = document.getElementById('map-place-input').value.trim();
     if (!place) return;
-    const ta    = document.getElementById('bodyTextarea');
-    const pos   = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
-    const val   = ta.value;
-    const lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    const isLineHead = (pos.start === lineStart);
-    const tag   = (isLineHead ? '' : '\n') + `[map:${place}]\n`;
-    ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    const newPos = pos.start + tag.length;
+    var ta       = document.getElementById('bodyTextarea');
+    var pos      = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val      = ta.value;
+    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    var tag      = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
+    ta.value     = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos   = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
     closeMapModal();
 }
 
 /* =========================================================
-   ★ YouTube 挿入モーダル（新規追加）
+   YouTube 挿入モーダル
    ========================================================= */
-let _ytPreviewTimer = null;
+var _ytPreviewTimer = null;
 
 function openYoutubeModal() {
-    const ta = document.getElementById('bodyTextarea');
+    var ta = document.getElementById('bodyTextarea');
     window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
     document.getElementById('youtube-url-input').value = '';
     document.getElementById('youtube-preview-area').innerHTML =
@@ -6790,7 +7030,7 @@ function openYoutubeModal() {
     document.getElementById('youtube-insert-btn').disabled = true;
     document.getElementById('youtube-modal-overlay').classList.add('open');
     document.getElementById('youtube-modal').classList.add('open');
-    setTimeout(() => document.getElementById('youtube-url-input').focus(), 80);
+    setTimeout(function() { document.getElementById('youtube-url-input').focus(); }, 80);
 }
 
 function closeYoutubeModal() {
@@ -6800,7 +7040,7 @@ function closeYoutubeModal() {
 
 function extractYoutubeId(raw) {
     raw = raw.trim();
-    let m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    var m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
     m = raw.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
@@ -6813,42 +7053,41 @@ function extractYoutubeId(raw) {
 }
 
 function updateYoutubePreview(value) {
-    const insertBtn   = document.getElementById('youtube-insert-btn');
-    const previewArea = document.getElementById('youtube-preview-area');
+    var insertBtn   = document.getElementById('youtube-insert-btn');
+    var previewArea = document.getElementById('youtube-preview-area');
     clearTimeout(_ytPreviewTimer);
-    const videoId = extractYoutubeId(value);
+    var videoId = extractYoutubeId(value);
     if (!videoId) {
         previewArea.innerHTML = '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
         insertBtn.disabled = true;
         return;
     }
     insertBtn.disabled = false;
-    _ytPreviewTimer = setTimeout(() => {
-        const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    _ytPreviewTimer = setTimeout(function() {
+        var thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
         previewArea.innerHTML =
-            `<img src="${thumbUrl}" alt="サムネイルプレビュー"
-                  style="width:100%; height:100%; object-fit:cover; display:block;"
-                  onerror="this.parentNode.innerHTML='<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>'">`;
+            '<img src="' + thumbUrl + '" alt="サムネイルプレビュー"' +
+            ' style="width:100%; height:100%; object-fit:cover; display:block;"' +
+            ' onerror="this.parentNode.innerHTML=\'<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>\'">';
     }, 600);
 }
 
 function insertYoutubeTag() {
-    const rawUrl = document.getElementById('youtube-url-input').value.trim();
+    var rawUrl = document.getElementById('youtube-url-input').value.trim();
     if (!rawUrl || !extractYoutubeId(rawUrl)) return;
-    const ta    = document.getElementById('bodyTextarea');
-    const pos   = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
-    const val   = ta.value;
-    const lineStart  = val.lastIndexOf('\n', pos.start - 1) + 1;
-    const isLineHead = (pos.start === lineStart);
-    const tag        = (isLineHead ? '' : '\n') + `[youtube:${rawUrl}]\n`;
-    ta.value = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    const newPos = pos.start + tag.length;
+    var ta       = document.getElementById('bodyTextarea');
+    var pos      = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val      = ta.value;
+    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    var tag      = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
+    ta.value     = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos   = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
     closeYoutubeModal();
 }
 
-// ESC キーでモーダルを閉じる
+/* ESC キーでモーダルを閉じる */
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeMapModal();
@@ -6858,64 +7097,39 @@ document.addEventListener('keydown', function(e) {
 
 /* ============================================================
    Sticky ツールバー：スクロール時クラス付与
-   ============================================================
-   create.html / update.html の既存 <script> ブロックの末尾に
-   この関数を追記してください（ESC キーのリスナーの直前が推奨）。
-
-   役割:
-     ツールバーが sticky で画面上部に吸着したタイミングを
-     IntersectionObserver で検出し、.is-sticky クラスを付与する。
-     CSS の box-shadow / border-color トランジションで
-     「固定されている」ことを視覚的にフィードバックする。
-
-   IntersectionObserver を使う理由:
-     - scroll イベントより低コスト（rAF 不要）
-     - ツールバーが「元の位置から外れた」瞬間だけ発火するため
-       連続スクロール中にも余分な処理が走らない
    ============================================================ */
-
 (function () {
     'use strict';
-
-    const toolbar = document.getElementById('md-toolbar');
+    var toolbar = document.getElementById('md-toolbar');
     if (!toolbar) return;
 
-    // ツールバーの直上に 1px の番兵要素を挿入する。
-    // この要素が viewport 外に出た＝ツールバーが sticky 状態、と判定できる。
-    const sentinel = document.createElement('div');
+    var sentinel = document.createElement('div');
     sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
     toolbar.parentElement.insertBefore(sentinel, toolbar);
 
-    const observer = new IntersectionObserver(
-        ([entry]) => {
-            // isIntersecting が false → 番兵が画面外 → sticky 吸着中
-            toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+    var observer = new IntersectionObserver(
+        function(entries) {
+            toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting);
         },
-        {
-            // ヘッダー分だけ上を除外してウォッチする
-            rootMargin: '-85px 0px 0px 0px', // スマホでは後述の mediaQuery で切替
-            threshold: 0,
-        }
+        { rootMargin: '-85px 0px 0px 0px', threshold: 0 }
     );
-
     observer.observe(sentinel);
 
-    // スマホ（ヘッダー 63px）ではオフセットを切り替える
-    const mq = window.matchMedia('(max-width: 767px)');
+    var mq = window.matchMedia('(max-width: 767px)');
     function updateRootMargin(e) {
         observer.disconnect();
-        const offset = e.matches ? '-63px' : '-85px';
-        const newObserver = new IntersectionObserver(
-            ([entry]) => {
-                toolbar.classList.toggle('is-sticky', !entry.isIntersecting);
+        var offset = e.matches ? '-63px' : '-85px';
+        var newObserver = new IntersectionObserver(
+            function(entries) {
+                toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting);
             },
-            { rootMargin: `${offset} 0px 0px 0px`, threshold: 0 }
+            { rootMargin: offset + ' 0px 0px 0px', threshold: 0 }
         );
         newObserver.observe(sentinel);
+        observer = newObserver;
     }
     mq.addEventListener('change', updateRootMargin);
 })();
-
 </script>
 
 {% endblock %}
