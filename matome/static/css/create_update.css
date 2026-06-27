@@ -697,3 +697,48 @@ h1 {
         scroll-margin-top: calc(63px + 56px + 8px);
     }
 }
+
+
+/* ===========================
+   箇条書きボタン（ツールバー）
+   create_update.css への追記分
+   =========================== */
+
+/*
+ * .md-btn-list
+ * 既存の .md-btn スタイルを継承しつつ、
+ * リスト系操作であることをわずかにアイコン色で示す。
+ * ベースの背景・高さ・余白・ホバーは .md-btn と同一にして
+ * ツールバー全体の統一感を保つ。
+ */
+.md-btn-list {
+    /* SVG アイコンと「リスト」テキストを横並びで中央揃えに */
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    /* アイコン色を既存ボタン文字色に合わせる（currentColor を SVG に使用しているため） */
+    color: #333;
+}
+
+.md-btn-list:hover,
+.md-btn-list:active {
+    /* 既存 .md-btn:hover と同じ背景・ボーダー・文字色を使用 */
+    background: #dff0fb;
+    border-color: #5aaedc;
+    color: #1a1a1a;
+}
+
+/*
+ * スマホ対応
+ * .md-btn と同じく padding / min-height を拡大してタップしやすくする。
+ * .md-btn のスマホ用上書きに合わせた値を設定。
+ */
+@media (max-width: 767px) {
+    .md-btn-list {
+        padding: 10px 12px;
+        font-size: 14px;
+        min-width: 48px;
+        min-height: 44px;
+        gap: 4px;
+    }
+}

@@ -17,10 +17,10 @@
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
             🔍 
+            {% if search_word %}「{{ search_word }}」{% endif %}
             {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
             {% if selected_hashtag %}ハッシュタグ「#{{ selected_hashtag }}」{% endif %}
-            {% if search_word %}キーワード「{{ search_word }}」{% endif %}
-            を表示中
+            の検索結果
         </p>
     {% endif %}
 

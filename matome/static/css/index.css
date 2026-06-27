@@ -36,10 +36,10 @@ a[role="button"]:hover {
    フィルター表示テキスト（視認性改善）
    =========================== */
 .filter-label {
-    font-size: 15px;
+    font-size: 19px;
     color: #094260;          /* #2a6f94より濃く、背景(#dff0fb)との差を確保 */
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 27px;
     display: inline-block;
 }
 
