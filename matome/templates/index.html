@@ -14,6 +14,10 @@
     {% endif %}
     {# ======================================================================= #}
 
+    {# ===== インページ検索エリア（常に表示） ===== #}
+    {% include 'search_area.html' %}
+    {# ============================================ #}
+
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
             🔍 

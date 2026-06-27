@@ -393,3 +393,338 @@
         font-size: 14px;
     }
 }
+
+
+
+/* =======================================================================
+   インページ検索エリア（index ページ専用）
+   top_sections.css への追記分
+
+   構造:
+     .index-search-area          ← セクション全体（カード）
+       .index-search-title       ← 見出し
+       .index-search-form        ← <form> 本体
+         .index-search-field     ← 各フィールドのラッパー
+           .index-search-label   ← ラベル
+           .index-search-select-wrap / .index-search-input-wrap
+                                 ← インタラクティブ要素のラッパー
+
+   PC レイアウト : 横並び [ジャンル] [キーワード] [ボタン]
+   SP レイアウト : 縦積み
+   ======================================================================= */
+
+/* -----------------------------------------------------------------------
+   セクション全体：カード風
+   ----------------------------------------------------------------------- */
+.index-search-area {
+    background: #ffffff;
+    border: 1px solid #c5dff0;
+    border-radius: 12px;
+    padding: 20px 24px 22px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+}
+
+/* セクション見出し */
+.index-search-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a5f85;
+    margin: 0 0 18px;
+    letter-spacing: 0.03em;
+}
+
+/* -----------------------------------------------------------------------
+   フォーム：横並び
+   ----------------------------------------------------------------------- */
+.index-search-form {
+    display: flex;
+    align-items: flex-end;      /* ラベル分の高さを考慮して下揃え */
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* 各フィールド共通 */
+.index-search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ジャンル選択：固定幅 */
+.index-search-genre {
+    flex: 0 0 180px;
+}
+
+/* キーワード：残り幅を埋める */
+.index-search-keyword {
+    flex: 1 1 180px;
+    min-width: 160px;
+}
+
+/* ボタンエリア：コンテンツ幅 */
+.index-search-action {
+    flex: 0 0 auto;
+}
+
+/* -----------------------------------------------------------------------
+   ラベル
+   ----------------------------------------------------------------------- */
+.index-search-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a8ba8;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* PC でボタンのラベル行のスペーサー（縦位置調整） */
+.index-search-label-spacer {
+    display: block;
+    height: 18px;   /* .index-search-label の line-height に合わせる */
+    pointer-events: none;
+}
+
+/* -----------------------------------------------------------------------
+   ジャンル select ラッパー
+   ----------------------------------------------------------------------- */
+.index-search-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.index-search-select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 10px 36px 10px 14px;   /* 右に矢印アイコン分の余白 */
+    font-size: 14px;
+    color: #0d3a52;
+    background: #f5f9fd;
+    border: 1.5px solid #c5dff0;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.18s, background 0.18s;
+    /* テキストが長い場合は省略 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.index-search-select:focus {
+    border-color: #1a7aad;
+    background: #fff;
+}
+
+/* カスタム矢印アイコン */
+.index-search-select-arrow {
+    position: absolute;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    color: #5a8ba8;
+    pointer-events: none;   /* select のクリックを邪魔しない */
+    flex-shrink: 0;
+    transition: color 0.18s;
+}
+
+.index-search-select-wrap:focus-within .index-search-select-arrow {
+    color: #1a7aad;
+}
+
+/* -----------------------------------------------------------------------
+   キーワード input ラッパー
+   ----------------------------------------------------------------------- */
+.index-search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* 検索アイコン（input の左端） */
+.index-search-input-icon {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    color: #8cc8e8;
+    pointer-events: none;
+    flex-shrink: 0;
+    transition: color 0.18s;
+}
+
+.index-search-input-wrap:focus-within .index-search-input-icon {
+    color: #1a7aad;
+}
+
+.index-search-input {
+    width: 100%;
+    padding: 10px 36px 10px 36px;  /* 左にアイコン、右にクリアボタン分 */
+    font-size: 14px;
+    color: #0d3a52;
+    background: #f5f9fd;
+    border: 1.5px solid #c5dff0;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.18s, background 0.18s;
+}
+
+.index-search-input:focus {
+    border-color: #1a7aad;
+    background: #fff;
+}
+
+.index-search-input::placeholder {
+    color: #8cc8e8;
+}
+
+/* クリアボタン（×） */
+.index-search-clear {
+    position: absolute;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: #8cc8e8;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+}
+
+.index-search-clear:hover {
+    color: #c0392b;
+    background: #fff0ee;
+}
+
+/* -----------------------------------------------------------------------
+   検索ボタン
+   ----------------------------------------------------------------------- */
+.index-search-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: #1a7aad;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    transition: background-color 0.18s, box-shadow 0.18s, transform 0.13s;
+    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.20);
+    min-height: 42px;   /* select / input と高さを揃える */
+}
+
+.index-search-btn:hover {
+    background: #155f8a;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.28);
+    transform: translateY(-1px);
+}
+
+.index-search-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background: #0f4a6e;
+}
+
+/* -----------------------------------------------------------------------
+   絞り込み解除リンク
+   ----------------------------------------------------------------------- */
+.index-search-reset {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c0392b;
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1.5px solid #f5b7b1;
+    border-radius: 20px;
+    background: #fff;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.index-search-reset:hover {
+    background: #fff0ee;
+    border-color: #e74c3c;
+    color: #a93226;
+    text-decoration: none;
+}
+
+/* -----------------------------------------------------------------------
+   スマホ（〜600px）：縦積みレイアウト
+   ----------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    .index-search-area {
+        padding: 16px 14px 18px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .index-search-title {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+
+    .index-search-form {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    /* 各フィールドを全幅に */
+    .index-search-genre,
+    .index-search-keyword,
+    .index-search-action {
+        flex: none;
+        width: 100%;
+    }
+
+    .index-search-select,
+    .index-search-input {
+        font-size: 15px;   /* iOS で自動ズームを防ぐ */
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .index-search-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 24px;
+        font-size: 14px;
+        min-height: 48px;
+        border-radius: 8px;
+        margin-top: 7px;
+        margin-bottom: 5px;
+    }
+
+    /* SP では縦位置調整スペーサーは不要 */
+    .index-search-label-spacer {
+        display: none;
+    }
+
+    .index-search-reset {
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        margin-top: 5px;
+    }
+}

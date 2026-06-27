@@ -1,0 +1,119 @@
+{# templates/search_area.html
+   index ページ専用の検索エリア（部分テンプレート）
+   使い方: {% include 'search_area.html' %}
+
+   依存する変数（index ビューから渡される）:
+     selected_genre   : 現在選択中のジャンル名（str | None）
+     search_word      : 現在のキーワード（str | None）
+     genre_list_all   : 選択肢として表示するジャンル名リスト（list[str]）
+
+   将来拡張:
+     - selected_hashtag を追加してタグ絞り込みも並べられる構造
+     - sort_order（新着順 / 人気順）をここに追加可能
+#}
+
+<section class="index-search-area" aria-label="記事検索">
+    <p class="index-search-title">📖 記事を探す</p>
+
+    <form action="{{ url_for('blog.index') }}" method="GET" class="index-search-form" id="indexSearchForm">
+
+        {# ジャンル選択 #}
+        <div class="index-search-field index-search-genre">
+            <label for="indexGenreSelect" class="index-search-label">ジャンル</label>
+            <div class="index-search-select-wrap">
+                <select name="genre"
+                        id="indexGenreSelect"
+                        class="index-search-select"
+                        aria-label="ジャンルを選択">
+                    <option value="">すべてのジャンル</option>
+                    {% for g in genre_list_all %}
+                        <option value="{{ g }}" {% if selected_genre == g %}selected{% endif %}>
+                            {{ g }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {# カスタム矢印アイコン #}
+                <svg class="index-search-select-arrow" viewBox="0 0 16 16" fill="none"
+                     xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        {# キーワード入力 #}
+        <div class="index-search-field index-search-keyword">
+            <label for="indexSearchInput" class="index-search-label">キーワード</label>
+            <div class="index-search-input-wrap">
+                <svg class="index-search-input-icon" viewBox="0 0 24 24" fill="none"
+                     xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5
+                             16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16
+                             c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"
+                          fill="currentColor"/>
+                </svg>
+                <input type="text"
+                       name="search"
+                       id="indexSearchInput"
+                       class="index-search-input"
+                       value="{{ search_word if search_word else '' }}"
+                       placeholder="タイトル・タグで検索…"
+                       autocomplete="off"
+                       aria-label="キーワードを入力">
+                {# 入力クリアボタン（JS で表示切替） #}
+                <button type="button"
+                        class="index-search-clear"
+                        id="indexSearchClear"
+                        aria-label="キーワードをクリア"
+                        style="display:none;">✕</button>
+            </div>
+        </div>
+
+        {# 検索ボタン #}
+        <div class="index-search-field index-search-action">
+            {# label のスペースを合わせて縦位置を揃える（PCのみ） #}
+            <span class="index-search-label index-search-label-spacer" aria-hidden="true"></span>
+            <button type="submit" class="index-search-btn">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                     width="17" height="17" aria-hidden="true">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5
+                             16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16
+                             c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"
+                          fill="currentColor"/>
+                </svg>
+                検索する
+            </button>
+            {% if search_word or selected_genre %}
+                <a href="{{ url_for('blog.index') }}" class="index-search-reset">
+                    絞り込みを解除
+                </a>
+            {% endif %}
+        </div>
+
+    </form>
+</section>
+
+<script>
+/* ============================================================
+   index 検索エリア：クリアボタンの表示制御
+   ============================================================ */
+(function () {
+    var input   = document.getElementById('indexSearchInput');
+    var clearBtn = document.getElementById('indexSearchClear');
+    if (!input || !clearBtn) return;
+
+    function updateClear() {
+        clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
+    }
+
+    input.addEventListener('input', updateClear);
+    clearBtn.addEventListener('click', function () {
+        input.value = '';
+        input.focus();
+        updateClear();
+    });
+
+    /* ページロード時に既存値があればボタンを表示 */
+    updateClear();
+})();
+</script>

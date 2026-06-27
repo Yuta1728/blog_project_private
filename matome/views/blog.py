@@ -66,6 +66,34 @@ def index():
             .all()
         )
 
+    # -------------------------------------------------------------------
+    # インページ検索エリア用ジャンルリスト
+    #
+    # search_area.html の <select> に渡す選択肢。
+    # DEFAULT_GENRES をベースに、実際に記事が存在するジャンルだけを残す。
+    # これにより「記事がないジャンル」を選択肢から除外できる。
+    #
+    # 表示順: DEFAULT_GENRES の並び順を優先し、
+    #         それ以外（管理者が独自追加したジャンル）は末尾に辞書順で追加。
+    # -------------------------------------------------------------------
+    pub_condition = (Post.is_published == True) if not current_user.is_authenticated else True
+    used_genres_raw = (
+        db.session.query(Post.genre)
+        .filter(pub_condition, Post.genre != None, Post.genre != '', Post.genre != '未分類')
+        .distinct()
+        .all()
+    )
+    used_genres_set = {g[0] for g in used_genres_raw}
+
+    genre_list_all = [g for g in DEFAULT_GENRES if g in used_genres_set]
+    # DEFAULT_GENRES にないジャンル（独自追加分）を末尾に辞書順で追加
+    extra_genres = sorted(used_genres_set - set(DEFAULT_GENRES))
+    genre_list_all.extend(extra_genres)
+    # 未分類が使われている場合は末尾に追加
+    has_miscellaneous = any(g[0] == '未分類' for g in used_genres_raw)
+    if has_miscellaneous:
+        genre_list_all.append('未分類')
+
     stats      = None
     admin_user = None
     if not selected_genre and not search_word and not selected_hashtag:
@@ -98,6 +126,7 @@ def index():
         search_word       = search_word,
         selected_hashtag  = selected_hashtag,
         hashtags_in_genre = hashtags_in_genre,
+        genre_list_all    = genre_list_all,   # ← 追加: インページ検索エリア用
         stats             = stats,
         admin_user        = admin_user,
     )
@@ -308,16 +337,6 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # 関連記事の取得
-    #
-    # 公開条件:
-    #   ログイン中 → 自分の非公開記事も含める
-    #   非ログイン → 公開記事のみ
-    #
-    # 選定ロジック（_get_related_posts 参照）:
-    #   STEP1: 同ジャンル × 同タグ
-    #   STEP2: 同タグのみ
-    #   STEP3: 同ジャンルのみ
-    #   STEP4: 最新記事
     # -------------------------------------------------------------------
     if current_user.is_authenticated:
         pub_filter = (Post.is_published == True) | (Post.user_id == current_user.id)
@@ -328,9 +347,6 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # 関連記事セクションのサブラベル生成
-    #
-    # ジャンルとタグが両方ある場合は「ジャンル・タグを表示中」
-    # どちらかのみの場合はそれぞれの名称を表示
     # -------------------------------------------------------------------
     tag_names = [t.name for t in post.hashtags]
     if post.genre and post.genre != '未分類' and tag_names:

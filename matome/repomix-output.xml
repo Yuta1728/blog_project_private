@@ -99,6 +99,7 @@ templates/howto.html
 templates/index.html
 templates/login.html
 templates/mypage.html
+templates/search_area.html
 templates/stats.html
 templates/update.html
 views/admin.py
@@ -210,7 +211,7 @@ def create_app():
     # ローカル開発用 URL（docker-compose で 54321 番ポートにマッピングした PostgreSQL）
     local_db_url = (
         f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
-        f"@localhost:54321/{config.postgre_DB}"
+        f"@localhost:55432/{config.postgre_DB}"
     )
     # 本番環境では DATABASE_URL 環境変数を使用（Heroku / Render など PaaS が自動設定する）
     # 未設定の場合はローカル用 URL にフォールバック
@@ -396,7 +397,7 @@ services:
             TZ: Asia/Tokyo
         ports:
             # ホスト : コンテナ(PostgreSQL)
-            - "54321:5432"
+            - "55432:5432"
         volumes:
             # データを永続化するための名前付きボリューム
             - personal_blog_data:/var/lib/postgresql
@@ -4730,6 +4731,341 @@ a[role="button"]:hover {
         font-size: 14px;
     }
 }
+
+
+
+/* =======================================================================
+   インページ検索エリア（index ページ専用）
+   top_sections.css への追記分
+
+   構造:
+     .index-search-area          ← セクション全体（カード）
+       .index-search-title       ← 見出し
+       .index-search-form        ← <form> 本体
+         .index-search-field     ← 各フィールドのラッパー
+           .index-search-label   ← ラベル
+           .index-search-select-wrap / .index-search-input-wrap
+                                 ← インタラクティブ要素のラッパー
+
+   PC レイアウト : 横並び [ジャンル] [キーワード] [ボタン]
+   SP レイアウト : 縦積み
+   ======================================================================= */
+
+/* -----------------------------------------------------------------------
+   セクション全体：カード風
+   ----------------------------------------------------------------------- */
+.index-search-area {
+    background: #ffffff;
+    border: 1px solid #c5dff0;
+    border-radius: 12px;
+    padding: 20px 24px 22px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+}
+
+/* セクション見出し */
+.index-search-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a5f85;
+    margin: 0 0 18px;
+    letter-spacing: 0.03em;
+}
+
+/* -----------------------------------------------------------------------
+   フォーム：横並び
+   ----------------------------------------------------------------------- */
+.index-search-form {
+    display: flex;
+    align-items: flex-end;      /* ラベル分の高さを考慮して下揃え */
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* 各フィールド共通 */
+.index-search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ジャンル選択：固定幅 */
+.index-search-genre {
+    flex: 0 0 180px;
+}
+
+/* キーワード：残り幅を埋める */
+.index-search-keyword {
+    flex: 1 1 180px;
+    min-width: 160px;
+}
+
+/* ボタンエリア：コンテンツ幅 */
+.index-search-action {
+    flex: 0 0 auto;
+}
+
+/* -----------------------------------------------------------------------
+   ラベル
+   ----------------------------------------------------------------------- */
+.index-search-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a8ba8;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* PC でボタンのラベル行のスペーサー（縦位置調整） */
+.index-search-label-spacer {
+    display: block;
+    height: 18px;   /* .index-search-label の line-height に合わせる */
+    pointer-events: none;
+}
+
+/* -----------------------------------------------------------------------
+   ジャンル select ラッパー
+   ----------------------------------------------------------------------- */
+.index-search-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.index-search-select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 10px 36px 10px 14px;   /* 右に矢印アイコン分の余白 */
+    font-size: 14px;
+    color: #0d3a52;
+    background: #f5f9fd;
+    border: 1.5px solid #c5dff0;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.18s, background 0.18s;
+    /* テキストが長い場合は省略 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.index-search-select:focus {
+    border-color: #1a7aad;
+    background: #fff;
+}
+
+/* カスタム矢印アイコン */
+.index-search-select-arrow {
+    position: absolute;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    color: #5a8ba8;
+    pointer-events: none;   /* select のクリックを邪魔しない */
+    flex-shrink: 0;
+    transition: color 0.18s;
+}
+
+.index-search-select-wrap:focus-within .index-search-select-arrow {
+    color: #1a7aad;
+}
+
+/* -----------------------------------------------------------------------
+   キーワード input ラッパー
+   ----------------------------------------------------------------------- */
+.index-search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* 検索アイコン（input の左端） */
+.index-search-input-icon {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    color: #8cc8e8;
+    pointer-events: none;
+    flex-shrink: 0;
+    transition: color 0.18s;
+}
+
+.index-search-input-wrap:focus-within .index-search-input-icon {
+    color: #1a7aad;
+}
+
+.index-search-input {
+    width: 100%;
+    padding: 10px 36px 10px 36px;  /* 左にアイコン、右にクリアボタン分 */
+    font-size: 14px;
+    color: #0d3a52;
+    background: #f5f9fd;
+    border: 1.5px solid #c5dff0;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.18s, background 0.18s;
+}
+
+.index-search-input:focus {
+    border-color: #1a7aad;
+    background: #fff;
+}
+
+.index-search-input::placeholder {
+    color: #8cc8e8;
+}
+
+/* クリアボタン（×） */
+.index-search-clear {
+    position: absolute;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: #8cc8e8;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+}
+
+.index-search-clear:hover {
+    color: #c0392b;
+    background: #fff0ee;
+}
+
+/* -----------------------------------------------------------------------
+   検索ボタン
+   ----------------------------------------------------------------------- */
+.index-search-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: #1a7aad;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    transition: background-color 0.18s, box-shadow 0.18s, transform 0.13s;
+    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.20);
+    min-height: 42px;   /* select / input と高さを揃える */
+}
+
+.index-search-btn:hover {
+    background: #155f8a;
+    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.28);
+    transform: translateY(-1px);
+}
+
+.index-search-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background: #0f4a6e;
+}
+
+/* -----------------------------------------------------------------------
+   絞り込み解除リンク
+   ----------------------------------------------------------------------- */
+.index-search-reset {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c0392b;
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1.5px solid #f5b7b1;
+    border-radius: 20px;
+    background: #fff;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.index-search-reset:hover {
+    background: #fff0ee;
+    border-color: #e74c3c;
+    color: #a93226;
+    text-decoration: none;
+}
+
+/* -----------------------------------------------------------------------
+   スマホ（〜600px）：縦積みレイアウト
+   ----------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    .index-search-area {
+        padding: 16px 14px 18px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .index-search-title {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+
+    .index-search-form {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    /* 各フィールドを全幅に */
+    .index-search-genre,
+    .index-search-keyword,
+    .index-search-action {
+        flex: none;
+        width: 100%;
+    }
+
+    .index-search-select,
+    .index-search-input {
+        font-size: 15px;   /* iOS で自動ズームを防ぐ */
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .index-search-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 24px;
+        font-size: 14px;
+        min-height: 48px;
+        border-radius: 8px;
+        margin-top: 7px;
+        margin-bottom: 5px;
+    }
+
+    /* SP では縦位置調整スペーサーは不要 */
+    .index-search-label-spacer {
+        display: none;
+    }
+
+    .index-search-reset {
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        margin-top: 5px;
+    }
+}
 </file>
 
 <file path="templates/about.html">
@@ -5373,7 +5709,7 @@ function rebuildImgBtns(count) {
 
 /** リスト種別ごとのプレフィックス定義（拡張ポイント） */
 var LIST_PREFIXES = {
-    bullet: '● '
+    bullet: '●  '
     // ordered を追加する例:
     // ordered: '1. '
 };
@@ -6007,6 +6343,10 @@ function ytPlay(facadeEl) {
     {% endif %}
     {# ======================================================================= #}
 
+    {# ===== インページ検索エリア（常に表示） ===== #}
+    {% include 'search_area.html' %}
+    {# ============================================ #}
+
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
             🔍 
@@ -6397,6 +6737,128 @@ function ytPlay(facadeEl) {
 </script>
 
 {% endblock %}
+</file>
+
+<file path="templates/search_area.html">
+{# templates/search_area.html
+   index ページ専用の検索エリア（部分テンプレート）
+   使い方: {% include 'search_area.html' %}
+
+   依存する変数（index ビューから渡される）:
+     selected_genre   : 現在選択中のジャンル名（str | None）
+     search_word      : 現在のキーワード（str | None）
+     genre_list_all   : 選択肢として表示するジャンル名リスト（list[str]）
+
+   将来拡張:
+     - selected_hashtag を追加してタグ絞り込みも並べられる構造
+     - sort_order（新着順 / 人気順）をここに追加可能
+#}
+
+<section class="index-search-area" aria-label="記事検索">
+    <p class="index-search-title">📖 記事を探す</p>
+
+    <form action="{{ url_for('blog.index') }}" method="GET" class="index-search-form" id="indexSearchForm">
+
+        {# ジャンル選択 #}
+        <div class="index-search-field index-search-genre">
+            <label for="indexGenreSelect" class="index-search-label">ジャンル</label>
+            <div class="index-search-select-wrap">
+                <select name="genre"
+                        id="indexGenreSelect"
+                        class="index-search-select"
+                        aria-label="ジャンルを選択">
+                    <option value="">すべてのジャンル</option>
+                    {% for g in genre_list_all %}
+                        <option value="{{ g }}" {% if selected_genre == g %}selected{% endif %}>
+                            {{ g }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {# カスタム矢印アイコン #}
+                <svg class="index-search-select-arrow" viewBox="0 0 16 16" fill="none"
+                     xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        {# キーワード入力 #}
+        <div class="index-search-field index-search-keyword">
+            <label for="indexSearchInput" class="index-search-label">キーワード</label>
+            <div class="index-search-input-wrap">
+                <svg class="index-search-input-icon" viewBox="0 0 24 24" fill="none"
+                     xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5
+                             16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16
+                             c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"
+                          fill="currentColor"/>
+                </svg>
+                <input type="text"
+                       name="search"
+                       id="indexSearchInput"
+                       class="index-search-input"
+                       value="{{ search_word if search_word else '' }}"
+                       placeholder="タイトル・タグで検索…"
+                       autocomplete="off"
+                       aria-label="キーワードを入力">
+                {# 入力クリアボタン（JS で表示切替） #}
+                <button type="button"
+                        class="index-search-clear"
+                        id="indexSearchClear"
+                        aria-label="キーワードをクリア"
+                        style="display:none;">✕</button>
+            </div>
+        </div>
+
+        {# 検索ボタン #}
+        <div class="index-search-field index-search-action">
+            {# label のスペースを合わせて縦位置を揃える（PCのみ） #}
+            <span class="index-search-label index-search-label-spacer" aria-hidden="true"></span>
+            <button type="submit" class="index-search-btn">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                     width="17" height="17" aria-hidden="true">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5
+                             16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16
+                             c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"
+                          fill="currentColor"/>
+                </svg>
+                検索する
+            </button>
+            {% if search_word or selected_genre %}
+                <a href="{{ url_for('blog.index') }}" class="index-search-reset">
+                    絞り込みを解除
+                </a>
+            {% endif %}
+        </div>
+
+    </form>
+</section>
+
+<script>
+/* ============================================================
+   index 検索エリア：クリアボタンの表示制御
+   ============================================================ */
+(function () {
+    var input   = document.getElementById('indexSearchInput');
+    var clearBtn = document.getElementById('indexSearchClear');
+    if (!input || !clearBtn) return;
+
+    function updateClear() {
+        clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
+    }
+
+    input.addEventListener('input', updateClear);
+    clearBtn.addEventListener('click', function () {
+        input.value = '';
+        input.focus();
+        updateClear();
+    });
+
+    /* ページロード時に既存値があればボタンを表示 */
+    updateClear();
+})();
+</script>
 </file>
 
 <file path="templates/stats.html">
@@ -6864,7 +7326,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /** リスト種別ごとのプレフィックス定義（拡張ポイント） */
 var LIST_PREFIXES = {
-    bullet: '● '
+    bullet: '●  '
     // ordered を追加する例:
     // ordered: '1. '
 };
@@ -7940,6 +8402,34 @@ def index():
             .all()
         )
 
+    # -------------------------------------------------------------------
+    # インページ検索エリア用ジャンルリスト
+    #
+    # search_area.html の <select> に渡す選択肢。
+    # DEFAULT_GENRES をベースに、実際に記事が存在するジャンルだけを残す。
+    # これにより「記事がないジャンル」を選択肢から除外できる。
+    #
+    # 表示順: DEFAULT_GENRES の並び順を優先し、
+    #         それ以外（管理者が独自追加したジャンル）は末尾に辞書順で追加。
+    # -------------------------------------------------------------------
+    pub_condition = (Post.is_published == True) if not current_user.is_authenticated else True
+    used_genres_raw = (
+        db.session.query(Post.genre)
+        .filter(pub_condition, Post.genre != None, Post.genre != '', Post.genre != '未分類')
+        .distinct()
+        .all()
+    )
+    used_genres_set = {g[0] for g in used_genres_raw}
+
+    genre_list_all = [g for g in DEFAULT_GENRES if g in used_genres_set]
+    # DEFAULT_GENRES にないジャンル（独自追加分）を末尾に辞書順で追加
+    extra_genres = sorted(used_genres_set - set(DEFAULT_GENRES))
+    genre_list_all.extend(extra_genres)
+    # 未分類が使われている場合は末尾に追加
+    has_miscellaneous = any(g[0] == '未分類' for g in used_genres_raw)
+    if has_miscellaneous:
+        genre_list_all.append('未分類')
+
     stats      = None
     admin_user = None
     if not selected_genre and not search_word and not selected_hashtag:
@@ -7972,6 +8462,7 @@ def index():
         search_word       = search_word,
         selected_hashtag  = selected_hashtag,
         hashtags_in_genre = hashtags_in_genre,
+        genre_list_all    = genre_list_all,   # ← 追加: インページ検索エリア用
         stats             = stats,
         admin_user        = admin_user,
     )
@@ -8182,16 +8673,6 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # 関連記事の取得
-    #
-    # 公開条件:
-    #   ログイン中 → 自分の非公開記事も含める
-    #   非ログイン → 公開記事のみ
-    #
-    # 選定ロジック（_get_related_posts 参照）:
-    #   STEP1: 同ジャンル × 同タグ
-    #   STEP2: 同タグのみ
-    #   STEP3: 同ジャンルのみ
-    #   STEP4: 最新記事
     # -------------------------------------------------------------------
     if current_user.is_authenticated:
         pub_filter = (Post.is_published == True) | (Post.user_id == current_user.id)
@@ -8202,9 +8683,6 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # 関連記事セクションのサブラベル生成
-    #
-    # ジャンルとタグが両方ある場合は「ジャンル・タグを表示中」
-    # どちらかのみの場合はそれぞれの名称を表示
     # -------------------------------------------------------------------
     tag_names = [t.name for t in post.hashtags]
     if post.genre and post.genre != '未分類' and tag_names:
