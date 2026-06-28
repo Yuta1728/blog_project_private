@@ -71,7 +71,6 @@
             <button type="button" class="md-btn" onclick="mdInsertHeading3()">H3 見出し</button>
             <button type="button" class="md-btn" onclick="mdWrapBold()"><b>太字</b></button>
             <button type="button" class="md-btn" onclick="mdInsertToc()">[toc] 目次</button>
-            <!-- ★ 箇条書きボタン（新規追加） -->
             <button type="button" class="md-btn md-btn-list" onclick="mdInsertList('bullet')" title="箇条書きリストを挿入">
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <circle cx="1.5" cy="3.5"  r="1.5" fill="currentColor"/>
@@ -96,7 +95,6 @@
                 {% endif %}
             </span>
         </div>
-        <!-- ================================ -->
 
         <!-- ===== 地図挿入モーダル ===== -->
         <div id="map-modal-overlay" class="map-modal-overlay" onclick="closeMapModal()"></div>
@@ -121,7 +119,6 @@
                         onclick="insertMapTag()" disabled>本文に挿入</button>
             </div>
         </div>
-        <!-- ============================ -->
 
         <!-- ===== YouTube 挿入モーダル ===== -->
         <div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
@@ -146,7 +143,6 @@
                         onclick="insertYoutubeTag()" disabled>本文に挿入</button>
             </div>
         </div>
-        <!-- ================================ -->
 
         <textarea name="body" id="bodyTextarea" rows="17">{{post.body}}</textarea>
 
@@ -174,8 +170,8 @@
                 <span class="hashtag-badge-preview">#{{ tag.name }}</span>
             {% endfor %}
         </div>
-        <!-- ========================== -->
 
+        <!-- ===== 現在の画像（既存）キャプション編集エリア ===== -->
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
             <p style="font-size:13px; color:#555; margin: -8px 0 12px;">
@@ -200,13 +196,35 @@
             </div>
         {% endif %}
 
+        <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
-            <label>画像を変更する（複数選択可 / 順番に [img1], [img2] になります）</label>
+            <label>画像を変更する</label>
             <p style="font-size:13px; color:#555; margin: 4px 0 10px;">
-                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。
+                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。<br>
+                　「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
             </p>
-            <input type="file" name="img[]" id="imgUpload" multiple accept="image/*" onchange="previewImages(this)">
 
+            <!-- 既存：複数一括選択 input（hidden にして JS から参照） -->
+            <input type="file" name="img[]" id="imgUpload" multiple accept="image/*"
+                   onchange="onBulkSelect(this)" style="display:none;">
+
+            <!-- 追加：1枚ずつ選択用 input（hidden） -->
+            <input type="file" name="" id="imgUploadOne" accept="image/*"
+                   onchange="onOneSelect(this)" style="display:none;">
+
+            <!-- ボタン群 -->
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                <button type="button" class="img-upload-btn img-upload-btn--bulk"
+                        onclick="document.getElementById('imgUpload').click()">
+                    📂 複数まとめて選択
+                </button>
+                <button type="button" class="img-upload-btn img-upload-btn--one"
+                        onclick="document.getElementById('imgUploadOne').click()">
+                    ＋ 1枚追加
+                </button>
+            </div>
+
+            <!-- 新規選択画像プレビュー -->
             <div id="preview-area" style="display: none; margin-top: 14px;">
                 <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
                     📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
@@ -252,7 +270,194 @@
 </div>
 
 
+<style>
+/* ===== 画像アップロードボタン追加スタイル ===== */
+.img-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.18s;
+    font-family: inherit;
+    line-height: 1;
+    min-height: 38px;
+}
+.img-upload-btn--bulk {
+    background: #f5f9fd;
+    color: #1a5f85;
+    border-color: #c5dff0;
+}
+.img-upload-btn--bulk:hover {
+    background: #dff0fb;
+    border-color: #5aaedc;
+}
+.img-upload-btn--one {
+    background: #e7f7ff;
+    color: #1a5f85;
+    border-color: #8cc8e8;
+}
+.img-upload-btn--one:hover {
+    background: #c5dff0;
+    border-color: #1a7aad;
+}
+
+/* ===== 削除ボタン ===== */
+.preview-delete-btn {
+    display: block;
+    width: 100%;
+    padding: 5px 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    background: #fff0ee;
+    color: #c0392b;
+    border: none;
+    border-top: 1px solid #f5b7b1;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+.preview-delete-btn:hover {
+    background: #fddcda;
+}
+</style>
+
+
 <script>
+/* =========================================================
+   画像ファイル管理（追加・削除・プレビュー再描画）
+   =========================================================
+   _fileList : File オブジェクトの配列（正データ）
+   _captions : キャプション文字列の配列（インデックス対応）
+
+   input[name="img[]"] の files は DataTransfer で都度再構築して同期する。
+   既存の Flask バックエンドは一切変更せずに動作する。
+   ========================================================= */
+var _fileList = [];
+var _captions = [];
+
+function _syncInputFiles() {
+    var dt    = new DataTransfer();
+    var input = document.getElementById('imgUpload');
+    _fileList.forEach(function(f) { dt.items.add(f); });
+    input.files = dt.files;
+}
+
+/**
+ * 「複数まとめて選択」: _fileList を完全置き換えして再描画。
+ */
+function onBulkSelect(input) {
+    var newFiles = Array.from(input.files);
+    if (newFiles.length === 0) return;
+    _fileList = newFiles;
+    _captions = new Array(newFiles.length).fill('');
+    _syncInputFiles();
+    renderPreviews();
+}
+
+/**
+ * 「1枚追加」: _fileList に追記して再描画。
+ */
+function onOneSelect(input) {
+    var newFiles = Array.from(input.files);
+    if (newFiles.length === 0) return;
+    _saveCaptions();
+    newFiles.forEach(function(f) {
+        _fileList.push(f);
+        _captions.push('');
+    });
+    _syncInputFiles();
+    renderPreviews();
+    input.value = '';
+}
+
+/**
+ * 指定インデックスの画像を削除して再描画。
+ */
+function deleteImage(index) {
+    _saveCaptions();
+    _fileList.splice(index, 1);
+    _captions.splice(index, 1);
+    _syncInputFiles();
+    renderPreviews();
+}
+
+function _saveCaptions() {
+    var inputs = document.querySelectorAll('#preview-list .preview-caption-input');
+    inputs.forEach(function(el, i) {
+        if (i < _captions.length) { _captions[i] = el.value; }
+    });
+}
+
+function renderPreviews() {
+    var previewArea = document.getElementById('preview-area');
+    var previewList = document.getElementById('preview-list');
+    previewList.innerHTML = '';
+
+    if (_fileList.length === 0) {
+        previewArea.style.display = 'none';
+        rebuildImgBtns(0);
+        return;
+    }
+    previewArea.style.display = 'block';
+
+    _fileList.forEach(function(file, index) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var item = document.createElement('div');
+            item.className = 'preview-item';
+            item.style.width = '150px';
+
+            var img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+
+            var label = document.createElement('div');
+            label.className = 'preview-label';
+            label.textContent = '[img' + (index + 1) + ']';
+
+            var filename = document.createElement('div');
+            filename.className = 'preview-filename';
+            filename.textContent = file.name;
+            filename.title = file.name;
+
+            var captionWrapper = document.createElement('div');
+            captionWrapper.className = 'preview-caption-wrapper';
+            var captionInput = document.createElement('input');
+            captionInput.type        = 'text';
+            captionInput.name        = 'img_caption_' + (index + 1);
+            captionInput.placeholder = '画像の説明（省略可）';
+            captionInput.className   = 'preview-caption-input';
+            captionInput.maxLength   = 100;
+            captionInput.value       = _captions[index] || '';
+            captionWrapper.appendChild(captionInput);
+
+            var deleteBtn = document.createElement('button');
+            deleteBtn.type      = 'button';
+            deleteBtn.className = 'preview-delete-btn';
+            deleteBtn.textContent = '✕ この画像を削除';
+            (function(i) {
+                deleteBtn.onclick = function() { deleteImage(i); };
+            })(index);
+
+            item.appendChild(img);
+            item.appendChild(label);
+            item.appendChild(filename);
+            item.appendChild(captionWrapper);
+            item.appendChild(deleteBtn);
+            previewList.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    rebuildImgBtns(_fileList.length);
+}
+
 /* =========================================================
    ジャンル入力切替
    ========================================================= */
@@ -286,60 +491,6 @@ function previewDefaultThumb(select) {
 }
 
 /* =========================================================
-   画像プレビュー＆[imgN]ボタン再構築
-   ========================================================= */
-function previewImages(input) {
-    var previewArea = document.getElementById('preview-area');
-    var previewList = document.getElementById('preview-list');
-    previewList.innerHTML = '';
-    var files = Array.from(input.files);
-    if (files.length === 0) { previewArea.style.display = 'none'; rebuildImgBtns(0); return; }
-    previewArea.style.display = 'block';
-
-    files.forEach(function(file, index) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var item = document.createElement('div');
-            item.className = 'preview-item';
-            item.style.width = '200px';
-
-            var img = document.createElement('img');
-            img.src = e.target.result;
-            img.alt = file.name;
-
-            var label = document.createElement('div');
-            label.className = 'preview-label';
-            label.textContent = '[img' + (index + 1) + ']';
-
-            var filename = document.createElement('div');
-            filename.className = 'preview-filename';
-            filename.textContent = file.name;
-            filename.title = file.name;
-
-            var captionWrapper = document.createElement('div');
-            captionWrapper.className = 'preview-caption-wrapper';
-
-            var captionInput = document.createElement('input');
-            captionInput.type        = 'text';
-            captionInput.name        = 'img_caption_' + (index + 1);
-            captionInput.placeholder = '画像の説明（省略可）';
-            captionInput.className   = 'preview-caption-input';
-            captionInput.maxLength   = 100;
-
-            captionWrapper.appendChild(captionInput);
-            item.appendChild(img);
-            item.appendChild(label);
-            item.appendChild(filename);
-            item.appendChild(captionWrapper);
-            previewList.appendChild(item);
-        };
-        reader.readAsDataURL(file);
-    });
-
-    rebuildImgBtns(files.length);
-}
-
-/* =========================================================
    マークダウンツールバー共通ユーティリティ
    ========================================================= */
 function mdInsertAt(ta, text, selectFrom, selectTo) {
@@ -353,7 +504,6 @@ function mdInsertAt(ta, text, selectFrom, selectTo) {
     ta.setSelectionRange(newPos, newEnd);
     ta.focus();
 }
-
 function mdInsertLinePrefix(ta, prefix) {
     var start     = ta.selectionStart;
     var val       = ta.value;
@@ -365,7 +515,6 @@ function mdInsertLinePrefix(ta, prefix) {
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
 }
-
 function mdInsertHeading2() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## '); }
 function mdInsertHeading3() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### '); }
 
@@ -380,7 +529,6 @@ function mdWrapBold() {
         mdInsertAt(ta, '**太字テキスト**', 2, 6);
     }
 }
-
 function mdInsertToc() {
     var ta  = document.getElementById('bodyTextarea');
     var pos = ta.selectionStart;
@@ -397,7 +545,6 @@ function mdInsertToc() {
                          :                              '\n\n';
     mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
 }
-
 function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), '[img' + n + ']'); }
 
 function rebuildImgBtns(count) {
@@ -423,103 +570,47 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /* =========================================================
-   ★ 箇条書き / リスト挿入（新規追加）
-   ---------------------------------------------------------
-   LIST_PREFIXES にエントリを追加するだけで新種のリストを
-   拡張できる設計にしています。
-
-   【動作仕様】
-   テキスト未選択時:
-     - 空行 → 「●」を挿入してカーソルを直後へ
-     - 非空行 → 行頭に「●」を付与（既存テキストを保持）
-     - 既に付いている場合 → 何もしない（重複防止）
-
-   テキスト選択時:
-     - 選択範囲を行ごとに分割し、空行以外の行頭に prefix を付与
-     - 変換後テキストで選択範囲を置換し選択状態を維持
+   箇条書きリスト挿入
    ========================================================= */
+var LIST_PREFIXES = { bullet: '●  ' };
 
-/** リスト種別ごとのプレフィックス定義（拡張ポイント） */
-var LIST_PREFIXES = {
-    bullet: '●  '
-    // ordered を追加する例:
-    // ordered: '1. '
-};
-
-/**
- * mdInsertList(type)
- * ツールバーの「リスト」ボタンから呼ばれるメイン関数。
- */
 function mdInsertList(type) {
     var ta     = document.getElementById('bodyTextarea');
     var prefix = LIST_PREFIXES[type];
     if (!prefix) return;
-
     var start        = ta.selectionStart;
     var end          = ta.selectionEnd;
     var hasSelection = (start !== end);
-
-    if (hasSelection) {
-        _mdListWrapSelection(ta, prefix, start, end);
-    } else {
-        _mdListInsertEmpty(ta, prefix, start);
-    }
+    if (hasSelection) { _mdListWrapSelection(ta, prefix, start, end); }
+    else              { _mdListInsertEmpty(ta, prefix, start); }
 }
-
-/**
- * _mdListInsertEmpty: 未選択時の挿入処理
- */
 function _mdListInsertEmpty(ta, prefix, cursorPos) {
     var val       = ta.value;
     var lineStart = val.lastIndexOf('\n', cursorPos - 1) + 1;
     var lineEnd   = val.indexOf('\n', cursorPos);
-    var currentLine = val.substring(
-        lineStart,
-        lineEnd === -1 ? val.length : lineEnd
-    );
-
+    var currentLine = val.substring(lineStart, lineEnd === -1 ? val.length : lineEnd);
     if (currentLine.trim() === '') {
-        /* 空行: prefix だけ挿入してカーソルを直後へ */
-        ta.value =
-            val.substring(0, cursorPos) +
-            prefix +
-            val.substring(cursorPos);
+        ta.value = val.substring(0, cursorPos) + prefix + val.substring(cursorPos);
         var newPos = cursorPos + prefix.length;
         ta.setSelectionRange(newPos, newPos);
     } else if (!currentLine.startsWith(prefix)) {
-        /* 非空行かつ未付与: 行頭に prefix を付与 */
-        ta.value =
-            val.substring(0, lineStart) +
-            prefix +
-            val.substring(lineStart);
+        ta.value = val.substring(0, lineStart) + prefix + val.substring(lineStart);
         var newPos2 = cursorPos + prefix.length;
         ta.setSelectionRange(newPos2, newPos2);
     } else {
-        /* 既付与: カーソル位置だけ保持 */
         ta.setSelectionRange(cursorPos, cursorPos);
     }
     ta.focus();
 }
-
-/**
- * _mdListWrapSelection: 選択範囲の各行に prefix を付与する処理
- */
 function _mdListWrapSelection(ta, prefix, start, end) {
     var val      = ta.value;
     var selText  = val.substring(start, end);
-    var lines    = selText.split('\n');
-
-    var converted = lines.map(function(line) {
-        if (line.trim() === '')       return line;  /* 空行はスキップ */
-        if (line.startsWith(prefix)) return line;  /* 既付与行は重複防止 */
+    var converted = selText.split('\n').map(function(line) {
+        if (line.trim() === '')       return line;
+        if (line.startsWith(prefix)) return line;
         return prefix + line;
     }).join('\n');
-
-    ta.value =
-        val.substring(0, start) +
-        converted +
-        val.substring(end);
-
+    ta.value = val.substring(0, start) + converted + val.substring(end);
     ta.setSelectionRange(start, start + converted.length);
     ta.focus();
 }
@@ -540,7 +631,6 @@ function renderHashtagPreview(value) {
    地図挿入モーダル
    ========================================================= */
 var _mapPreviewTimer = null;
-
 function openMapModal() {
     var ta = document.getElementById('bodyTextarea');
     window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
@@ -552,12 +642,10 @@ function openMapModal() {
     document.getElementById('map-modal').classList.add('open');
     setTimeout(function() { document.getElementById('map-place-input').focus(); }, 80);
 }
-
 function closeMapModal() {
     document.getElementById('map-modal-overlay').classList.remove('open');
     document.getElementById('map-modal').classList.remove('open');
 }
-
 function updateMapPreview(value) {
     var insertBtn   = document.getElementById('map-insert-btn');
     var previewArea = document.getElementById('map-preview-area');
@@ -577,17 +665,16 @@ function updateMapPreview(value) {
             ' loading="lazy" allowfullscreen></iframe>';
     }, 600);
 }
-
 function insertMapTag() {
     var place = document.getElementById('map-place-input').value.trim();
     if (!place) return;
-    var ta       = document.getElementById('bodyTextarea');
-    var pos      = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
-    var val      = ta.value;
+    var ta        = document.getElementById('bodyTextarea');
+    var pos       = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val       = ta.value;
     var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    var tag      = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
-    ta.value     = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    var newPos   = pos.start + tag.length;
+    var tag       = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
+    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos    = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
     closeMapModal();
@@ -597,7 +684,6 @@ function insertMapTag() {
    YouTube 挿入モーダル
    ========================================================= */
 var _ytPreviewTimer = null;
-
 function openYoutubeModal() {
     var ta = document.getElementById('bodyTextarea');
     window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
@@ -609,12 +695,10 @@ function openYoutubeModal() {
     document.getElementById('youtube-modal').classList.add('open');
     setTimeout(function() { document.getElementById('youtube-url-input').focus(); }, 80);
 }
-
 function closeYoutubeModal() {
     document.getElementById('youtube-modal-overlay').classList.remove('open');
     document.getElementById('youtube-modal').classList.remove('open');
 }
-
 function extractYoutubeId(raw) {
     raw = raw.trim();
     var m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
@@ -628,7 +712,6 @@ function extractYoutubeId(raw) {
     if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
     return null;
 }
-
 function updateYoutubePreview(value) {
     var insertBtn   = document.getElementById('youtube-insert-btn');
     var previewArea = document.getElementById('youtube-preview-area');
@@ -648,62 +731,49 @@ function updateYoutubePreview(value) {
             ' onerror="this.parentNode.innerHTML=\'<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>\'">';
     }, 600);
 }
-
 function insertYoutubeTag() {
     var rawUrl = document.getElementById('youtube-url-input').value.trim();
     if (!rawUrl || !extractYoutubeId(rawUrl)) return;
-    var ta       = document.getElementById('bodyTextarea');
-    var pos      = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
-    var val      = ta.value;
+    var ta        = document.getElementById('bodyTextarea');
+    var pos       = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val       = ta.value;
     var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    var tag      = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
-    ta.value     = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    var newPos   = pos.start + tag.length;
+    var tag       = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
+    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos    = pos.start + tag.length;
     ta.setSelectionRange(newPos, newPos);
     ta.focus();
     closeYoutubeModal();
 }
 
-/* ESC キーでモーダルを閉じる */
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeMapModal();
-        closeYoutubeModal();
-    }
+    if (e.key === 'Escape') { closeMapModal(); closeYoutubeModal(); }
 });
 
-/* ============================================================
-   Sticky ツールバー：スクロール時クラス付与
-   ============================================================ */
+/* =========================================================
+   Sticky ツールバー
+   ========================================================= */
 (function () {
     'use strict';
     var toolbar = document.getElementById('md-toolbar');
     if (!toolbar) return;
-
     var sentinel = document.createElement('div');
     sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
     toolbar.parentElement.insertBefore(sentinel, toolbar);
-
     var observer = new IntersectionObserver(
-        function(entries) {
-            toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting);
-        },
+        function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
         { rootMargin: '-85px 0px 0px 0px', threshold: 0 }
     );
     observer.observe(sentinel);
-
     var mq = window.matchMedia('(max-width: 767px)');
     function updateRootMargin(e) {
         observer.disconnect();
         var offset = e.matches ? '-63px' : '-85px';
-        var newObserver = new IntersectionObserver(
-            function(entries) {
-                toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting);
-            },
+        observer = new IntersectionObserver(
+            function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
             { rootMargin: offset + ' 0px 0px 0px', threshold: 0 }
         );
-        newObserver.observe(sentinel);
-        observer = newObserver;
+        observer.observe(sentinel);
     }
     mq.addEventListener('change', updateRootMargin);
 })();
