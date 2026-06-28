@@ -714,7 +714,7 @@ hr {
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
-    font-size: 15px;
+    font-size: 21px;
     font-weight: 700;
     color: #0d3a52;
     border-bottom: 2px solid #1a7aad;
@@ -735,12 +735,12 @@ hr {
 [対象要素]：.related-heading-sub（「〇〇を表示中」などのバッジ形式サブラベル）
 ========================================== */
 .related-heading-sub {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
-    color: #5a8ba8;
-    background: #f0faff;
+    color: #2e7198;
+    background: #f8fdff;
     border: 1px solid #c5dff0;
-    border-radius: 20px;
+    border-radius: 10px;
     padding: 2px 10px;
     margin-left: 4px;
     white-space: nowrap;
@@ -771,11 +771,11 @@ hr {
 .related-card {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 18px; 
     background: #fff;
     border: 1px solid #c5dff0;
     border-radius: 10px;
-    padding: 10px 14px 10px 10px;
+    padding: 14px 18px 14px 14px; 
     text-decoration: none;
     color: inherit;
     transition: box-shadow 0.18s, border-color 0.18s, transform 0.15s;
@@ -796,9 +796,9 @@ hr {
 [対象要素]：.related-thumb・img（関連記事カード左側のサムネイル画像）
 ========================================== */
 .related-thumb {
-    flex: 0 0 88px;
-    width: 88px;
-    height: 60px;
+    flex: 0 0 120px; 
+    width: 120px;    
+    height: 85px;    
     border-radius: 6px;
     overflow: hidden;
     background: #dff0fb;
@@ -829,7 +829,7 @@ hr {
 }
 
 .related-title {
-    font-size: 14px;
+    font-size: 16px; 
     font-weight: 600;
     color: #0d3a52;
     line-height: 1.45;
@@ -848,8 +848,8 @@ hr {
 }
 
 .related-date {
-    font-size: 11px;
-    color: #7aaec8;
+    font-size: 13px; 
+    color: #548ba7;
     margin: 0;
 }
 
@@ -1115,7 +1115,7 @@ hr {
     }
 
     .related-heading {
-        font-size: 14px;
+        font-size: 16px;
         margin: 24px 0 12px;
         padding-bottom: 8px;
     }
@@ -1130,22 +1130,22 @@ hr {
     }
 
     .related-card {
-        gap: 10px;
-        padding: 8px 10px 8px 8px;
+        gap: 14px;                   /* 変更: 10px → 14px */
+        padding: 12px 14px 12px 12px; /* 変更: 8px 10px 8px 8px → 12px 14px 12px 12px */
         border-radius: 8px;
     }
 
     .related-thumb {
-        flex: 0 0 72px;
-        width: 72px;
-        height: 52px;
+        flex: 0 0 100px; /* 変更: 72px → 100px */
+        width: 100px;    /* 変更: 72px → 100px */
+        height: 70px;    /* 変更: 52px → 70px */
     }
 
     .related-title {
-        font-size: 13px;
+        font-size: 14px; /* 変更: 13px → 14px */
     }
 
     .related-date {
-        font-size: 11px;
+        font-size: 12px; /* 変更: 11px → 12px */
     }
 }

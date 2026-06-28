@@ -350,7 +350,7 @@ def detail(id):
     # -------------------------------------------------------------------
     tag_names = [t.name for t in post.hashtags]
     if post.genre and post.genre != '未分類' and tag_names:
-        related_sub_label = f'{post.genre}・{"、".join(f"#{n}" for n in tag_names[:2])} を表示中'
+        related_sub_label = f'📂 {post.genre} / {"、".join(f"#{n}" for n in tag_names[:2])} を表示中'
     elif post.genre and post.genre != '未分類':
         related_sub_label = f'{post.genre} を表示中'
     elif tag_names:
