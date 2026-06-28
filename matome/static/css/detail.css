@@ -700,7 +700,7 @@ hr {
 [対象要素]：.related-section（記事下部の関連記事エリア全体）
 ========================================== */
 .related-section {
-    margin-top: 40px;
+    margin-top: 30px;
     padding-top: 8px;
 }
 
