@@ -1,8 +1,15 @@
 /* static/css/index.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
 
+
 /* ===========================
    メインレイアウト
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：ページ全体ラッパー
+[対象要素]：.page-wrapper（コンテンツ最大幅・中央寄せ・余白）
+========================================== */
 .page-wrapper {
     max-width: 940px;
     margin: 0 auto;
@@ -11,13 +18,21 @@
 }
 
 
-/* 編集ボタン */
+/* ===========================
+   記事カード共通
+   =========================== */
+
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事カード 編集ボタン
+[対象要素]：.btn-edit（編集リンクボタン・ホバー状態）
+========================================== */
 .btn-edit {
     display: inline-block;
     padding: 3px 14px;
     font-size: 14px;
     font-weight: 500;
-    color: #1a6a96;          /* 濃くして視認性UP */
+    color: #1a6a96;
     border: 1.2px solid #7ab8d8;
     border-radius: 4px;
     margin-right: 7px;
@@ -32,12 +47,19 @@ a[role="button"]:hover {
     text-decoration: none;
 }
 
+
 /* ===========================
-   検索フィルター表示テキスト（視認性改善）
+   検索・フィルター表示
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ
+[機能名]：検索・ジャンル絞り込み結果ラベル
+[対象要素]：.filter-label（「〇〇の検索結果」テキスト）
+========================================== */
 .filter-label {
     font-size: 19px;
-    color: #094260;          /* #2a6f94より濃く、背景(#dff0fb)との差を確保 */
+    color: #094260;
     font-weight: 600;
     margin-bottom: 27px;
     display: inline-block;
@@ -45,10 +67,16 @@ a[role="button"]:hover {
 
 
 /* ===========================
-   記事一覧セクション見出し
+   記事一覧セクション
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ
+[機能名]：記事一覧セクション見出し
+[対象要素]：.posts-section-title（「最新の記事」などのセクション見出し）
+========================================== */
 .posts-section-title {
-    font-size: 1.4rem !important; 
+    font-size: 1.4rem !important;
     font-weight: 700;
     color: #0d3a52;
     line-height: 1.4;
@@ -57,12 +85,18 @@ a[role="button"]:hover {
 
 
 /* ===========================
-   ジャンルバッジ（視認性改善）
+   記事カードバッジ
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事カード ジャンルバッジ
+[対象要素]：.badge-genre（カード上部のジャンル表示バッジ）
+========================================== */
 .badge-genre {
     font-size: 13px;
     font-weight: 600;
-    color: #1a5f85;          /* 薄い水色背景の上でも読める濃さ */
+    color: #1a5f85;
     background: #f0faff;
     border: 1px solid #45a3d8;
     border-radius: 12px;
@@ -70,13 +104,15 @@ a[role="button"]:hover {
     white-space: nowrap;
 }
 
-/* ===========================
-   非公開バッジ（差し色：暖色警告）
-   =========================== */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事カード 非公開バッジ
+[対象要素]：.badge-private（非公開記事を示す警告バッジ）
+========================================== */
 .badge-private {
     font-size: 12px;
     font-weight: 700;
-    color: #c0392b;          /* 警告赤 */
+    color: #c0392b;
     background: #fff0ee;
     border: 1.2px solid #f5b7b1;
     border-radius: 12px;
@@ -84,9 +120,16 @@ a[role="button"]:hover {
     white-space: nowrap;
 }
 
+
 /* ===========================
-   記事カード全体
+   記事カード本体
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード表示
+[対象要素]：.post-card（カード全体・flex横並び・ホバーアニメーション・全域タップ基準）
+========================================== */
 .post-card {
     display: flex;
     gap: 36px;
@@ -106,7 +149,11 @@ a[role="button"]:hover {
     box-shadow: 0 6px 16px rgba(26, 122, 173, 0.12);
 }
 
-/* サムネイル */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード サムネイル画像
+[対象要素]：.post-thumbnail・.thumb-img（サムネイルエリア・画像フィット）
+========================================== */
 .post-thumbnail {
     flex: 0 0 300px;
     height: 185px;
@@ -123,7 +170,11 @@ a[role="button"]:hover {
     object-position: center;
 }
 
-/* コンテンツエリア */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード コンテンツエリア
+[対象要素]：.post-content（サムネイル右側のテキスト・メタ情報エリア）
+========================================== */
 .post-content {
     flex: 1;
     display: flex;
@@ -131,7 +182,11 @@ a[role="button"]:hover {
     justify-content: space-between;
 }
 
-/* メタ情報 */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード メタ情報エリア
+[対象要素]：.post-header-meta（ジャンルバッジ・非公開バッジを横並び表示するエリア）
+========================================== */
 .post-header-meta {
     display: flex;
     gap: 8px;
@@ -141,7 +196,11 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
-/* 記事タイトル */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード 記事タイトル
+[対象要素]：.post-title・a（タイトルテキスト・リンク・全域タップ化の::after）
+========================================== */
 .post-title {
     margin: 8px 0 8px 0;
     font-size: 1.25rem;
@@ -167,20 +226,26 @@ a[role="button"]:hover {
     color: #006cd0;
 }
 
-/* ボタン保護 */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード 操作ボタンエリア（編集・削除）
+[対象要素]：.post-actions（ボタンを全域タップリンクより前面に出すためのz-index設定）
+========================================== */
 .post-actions {
     position: relative;
     z-index: 2;
     margin-top: 8px;
 }
 
-/* ===========================
-   削除ボタン（差し色：珊瑚系警告）
-   =========================== */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード 削除ボタン
+[対象要素]：.btn-delete（削除ボタン・ホバー状態）
+========================================== */
 .btn-delete {
     background: transparent;
-    border: 1.2px solid #f5b7b1;  /* パステル赤ボーダー */
-    color: #c0392b;                /* 警告赤の文字 */
+    border: 1.2px solid #f5b7b1;
+    color: #c0392b;
     padding: 3px 14px;
     font-size: 14px;
     border-radius: 4px;
@@ -190,97 +255,123 @@ a[role="button"]:hover {
 }
 
 .btn-delete:hover {
-    background-color: #fff0ee;     /* パステル赤背景 */
+    background-color: #fff0ee;
     border-color: #e74c3c;
     color: #a93226;
 }
 
-/* ===========================
-   投稿日時（視認性改善）
-   =========================== */
+/* ==========================================
+[画面名]：indexページ・mypageページ
+[機能名]：記事一覧カード 投稿日時
+[対象要素]：.post-date（投稿日・更新日テキスト）
+========================================== */
 .post-date {
     margin: 1px 0 0 0;
     font-size: 0.80rem;
-    color: #3a82ac;              /* #7aaec8より濃く、爽やかさ維持 */
+    color: #3a82ac;
 }
 
 
+/* ==========================================================================
+   レスポンシブ（スマホ）
+   ========================================================================== */
 
-/* ===========================
-📱 スマホ対応
-=========================== */
+/* スマホ（〜600px） */
 @media (max-width: 600px) {
 
-.page-wrapper {
-    padding: 16px 14px 48px;
-}
+    /* ==========================================
+    [画面名]：indexページ・mypageページ（スマホ）
+    [機能名]：ページ全体ラッパー（スマホ余白縮小）
+    [対象要素]：.page-wrapper
+    ========================================== */
+    .page-wrapper {
+        padding: 16px 14px 48px;
+    }
 
-.post-card {
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
-    margin-top: 5px;
-}
+    /* ==========================================
+    [画面名]：indexページ・mypageページ（スマホ）
+    [機能名]：記事一覧カード（スマホ縦積みレイアウト）
+    [対象要素]：.post-card・.post-thumbnail・.post-content
+    ========================================== */
+    .post-card {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        margin-top: 5px;
+    }
 
-.post-thumbnail {
-    flex: none;
-    width: 100%;
-    height: 210px;
-}
+    .post-thumbnail {
+        flex: none;
+        width: 100%;
+        height: 210px;
+    }
 
-.post-content {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
+    .post-content {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
 
-.post-header-meta {
-    font-size: 0.85rem;
-    margin-bottom: 4px;
-}
+    /* ==========================================
+    [画面名]：indexページ・mypageページ（スマホ）
+    [機能名]：記事カード メタ情報・タイトル・日時（スマホ縮小）
+    [対象要素]：.post-header-meta・.post-title・.post-date
+    ========================================== */
+    .post-header-meta {
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+    }
 
-.post-title {
-    font-size: 1.1rem;
-    line-height: 1.4;
-    margin-bottom: 10px;
-}
+    .post-title {
+        font-size: 1.1rem;
+        line-height: 1.4;
+        margin-bottom: 10px;
+    }
 
-.post-actions {
-    display: flex;
-    justify-content: center;   
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    margin-bottom: 3px;          
-    width: 100%;
-}
+    .post-date {
+        order: 0;
+        font-size: 0.75rem;
+        margin-top: 3px;
+        margin-bottom: 3px;
+    }
 
-.btn-edit,
-.btn-delete {
-    padding: 4px 17px;
-    font-size: 13px;
-    min-height: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
+    /* ==========================================
+    [画面名]：indexページ・mypageページ（スマホ）
+    [機能名]：記事カード 操作ボタンエリア（スマホ中央寄せ）
+    [対象要素]：.post-actions・.btn-edit・.btn-delete
+    ========================================== */
+    .post-actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        margin-bottom: 3px;
+        width: 100%;
+    }
 
-.post-date {
-    order: 0;
-    font-size: 0.75rem;
-    margin-top: 3px;
-    margin-bottom: 3px;
-}
+    .btn-edit,
+    .btn-delete {
+        padding: 4px 17px;
+        font-size: 13px;
+        min-height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-.post-actions {
-    order: 1;
-}
+    .post-actions {
+        order: 1;
+    }
 
-.post-title a::after {
-    inset: 0;
-    z-index: 1;
+    /* ==========================================
+    [画面名]：indexページ・mypageページ（スマホ）
+    [機能名]：記事タイトル全域タップリンク
+    [対象要素]：.post-title a::after（タップ領域拡張）
+    ========================================== */
+    .post-title a::after {
+        inset: 0;
+        z-index: 1;
+    }
 }
-
-}
-
 

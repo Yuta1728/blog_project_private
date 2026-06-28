@@ -1,19 +1,33 @@
 /* static/css/top_sections.css
-   hero・howto・stats セクション共通スタイル
+   hero・howto・stats・about・search_area セクション共通スタイル
    ================================================= */
+
 
 /* ===========================
    共通：セクション間余白
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero・howto・stats セクション共通 外余白
+[対象要素]：.hero-section・.howto-section・.stats-section（各セクション下余白）
+========================================== */
 .hero-section,
 .howto-section,
 .stats-section {
     margin-bottom: 40px;
 }
 
+
 /* ===========================
    hero セクション
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero セクション コンテナ
+[対象要素]：.hero-section（アバター+自己紹介テキストを横並びにするカード）
+========================================== */
 .hero-section {
     display: flex;
     align-items: center;
@@ -25,6 +39,11 @@
     box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero セクション アバター画像
+[対象要素]：.hero-avatar img（丸型アバター画像）
+========================================== */
 .hero-avatar img {
     width: 80px;
     height: 80px;
@@ -35,10 +54,20 @@
     display: block;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero セクション テキストエリア
+[対象要素]：.hero-body（名前・自己紹介テキスト・リンクボタンを縦並びにするエリア）
+========================================== */
 .hero-body {
     flex: 1;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero セクション ブログ名テキスト
+[対象要素]：.hero-name（「〇〇のブログ」タイトルテキスト）
+========================================== */
 .hero-name {
     font-size: 20px;
     font-weight: 800;
@@ -48,6 +77,11 @@
     letter-spacing: -0.01em;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero セクション 自己紹介テキスト
+[対象要素]：.hero-bio（キャッチコピー・自己紹介一文）
+========================================== */
 .hero-bio {
     font-size: 15px;
     color: #2a4a5e;
@@ -55,9 +89,49 @@
     margin: 0;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：hero セクション リンクボタン群
+[対象要素]：.hero-links・.hero-link-btn（「自己紹介を読む」「使い方を見る」ボタン）
+========================================== */
+.hero-links {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.hero-link-btn {
+    display: inline-block;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a5f85;
+    background: #edf8ff;
+    border: 1.5px solid #8cc8e8;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+
+.hero-link-btn:hover {
+    background: #dff0fb;
+    border-color: #1a7aad;
+    color: #0d3a52;
+    text-decoration: none;
+}
+
+
 /* ===========================
    howto セクション
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：howto セクション コンテナ
+[対象要素]：.howto-section（使い方の簡易説明カード・左アクセントライン）
+========================================== */
 .howto-section {
     background: #f4fbff;
     border: 1px solid #c5dff0;
@@ -66,6 +140,11 @@
     padding: 24px 28px;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：howto セクション 見出し
+[対象要素]：.howto-title（セクションタイトルテキスト）
+========================================== */
 .howto-title {
     font-size: 16px;
     font-weight: 700;
@@ -74,6 +153,11 @@
     text-align: left;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：howto セクション 各項目リスト
+[対象要素]：.howto-list・.howto-item・.howto-icon（使い方の箇条書きリスト）
+========================================== */
 .howto-list {
     list-style: none;
     margin: 0;
@@ -103,15 +187,27 @@
     font-weight: 700;
 }
 
+
 /* ===========================
    stats セクション
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：stats セクション コンテナ
+[対象要素]：.stats-section（統計カードを横並びにするflexコンテナ）
+========================================== */
 .stats-section {
     display: flex;
     gap: 27px;
     height: 70%;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：stats セクション 各統計カード
+[対象要素]：.stats-card（総投稿数・ハッシュタグ数・最終更新日を表示する1枚カード）
+========================================== */
 .stats-card {
     flex: 1;
     display: flex;
@@ -127,6 +223,11 @@
     text-align: center;
 }
 
+/* ==========================================
+[画面名]：indexページ（トップ）
+[機能名]：stats セクション カード内テキスト
+[対象要素]：.stats-icon・.stats-number・.stats-label（絵文字・数値・ラベル）
+========================================== */
 .stats-icon {
     font-size: 20px;
     line-height: 1;
@@ -147,9 +248,16 @@
     letter-spacing: 0.03em;
 }
 
+
 /* ===========================
-   記事一覧 見出し
+   記事一覧見出し（indexページ）
    =========================== */
+
+/* ==========================================
+[画面名]：indexページ
+[機能名]：記事一覧セクション見出し
+[対象要素]：.posts-section-title（「最新の記事」等のセクション見出し・下線アクセント）
+========================================== */
 .posts-section-title {
     font-size: 16px;
     font-weight: 700;
@@ -161,102 +269,16 @@
     letter-spacing: 0.02em;
 }
 
-/* ===========================
-   スマホ（〜600px）
-   =========================== */
-@media (max-width: 600px) {
-    .hero-section {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 20px 16px;
-    }
-
-    .hero-avatar img {
-        width: 64px;
-        height: 64px;
-    }
-
-    .hero-name {
-        font-size: 17px;
-    }
-
-    .hero-bio {
-        font-size: 14px;
-    }
-
-    .howto-section {
-        padding: 18px 16px;
-    }
-
-    .howto-title {
-        font-size: 15px;
-    }
-
-    .howto-item {
-        font-size: 13px;
-        gap: 10px;
-    }
-
-    .howto-icon {
-        font-size: 18px;
-    }
-
-    .stats-section {
-        gap: 10px;
-    }
-
-    .stats-card {
-        padding: 16px 8px;
-    }
-
-    .stats-icon {
-        font-size: 18px;
-    }
-
-    .stats-number {
-        font-size: 20px;
-    }
-
-    .stats-label {
-        font-size: 11px;
-    }
-}
 
 /* ===========================
-   hero セクション内リンクボタン
+   about・howto 静的情報ページ共通
    =========================== */
-.hero-links {
-    display: flex;
-    gap: 10px;
-    margin-top: 14px;
-    flex-wrap: wrap;
-}
 
-.hero-link-btn {
-    display: inline-block;
-    padding: 8px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a5f85;
-    background: #edf8ff;
-    border: 1.5px solid #8cc8e8;
-    border-radius: 20px;
-    text-decoration: none;
-    transition: all 0.18s;
-    white-space: nowrap;
-}
-
-.hero-link-btn:hover {
-    background: #dff0fb;
-    border-color: #1a7aad;
-    color: #0d3a52;
-    text-decoration: none;
-}
-
-/* ===========================
-   about / howto ページ共通
-   =========================== */
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ コンテナ
+[対象要素]：.info-page-container（最大幅・中央寄せ・余白）
+========================================== */
 .info-page-container {
     max-width: 720px;
     margin: 0 auto;
@@ -264,6 +286,11 @@
     box-sizing: border-box;
 }
 
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ ページヘッダー（アバター+タイトル）
+[対象要素]：.info-page-header・.info-page-avatar・.info-page-title
+========================================== */
 .info-page-header {
     display: flex;
     align-items: center;
@@ -289,6 +316,11 @@
     letter-spacing: -0.01em;
 }
 
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ 本文カード
+[対象要素]：.info-page-body（各セクションを囲むカード型コンテナ）
+========================================== */
 .info-page-body {
     background: #ffffff;
     border: 1px solid #c5dff0;
@@ -298,6 +330,11 @@
     margin-bottom: 28px;
 }
 
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ 各セクション
+[対象要素]：.info-section（カード内の各セクションエリア・下余白）
+========================================== */
 .info-section {
     margin-bottom: 32px;
 }
@@ -306,6 +343,11 @@
     margin-bottom: 0;
 }
 
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ セクション見出し
+[対象要素]：.info-section-title（左アクセントライン付きの中見出し）
+========================================== */
 .info-section-title {
     font-size: 17px;
     font-weight: 700;
@@ -316,6 +358,11 @@
     text-align: left;
 }
 
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ 本文テキスト
+[対象要素]：.info-section p（各セクションの説明テキスト）
+========================================== */
 .info-section p {
     font-size: 15px;
     color: #2a4a5e;
@@ -323,6 +370,11 @@
     margin: 0;
 }
 
+/* ==========================================
+[画面名]：aboutページ・howtoページ
+[機能名]：静的情報ページ フッター「トップに戻る」ボタン
+[対象要素]：.info-page-footer・.info-back-btn（「← トップに戻る」リンクボタン・ホバー状態）
+========================================== */
 .info-page-footer {
     text-align: center;
 }
@@ -346,76 +398,16 @@
     text-decoration: none;
 }
 
+
 /* ===========================
-   スマホ対応（about / howto）
+   インページ検索エリア（indexページ）
    =========================== */
-@media (max-width: 600px) {
-    .hero-links {
-        flex-direction: column;
-        gap: 17px;
-    }
 
-    .hero-link-btn {
-        text-align: center;
-    }
-
-    .info-page-container {
-        padding: 20px 0 48px;
-    }
-
-    .info-page-header {
-        padding: 0 16px;
-        gap: 14px;
-        margin-bottom: 20px;
-    }
-
-    .info-page-avatar {
-        width: 56px;
-        height: 56px;
-    }
-
-    .info-page-title {
-        font-size: 18px;
-    }
-
-    .info-page-body {
-        padding: 24px 16px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-    }
-
-    .info-section-title {
-        font-size: 15px;
-    }
-
-    .info-section p {
-        font-size: 14px;
-    }
-}
-
-
-
-/* =======================================================================
-   インページ検索エリア（index ページ専用）
-   top_sections.css への追記分
-
-   構造:
-     .index-search-area          ← セクション全体（カード）
-       .index-search-title       ← 見出し
-       .index-search-form        ← <form> 本体
-         .index-search-field     ← 各フィールドのラッパー
-           .index-search-label   ← ラベル
-           .index-search-select-wrap / .index-search-input-wrap
-                                 ← インタラクティブ要素のラッパー
-
-   PC レイアウト : 横並び [ジャンル] [キーワード] [ボタン]
-   SP レイアウト : 縦積み
-   ======================================================================= */
-
-/* -----------------------------------------------------------------------
-   セクション全体：カード風
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア コンテナ
+[対象要素]：.index-search-area（ジャンル選択・キーワード・ボタンをまとめるカード）
+========================================== */
 .index-search-area {
     background: #ffffff;
     border: 1px solid #c5dff0;
@@ -425,7 +417,11 @@
     box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
 }
 
-/* セクション見出し */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア 見出し
+[対象要素]：.index-search-title（「記事を探す」見出しテキスト）
+========================================== */
 .index-search-title {
     font-size: 17px;
     font-weight: 700;
@@ -434,17 +430,23 @@
     letter-spacing: 0.03em;
 }
 
-/* -----------------------------------------------------------------------
-   フォーム：横並び
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア フォーム（横並びレイアウト）
+[対象要素]：.index-search-form（ジャンル・キーワード・ボタンをflex横並びにするform）
+========================================== */
 .index-search-form {
     display: flex;
-    align-items: flex-end;      /* ラベル分の高さを考慮して下揃え */
+    align-items: flex-end;
     gap: 12px;
     flex-wrap: wrap;
 }
 
-/* 各フィールド共通 */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア 各フィールド共通
+[対象要素]：.index-search-field（各入力グループのflex縦並びラッパー）
+========================================== */
 .index-search-field {
     display: flex;
     flex-direction: column;
@@ -467,9 +469,11 @@
     flex: 0 0 auto;
 }
 
-/* -----------------------------------------------------------------------
-   ラベル
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア ラベル
+[対象要素]：.index-search-label（「ジャンル」「キーワード」フィールド名）
+========================================== */
 .index-search-label {
     font-size: 12px;
     font-weight: 700;
@@ -478,16 +482,18 @@
     white-space: nowrap;
 }
 
-/* PC でボタンのラベル行のスペーサー（縦位置調整） */
+/* PCでボタンのラベル行スペーサー（縦位置調整） */
 .index-search-label-spacer {
     display: block;
-    height: 18px;   /* .index-search-label の line-height に合わせる */
+    height: 18px;
     pointer-events: none;
 }
 
-/* -----------------------------------------------------------------------
-   ジャンル select ラッパー
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア ジャンル選択セレクト
+[対象要素]：.index-search-select-wrap・.index-search-select・.index-search-select-arrow
+========================================== */
 .index-search-select-wrap {
     position: relative;
     display: flex;
@@ -498,7 +504,7 @@
     width: 100%;
     appearance: none;
     -webkit-appearance: none;
-    padding: 10px 36px 10px 14px;   /* 右に矢印アイコン分の余白 */
+    padding: 10px 36px 10px 14px;
     font-size: 14px;
     color: #0d3a52;
     background: #f5f9fd;
@@ -508,7 +514,6 @@
     cursor: pointer;
     font-family: inherit;
     transition: border-color 0.18s, background 0.18s;
-    /* テキストが長い場合は省略 */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -526,7 +531,7 @@
     width: 16px;
     height: 16px;
     color: #5a8ba8;
-    pointer-events: none;   /* select のクリックを邪魔しない */
+    pointer-events: none;
     flex-shrink: 0;
     transition: color 0.18s;
 }
@@ -535,9 +540,11 @@
     color: #1a7aad;
 }
 
-/* -----------------------------------------------------------------------
-   キーワード input ラッパー
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア キーワード入力
+[対象要素]：.index-search-input-wrap・.index-search-input-icon・.index-search-input・.index-search-clear
+========================================== */
 .index-search-input-wrap {
     position: relative;
     display: flex;
@@ -562,7 +569,7 @@
 
 .index-search-input {
     width: 100%;
-    padding: 10px 36px 10px 36px;  /* 左にアイコン、右にクリアボタン分 */
+    padding: 10px 36px 10px 36px;
     font-size: 14px;
     color: #0d3a52;
     background: #f5f9fd;
@@ -608,9 +615,11 @@
     background: #fff0ee;
 }
 
-/* -----------------------------------------------------------------------
-   検索ボタン
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア 検索ボタン
+[対象要素]：.index-search-btn（「検索する」ボタン・ホバー・押下状態）
+========================================== */
 .index-search-btn {
     display: inline-flex;
     align-items: center;
@@ -628,7 +637,7 @@
     white-space: nowrap;
     transition: background-color 0.18s, box-shadow 0.18s, transform 0.13s;
     box-shadow: 0 2px 8px rgba(26, 122, 173, 0.20);
-    min-height: 42px;   /* select / input と高さを揃える */
+    min-height: 42px;
 }
 
 .index-search-btn:hover {
@@ -643,9 +652,11 @@
     background: #0f4a6e;
 }
 
-/* -----------------------------------------------------------------------
-   絞り込み解除リンク
-   ----------------------------------------------------------------------- */
+/* ==========================================
+[画面名]：indexページ
+[機能名]：インページ検索エリア 絞り込み解除リンク
+[対象要素]：.index-search-reset（「絞り込みを解除」リンク・赤系警告色）
+========================================== */
 .index-search-reset {
     display: inline-block;
     margin-top: 6px;
@@ -668,10 +679,139 @@
     text-decoration: none;
 }
 
-/* -----------------------------------------------------------------------
-   スマホ（〜600px）：縦積みレイアウト
-   ----------------------------------------------------------------------- */
+
+/* ==========================================================================
+   レスポンシブ（スマホ）
+   ========================================================================== */
+
+/* スマホ（〜600px） */
 @media (max-width: 600px) {
+
+    /* ==========================================
+    [画面名]：indexページ（トップ）（スマホ）
+    [機能名]：hero セクション（スマホ縦積み）
+    [対象要素]：.hero-section・.hero-avatar img・.hero-name・.hero-bio・.hero-links・.hero-link-btn
+    ========================================== */
+    .hero-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px 16px;
+    }
+
+    .hero-avatar img {
+        width: 64px;
+        height: 64px;
+    }
+
+    .hero-name {
+        font-size: 17px;
+    }
+
+    .hero-bio {
+        font-size: 14px;
+    }
+
+    .hero-links {
+        flex-direction: column;
+        gap: 17px;
+    }
+
+    .hero-link-btn {
+        text-align: center;
+    }
+
+    /* ==========================================
+    [画面名]：indexページ（トップ）（スマホ）
+    [機能名]：howto セクション（スマホ縮小）
+    [対象要素]：.howto-section・.howto-title・.howto-item・.howto-icon
+    ========================================== */
+    .howto-section {
+        padding: 18px 16px;
+    }
+
+    .howto-title {
+        font-size: 15px;
+    }
+
+    .howto-item {
+        font-size: 13px;
+        gap: 10px;
+    }
+
+    .howto-icon {
+        font-size: 18px;
+    }
+
+    /* ==========================================
+    [画面名]：indexページ（トップ）（スマホ）
+    [機能名]：stats セクション（スマホ縮小）
+    [対象要素]：.stats-section・.stats-card・.stats-icon・.stats-number・.stats-label
+    ========================================== */
+    .stats-section {
+        gap: 10px;
+    }
+
+    .stats-card {
+        padding: 16px 8px;
+    }
+
+    .stats-icon {
+        font-size: 18px;
+    }
+
+    .stats-number {
+        font-size: 20px;
+    }
+
+    .stats-label {
+        font-size: 11px;
+    }
+
+    /* ==========================================
+    [画面名]：aboutページ・howtoページ（スマホ）
+    [機能名]：静的情報ページ（スマホ全幅・角丸なし）
+    [対象要素]：.info-page-container・.info-page-header・.info-page-avatar・.info-page-title・.info-page-body・.info-section-title・.info-section p
+    ========================================== */
+    .info-page-container {
+        padding: 20px 0 48px;
+    }
+
+    .info-page-header {
+        padding: 0 16px;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .info-page-avatar {
+        width: 56px;
+        height: 56px;
+    }
+
+    .info-page-title {
+        font-size: 18px;
+    }
+
+    .info-page-body {
+        padding: 24px 16px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .info-section-title {
+        font-size: 15px;
+    }
+
+    .info-section p {
+        font-size: 14px;
+    }
+
+    /* ==========================================
+    [画面名]：indexページ（スマホ）
+    [機能名]：インページ検索エリア（スマホ縦積みレイアウト）
+    [対象要素]：.index-search-area・.index-search-title・.index-search-form・各フィールド・ボタン・解除リンク
+    ========================================== */
     .index-search-area {
         padding: 16px 14px 18px;
         border-radius: 10px;
@@ -697,9 +837,10 @@
         width: 100%;
     }
 
+    /* iOS で自動ズームを防ぐため16px以上に */
     .index-search-select,
     .index-search-input {
-        font-size: 15px;   /* iOS で自動ズームを防ぐ */
+        font-size: 15px;
         padding-top: 12px;
         padding-bottom: 12px;
     }
