@@ -1032,9 +1032,6 @@ WTForms==3.2.1
 zipp==3.23.1
 </file>
 
-<file path="save_path">
-
-</file>
 
 <file path="static/css/auth.css">
 /* static/css/auth.css - 水色×白 爽やかテーマ版 */
@@ -1314,13 +1311,9 @@ a:hover {
     width: 100%;
 
     /* ===== スクロール連動の核心部分 ===== */
-    position: sticky;      /* スクロールに追従して画面上部に固定 */
+    position: sticky;   
     top: 0;
     z-index: 100;
-
-    /* transform で Y 方向に動かすことでヘッダーをスライドイン/アウトさせる。
-       visibility を合わせることでスクリーンリーダーや Tab キー移動からも隠す。
-       transition は cubic-bezier で自然な加速感を出している。 */
     transform: translateY(0);
     visibility: visible;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1334,8 +1327,6 @@ a:hover {
 ========================================== */
 .main-header.header-hidden {
     transform: translateY(-100%);
-    /* visibility の遅延: transform アニメーションが終わってから hidden にする
-       （アニメーション中はまだ見えているので visibility=hidden にしてはいけない）*/
     visibility: hidden;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s linear 0.2s;
@@ -2079,7 +2070,7 @@ h1 {
 [対象要素]：.md-toolbar-wrapper（ツールバー+texareaをまとめるstickyの基準コンテナ）
 ========================================== */
 .md-toolbar-wrapper {
-    position: relative; /* sticky の基準コンテナ */
+    position: relative; 
 }
 
 /* ==========================================
@@ -2097,16 +2088,10 @@ h1 {
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     margin-bottom: 0 !important;
-
-    /* Sticky ツールバー：ヘッダー(85px)分下げて貼り付く */
     position: sticky;
     top: 85px;
     z-index: 50;
-
-    /* 浮いて見えるよう影を追加 */
     box-shadow: 0 4px 12px rgba(26, 122, 173, 0.12);
-
-    /* スムーズな影の変化 */
     transition: box-shadow 0.2s ease;
 }
 
@@ -2246,7 +2231,7 @@ h1 {
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
-    scroll-margin-top: calc(85px + 48px + 8px); /* ヘッダー + ツールバー + 余裕 */
+    scroll-margin-top: calc(85px + 48px + 8px); 
 }
 
 
@@ -2940,7 +2925,7 @@ h1 {
     font-size: 13px !important;
 }
 
-/* 最後の大見出し項目：下ボーダー・余白なし */
+/* 最後の大見出し項目*/
 .post-toc > ul > li:last-child,
 .post-toc .toc > ul > li:last-child,
 .detail-article-body .toc > ul > li:last-child {
@@ -2949,7 +2934,7 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* 最初の大見出し項目：上余白縮小 */
+/* 最初の大見出し項目*/
 .post-toc > ul > li:first-child,
 .post-toc .toc > ul > li:first-child,
 .detail-article-body .toc > ul > li:first-child {
@@ -3102,7 +3087,6 @@ article img {
     width: 100%;
 }
 
-/* figure直後の段落との余白を詰める */
 .post-figure + p {
     margin-top: 0.6em;
 }
@@ -3222,7 +3206,7 @@ article img {
     transform: scale(1.1);
 }
 
-/* SVG 内の赤い背景ボタン */
+
 .yt-btn-bg {
     fill: #ff0000;
     fill-opacity: 0.9;
@@ -3233,7 +3217,7 @@ article img {
     fill-opacity: 1;
 }
 
-/* SVG 内の白い再生三角アイコン */
+
 .yt-btn-icon {
     fill: #fff;
 }
@@ -3806,23 +3790,23 @@ hr {
     }
 
     .related-card {
-        gap: 14px;                   /* 変更: 10px → 14px */
-        padding: 12px 14px 12px 12px; /* 変更: 8px 10px 8px 8px → 12px 14px 12px 12px */
+        gap: 14px;                   
+        padding: 12px 14px 12px 12px; 
         border-radius: 8px;
     }
 
     .related-thumb {
-        flex: 0 0 100px; /* 変更: 72px → 100px */
-        width: 100px;    /* 変更: 72px → 100px */
-        height: 70px;    /* 変更: 52px → 70px */
+        flex: 0 0 100px; 
+        width: 100px;    
+        height: 70px;    
     }
 
     .related-title {
-        font-size: 14px; /* 変更: 13px → 14px */
+        font-size: 14px; 
     }
 
     .related-date {
-        font-size: 12px; /* 変更: 11px → 12px */
+        font-size: 12px; 
     }
 }
 </file>
@@ -4810,7 +4794,7 @@ a[role="button"]:hover {
 [対象要素]：.load-more-wrap（ボタンを中央寄せするflexコンテナ・JS制御で表示切替）
 ========================================== */
 .load-more-wrap {
-    display: none;          /* JS で flex に切り替える */
+    display: none;         
     align-items: center;
     justify-content: center;
     gap: 12px;
@@ -5778,7 +5762,7 @@ a[role="button"]:hover {
     white-space: nowrap;
 }
 
-/* PCでボタンのラベル行スペーサー（縦位置調整） */
+
 .index-search-label-spacer {
     display: block;
     height: 18px;
@@ -6125,7 +6109,7 @@ a[role="button"]:hover {
         align-items: stretch;
     }
 
-    /* 各フィールドを全幅に */
+
     .index-search-genre,
     .index-search-keyword,
     .index-search-action {
@@ -6133,7 +6117,7 @@ a[role="button"]:hover {
         width: 100%;
     }
 
-    /* iOS で自動ズームを防ぐため16px以上に */
+
     .index-search-select,
     .index-search-input {
         font-size: 15px;
@@ -6152,7 +6136,7 @@ a[role="button"]:hover {
         margin-bottom: 5px;
     }
 
-    /* SP では縦位置調整スペーサーは不要 */
+
     .index-search-label-spacer {
         display: none;
     }
@@ -6360,11 +6344,11 @@ a[role="button"]:hover {
            ============================================================ */
         (function () {
             const header    = document.getElementById('mainHeader');
-            const THRESHOLD = 80;   // このスクロール量（px）以下では常に表示
-            const DELTA     = 5;    // この幅（px）未満の微細な動きは無視する
+            const THRESHOLD = 80;   
+            const DELTA     = 5;    
 
-            let lastScrollY  = window.scrollY;  // 前回の scrollY を記録
-            let ticking      = false;            // rAF のスロットリング用フラグ
+            let lastScrollY  = window.scrollY;  
+            let ticking      = false;            
 
             function updateHeader() {
                 const currentScrollY = window.scrollY;
@@ -6753,7 +6737,7 @@ function onOneSelect(input) {
  * 指定インデックスの画像を削除して再描画。
  */
 function deleteImage(index) {
-    _saveCaptions();          // 削除前に現在のキャプション入力値を保存
+    _saveCaptions();          
     _fileList.splice(index, 1);
     _captions.splice(index, 1);
     _syncInputFiles();
