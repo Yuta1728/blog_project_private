@@ -117,13 +117,9 @@ a:hover {
     width: 100%;
 
     /* ===== スクロール連動の核心部分 ===== */
-    position: sticky;      /* スクロールに追従して画面上部に固定 */
+    position: sticky;   
     top: 0;
     z-index: 100;
-
-    /* transform で Y 方向に動かすことでヘッダーをスライドイン/アウトさせる。
-       visibility を合わせることでスクリーンリーダーや Tab キー移動からも隠す。
-       transition は cubic-bezier で自然な加速感を出している。 */
     transform: translateY(0);
     visibility: visible;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -137,8 +133,6 @@ a:hover {
 ========================================== */
 .main-header.header-hidden {
     transform: translateY(-100%);
-    /* visibility の遅延: transform アニメーションが終わってから hidden にする
-       （アニメーション中はまだ見えているので visibility=hidden にしてはいけない）*/
     visibility: hidden;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s linear 0.2s;

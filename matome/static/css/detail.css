@@ -264,7 +264,7 @@ h1 {
     font-size: 13px !important;
 }
 
-/* 最後の大見出し項目：下ボーダー・余白なし */
+/* 最後の大見出し項目*/
 .post-toc > ul > li:last-child,
 .post-toc .toc > ul > li:last-child,
 .detail-article-body .toc > ul > li:last-child {
@@ -273,7 +273,7 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* 最初の大見出し項目：上余白縮小 */
+/* 最初の大見出し項目*/
 .post-toc > ul > li:first-child,
 .post-toc .toc > ul > li:first-child,
 .detail-article-body .toc > ul > li:first-child {
@@ -426,7 +426,6 @@ article img {
     width: 100%;
 }
 
-/* figure直後の段落との余白を詰める */
 .post-figure + p {
     margin-top: 0.6em;
 }
@@ -546,7 +545,7 @@ article img {
     transform: scale(1.1);
 }
 
-/* SVG 内の赤い背景ボタン */
+
 .yt-btn-bg {
     fill: #ff0000;
     fill-opacity: 0.9;
@@ -557,7 +556,7 @@ article img {
     fill-opacity: 1;
 }
 
-/* SVG 内の白い再生三角アイコン */
+
 .yt-btn-icon {
     fill: #fff;
 }
@@ -1130,22 +1129,22 @@ hr {
     }
 
     .related-card {
-        gap: 14px;                   /* 変更: 10px → 14px */
-        padding: 12px 14px 12px 12px; /* 変更: 8px 10px 8px 8px → 12px 14px 12px 12px */
+        gap: 14px;                   
+        padding: 12px 14px 12px 12px; 
         border-radius: 8px;
     }
 
     .related-thumb {
-        flex: 0 0 100px; /* 変更: 72px → 100px */
-        width: 100px;    /* 変更: 72px → 100px */
-        height: 70px;    /* 変更: 52px → 70px */
+        flex: 0 0 100px; 
+        width: 100px;    
+        height: 70px;    
     }
 
     .related-title {
-        font-size: 14px; /* 変更: 13px → 14px */
+        font-size: 14px; 
     }
 
     .related-date {
-        font-size: 12px; /* 変更: 11px → 12px */
+        font-size: 12px; 
     }
 }

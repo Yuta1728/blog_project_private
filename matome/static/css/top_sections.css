@@ -482,7 +482,7 @@
     white-space: nowrap;
 }
 
-/* PCでボタンのラベル行スペーサー（縦位置調整） */
+
 .index-search-label-spacer {
     display: block;
     height: 18px;
@@ -829,7 +829,7 @@
         align-items: stretch;
     }
 
-    /* 各フィールドを全幅に */
+
     .index-search-genre,
     .index-search-keyword,
     .index-search-action {
@@ -837,7 +837,7 @@
         width: 100%;
     }
 
-    /* iOS で自動ズームを防ぐため16px以上に */
+
     .index-search-select,
     .index-search-input {
         font-size: 15px;
@@ -856,7 +856,7 @@
         margin-bottom: 5px;
     }
 
-    /* SP では縦位置調整スペーサーは不要 */
+
     .index-search-label-spacer {
         display: none;
     }

@@ -283,7 +283,7 @@ h1 {
 [対象要素]：.md-toolbar-wrapper（ツールバー+texareaをまとめるstickyの基準コンテナ）
 ========================================== */
 .md-toolbar-wrapper {
-    position: relative; /* sticky の基準コンテナ */
+    position: relative; 
 }
 
 /* ==========================================
@@ -301,16 +301,10 @@ h1 {
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     margin-bottom: 0 !important;
-
-    /* Sticky ツールバー：ヘッダー(85px)分下げて貼り付く */
     position: sticky;
     top: 85px;
     z-index: 50;
-
-    /* 浮いて見えるよう影を追加 */
     box-shadow: 0 4px 12px rgba(26, 122, 173, 0.12);
-
-    /* スムーズな影の変化 */
     transition: box-shadow 0.2s ease;
 }
 
@@ -450,7 +444,7 @@ h1 {
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
-    scroll-margin-top: calc(85px + 48px + 8px); /* ヘッダー + ツールバー + 余裕 */
+    scroll-margin-top: calc(85px + 48px + 8px); 
 }
 
 

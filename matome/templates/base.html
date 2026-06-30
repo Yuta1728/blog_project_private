@@ -140,11 +140,11 @@
            ============================================================ */
         (function () {
             const header    = document.getElementById('mainHeader');
-            const THRESHOLD = 80;   // このスクロール量（px）以下では常に表示
-            const DELTA     = 5;    // この幅（px）未満の微細な動きは無視する
+            const THRESHOLD = 80;   
+            const DELTA     = 5;    
 
-            let lastScrollY  = window.scrollY;  // 前回の scrollY を記録
-            let ticking      = false;            // rAF のスロットリング用フラグ
+            let lastScrollY  = window.scrollY;  
+            let ticking      = false;            
 
             function updateHeader() {
                 const currentScrollY = window.scrollY;

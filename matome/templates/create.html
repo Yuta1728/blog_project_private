@@ -345,7 +345,7 @@ function onOneSelect(input) {
  * 指定インデックスの画像を削除して再描画。
  */
 function deleteImage(index) {
-    _saveCaptions();          // 削除前に現在のキャプション入力値を保存
+    _saveCaptions();          
     _fileList.splice(index, 1);
     _captions.splice(index, 1);
     _syncInputFiles();

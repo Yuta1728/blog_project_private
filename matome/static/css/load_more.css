@@ -14,7 +14,7 @@
 [対象要素]：.load-more-wrap（ボタンを中央寄せするflexコンテナ・JS制御で表示切替）
 ========================================== */
 .load-more-wrap {
-    display: none;          /* JS で flex に切り替える */
+    display: none;         
     align-items: center;
     justify-content: center;
     gap: 12px;
