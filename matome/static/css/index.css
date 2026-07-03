@@ -11,6 +11,21 @@
     margin-top: 15px;
 }
 
+/* ========================================
+   [追加] ページ送り時にスクロールを戻す目印。
+   固定ヘッダー（position: fixed）の下に隠れないよう
+   scroll-margin-top をヘッダーの高さ分だけ確保しておく。
+   ======================================== */
+#index-articles-anchor {
+    scroll-margin-top: 100px;
+}
+
+@media (max-width: 767px) {
+    #index-articles-anchor {
+        scroll-margin-top: 80px;
+    }
+}
+
 
 /* ===========================
    記事カード共通
@@ -259,6 +274,85 @@ a[role="button"]:hover {
 }
 
 
+/* ===========================
+   ページ番号によるページ送り
+   =========================== */
+
+/* ========================================
+   [追加] 「もっと見る／表示を減らす」ボタンを廃止し、
+   ページ番号によるページ送り UI に置き換え。
+   ボタン群は load_more.css の配色トーンを踏襲しつつ、
+   現在のページを塗りつぶし（.active）で強調する。
+   ======================================== */
+.index-pagination {
+    display: none; /* JS側で totalPages > 1 のときだけ flex に切り替える */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0 40px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #0369a1;
+    background-color: #ffffff;
+    border: 1px solid #7dd3fa;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    background-color: #dbeafe;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
+    transform: translateY(-1px);
+}
+
+.page-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #bae6fd;
+}
+
+.page-btn.active {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+}
+
+.page-btn.active:hover {
+    background-color: #0369a1;
+    border-color: #0369a1;
+    color: #ffffff;
+}
+
+.page-btn-arrow {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+
 /* ==========================================================================
    レスポンシブ（スマホ）
    ========================================================================== */
@@ -334,5 +428,16 @@ a[role="button"]:hover {
         inset: 0;
         z-index: 1;
     }
-}
 
+    .index-pagination {
+        gap: 6px;
+        margin: 8px 0 32px;
+    }
+
+    .page-btn {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        font-size: 13px;
+    }
+}

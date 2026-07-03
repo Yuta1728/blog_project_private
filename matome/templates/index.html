@@ -2,7 +2,6 @@
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
 
 
@@ -46,6 +45,10 @@
             </div>
         </div>
     {% endif %}
+    {# ========================================================= #}
+
+    {# ===== ページ送り時にここへスクロールを戻すための目印 ===== #}
+    <div id="index-articles-anchor"></div>
     {# ========================================================= #}
 
     {# ===== 記事一覧の見出し ===== #}
@@ -116,18 +119,8 @@
         </p>
     {% endfor %}
 
-    {# ===== 「もっと見る」「表示を減らす」ボタン ===== #}
-    <div class="load-more-wrap" id="index-load-more-wrap">
-        <button class="load-less-btn" id="index-load-less-btn" type="button"
-                onclick="indexLoadLess()">
-            ▲ 表示を減らす
-        </button>
-        <button class="load-more-btn" id="index-load-more-btn" type="button"
-                onclick="indexLoadMore()">
-            もっと見る
-            <span class="load-more-count" id="index-load-more-count"></span>
-        </button>
-    </div>
+    {# ===== ページ番号によるページ送り ===== #}
+    <nav class="index-pagination" id="index-pagination" aria-label="記事一覧のページ送り"></nav>
     {# ================================================ #}
 
 
@@ -140,58 +133,103 @@
 </div>
 
 <script>
+/* ============================================================
+   記事一覧のページ送り（ページ番号方式）
+   ------------------------------------------------------------
+   従来の「もっと見る／表示を減らす」による追加表示方式は、
+   ページが縦に伸び続けてスクロール量が増えてしまい、
+   どこからが新しく表示された記事なのか分かりにくいという
+   課題があったため、1ページあたり PAGE_SIZE 件ずつを表示し、
+   下部のページ番号ボタンで表示を「切り替える」方式に変更した。
+
+   記事自体はこれまでと同様にサーバー側で全件レンダリングされており、
+   JS側では表示するカードを display: none / '' で切り替えているだけ
+   （サーバーへの再リクエストは発生しない）。
+
+   ページを切り替えた際は、ユーザーが毎回一覧の先頭まで
+   手動でスクロールし直す必要がないよう、
+   #index-articles-anchor へ自動でスムーズスクロールする。
+   ============================================================ */
 (function () {
-    var INITIAL = 4;   // 初期表示件数（これより多い記事数がある場合に「もっと見る」を表示）
-    var STEP    = 4;   // 「もっと見る」クリック時の追加表示件数
+    var PAGE_SIZE = 5;   // 1ページあたりの表示件数
 
-    var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
-    var total   = cards.length;
-    var shown   = 0;
+    var cards = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
+    var total = cards.length;
+    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var currentPage = 1;
 
-    var wrap      = document.getElementById('index-load-more-wrap');
-    var countEl   = document.getElementById('index-load-more-count');
-    var lessBtn   = document.getElementById('index-load-less-btn');
-    var moreBtn   = document.getElementById('index-load-more-btn');
+    var nav    = document.getElementById('index-pagination');
+    var anchor = document.getElementById('index-articles-anchor');
 
-    cards.forEach(function (c) { c.style.display = 'none'; });
+    function showPage(page, opts) {
+        opts = opts || {};
+        currentPage = Math.min(Math.max(page, 1), totalPages);
 
-    function showCards(n) {
-        var end = Math.min(shown + n, total);
-        for (var i = shown; i < end; i++) {
-            cards[i].style.display = '';
+        var start = (currentPage - 1) * PAGE_SIZE;
+        var end   = start + PAGE_SIZE;
+
+        cards.forEach(function (card, i) {
+            card.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        renderPagination();
+
+        if (opts.scroll && anchor) {
+            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        shown = end;
-        updateBtn();
     }
 
-    function hideCards(n) {
-        var end = Math.max(shown - n, INITIAL);
-        for (var i = end; i < shown; i++) {
-            cards[i].style.display = 'none';
+    function makeButton(label, extraClass) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'page-btn' + (extraClass ? ' ' + extraClass : '');
+        btn.textContent = label;
+        return btn;
+    }
+
+    function renderPagination() {
+        if (!nav) return;
+        nav.innerHTML = '';
+
+        /* 1ページに収まる件数しかない場合はページ送り自体を表示しない */
+        if (totalPages <= 1) {
+            nav.style.display = 'none';
+            return;
         }
-        shown = end;
-        updateBtn();
+        nav.style.display = 'flex';
+
+        /* 前へ */
+        var prevBtn = makeButton('‹', 'page-btn-arrow');
+        prevBtn.setAttribute('aria-label', '前のページ');
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', function () {
+            showPage(currentPage - 1, { scroll: true });
+        });
+        nav.appendChild(prevBtn);
+
+        /* ページ番号 1, 2, 3 ... */
+        for (var p = 1; p <= totalPages; p++) {
+            (function (pageNum) {
+                var btn = makeButton(String(pageNum), pageNum === currentPage ? 'active' : '');
+                btn.setAttribute('aria-current', pageNum === currentPage ? 'page' : 'false');
+                btn.addEventListener('click', function () {
+                    showPage(pageNum, { scroll: true });
+                });
+                nav.appendChild(btn);
+            })(p);
+        }
+
+        /* 次へ */
+        var nextBtn = makeButton('›', 'page-btn-arrow');
+        nextBtn.setAttribute('aria-label', '次のページ');
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', function () {
+            showPage(currentPage + 1, { scroll: true });
+        });
+        nav.appendChild(nextBtn);
     }
 
-    function updateBtn() {
-        var remaining = total - shown;
-
-        /* ラッパー：記事数が INITIAL 件以下なら常に非表示。
-           それ以外（INITIAL 件より多い）は「もっと見る」or「表示を減らす」のどちらかが必ず必要なので表示。 */
-        wrap.style.display = (total <= INITIAL) ? 'none' : 'flex';
-
-        /* もっと見るボタン：残件数0なら非表示 */
-        moreBtn.style.display  = remaining > 0 ? 'inline-flex' : 'none';
-        countEl.textContent    = 'あと ' + remaining + ' 件';
-
-        /* 表示を減らすボタン：INITIAL件より多く表示中なら表示 */
-        lessBtn.style.display  = shown > INITIAL ? 'inline-flex' : 'none';
-    }
-
-    window.indexLoadMore = function () { showCards(STEP); };
-    window.indexLoadLess = function () { hideCards(STEP); };
-
-    showCards(INITIAL);
+    showPage(1);
 })();
 </script>
 
