@@ -1,17 +1,25 @@
-/* static/css/top_sections.css
-   hero・howto・stats・about・search_area セクション共通スタイル
-   ================================================= */
+/* static/css/top_sections.css - Coastal Dawn v2（白ヘッダー・視認性改善版） */
+
+
+/* ===========================
+   自己紹介見出し 
+   =========================== */
+.hero-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
+    padding-bottom: 10px;
+    margin: 0 0 20px;
+    text-align: left;
+    letter-spacing: 0.02em;
+    margin-top: 45px;
+}
 
 
 /* ===========================
    共通：セクション間余白
    =========================== */
-
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero・howto・stats セクション共通 外余白
-[対象要素]：.hero-section・.howto-section・.stats-section（各セクション下余白）
-========================================== */
 .hero-section,
 .howto-section,
 .stats-section {
@@ -23,77 +31,58 @@
    hero セクション
    =========================== */
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero セクション コンテナ
-[対象要素]：.hero-section（アバター+自己紹介テキストを横並びにするカード）
-========================================== */
+/* ========================================
+   [修正] hero カードも記事カードと同じ
+   左アクセントラインデザインに統一。
+   背景は白、外枠は #bae6fd で視認性◎。
+   ======================================== */
 .hero-section {
     display: flex;
     align-items: center;
     gap: 24px;
     background: #ffffff;
-    border: 1px solid #7cb9e1;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     padding: 28px 32px;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero セクション アバター画像
-[対象要素]：.hero-avatar img（丸型アバター画像）
-========================================== */
 .hero-avatar img {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    border: 3px solid #c5dff0;
-    background: #edf8ff;
+    border: 3px solid #bae6fd;
+    background: #e0f2fe;
     flex-shrink: 0;
     display: block;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero セクション テキストエリア
-[対象要素]：.hero-body（名前・自己紹介テキスト・リンクボタンを縦並びにするエリア）
-========================================== */
 .hero-body {
     flex: 1;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero セクション ブログ名テキスト
-[対象要素]：.hero-name（「〇〇のブログ」タイトルテキスト）
-========================================== */
+/* ========================================
+   [変更・維持] ブログ名を明朝体に変更。
+   色は #0c1f35 で白背景上の視認性を確保。
+   ======================================== */
 .hero-name {
     font-size: 20px;
-    font-weight: 800;
-    color: #0d3a52;
+    font-weight: 700;
+    color: #0c1f35;
     margin: 0 0 10px;
     text-align: left;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero セクション 自己紹介テキスト
-[対象要素]：.hero-bio（キャッチコピー・自己紹介一文）
-========================================== */
 .hero-bio {
+    font-weight: 500;
     font-size: 15px;
     color: #2a4a5e;
     line-height: 1.75;
     margin: 0;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：hero セクション リンクボタン群
-[対象要素]：.hero-links・.hero-link-btn（「自己紹介を読む」「使い方を見る」ボタン）
-========================================== */
 .hero-links {
     display: flex;
     gap: 10px;
@@ -101,14 +90,19 @@
     flex-wrap: wrap;
 }
 
+/* ========================================
+   [修正] hero リンクボタンのテキストを
+   #0369a1 に強化。#e0f2fe 背景上でも
+   明確に視認できるコントラストを確保。
+   ======================================== */
 .hero-link-btn {
     display: inline-block;
     padding: 8px 18px;
     font-size: 13px;
     font-weight: 600;
-    color: #1a5f85;
-    background: #edf8ff;
-    border: 1.5px solid #8cc8e8;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fa;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.18s;
@@ -116,9 +110,9 @@
 }
 
 .hero-link-btn:hover {
-    background: #dff0fb;
-    border-color: #1a7aad;
-    color: #0d3a52;
+    background: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
     text-decoration: none;
 }
 
@@ -127,37 +121,28 @@
    howto セクション
    =========================== */
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：howto セクション コンテナ
-[対象要素]：.howto-section（使い方の簡易説明カード・左アクセントライン）
-========================================== */
+/* ========================================
+   [修正] howto も左アクセントラインデザインに
+   統一。背景を #f4fbff に設定し白カードとの
+   差を出しつつ、文字は十分に読める色に。
+   ======================================== */
 .howto-section {
     background: #f4fbff;
-    border: 1px solid #c5dff0;
-    border-left: 4px solid #1a7aad;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     padding: 24px 28px;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.08);
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：howto セクション 見出し
-[対象要素]：.howto-title（セクションタイトルテキスト）
-========================================== */
 .howto-title {
     font-size: 16px;
     font-weight: 700;
-    color: #0d3a52;
+    color: #0c1f35;
     margin: 0 0 16px;
     text-align: left;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：howto セクション 各項目リスト
-[対象要素]：.howto-list・.howto-item・.howto-icon（使い方の箇条書きリスト）
-========================================== */
 .howto-list {
     list-style: none;
     margin: 0;
@@ -168,6 +153,7 @@
 }
 
 .howto-item {
+    font-weight: 500;
     display: flex;
     align-items: flex-start;
     gap: 14px;
@@ -183,7 +169,7 @@
 }
 
 .howto-item strong {
-    color: #0d3a52;
+    color: #0c1f35;
     font-weight: 700;
 }
 
@@ -192,22 +178,19 @@
    stats セクション
    =========================== */
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：stats セクション コンテナ
-[対象要素]：.stats-section（統計カードを横並びにするflexコンテナ）
-========================================== */
+/* ========================================
+   [修正] stats カードの上部に 3px の
+   セルリアンラインを追加（ヘッダーと連動）。
+   数値は明朝体×#0369a1 で品格を出す。
+   白背景カードを #f0f9ff の page 上に
+   置くことで浮き上がり感が生まれる。
+   ======================================== */
 .stats-section {
     display: flex;
-    gap: 27px;
+    gap: 16px;
     height: 70%;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：stats セクション 各統計カード
-[対象要素]：.stats-card（総投稿数・ハッシュタグ数・最終更新日を表示する1枚カード）
-========================================== */
 .stats-card {
     flex: 1;
     display: flex;
@@ -216,34 +199,35 @@
     justify-content: center;
     gap: 4px;
     background: #ffffff;
-    border: 1px solid #7cb9e1;
-    border-radius: 12px;
-    padding: 12px 10px;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.06);
+    border: 1.5px solid #7dd3fa;
+    border-top: 4px solid #0ea5e9;
+    border-radius: 0 0 12px 12px;
+    padding: 16px 10px;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.12);
     text-align: center;
 }
 
-/* ==========================================
-[画面名]：indexページ（トップ）
-[機能名]：stats セクション カード内テキスト
-[対象要素]：.stats-icon・.stats-number・.stats-label（絵文字・数値・ラベル）
-========================================== */
 .stats-icon {
     font-size: 20px;
     line-height: 1;
 }
 
+/* ========================================
+   [修正] 数値を #0369a1（濃いセルリアン）に。
+   従来の #1a7aad より明確に読める。
+   明朝体で記念碑的な存在感を持たせる。
+   ======================================== */
 .stats-number {
-    font-size: 24px;
-    font-weight: 800;
-    color: #1a7aad;
+    font-size: 26px;
+    font-weight: 700;
+    color: #0369a1;
     line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
 }
 
 .stats-label {
     font-size: 12px;
-    color: #5a8ba8;
+    color: #4a7a96;
     font-weight: 600;
     letter-spacing: 0.03em;
 }
@@ -252,33 +236,22 @@
 /* ===========================
    記事一覧見出し（indexページ）
    =========================== */
-
-/* ==========================================
-[画面名]：indexページ
-[機能名]：記事一覧セクション見出し
-[対象要素]：.posts-section-title（「最新の記事」等のセクション見出し・下線アクセント）
-========================================== */
 .posts-section-title {
     font-size: 16px;
     font-weight: 700;
-    color: #0d3a52;
-    border-bottom: 2px solid #1a7aad;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
     padding-bottom: 10px;
     margin: 0 0 20px;
     text-align: left;
     letter-spacing: 0.02em;
+    border-top: 100px;
 }
 
 
 /* ===========================
    about・howto 静的情報ページ共通
    =========================== */
-
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ コンテナ
-[対象要素]：.info-page-container（最大幅・中央寄せ・余白）
-========================================== */
 .info-page-container {
     max-width: 720px;
     margin: 0 auto;
@@ -286,11 +259,6 @@
     box-sizing: border-box;
 }
 
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ ページヘッダー（アバター+タイトル）
-[対象要素]：.info-page-header・.info-page-avatar・.info-page-title
-========================================== */
 .info-page-header {
     display: flex;
     align-items: center;
@@ -302,39 +270,30 @@
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    border: 3px solid #c5dff0;
-    background: #edf8ff;
+    border: 3px solid #bae6fd;
+    background: #e0f2fe;
     flex-shrink: 0;
 }
 
 .info-page-title {
     font-size: 22px;
-    font-weight: 800;
-    color: #0d3a52;
+    font-weight: 700;
+    color: #0c1f35;
     margin: 0;
     text-align: left;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
 }
 
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ 本文カード
-[対象要素]：.info-page-body（各セクションを囲むカード型コンテナ）
-========================================== */
 .info-page-body {
     background: #ffffff;
-    border: 1px solid #c5dff0;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     padding: 32px 36px;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
     margin-bottom: 28px;
 }
 
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ 各セクション
-[対象要素]：.info-section（カード内の各セクションエリア・下余白）
-========================================== */
 .info-section {
     margin-bottom: 32px;
 }
@@ -343,38 +302,24 @@
     margin-bottom: 0;
 }
 
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ セクション見出し
-[対象要素]：.info-section-title（左アクセントライン付きの中見出し）
-========================================== */
 .info-section-title {
     font-size: 17px;
     font-weight: 700;
-    color: #0d3a52;
-    border-left: 4px solid #1a7aad;
+    color: #0c1f35;
+    border-left: 4px solid #0ea5e9;
     padding-left: 12px;
     margin: 0 0 12px;
     text-align: left;
 }
 
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ 本文テキスト
-[対象要素]：.info-section p（各セクションの説明テキスト）
-========================================== */
 .info-section p {
+    font-weight: 500;
     font-size: 15px;
     color: #2a4a5e;
     line-height: 1.8;
     margin: 0;
 }
 
-/* ==========================================
-[画面名]：aboutページ・howtoページ
-[機能名]：静的情報ページ フッター「トップに戻る」ボタン
-[対象要素]：.info-page-footer・.info-back-btn（「← トップに戻る」リンクボタン・ホバー状態）
-========================================== */
 .info-page-footer {
     text-align: center;
 }
@@ -384,17 +329,17 @@
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 600;
-    color: #1a5f85;
-    border: 1.5px solid #8cc8e8;
+    color: #0369a1;
+    border: 1px solid #7dd3fa;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.18s;
 }
 
 .info-back-btn:hover {
-    background: #dff0fb;
-    border-color: #1a7aad;
-    color: #0d3a52;
+    background: #e0f2fe;
+    border-color: #0ea5e9;
+    color: #0c1f35;
     text-decoration: none;
 }
 
@@ -403,38 +348,27 @@
    インページ検索エリア（indexページ）
    =========================== */
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア コンテナ
-[対象要素]：.index-search-area（ジャンル選択・キーワード・ボタンをまとめるカード）
-========================================== */
+/* ========================================
+   [修正] 検索エリアは白カード。
+   #f0f9ff の page 背景上でしっかり浮き上がる。
+   ======================================== */
 .index-search-area {
     background: #ffffff;
-    border: 1px solid #c5dff0;
+    border: 1.5px solid #7dd3fa;
     border-radius: 12px;
     padding: 20px 24px 22px;
-    margin-bottom: 28px;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    margin-bottom: 40px;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア 見出し
-[対象要素]：.index-search-title（「記事を探す」見出しテキスト）
-========================================== */
 .index-search-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
-    color: #1a5f85;
+    color: #0369a1;
     margin: 0 0 18px;
     letter-spacing: 0.03em;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア フォーム（横並びレイアウト）
-[対象要素]：.index-search-form（ジャンル・キーワード・ボタンをflex横並びにするform）
-========================================== */
 .index-search-form {
     display: flex;
     align-items: flex-end;
@@ -442,46 +376,37 @@
     flex-wrap: wrap;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア 各フィールド共通
-[対象要素]：.index-search-field（各入力グループのflex縦並びラッパー）
-========================================== */
 .index-search-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
-/* ジャンル選択：固定幅 */
 .index-search-genre {
     flex: 0 0 180px;
 }
 
-/* キーワード：残り幅を埋める */
 .index-search-keyword {
     flex: 1 1 180px;
     min-width: 160px;
 }
 
-/* ボタンエリア：コンテンツ幅 */
 .index-search-action {
     flex: 0 0 auto;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア ラベル
-[対象要素]：.index-search-label（「ジャンル」「キーワード」フィールド名）
-========================================== */
+/* ========================================
+   [修正] ラベルテキストを #4a7a96 に強化。
+   従来の #5a8ba8 より濃く、白背景上でも
+   明確に読める。
+   ======================================== */
 .index-search-label {
     font-size: 12px;
     font-weight: 700;
-    color: #5a8ba8;
+    color: #4a7a96;
     letter-spacing: 0.02em;
     white-space: nowrap;
 }
-
 
 .index-search-label-spacer {
     display: block;
@@ -489,26 +414,26 @@
     pointer-events: none;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア ジャンル選択セレクト
-[対象要素]：.index-search-select-wrap・.index-search-select・.index-search-select-arrow
-========================================== */
 .index-search-select-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
 
+/* ========================================
+   [修正] セレクト・テキスト入力の背景を
+   #f0f9ff（淡水色）に設定。白カード上で
+   入力エリアと背景の区別がつきやすい。
+   ======================================== */
 .index-search-select {
     width: 100%;
     appearance: none;
     -webkit-appearance: none;
     padding: 10px 36px 10px 14px;
     font-size: 14px;
-    color: #0d3a52;
-    background: #f5f9fd;
-    border: 1.5px solid #c5dff0;
+    color: #0c1f35;
+    background: #f0f9ff;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     outline: none;
     cursor: pointer;
@@ -520,60 +445,54 @@
 }
 
 .index-search-select:focus {
-    border-color: #1a7aad;
-    background: #fff;
+    border-color: #0ea5e9;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* カスタム矢印アイコン */
 .index-search-select-arrow {
     position: absolute;
     right: 10px;
     width: 16px;
     height: 16px;
-    color: #5a8ba8;
+    color: #4a7a96;
     pointer-events: none;
     flex-shrink: 0;
     transition: color 0.18s;
 }
 
 .index-search-select-wrap:focus-within .index-search-select-arrow {
-    color: #1a7aad;
+    color: #0ea5e9;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア キーワード入力
-[対象要素]：.index-search-input-wrap・.index-search-input-icon・.index-search-input・.index-search-clear
-========================================== */
 .index-search-input-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-/* 検索アイコン（input の左端） */
 .index-search-input-icon {
     position: absolute;
     left: 12px;
     width: 16px;
     height: 16px;
-    color: #8cc8e8;
+    color: #7dd3fa;
     pointer-events: none;
     flex-shrink: 0;
     transition: color 0.18s;
 }
 
 .index-search-input-wrap:focus-within .index-search-input-icon {
-    color: #1a7aad;
+    color: #0ea5e9;
 }
 
 .index-search-input {
     width: 100%;
     padding: 10px 36px 10px 36px;
     font-size: 14px;
-    color: #0d3a52;
-    background: #f5f9fd;
-    border: 1.5px solid #c5dff0;
+    color: #0c1f35;
+    background: #f0f9ff;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     outline: none;
     font-family: inherit;
@@ -582,15 +501,19 @@
 }
 
 .index-search-input:focus {
-    border-color: #1a7aad;
-    background: #fff;
+    border-color: #0ea5e9;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* ========================================
+   [修正] プレースホルダーを #7ab8d8 に。
+   存在はわかるが邪魔にならないトーン。
+   ======================================== */
 .index-search-input::placeholder {
-    color: #8cc8e8;
+    color: #7ab8d8;
 }
 
-/* クリアボタン（×） */
 .index-search-clear {
     position: absolute;
     right: 8px;
@@ -602,7 +525,7 @@
     background: none;
     border: none;
     border-radius: 50%;
-    color: #8cc8e8;
+    color: #7ab8d8;
     font-size: 13px;
     cursor: pointer;
     padding: 0;
@@ -615,11 +538,6 @@
     background: #fff0ee;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア 検索ボタン
-[対象要素]：.index-search-btn（「検索する」ボタン・ホバー・押下状態）
-========================================== */
 .index-search-btn {
     display: inline-flex;
     align-items: center;
@@ -627,36 +545,29 @@
     padding: 10px 22px;
     font-size: 14px;
     font-weight: 700;
-    color: #fff;
-    background: #1a7aad;
+    color: #ffffff;
+    background: #0ea5e9;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-family: inherit;
     letter-spacing: 0.02em;
     white-space: nowrap;
-    transition: background-color 0.18s, box-shadow 0.18s, transform 0.13s;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.20);
+    transition: background-color 0.18s, transform 0.13s;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
     min-height: 42px;
 }
 
 .index-search-btn:hover {
-    background: #155f8a;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.28);
+    background: #0369a1;
     transform: translateY(-1px);
 }
 
 .index-search-btn:active {
     transform: translateY(0);
-    box-shadow: none;
-    background: #0f4a6e;
+    background: #075985;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：インページ検索エリア 絞り込み解除リンク
-[対象要素]：.index-search-reset（「絞り込みを解除」リンク・赤系警告色）
-========================================== */
 .index-search-reset {
     display: inline-block;
     margin-top: 6px;
@@ -665,9 +576,9 @@
     color: #c0392b;
     text-decoration: none;
     padding: 4px 10px;
-    border: 1.5px solid #f5b7b1;
+    border: 1px solid #f5b7b1;
     border-radius: 20px;
-    background: #fff;
+    background: #ffffff;
     transition: all 0.15s;
     white-space: nowrap;
 }
@@ -684,14 +595,7 @@
    レスポンシブ（スマホ）
    ========================================================================== */
 
-/* スマホ（〜600px） */
 @media (max-width: 600px) {
-
-    /* ==========================================
-    [画面名]：indexページ（トップ）（スマホ）
-    [機能名]：hero セクション（スマホ縦積み）
-    [対象要素]：.hero-section・.hero-avatar img・.hero-name・.hero-bio・.hero-links・.hero-link-btn
-    ========================================== */
     .hero-section {
         flex-direction: column;
         align-items: flex-start;
@@ -709,6 +613,7 @@
     }
 
     .hero-bio {
+    font-weight: 500;
         font-size: 14px;
     }
 
@@ -721,11 +626,6 @@
         text-align: center;
     }
 
-    /* ==========================================
-    [画面名]：indexページ（トップ）（スマホ）
-    [機能名]：howto セクション（スマホ縮小）
-    [対象要素]：.howto-section・.howto-title・.howto-item・.howto-icon
-    ========================================== */
     .howto-section {
         padding: 18px 16px;
     }
@@ -735,6 +635,7 @@
     }
 
     .howto-item {
+    font-weight: 500;
         font-size: 13px;
         gap: 10px;
     }
@@ -743,17 +644,12 @@
         font-size: 18px;
     }
 
-    /* ==========================================
-    [画面名]：indexページ（トップ）（スマホ）
-    [機能名]：stats セクション（スマホ縮小）
-    [対象要素]：.stats-section・.stats-card・.stats-icon・.stats-number・.stats-label
-    ========================================== */
     .stats-section {
         gap: 10px;
     }
 
     .stats-card {
-        padding: 16px 8px;
+        padding: 14px 8px;
     }
 
     .stats-icon {
@@ -768,11 +664,6 @@
         font-size: 11px;
     }
 
-    /* ==========================================
-    [画面名]：aboutページ・howtoページ（スマホ）
-    [機能名]：静的情報ページ（スマホ全幅・角丸なし）
-    [対象要素]：.info-page-container・.info-page-header・.info-page-avatar・.info-page-title・.info-page-body・.info-section-title・.info-section p
-    ========================================== */
     .info-page-container {
         padding: 20px 0 48px;
     }
@@ -794,9 +685,7 @@
 
     .info-page-body {
         padding: 24px 16px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
+        border-radius: 0 10px 10px 0;
     }
 
     .info-section-title {
@@ -804,18 +693,14 @@
     }
 
     .info-section p {
+    font-weight: 500;
         font-size: 14px;
     }
 
-    /* ==========================================
-    [画面名]：indexページ（スマホ）
-    [機能名]：インページ検索エリア（スマホ縦積みレイアウト）
-    [対象要素]：.index-search-area・.index-search-title・.index-search-form・各フィールド・ボタン・解除リンク
-    ========================================== */
     .index-search-area {
         padding: 16px 14px 18px;
         border-radius: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 30px;
     }
 
     .index-search-title {
@@ -829,14 +714,12 @@
         align-items: stretch;
     }
 
-
     .index-search-genre,
     .index-search-keyword,
     .index-search-action {
         flex: none;
         width: 100%;
     }
-
 
     .index-search-select,
     .index-search-input {
@@ -855,7 +738,6 @@
         margin-top: 7px;
         margin-bottom: 5px;
     }
-
 
     .index-search-label-spacer {
         display: none;

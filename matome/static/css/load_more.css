@@ -1,20 +1,7 @@
-/* static/css/load_more.css
-   「もっと見る」「表示を減らす」ボタン共通スタイル
-   index.html / mypage.html の両方から読み込む
-   ================================================= */
+/* static/css/load_more.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   もっと見る / 表示を減らす ボタン共通
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」「表示を減らす」ボタン ラッパー
-[対象要素]：.load-more-wrap（ボタンを中央寄せするflexコンテナ・JS制御で表示切替）
-========================================== */
 .load-more-wrap {
-    display: none;         
+    display: none;
     align-items: center;
     justify-content: center;
     gap: 12px;
@@ -22,11 +9,6 @@
     flex-wrap: wrap;
 }
 
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」「表示を減らす」ボタン 共通スタイル
-[対象要素]：.load-more-btn・.load-less-btn（形状・トランジション共通定義）
-========================================== */
 .load-more-btn,
 .load-less-btn {
     display: inline-flex;
@@ -39,89 +21,56 @@
     cursor: pointer;
     font-family: inherit;
     letter-spacing: 0.02em;
-    transition: background-color 0.2s ease,
-                border-color     0.2s ease,
-                color            0.2s ease,
-                box-shadow       0.2s ease,
-                transform        0.15s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-
-/* ===========================
-   「もっと見る」ボタン
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」ボタン
-[対象要素]：.load-more-btn（通常状態・ホバー状態・押下状態）
-========================================== */
 .load-more-btn {
     background-color: #ffffff;
-    color: #1a5f85;
-    border: 1.5px solid #8cc8e8;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.08);
+    color: #0369a1;
+    border: 1px solid #7dd3fa;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.10);
 }
 
 .load-more-btn:hover {
-    background-color: #dff0fb;
-    border-color: #5aaedc;
-    color: #0d3a52;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.14);
+    background-color: #dbeafe;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.18);
     transform: translateY(-1px);
 }
 
 .load-more-btn:active {
     transform: translateY(0);
     box-shadow: none;
-    background-color: #c5dff0;
+    background-color: #bae6fd;
 }
 
-
-/* ===========================
-   「表示を減らす」ボタン
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「表示を減らす」ボタン
-[対象要素]：.load-less-btn（通常状態・ホバー状態・押下状態）
-========================================== */
 .load-less-btn {
     background-color: #ffffff;
-    color: #5a8ba8;
-    border: 1.5px solid #c5dff0;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.05);
+    color: #4a7a96;
+    border: 1px solid #bae6fd;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.06);
 }
 
 .load-less-btn:hover {
-    background-color: #f4fbff;
-    border-color: #8cc8e8;
-    color: #0d3a52;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.10);
+    background-color: #f0f9ff;
+    border-color: #7dd3fa;
+    color: #0c1f35;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
     transform: translateY(-1px);
 }
 
 .load-less-btn:active {
     transform: translateY(0);
     box-shadow: none;
-    background-color: #e4f3fb;
+    background-color: #e0f2fe;
 }
 
-
-/* ===========================
-   残件数バッジ
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」ボタン内 残件数バッジ
-[対象要素]：.load-more-count（「あと〇件」バッジ・ホバー時色変更）
-========================================== */
 .load-more-count {
     display: inline-block;
-    background: #e4f3fb;
-    color: #1a7aad;
+    background: #dbeafe;
+    color: #0369a1;
     font-size: 12px;
     font-weight: 700;
     padding: 2px 10px;
@@ -133,29 +82,12 @@
 }
 
 .load-more-btn:hover .load-more-count {
-    background-color: #c5dff0;
+    background-color: #bae6fd;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜600px） */
 @media (max-width: 600px) {
-
-    /* ==========================================
-    [画面名]：indexページ・mypageページ（スマホ）
-    [機能名]：「もっと見る」「表示を減らす」ボタン（スマホ全幅・縦積み）
-    [対象要素]：.load-more-wrap・.load-more-btn・.load-less-btn
-    ========================================== */
-    .load-more-wrap {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .load-more-btn,
-    .load-less-btn {
+    .load-more-wrap { flex-direction: column; gap: 8px; }
+    .load-more-btn, .load-less-btn {
         width: 100%;
         justify-content: center;
         padding: 14px 24px;

@@ -1,15 +1,5 @@
-/* static/css/detail.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/detail.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   detailページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事詳細ページ コンテナ
-[対象要素]：.detail-container（最大幅・中央寄せ・余白）
-========================================== */
 .detail-container {
     max-width: 860px !important;
     margin: 0 auto;
@@ -17,84 +7,57 @@
     box-sizing: border-box;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文カード
-[対象要素]：article（本文全体を囲むカード型コンテナ）
-========================================== */
+/* 記事本文カード — 左アクセントラインで一覧カードと統一 */
 article {
     background: #fff;
     padding: 52px 60px;
-    border: 1px solid #c5dff0;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     margin-bottom: 32px;
     box-sizing: border-box;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事タイトル
-[対象要素]：h1（記事の大タイトル）
-========================================== */
 h1 {
-    font-size: 25px;
-    font-weight: 800;
-    color: #0d3a52;
+    font-size: 24px;
+    font-weight: 700;
+    color: #0c1f35;
     margin: 0 0 20px;
     text-align: left;
     line-height: 1.4;
     letter-spacing: -0.02em;
 }
 
-
-/* ===========================
-   記事メタ情報
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事ジャンルバッジ
-[対象要素]：.genre-badge（ジャンル名を示すバッジ）
-========================================== */
+/* メタ情報 */
 .genre-badge {
-    background-color: #e7f7ff;
-    color: #1a5f85;
+    background-color: #dbeafe;
+    color: #0369a1;
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 13px;
     margin-bottom: 8px;
     font-weight: 600;
-    border: 1px solid #9fd0ec;
+    border: 1px solid #38bdf8;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事メタ情報エリア
-[対象要素]：.post-meta（ジャンル・投稿者・日時・タグをまとめるエリア）
-========================================== */
 .post-meta {
     display: flex;
     flex-direction: column;
     gap: 8px;
     font-size: 13px;
-    color: #5a8ba8;
+    color: #4a7a96;
     margin-bottom: 36px;
     padding-bottom: 24px;
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 1px solid #e0f2fe;
     width: 100%;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事 投稿者情報
-[対象要素]：.post-user-info（アバター画像・ニックネームを横並びで表示）
-========================================== */
 .post-user-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #1a5f85;
+    color: #0369a1;
     font-weight: 600;
     font-size: 12px;
 }
@@ -103,54 +66,32 @@ h1 {
     width: 21px;
     height: 21px;
     border-radius: 50%;
-    background: #dff0fb;
-    border: 1px solid #c5dff0;
+    background: #dbeafe;
+    border: 1px solid #7dd3fa;
     margin: 0 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事 投稿・更新日時テキスト
-[対象要素]：.post-time（「投稿日時：〇〇」「更新日時：〇〇」テキスト）
-========================================== */
-.post-time {
-    color: #5a8ba8;
-    font-size: 12px;
-}
+.post-time { color: #4a7a96; font-size: 12px; }
 
-
-/* ===========================
-   目次（TOC）
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次ブロック コンテナ
-[対象要素]：.post-toc・.detail-article-body .toc（目次全体の枠・左アクセントライン）
-========================================== */
+/* 目次 */
 .post-toc,
 .detail-article-body .toc {
-    background-color: #f4fbff !important;
-    border: 1px solid #90c6e8 !important;
-    border-left: 4px solid #1a7aad !important;
-    border-radius: 8px;
+    background-color: #f0f9ff !important;
+    border: 1px solid #7dd3fa !important;
+    border-left: 4px solid #0ea5e9 !important;
+    border-radius: 0 8px 8px 0;
     padding: 20px 24px;
     margin: 36px 0;
     box-sizing: border-box;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 タイトル（.toc直上の::before疑似要素）
-[対象要素]：.detail-article-body .toc::before（「目次」テキストの自動挿入）
-========================================== */
 .detail-article-body .toc::before {
     content: "目次" !important;
     display: block !important;
     font-weight: 700 !important;
     font-size: 15px !important;
     margin: 0 0 14px !important;
-    color: #0d3a52 !important;
+    color: #0c1f35 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -158,19 +99,12 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 タイトルテキスト
-[対象要素]：.toc-title・.toc-fixed .toc-title・.toc-sticky .toc-title（「目次」見出し）
-========================================== */
-.post-toc .toc-title,
-.toc-fixed .toc-title,
-.toc-sticky .toc-title {
+.post-toc .toc-title, .toc-fixed .toc-title, .toc-sticky .toc-title {
     display: block !important;
     font-weight: 700 !important;
-    font-size: 17px !important;
+    font-size: 16px !important;
     margin: 0 0 14px !important;
-    color: #0d3a52 !important;
+    color: #0c1f35 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -178,14 +112,7 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 リスト外枠（h2レベル）
-[対象要素]：.post-toc > ul・.detail-article-body .toc > ul（最外ul）
-========================================== */
-.post-toc > ul,
-.post-toc .toc > ul,
-.detail-article-body .toc > ul {
+.post-toc > ul, .post-toc .toc > ul, .detail-article-body .toc > ul {
     list-style-type: none !important;
     padding-left: 0 !important;
     margin: 0 !important;
@@ -193,25 +120,11 @@ h1 {
     display: block !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 見出しへのスクロールオフセット
-[対象要素]：.detail-article-body h1・h2・h3（目次クリック時の到達位置をstickyヘッダー分オフセット）
-========================================== */
 .detail-article-body h1,
 .detail-article-body h2,
-.detail-article-body h3 {
-    scroll-margin-top: 100px;
-}
+.detail-article-body h3 { scroll-margin-top: 100px; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 大見出し項目（h2レベル）
-[対象要素]：.post-toc > ul > li・.detail-article-body .toc > ul > li
-========================================== */
-.post-toc > ul > li,
-.post-toc .toc > ul > li,
-.detail-article-body .toc > ul > li {
+.post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li {
     text-align: left !important;
     margin-bottom: 0 !important;
     padding: 11px 0 !important;
@@ -220,32 +133,18 @@ h1 {
     display: block !important;
     background: none !important;
     border: none !important;
-    border-bottom: 1px solid #9ccced !important;
-    color: #0d3a52 !important;
+    border-bottom: 1px solid #bae6fd !important;
+    color: #0c1f35 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 中見出しリスト（h3レベル）
-[対象要素]：.post-toc ul ul・.detail-article-body .toc ul ul（入れ子ul）
-========================================== */
-.post-toc ul ul,
-.post-toc .toc ul ul,
-.detail-article-body .toc ul ul {
+.post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul {
     list-style-type: none !important;
     padding-left: 20px !important;
     margin: 6px 0 0 !important;
     display: block !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 中見出し項目（h3レベル）
-[対象要素]：.post-toc ul ul li・.detail-article-body .toc ul ul li（・マーカー付き）
-========================================== */
-.post-toc ul ul li,
-.post-toc .toc ul ul li,
-.detail-article-body .toc ul ul li {
+.post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
     font-size: 14px !important;
     font-weight: normal !important;
     padding: 4px 0 !important;
@@ -255,61 +154,38 @@ h1 {
     color: #2a4a5e !important;
 }
 
-.post-toc ul ul li::before,
-.post-toc .toc ul ul li::before,
-.detail-article-body .toc ul ul li::before {
+.post-toc ul ul li::before, .post-toc .toc ul ul li::before, .detail-article-body .toc ul ul li::before {
     content: "•" !important;
-    color: #5a8ba8 !important;
+    color: #38bdf8 !important;
     margin-right: 6px !important;
     font-size: 13px !important;
 }
 
-/* 最後の大見出し項目*/
-.post-toc > ul > li:last-child,
-.post-toc .toc > ul > li:last-child,
-.detail-article-body .toc > ul > li:last-child {
+.post-toc > ul > li:last-child, .post-toc .toc > ul > li:last-child, .detail-article-body .toc > ul > li:last-child {
     margin-bottom: 0 !important;
     border-bottom: none !important;
     padding-bottom: 0 !important;
 }
 
-/* 最初の大見出し項目*/
-.post-toc > ul > li:first-child,
-.post-toc .toc > ul > li:first-child,
-.detail-article-body .toc > ul > li:first-child {
+.post-toc > ul > li:first-child, .post-toc .toc > ul > li:first-child, .detail-article-body .toc > ul > li:first-child {
     padding-top: 4px !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 リンク
-[対象要素]：.post-toc a・.detail-article-body .toc a（クリックで見出しへ移動・ホバー状態）
-========================================== */
-.post-toc a,
-.detail-article-body .toc a {
-    color: #1a6a96 !important;
+.post-toc a, .detail-article-body .toc a {
+    color: #0369a1 !important;
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
 }
 
-.post-toc a:hover,
-.detail-article-body .toc a:hover {
-    color: #1a7aad !important;
+.post-toc a:hover, .detail-article-body .toc a:hover {
+    color: #0ea5e9 !important;
     text-decoration: underline !important;
 }
 
-
-/* ===========================
-   記事本文
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文エリア 基本スタイル
-[対象要素]：.detail-article-body（マークダウン変換後HTML全体の文字・行間）
-========================================== */
+/* 記事本文 */
 .detail-article-body {
+    font-weight: 400;
     font-size: 17px;
     line-height: 1.8;
     word-break: break-word;
@@ -318,298 +194,60 @@ h1 {
     color: #1e3a4f;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 太字テキスト
-[対象要素]：.detail-article-body strong
-========================================== */
-.detail-article-body strong {
-    font-weight: 700 !important;
-    color: #0d3a52;
-}
+.detail-article-body strong { font-weight: 700 !important; color: #0c1f35; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 段落
-[対象要素]：.detail-article-body p
-========================================== */
-.detail-article-body p {
-    margin-top: 9px !important;
-    margin-bottom: 1.4em;
-    font-size: 17px;
-}
+.detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 17px; font-weight: 400; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 H2見出し
-[対象要素]：.detail-article-body h2（下線付き大見出し）
-========================================== */
 .detail-article-body h2 {
-    font-size: 23px;
+    font-size: 22px;
     font-weight: 700;
-    border-bottom: 2px solid #b0d5ec;
+    border-bottom: 2px solid #7dd3fa;
     padding-bottom: 6px;
     margin: 40px 0 16px;
     text-align: left;
-    color: #0d3a52;
+    color: #0c1f35;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 H3見出し
-[対象要素]：.detail-article-body h3（左線付き中見出し）
-========================================== */
 .detail-article-body h3 {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     margin: 28px 0 0;
     text-align: left;
-    color: #0d3a52;
-    border-left: 3px solid #5aaedc;
+    color: #0c1f35;
+    border-left: 4px solid #0ea5e9;
     padding-left: 10px;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文内 埋め込み画像
-[対象要素]：article img（本文中の画像・中央寄せ・角丸）
-========================================== */
-article img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 25px auto;
-    border-radius: 5px;
-}
+article img { max-width: 100%; height: auto; display: block; margin: 25px auto; border-radius: 5px; }
 
+/* 画像キャプション */
+.post-figure { display: block; margin: 16px auto 8px; text-align: center; }
+.post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
+.post-figcaption { margin-top: 6px; text-align: center !important; font-size: 15px; color: #0369a1; line-height: 1.5; display: block; width: 100%; }
+.post-figure + p { margin-top: 0.6em; }
 
-/* ===========================
-   画像キャプション表示
-   =========================== */
+/* 地図 */
+.post-map-wrapper { margin: 24px 0; border-radius: 0 10px 10px 0; overflow: hidden; border: 1.5px solid #7dd3fa; border-left: 4px solid #0ea5e9; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); }
+.post-map-label { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0369a1; background: #f0f9ff; border-bottom: 1px solid #7dd3fa; }
+.post-map-iframe { width: 100%; height: 380px; border: none; display: block; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：画像キャプション付き figure
-[対象要素]：.post-figure（figureタグ全体・中央寄せ）
-========================================== */
-.post-figure {
-    display: block;
-    margin: 16px auto 8px;
-    text-align: center;
-}
+/* YouTube */
+.post-youtube-wrapper { margin: 24px 0; border-radius: 10px; overflow: hidden; border: 1px solid #7dd3fa; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.post-youtube-facade { position: absolute; inset: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.post-youtube-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s ease; }
+.post-youtube-facade:hover .post-youtube-thumb { filter: brightness(0.85); }
+.post-youtube-play-btn { position: absolute; background: none; border: none; cursor: pointer; padding: 0; transition: transform 0.15s ease; }
+.post-youtube-facade:hover .post-youtube-play-btn { transform: scale(1.1); }
+.yt-btn-bg { fill: #ff0000; fill-opacity: 0.9; transition: fill-opacity 0.15s ease; }
+.post-youtube-facade:hover .yt-btn-bg { fill-opacity: 1; }
+.yt-btn-icon { fill: #fff; }
+.post-youtube-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：画像キャプション付き figure 内画像
-[対象要素]：.post-figure img（figure内画像・article imgのmarginを上書き）
-========================================== */
-.post-figure img {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block !important;
-    margin: 0 auto !important;
-    border-radius: 5px;
-}
+/* 下部ボタン */
+hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：画像キャプションテキスト
-[対象要素]：.post-figcaption（画像下部のキャプション・中央寄せ）
-========================================== */
-.post-figcaption {
-    margin-top: 6px;
-    text-align: center !important;
-    font-size: 15px;
-    color: #214f69;
-    line-height: 1.5;
-    display: block;
-    width: 100%;
-}
+.detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 32px; flex-wrap: wrap; }
 
-.post-figure + p {
-    margin-top: 0.6em;
-}
-
-
-/* ===========================
-   Google Maps 埋め込み
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：Google Maps 埋め込みブロック
-[対象要素]：.post-map-wrapper（地図全体の外枠・角丸・影）
-========================================== */
-.post-map-wrapper {
-    margin: 24px 0;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #c5dff0;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.09);
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：Google Maps 埋め込みブロック ラベル
-[対象要素]：.post-map-label（地図上部の場所名テキスト）
-========================================== */
-.post-map-label {
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a5f85;
-    background: #f0faff;
-    border-bottom: 1px solid #c5dff0;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：Google Maps 埋め込みブロック iframeエリア
-[対象要素]：.post-map-iframe（実際の地図iframe・高さ380px）
-========================================== */
-.post-map-iframe {
-    width: 100%;
-    height: 380px;
-    border: none;
-    display: block;
-}
-
-
-/* ===========================
-   YouTube 動画埋め込み
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み コンテナ
-[対象要素]：.post-youtube-wrapper（16:9アスペクト比を維持するラッパー）
-========================================== */
-.post-youtube-wrapper {
-    margin: 24px 0;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #c5dff0;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.09);
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #000;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み ファサード（サムネイル表示層）
-[対象要素]：.post-youtube-facade（クリックで再生に切り替わる前面レイヤー）
-========================================== */
-.post-youtube-facade {
-    position: absolute;
-    inset: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み サムネイル画像
-[対象要素]：.post-youtube-thumb（ファサード内のサムネイル・ホバー時に暗転）
-========================================== */
-.post-youtube-thumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: filter 0.2s ease;
-}
-
-.post-youtube-facade:hover .post-youtube-thumb {
-    filter: brightness(0.85);
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み 再生ボタン
-[対象要素]：.post-youtube-play-btn（YouTube公式デザイン準拠の再生ボタンSVG・ホバー拡大）
-========================================== */
-.post-youtube-play-btn {
-    position: absolute;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: transform 0.15s ease;
-}
-
-.post-youtube-facade:hover .post-youtube-play-btn {
-    transform: scale(1.1);
-}
-
-
-.yt-btn-bg {
-    fill: #ff0000;
-    fill-opacity: 0.9;
-    transition: fill-opacity 0.15s ease;
-}
-
-.post-youtube-facade:hover .yt-btn-bg {
-    fill-opacity: 1;
-}
-
-
-.yt-btn-icon {
-    fill: #fff;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み 再生後iframe
-[対象要素]：.post-youtube-iframe（クリック後に動的挿入されるiframe）
-========================================== */
-.post-youtube-iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-}
-
-
-/* ===========================
-   記事下部ボタンエリア
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 区切り線
-[対象要素]：hr（本文とボタンエリアを区切る横線）
-========================================== */
-hr {
-    border: 0;
-    border-top: 1px solid #dff0fb;
-    margin: 0 0 24px;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 ボタンエリア
-[対象要素]：.detail-actions（「前の画面に戻る」「編集する」ボタンを並べるコンテナ）
-========================================== */
-.detail-actions {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    padding: 4px 0 32px;
-    flex-wrap: wrap;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 ボタン共通スタイル
-[対象要素]：.detail-btn（ボタン全種共通の形状・トランジション）
-========================================== */
 .detail-btn {
     display: inline-flex;
     align-items: center;
@@ -622,123 +260,75 @@ hr {
     font-family: inherit;
     letter-spacing: 0.02em;
     text-decoration: none;
-    transition: background-color 0.18s, border-color 0.18s,
-                color 0.18s, box-shadow 0.18s, transform 0.13s;
+    transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.13s;
     white-space: nowrap;
     min-height: 44px;
     line-height: 1;
 }
 
-.detail-btn-icon {
-    width: 17px;
-    height: 17px;
-    flex-shrink: 0;
-}
+.detail-btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 「前の画面に戻る」ボタン
-[対象要素]：.detail-btn-back（アウトライン・グレー系・ホバー・押下状態）
-========================================== */
 .detail-btn-back {
     background-color: #ffffff;
     color: #4a7a96;
-    border: 1.5px solid #a8cfe0;
-    box-shadow: 0 1px 4px rgba(26, 122, 173, 0.07);
+    border: 1px solid #7dd3fa;
+    box-shadow: 0 1px 4px rgba(14, 165, 233, 0.08);
 }
 
 .detail-btn-back:hover {
-    background-color: #f0f8fd;
-    border-color: #5aaedc;
-    color: #0d3a52;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.13);
+    background-color: #f0f9ff;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.14);
     transform: translateY(-1px);
 }
 
-.detail-btn-back:active {
-    transform: translateY(0);
-    box-shadow: none;
-    background-color: #dff0fb;
-}
+.detail-btn-back:active { transform: translateY(0); box-shadow: none; background-color: #dbeafe; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 「この記事を編集する」ボタン（管理者のみ表示）
-[対象要素]：.detail-btn-edit（塗りつぶしアクセントブルー・ホバー・押下状態）
-========================================== */
 .detail-btn-edit {
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #ffffff;
-    border: 1.5px solid #1a7aad;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.22);
+    border: 1px solid #0ea5e9;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
 .detail-btn-edit:hover {
-    background-color: #155f8a;
-    border-color: #155f8a;
+    background-color: #0369a1;
+    border-color: #0369a1;
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.30);
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.30);
     transform: translateY(-1px);
     text-decoration: none;
 }
 
-.detail-btn-edit:active {
-    transform: translateY(0);
-    box-shadow: none;
-    background-color: #0f4a6e;
-}
+.detail-btn-edit:active { transform: translateY(0); box-shadow: none; background-color: #075985; }
 
+/* 関連記事 */
+.related-section { margin-top: 20px; padding-top: 8px; }
 
-/* ===========================
-   関連記事セクション
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事セクション 外枠
-[対象要素]：.related-section（記事下部の関連記事エリア全体）
-========================================== */
-.related-section {
-    margin-top: 30px;
-    padding-top: 8px;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事セクション 見出し
-[対象要素]：.related-heading（「関連記事」見出し・アイコン・サブラベルを横並び）
-========================================== */
 .related-heading {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 700;
-    color: #0d3a52;
-    border-bottom: 2px solid #1a7aad;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
     padding-bottom: 10px;
     margin: 32px 0 14px;
     text-align: left;
     letter-spacing: 0.02em;
 }
 
-.related-heading-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-}
+.related-heading-icon { font-size: 16px; flex-shrink: 0; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事セクション 見出しサブラベル
-[対象要素]：.related-heading-sub（「〇〇を表示中」などのバッジ形式サブラベル）
-========================================== */
 .related-heading-sub {
     font-size: 13px;
     font-weight: 500;
-    color: #2e7198;
-    background: #f8fdff;
-    border: 1px solid #c5dff0;
+    color: #0369a1;
+    background: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 10px;
     padding: 2px 10px;
     margin-left: 4px;
@@ -748,403 +338,106 @@ hr {
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 カードリスト
-[対象要素]：.related-list（関連記事カードを縦に並べるulコンテナ）
-========================================== */
-.related-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+.related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 1件分カード
-[対象要素]：.related-card（サムネイル+テキストを横並びにするリンクカード・ホバー状態）
-========================================== */
+/* 関連記事カードも左アクセントラインデザインで統一 */
 .related-card {
     display: flex;
     align-items: center;
-    gap: 18px; 
+    gap: 18px;
     background: #fff;
-    border: 1px solid #c5dff0;
-    border-radius: 10px;
-    padding: 14px 18px 14px 14px; 
+    border: 1.5px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px 14px 14px;
     text-decoration: none;
     color: inherit;
-    transition: box-shadow 0.18s, border-color 0.18s, transform 0.15s;
+    transition: box-shadow 0.18s, border-color 0.18s, background 0.18s, transform 0.15s;
     overflow: hidden;
 }
 
 .related-card:hover {
-    border-color: #5aaedc;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.12);
+    border-left-color: #f59e0b;
+    border-color: #fbbf24;
+    background: #fffbeb;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
     transform: translateY(-1px);
     text-decoration: none;
     color: inherit;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 サムネイル
-[対象要素]：.related-thumb・img（関連記事カード左側のサムネイル画像）
-========================================== */
 .related-thumb {
-    flex: 0 0 120px; 
-    width: 120px;    
-    height: 85px;    
+    flex: 0 0 120px;
+    width: 120px;
+    height: 85px;
     border-radius: 6px;
     overflow: hidden;
-    background: #dff0fb;
-    border: 1px solid #c5dff0;
+    background: #dbeafe;
+    border: 1px solid #7dd3fa;
+    transition: border-color 0.18s;
 }
 
-.related-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-    margin: 0 !important;
-    border-radius: 0;
-}
+.related-card:hover .related-thumb { border-color: #fbbf24; background: #fef3c7; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 テキストエリア
-[対象要素]：.related-body・.related-title・.related-date（タイトル・日付テキスト）
-========================================== */
-.related-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+.related-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; margin: 0 !important; border-radius: 0; }
+
+.related-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 
 .related-title {
-    font-size: 16px; 
+    font-size: 15px;
     font-weight: 600;
-    color: #0d3a52;
+    color: #0c1f35;
     line-height: 1.45;
     margin: 0;
     overflow: hidden;
     display: -webkit-box;
-    /* stylelint-disable-next-line */
     -webkit-line-clamp: 2;
     line-clamp: 2;
-    /* stylelint-disable-next-line */
     -webkit-box-orient: vertical;
 }
 
-.related-card:hover .related-title {
-    color: #1a7aad;
-}
+.related-card:hover .related-title { color: #0369a1; }
+.related-date { font-size: 12px; color: #0369a1; margin: 0; font-weight: 500; }
 
-.related-date {
-    font-size: 13px; 
-    color: #548ba7;
-    margin: 0;
-}
+/* 後方互換ボタン */
+.detail-ul { display: flex; justify-content: center; gap: 16px; padding: 0; margin: 0; list-style: none; flex-wrap: wrap; }
+.detail-ul-li { background: none; border: none; padding: 0; }
+.detail-ul-li-a { font-size: 14px; color: #0369a1; text-decoration: none; padding: 10px 22px; border: 1px solid #7dd3fa; border-radius: 20px; display: inline-block; transition: all 0.18s; background: none; cursor: pointer; font-family: inherit; }
+.detail-ul-li-a:hover { border-color: #0ea5e9; color: #0c1f35; background: #dbeafe; text-decoration: none; }
 
-
-/* ===========================
-   旧ボタンエリア（後方互換）
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 旧ボタンリスト（後方互換）
-[対象要素]：.detail-ul・.detail-ul-li・.detail-ul-li-a（旧デザインのボタン群・ホバー状態）
-========================================== */
-.detail-ul {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 0;
-    margin: 0;
-    list-style: none;
-    flex-wrap: wrap;
-}
-
-.detail-ul-li {
-    background: none;
-    border: none;
-    padding: 0;
-}
-
-.detail-ul-li-a {
-    font-size: 14px;
-    color: #1a5f85;
-    text-decoration: none;
-    padding: 10px 22px;
-    border: 1.5px solid #8cc8e8;
-    border-radius: 20px;
-    display: inline-block;
-    transition: all 0.18s;
-    background: none;
-    cursor: pointer;
-    font-family: inherit;
-}
-
-.detail-ul-li-a:hover {
-    border-color: #1a7aad;
-    color: #1a7aad;
-    background: #dff0fb;
-    text-decoration: none;
-}
-
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
+/* スマホ */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事詳細コンテナ・本文カード（スマホ全幅・角丸なし）
-    [対象要素]：.detail-container・article・h1
-    ========================================== */
-    .detail-container {
-        padding: 16px 0 48px !important;
-        width: 100% !important;
-        overflow-x: hidden;
-    }
-
-    article {
-        padding: 28px 16px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        margin-bottom: 16px;
-    }
-
-    h1 {
-        font-size: 21px;
-        letter-spacing: -0.01em;
-        line-height: 1.45;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事メタ情報（スマホ縮小）
-    [対象要素]：.post-meta・.post-user-info
-    ========================================== */
-    .post-meta {
-        font-size: 12px;
-        gap: 6px;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-    }
-
-    .post-user-info {
-        font-size: 13px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事本文（スマホ文字サイズ・コードブロック横スクロール対応）
-    [対象要素]：.detail-article-body・p・pre・code・table・h2・h3
-    ========================================== */
+    .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
+    article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }
+    h1 { font-size: 20px; letter-spacing: -0.01em; line-height: 1.45; }
+    .post-meta { font-size: 12px; gap: 6px; margin-bottom: 24px; padding-bottom: 16px; }
+    .post-user-info { font-size: 13px; }
     .detail-article-body {
-        font-size: 15px !important;
-        line-height: 1.75 !important;
-        word-break: break-all;
-    }
-
-    .detail-article-body p {
-        margin-top: 9px !important;
-        margin-bottom: 1.4em;
-        font-size: 15px;
-    }
-
-    .detail-article-body pre,
-    .detail-article-body code,
-    .detail-article-body table {
-        max-width: 100% !important;
-        overflow-x: auto !important;
-        display: block;
-        word-break: normal;
-    }
-
-    .detail-article-body h2 {
-        font-size: 19px;
-        margin: 32px 0 12px;
-    }
-
-    .detail-article-body h3 {
-        font-size: 17px;
-        margin: 24px 0 0;
-        padding-left: 8px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：目次ブロック（スマホ縮小）
-    [対象要素]：.post-toc・.detail-article-body .toc・各li
-    ========================================== */
-    .post-toc,
-    .detail-article-body .toc {
-        padding: 16px !important;
-        border-radius: 6px !important;
-        margin: 24px 0 !important;
-    }
-
-    .post-toc > ul > li,
-    .post-toc .toc > ul > li,
-    .detail-article-body .toc > ul > li {
-        font-size: 14px !important;
-        padding: 10px 0 !important;
-    }
-
-    .post-toc ul ul,
-    .post-toc .toc ul ul,
-    .detail-article-body .toc ul ul {
-        padding-left: 16px !important;
-        margin: 4px 0 0 !important;
-    }
-
-    .post-toc ul ul li,
-    .post-toc .toc ul ul li,
-    .detail-article-body .toc ul ul li {
-        font-size: 13px !important;
-        padding: 5px 0 !important;
-    }
-
-    .post-toc ul ul li::before,
-    .post-toc .toc ul ul li::before,
-    .detail-article-body .toc ul ul li::before {
-        font-size: 12px !important;
-        margin-right: 5px !important;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：Google Maps 埋め込み（スマホ高さ縮小）
-    [対象要素]：.post-map-iframe
-    ========================================== */
-    .post-map-iframe {
-        height: 260px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：YouTube 動画埋め込み（スマホ角丸縮小）
-    [対象要素]：.post-youtube-wrapper
-    ========================================== */
-    .post-youtube-wrapper {
-        border-radius: 6px;
-        margin: 16px 0;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事下部 区切り線・ボタンエリア（スマホ縦積み）
-    [対象要素]：hr・.detail-actions・.detail-btn・.detail-ul・.detail-ul-li-a
-    ========================================== */
-    hr {
-        margin: 0 16px 20px;
-    }
-
-    .detail-actions {
-        flex-direction: column;
-        gap: 10px;
-        padding: 0 16px 28px;
-    }
-
-    .detail-btn {
-        width: 100%;
-        justify-content: center;
-        padding: 13px 24px;
-        font-size: 15px;
-        border-radius: 8px;
-        box-sizing: border-box;
-    }
-
-    .detail-ul {
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        padding: 0 16px 12px;
-        box-sizing: border-box;
-    }
-
-    .detail-ul-li {
-        width: 100%;
-    }
-
-    .detail-ul-li-a {
-        font-size: 15px;
-        padding: 13px 24px;
-        display: block;
-        text-align: center;
-        width: 100%;
-        box-sizing: border-box;
-        min-height: 48px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：画像キャプション（スマホ縮小）
-    [対象要素]：.post-figure・.post-figcaption
-    ========================================== */
-    .post-figure {
-        margin: 12px auto 6px;
-    }
-
-    .post-figcaption {
-        font-size: 12px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：関連記事セクション（スマホ縮小）
-    [対象要素]：.related-section・.related-heading・.related-card・.related-thumb・.related-title
-    ========================================== */
-    .related-section {
-        margin-top: 28px;
-        padding: 0 0 8px;
-    }
-
-    .related-heading {
-        font-size: 16px;
-        margin: 24px 0 12px;
-        padding-bottom: 8px;
-    }
-
-    .related-heading-sub {
-        margin-left: 0;
-        font-size: 11px;
-    }
-
-    .related-list {
-        gap: 8px;
-    }
-
-    .related-card {
-        gap: 14px;                   
-        padding: 12px 14px 12px 12px; 
-        border-radius: 8px;
-    }
-
-    .related-thumb {
-        flex: 0 0 100px; 
-        width: 100px;    
-        height: 70px;    
-    }
-
-    .related-title {
-        font-size: 14px; 
-    }
-
-    .related-date {
-        font-size: 12px; 
-    }
+    font-weight: 500; font-size: 15px !important; line-height: 1.75 !important; word-break: break-all; }
+    .detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 15px; }
+    .detail-article-body pre, .detail-article-body code, .detail-article-body table { max-width: 100% !important; overflow-x: auto !important; display: block; word-break: normal; }
+    .detail-article-body h2 { font-size: 18px; margin: 32px 0 12px; }
+    .detail-article-body h3 { font-size: 16px; margin: 24px 0 0; padding-left: 8px; }
+    .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
+    .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 14px !important; padding: 10px 0 !important; }
+    .post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
+    .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 13px !important; padding: 5px 0 !important; }
+    .post-map-iframe { height: 260px; }
+    .post-youtube-wrapper { border-radius: 6px; margin: 16px 0; }
+    hr { margin: 0 16px 20px; }
+    .detail-actions { flex-direction: column; gap: 10px; padding: 0 16px 28px; }
+    .detail-btn { width: 100%; justify-content: center; padding: 13px 24px; font-size: 15px; border-radius: 8px; box-sizing: border-box; }
+    .detail-ul { flex-direction: column; align-items: center; gap: 12px; padding: 0 16px 12px; box-sizing: border-box; }
+    .detail-ul-li { width: 100%; }
+    .detail-ul-li-a { font-size: 15px; padding: 13px 24px; display: block; text-align: center; width: 100%; box-sizing: border-box; min-height: 48px; }
+    .post-figure { margin: 12px auto 6px; }
+    .post-figcaption { font-size: 12px; }
+    .related-section { margin-top: 28px; padding: 0 0 8px; }
+    .related-heading { font-size: 16px; margin: 24px 0 12px; padding-bottom: 8px; }
+    .related-heading-sub { margin-left: 0; font-size: 11px; }
+    .related-list { gap: 8px; }
+    .related-card { gap: 14px; padding: 12px 14px 12px 12px; border-radius: 0 8px 8px 0; }
+    .related-thumb { flex: 0 0 100px; width: 100px; height: 70px; }
+    .related-title { font-size: 14px; }
+    .related-date { font-size: 12px; }
 }

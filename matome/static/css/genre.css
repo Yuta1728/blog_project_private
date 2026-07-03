@@ -1,100 +1,58 @@
-/* static/css/genre.css - 水色×白 爽やかテーマ版（文字色修正済み） */
+/* static/css/genre.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   genreページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンル一覧ページ タイトル
-[対象要素]：h1（「ジャンル一覧」見出し）
-========================================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     margin: 36px 0 20px;
-    color: #1a1a1a;
+    color: #0c1f35;
     letter-spacing: -0.01em;
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンル一覧 コンテナ
-[対象要素]：.genre-container（リスト全体を囲むカード型コンテナ）
-========================================== */
 .genre-container {
     max-width: 480px;
     margin: 0 auto 60px;
     background: #fff;
-    border: 1px solid #c5dff0;
+    border: 1.5px solid #7dd3fa;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンル一覧 リスト基本スタイル
-[対象要素]：.genre-list・.sub-genre-list（アウターリスト・サブリストの余白リセット）
-========================================== */
 .genre-list, .sub-genre-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-
-/* ===========================
-   「全て表示」リンク
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：「全て表示」リンク
-[対象要素]：.genre-item-all a（全記事表示リンク・ホバー状態）
-========================================== */
+/* 「全て表示」リンク */
 .genre-item-all a {
     display: block;
     padding: 16px 24px;
     font-size: 15px !important;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #0369a1;
     text-decoration: none;
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 1px solid #e0f2fe;
     transition: background 0.15s;
 }
 
 .genre-item-all a:hover {
-    background: #f0f8fd;
-    color: #1a7aad;
+    background: #dbeafe;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-
-/* ===========================
-   ジャンルグループ（アコーディオン）
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンルグループ アコーディオン外枠
-[対象要素]：.genre-group（各カテゴリグループの境界線）
-========================================== */
+/* アコーディオン外枠 */
 .genre-group {
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 1px solid #e0f2fe;
 }
 
 .genre-group:last-child {
     border-bottom: none;
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンルグループ アコーディオン 見出し行
-[対象要素]：.group-title（summary要素・クリックで開閉・矢印アイコン）
-========================================== */
+/* アコーディオン見出し */
 .group-title {
     display: flex;
     justify-content: space-between;
@@ -102,7 +60,7 @@ h1 {
     padding: 15px 24px;
     font-size: 15px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #0c1f35;
     cursor: pointer;
     user-select: none;
     outline: none;
@@ -113,21 +71,16 @@ h1 {
 }
 
 .group-title:hover {
-    background: #f0f8fd;
+    background: #f0f9ff;
 }
 
 .group-title::-webkit-details-marker {
     display: none;
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンルグループ アコーディオン 矢印アイコン
-[対象要素]：.group-title .arrow（開閉状態を示す矢印・回転アニメーション）
-========================================== */
 .group-title .arrow {
     font-size: 10px;
-    color: #8cc8e8;
+    color: #38bdf8;
     display: inline-block;
     transition: transform 0.22s ease, color 0.22s;
     flex-shrink: 0;
@@ -135,36 +88,28 @@ h1 {
 
 details[open] .group-title .arrow {
     transform: rotate(90deg);
-    color: #1a7aad;
+    color: #0ea5e9;
 }
 
 details[open] .group-title {
-    color: #1a1a1a;
-    background: #f0f8fd;
-    border-bottom: 1px solid #dff0fb;
+    color: #0c1f35;
+    background: #f0f9ff;
+    border-bottom: 1px solid #e0f2fe;
 }
 
-
-/* ===========================
-   サブジャンルリスト（アコーディオン内）
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：サブジャンルリスト
-[対象要素]：.sub-genre-list・li・a（アコーディオン内の個別ジャンルリンク・ホバー）
-========================================== */
+/* サブジャンルリスト */
 .sub-genre-list {
-    background: #f8fbfe;
+    background: #f8fdff;
     padding: 4px 0;
 }
 
 .sub-genre-list li a {
+    font-weight: 500;
     display: flex;
     align-items: center;
     padding: 12px 24px 12px 36px;
     font-size: 14px !important;
-    color: #333;
+    color: #0369a1;
     text-decoration: none;
     transition: background 0.15s, color 0.15s;
     min-height: 44px;
@@ -174,26 +119,17 @@ details[open] .group-title {
 .sub-genre-list li a::before {
     content: "–";
     margin-right: 8px;
-    color: #8cc8e8;
+    color: #38bdf8;
     flex-shrink: 0;
 }
 
 .sub-genre-list li a:hover {
-    background: #dff0fb;
-    color: #095984;
+    background: #dbeafe;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-
-/* ===========================
-   フッターリンク
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：一覧に戻るフッターリンク
-[対象要素]：.genre-footer・a（「一覧画面に戻る」リンクボタン・ホバー）
-========================================== */
+/* フッターリンク */
 .genre-footer {
     text-align: center;
     margin: 20px 0 48px;
@@ -201,58 +137,27 @@ details[open] .group-title {
 
 .genre-footer a {
     font-size: 14px;
-    color: #333;
+    color: #0369a1;
     text-decoration: none;
     padding: 10px 22px;
-    border: 1.5px solid #8cc8e8;
+    border: 1px solid #7dd3fa;
     border-radius: 20px;
     display: inline-block;
     transition: all 0.18s;
+    background: #ffffff;
 }
 
 .genre-footer a:hover {
-    border-color: #1a7aad;
-    color: #0c5b86;
-    background: #dff0fb;
+    border-color: #0ea5e9;
+    color: #0c1f35;
+    background: #dbeafe;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：genreページ（スマホ）
-    [機能名]：ページタイトル・コンテナ・リンク（スマホ縮小）
-    [対象要素]：h1・.genre-container・.genre-item-all a・.group-title・.sub-genre-list li a
-    ========================================== */
-    h1 {
-        font-size: 18px;
-        margin: 24px 0 16px;
-    }
-
-    .genre-container {
-        margin: 0 16px 48px;
-        border-radius: 10px;
-    }
-
-    .genre-item-all a {
-        padding: 16px 18px;
-        font-size: 14px !important;
-    }
-
-    .group-title {
-        padding: 14px 18px;
-        font-size: 14px;
-        min-height: 50px;
-    }
-
+    h1 { font-size: 18px; margin: 24px 0 16px; }
+    .genre-container { margin: 0 16px 48px; border-radius: 10px; }
+    .genre-item-all a { padding: 16px 18px; font-size: 14px !important; }
+    .group-title { padding: 14px 18px; font-size: 14px; min-height: 50px; }
     .sub-genre-list li a {
-        padding: 12px 18px 12px 30px;
-        font-size: 14px !important;
-        min-height: 48px;
-    }
+    font-weight: 500; padding: 12px 18px 12px 30px; font-size: 14px !important; min-height: 48px; }
 }

@@ -1,15 +1,5 @@
-/* static/css/mypage.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/mypage.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   mypageページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：マイページ全体コンテナ
-[対象要素]：.mypage-container（最大幅・中央寄せ・余白）
-========================================== */
 .mypage-container {
     max-width: 940px;
     margin: 0 auto;
@@ -17,185 +7,117 @@
     box-sizing: border-box;
 }
 
-
-/* ===========================
-   プロフィールヘッダー
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィールヘッダーカード
-[対象要素]：.profile-header（ニックネーム・投稿数・変更フォームをまとめるカード）
-========================================== */
+/* プロフィールヘッダー */
 .profile-header {
     background: #fff;
     padding: 28px 28px 24px;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     margin-bottom: 30px;
-    border: 1px solid #c5dff0;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィール表示名
-[対象要素]：.profile-title（「〇〇さんのマイページ」タイトル）
-========================================== */
 .profile-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     margin: 0 0 8px 0;
-    color: #0d3a52;
+    color: #0c1f35;
     letter-spacing: -0.01em;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィール ユーザー名表示
-[対象要素]：.profile-username（ログインユーザー名テキスト）
-========================================== */
 .profile-username {
     margin: 4px 0 0;
-    color: #5a8ba8;
+    color: #4a7a96;
     font-size: 13px;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィール 総投稿数表示
-[対象要素]：.profile-post-count（総投稿数テキスト・強調数値）
-========================================== */
 .profile-post-count {
+    font-weight: 500;
     margin: 10px 0 0;
     color: #2a4a5e;
     font-size: 14px;
 }
 
 .profile-post-count strong {
-    color: #1a7aad;
+    color: #0369a1;
     font-weight: 700;
 }
 
-
-/* ===========================
-   ニックネーム変更フォーム
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム ラッパー
-[対象要素]：.nickname-form-wrapper（フォームを区切り線で分けるラッパー）
-========================================== */
+/* ニックネーム変更フォーム */
 .nickname-form-wrapper {
     margin-top: 20px;
     padding-top: 18px;
-    border-top: 1px solid #dff0fb;
+    border-top: 1px solid #e0f2fe;
 }
 
 .nickname-form-wrapper > p,
 .nickname-form label {
     font-size: 13px;
-    color: #5a8ba8;
+    color: #4a7a96;
     margin: 0 0 8px;
     font-weight: 500;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム本体
-[対象要素]：.nickname-form（input・ボタンの横並びflex）
-========================================== */
 .nickname-form {
     display: flex;
     gap: 8px;
     align-items: center;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム テキスト入力欄
-[対象要素]：.nickname-input（ニックネーム入力・フォーカス状態）
-========================================== */
 .nickname-input {
     flex: 1;
     min-width: 0;
     padding: 8px 14px;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 20px;
     font-size: 14px;
     outline: none;
-    transition: border-color 0.18s;
-    background: #f5f9fd;
-    color: #0d3a52;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    background: #f0f9ff;
+    color: #0c1f35;
+    font-family: inherit;
 }
 
 .nickname-input:focus {
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
     background: #fff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム 送信ボタン
-[対象要素]：.nickname-submit-btn（「変更する」ボタン・ホバー状態）
-========================================== */
 .nickname-submit-btn {
     padding: 8px 18px;
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 20px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     transition: background 0.18s;
     white-space: nowrap;
     flex-shrink: 0;
+    font-family: inherit;
 }
 
 .nickname-submit-btn:hover {
-    background-color: #155f8a;
+    background-color: #0369a1;
 }
 
-
-/* ===========================
-   セクション見出し
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ジャンル一覧セクション見出し
-[対象要素]：.section-title-genre（「あなたのジャンル」セクションタイトル）
-========================================== */
+/* セクション見出し */
 .section-title-genre,
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：投稿一覧セクション見出し
-[対象要素]：.section-title-posts（「投稿一覧」セクションタイトル）
-========================================== */
 .section-title-posts {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    color: #0d3a52;
-    border-bottom: 2px solid #1a7aad;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
     padding-bottom: 10px;
     margin: 36px 0 20px;
     letter-spacing: 0.02em;
 }
 
-
-/* ===========================
-   ジャンルタグ一覧
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：使用ジャンルタグ一覧
-[対象要素]：.user-genre-list・.genre-tags・.genre-tag-item・.genre-tag-link
-========================================== */
-.user-genre-list {
-    margin-bottom: 8px;
-}
+/* ジャンルタグ一覧 */
+.user-genre-list { margin-bottom: 8px; }
 
 .genre-tags {
     list-style: none;
@@ -207,8 +129,8 @@
 }
 
 .genre-tag-item {
-    background: #ffffff;
-    border: 1px solid #8cc8e8;
+    background: #dbeafe;
+    border: 1px solid #38bdf8;
     padding: 4px 14px;
     border-radius: 15px;
     display: inline-block;
@@ -216,29 +138,20 @@
 }
 
 .genre-tag-item:hover {
-    background: #dff0fb;
-    border-color: #5aaedc;
+    background: #bae6fd;
+    border-color: #0ea5e9;
 }
 
 .genre-tag-link {
     text-decoration: none;
-    color: #1a5f85;
+    color: #0369a1;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-
-/* ===========================
-   空状態メッセージ
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：投稿ゼロ時の空状態メッセージ
-[対象要素]：.empty-message（投稿がない場合のメッセージ・誘導リンク）
-========================================== */
+/* 空状態メッセージ */
 .empty-message {
-    color: #5a8ba8;
+    color: #4a7a96;
     text-align: center;
     margin-top: 48px;
     font-size: 15px;
@@ -246,84 +159,17 @@
 }
 
 .empty-message a {
-    color: #1a7aad;
+    color: #0369a1;
     text-decoration: underline;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：マイページコンテナ（スマホ余白縮小）
-    [対象要素]：.mypage-container
-    ========================================== */
-    .mypage-container {
-        padding: 15px 12px 48px;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：プロフィールヘッダー（スマホ縮小）
-    [対象要素]：.profile-header・.profile-title
-    ========================================== */
-    .profile-header {
-        padding: 20px 16px 18px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-
-    .profile-title {
-        font-size: 18px;
-    }
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：ニックネーム変更フォーム（スマホ縦積み）
-    [対象要素]：.nickname-form・.nickname-input・.nickname-submit-btn
-    ========================================== */
-    .nickname-form {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-    }
-
-    .nickname-input {
-        font-size: 16px;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    .nickname-submit-btn {
-        text-align: center;
-        margin-top: 4px;
-        padding: 10px;
-        font-size: 14px;
-        border-radius: 20px;
-        width: 100%;
-        min-height: 40px;
-    }
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：セクション見出し・ジャンルタグ（スマホ縮小）
-    [対象要素]：.section-title-genre・.section-title-posts・.genre-tag-item
-    ========================================== */
-    .section-title-genre,
-    .section-title-posts {
-        font-size: 15px;
-        margin: 28px 0 16px;
-    }
-
-    .genre-tag-item {
-        padding: 6px 14px;
-        background-color: #ffffff;
-    }
+    .mypage-container { padding: 15px 12px 48px; width: 100% !important; box-sizing: border-box; }
+    .profile-header { padding: 20px 16px 18px; border-radius: 0 10px 10px 0; margin-bottom: 20px; }
+    .profile-title { font-size: 17px; }
+    .nickname-form { flex-direction: column; align-items: stretch; gap: 8px; }
+    .nickname-input { font-size: 16px; width: 100% !important; box-sizing: border-box; }
+    .nickname-submit-btn { text-align: center; margin-top: 4px; padding: 10px; font-size: 14px; width: 100%; min-height: 40px; }
+    .section-title-genre, .section-title-posts { font-size: 15px; margin: 28px 0 16px; }
+    .genre-tag-item { padding: 6px 14px; }
 }

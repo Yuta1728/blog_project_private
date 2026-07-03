@@ -1,59 +1,49 @@
-/* static/css/base.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/base.css - Coastal Dawn v2（白ヘッダー・視認性改善版） */
+
+/* ===========================
+   Google Fonts
+   =========================== */
 
 /* ===========================
    グローバルリセット・基本設定
    =========================== */
-
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ボックスモデルリセット
-[対象要素]：全要素
-========================================== */
 *, *::before, *::after {
     box-sizing: border-box;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ボディ基本スタイル
-[対象要素]：body（フォント・文字色・背景色・行間）
-========================================== */
+/* ========================================
+   [修正] body 背景を #f0f9ff（淡い水色）に統一。
+   ドットグリッドは視認性を下げるため削除。
+   テキストカラーは #2a4a5e（元の値）を維持し
+   白背景・淡水色背景のどちらでも読みやすくする。
+   ======================================== */
 body {
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: #2a4a5e;
-    background-color: #e1f4ff;
+    background-color: #f0f9ff;
     line-height: 1.7;
+    font-weight: 500;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：見出し基本スタイル
-[対象要素]：h2（ページタイトル・セクション見出し）
-========================================== */
 h2 {
     font-size: 28px;
     font-weight: 700;
     letter-spacing: 0.02em;
     margin: 24px 0;
     text-align: center;
-    color: #0d3a52;
+    color: #0c1f35;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：リンク基本スタイル
-[対象要素]：a（通常状態・ホバー状態）
-========================================== */
 a {
-    color: #2a4a5e;
+    color: #0369a1;
     text-decoration: none;
 }
 
 a:hover {
-    color: #1a7aad;
+    color: #0ea5e9;
     text-decoration: underline;
 }
 
@@ -61,12 +51,6 @@ a:hover {
 /* ===========================
    フラッシュメッセージ
    =========================== */
-
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：フラッシュメッセージ表示
-[対象要素]：.flash-messages ul（メッセージリスト全体）
-========================================== */
 .flash-messages {
     list-style: none;
     padding: 0;
@@ -75,26 +59,16 @@ a:hover {
     text-align: center;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：フラッシュメッセージ表示
-[対象要素]：.flash-messages li（success / info カテゴリ・水色系）
-========================================== */
 .flash-messages li {
     font-size: 14px;
     color: #033f5f;
     background-color: #f4fbff;
-    border: 1px solid #5db4e0;
+    border: 1px solid #7dd3fa;
     padding: 10px 16px;
     margin-bottom: 8px;
     border-radius: 6px;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：フラッシュメッセージ表示
-[対象要素]：.flash-messages li.danger（danger カテゴリ・赤系エラー）
-========================================== */
 .flash-messages li.danger {
     color: #922b21;
     background-color: #fff0ee;
@@ -106,18 +80,18 @@ a:hover {
    ヘッダー
    =========================== */
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ヘッダー固定・スクロール連動表示制御
-[対象要素]：.main-header（sticky固定・スライドアニメーション基底）
-========================================== */
+/* ========================================
+   [修正] 黒ヘッダーを廃止し、白ヘッダーに変更。
+   下部に 3px のセルリアンラインを引くことで
+   「爽やかな水色」らしさを保ちながら
+   清潔感のある仕上がりにする。
+   ======================================== */
 .main-header {
     background-color: #ffffff;
-    border-bottom: 1px solid #6fafda;
+    border-bottom: 3px solid #0ea5e9;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.10);
     width: 100%;
-
-    /* ===== スクロール連動の核心部分 ===== */
-    position: sticky;   
+    position: sticky;
     top: 0;
     z-index: 100;
     transform: translateY(0);
@@ -126,11 +100,6 @@ a:hover {
                 visibility 0s linear 0s;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ヘッダースクロール非表示クラス（JSによる付与）
-[対象要素]：.main-header.header-hidden（下スクロール時にヘッダーを画面外へ退避）
-========================================== */
 .main-header.header-hidden {
     transform: translateY(-100%);
     visibility: hidden;
@@ -138,11 +107,6 @@ a:hover {
                 visibility 0s linear 0.2s;
 }
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ヘッダー内レイアウト
-[対象要素]：.header-container（ロゴ・検索・ナビを横並びにするflexコンテナ）
-========================================== */
 .header-container {
     display: flex;
     align-items: center;
@@ -157,37 +121,38 @@ a:hover {
 
 /* ロゴ */
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ヘッダーロゴ
-[対象要素]：.header-logo（ロゴエリア・リンク・ホバー）
-========================================== */
+/* ========================================
+   [修正] ロゴは Noto Serif JP（明朝体）の
+   インク色（#0c1f35）。白背景上でくっきりと
+   読める十分なコントラストを確保。
+   ======================================== */
 .header-logo {
     flex: 0 0 auto;
 }
 
 .header-logo a {
-    color: #0062b3 !important;
+    color: #0c1f35 !important;
     text-decoration: none !important;
-    font-size: 35px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
     line-height: 1;
     display: block;
 }
 
 .header-logo a:hover {
-    color: #0092e7 !important;
+    color: #0369a1 !important;
     text-decoration: none !important;
 }
 
 /* 検索フォーム */
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ヘッダー検索フォーム
-[対象要素]：.header-search-box（検索バーエリア全体・input・送信ボタン・クリアリンク）
-========================================== */
+/* ========================================
+   [修正] 検索バーを白背景に戻し、
+   セルリアン系のボーダーで統一感を出す。
+   プレースホルダーは #7ab8d8 で
+   薄すぎず、邪魔にならないトーンに。
+   ======================================== */
 .header-search-box {
     flex: 1;
     display: flex;
@@ -198,10 +163,10 @@ a:hover {
 .header-search-box form {
     display: flex;
     align-items: center;
-    background-color: #edf8ff;
+    background-color: #dbeafe;
     border-radius: 20px;
-    padding: 4px 14px;
-    border: 1px solid #3899ce;
+    padding: 5px 14px;
+    border: 1px solid #38bdf8;
     transition: all 0.3s ease;
     width: 100%;
     max-width: 350px;
@@ -209,28 +174,30 @@ a:hover {
 
 .header-search-box form:focus-within {
     background-color: #ffffff;
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
 }
 
 .header-search-box input[type="text"] {
     border: none;
     background: transparent;
     outline: none;
-    padding: 6px 4px;
+    padding: 5px 4px;
     font-size: 14px;
-    color: #0d3a52;
+    color: #0c1f35;
     width: 100%;
+    font-family: inherit;
 }
 
 .header-search-box input[type="text"]::placeholder {
-    color: #4a86a8;
+    color: #5a8ba8;
 }
 
 .search-submit-btn {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #1273b0;
+    color: #0ea5e9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -240,8 +207,8 @@ a:hover {
 }
 
 .search-submit-btn:hover {
-    color: #1a7aad;
-    background-color: #d0ecff;
+    color: #0369a1;
+    background-color: #e0f2fe;
 }
 
 .search-clear-btn {
@@ -260,11 +227,11 @@ a:hover {
 
 /* ナビゲーション */
 
-/* ==========================================
-[画面名]：全ページ共通
-[機能名]：ヘッダーPC用ナビゲーション
-[対象要素]：.header-nav（PCナビリンク一覧・通常リンク・新規投稿アクセントリンク）
-========================================== */
+/* ========================================
+   [修正] 白背景上のナビリンク。
+   テキストを #0369a1（濃いセルリアン）に設定し
+   白背景でも確実に視認できるコントラストを確保。
+   ======================================== */
 .header-nav {
     flex: 0 0 auto;
     display: flex;
@@ -287,53 +254,48 @@ a:hover {
 }
 
 .header-nav ul li a {
-    color: #1a5f85;
+    color: #0369a1;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
-    padding: 8px 16px;
+    padding: 7px 16px;
     border-radius: 20px;
-    background-color: transparent;
-    border: 1.5px solid #8cc8e8;
+    background-color: #e0f2fe;
+    border: 1px solid #38bdf8;
     transition: all 0.18s ease;
     display: inline-block;
     white-space: nowrap;
 }
 
 .header-nav ul li a:hover {
-    color: #0d3a52;
-    border-color: #5aaedc;
-    background-color: #dff0fb;
+    color: #0c1f35;
+    border-color: #0ea5e9;
+    background-color: #bae6fd;
     text-decoration: none;
 }
 
-/* 「新規投稿」アクセントカラー */
+/* 「新規投稿」はセルリアン塗りつぶし */
 .header-nav ul li:first-child a {
-    background-color: #1a7aad;
-    color: #fff;
-    border-color: #1a7aad;
+    background-color: #0ea5e9;
+    color: #ffffff;
+    border-color: #0ea5e9;
+    font-weight: 700;
 }
 
 .header-nav ul li:first-child a:hover {
-    background-color: #155f8a;
-    border-color: #155f8a;
-    color: #fff;
+    background-color: #0369a1;
+    border-color: #0369a1;
+    color: #ffffff;
 }
 
 
 /* ===========================
    ハンバーガーボタン（スマホ）
    =========================== */
-
-/* ==========================================
-[画面名]：全ページ共通（スマホ）
-[機能名]：ハンバーガーメニューボタン
-[対象要素]：.hamburger-btn（スマホ表示時のメニュー開閉ボタン・三本線アイコン）
-========================================== */
 .hamburger-btn {
     display: none;
     background: none;
-    border: 1.5px solid #c5dff0;
+    border: 1.5px solid #bae6fd;
     border-radius: 8px;
     padding: 10px 12px;
     cursor: pointer;
@@ -342,11 +304,15 @@ a:hover {
     flex-shrink: 0;
 }
 
+/* ========================================
+   [修正] 白ヘッダー上のハンバーガーラインは
+   セルリアン系の濃い色で視認性を確保。
+   ======================================== */
 .hamburger-btn span {
     display: block;
     width: 20px;
     height: 2px;
-    background-color: #1a6a96;
+    background-color: #0369a1;
     border-radius: 2px;
     transition: all 0.25s ease;
 }
@@ -355,17 +321,11 @@ a:hover {
 /* ===========================
    ドロワーナビ（スマホ）
    =========================== */
-
-/* ==========================================
-[画面名]：全ページ共通（スマホ）
-[機能名]：スマホ用ドロワーナビゲーション - オーバーレイ
-[対象要素]：.mobile-nav-overlay（背景暗転マスク・open状態制御）
-========================================== */
 .mobile-nav-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(13, 58, 82, 0.45);
+    background: rgba(12, 31, 53, 0.45);
     z-index: 999;
 }
 
@@ -373,11 +333,6 @@ a:hover {
     display: block;
 }
 
-/* ==========================================
-[画面名]：全ページ共通（スマホ）
-[機能名]：スマホ用ドロワーナビゲーション - ドロワー本体
-[対象要素]：.mobile-nav-drawer（右側スライドパネル・open状態アニメーション）
-========================================== */
 .mobile-nav-drawer {
     position: fixed;
     top: 0;
@@ -385,7 +340,7 @@ a:hover {
     width: 270px;
     height: 100dvh;
     background: #ffffff;
-    box-shadow: -4px 0 20px rgba(26, 122, 173, 0.15);
+    box-shadow: -4px 0 20px rgba(14, 165, 233, 0.15);
     z-index: 1000;
     transition: right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
@@ -397,24 +352,20 @@ a:hover {
     right: 0;
 }
 
-/* ==========================================
-[画面名]：全ページ共通（スマホ）
-[機能名]：スマホ用ドロワーナビゲーション - ヘッダー部
-[対象要素]：.mobile-nav-header（ドロワー上部エリア・ロゴ・閉じるボタン）
-========================================== */
 .mobile-nav-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 20px;
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 3px solid #0ea5e9;
+    background: #ffffff;
 }
 
 .mobile-nav-header-logo {
     font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: #1a7aad;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: #0c1f35;
 }
 
 .mobile-nav-close {
@@ -436,14 +387,9 @@ a:hover {
 
 .mobile-nav-close:hover,
 .mobile-nav-close:active {
-    background: #eef6fb;
+    background: #e0f2fe;
 }
 
-/* ==========================================
-[画面名]：全ページ共通（スマホ）
-[機能名]：スマホ用ドロワーナビゲーション - メニューリスト
-[対象要素]：ドロワー内ul・li・a（通常リンク・新規投稿アクセントリンク）
-========================================== */
 .mobile-nav-drawer ul {
     list-style: none;
     margin: 12px 0 0;
@@ -459,30 +405,34 @@ a:hover {
 .mobile-nav-drawer ul li a {
     display: block;
     padding: 14px 16px;
-    color: #1a5f85;
+    color: #0369a1;
     text-decoration: none;
     font-size: 16px;
     font-weight: 500;
     transition: background 0.15s;
     border-radius: 8px;
     min-height: 48px;
+    border-left: 3px solid transparent;
 }
 
 .mobile-nav-drawer ul li a:hover,
 .mobile-nav-drawer ul li a:active {
-    background: #dff0fb;
+    background: #e0f2fe;
+    border-left-color: #0ea5e9;
 }
 
 .mobile-nav-drawer ul li:first-child a {
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #fff;
     margin-bottom: 12px;
     text-align: center;
+    border-left-color: transparent;
+    font-weight: 700;
 }
 
 .mobile-nav-drawer ul li:first-child a:hover,
 .mobile-nav-drawer ul li:first-child a:active {
-    background-color: #155f8a;
+    background-color: #0369a1;
 }
 
 .clear { clear: both; }
@@ -492,14 +442,7 @@ a:hover {
    レスポンシブ（スマホ）
    ========================================================================== */
 
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：全ページ共通（スマホ）
-    [機能名]：ヘッダーレイアウト・ロゴ・PCナビ非表示・ハンバーガー表示
-    [対象要素]：.header-container・.header-logo・.header-nav・.hamburger-btn
-    ========================================== */
     .header-container {
         padding: 0 15px;
         height: 63px;
@@ -518,11 +461,6 @@ a:hover {
         display: flex;
     }
 
-    /* ==========================================
-    [画面名]：全ページ共通（スマホ）
-    [機能名]：フラッシュメッセージ・見出し（スマホ縮小）
-    [対象要素]：.flash-messages・h2
-    ========================================== */
     .flash-messages {
         margin: 12px 16px;
     }
@@ -536,11 +474,6 @@ a:hover {
         margin: 16px 0;
     }
 
-    /* ==========================================
-    [画面名]：全ページ共通（スマホ）
-    [機能名]：ヘッダー検索フォーム（スマホ縮小版）
-    [対象要素]：.header-search-box・form・input・検索アイコン・クリアボタン
-    ========================================== */
     .header-search-box {
         padding: 0 5px;
         flex: 1;
@@ -553,7 +486,6 @@ a:hover {
         max-width: 160px;
         padding: 2px 8px;
         border-radius: 15px;
-        background-color: #eef6fb;
     }
 
     .header-search-box input[type="text"] {
@@ -572,14 +504,7 @@ a:hover {
     }
 }
 
-/* スマホ（〜480px） */
 @media (max-width: 480px) {
-
-    /* ==========================================
-    [画面名]：全ページ共通（極小スマホ）
-    [機能名]：ヘッダー検索フォーム（さらに縮小）
-    [対象要素]：.header-search-box form・placeholder文字サイズ
-    ========================================== */
     .header-search-box form {
         max-width: 145px;
     }

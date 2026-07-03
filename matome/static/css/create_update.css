@@ -1,150 +1,92 @@
-/* static/css/create_update.css - 水色×白 爽やかテーマ版（文字色修正済み） */
+/* static/css/create_update.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   create・updateページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ページタイトル
-[対象要素]：h1（「新規投稿作成」「編集」見出し）
-========================================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     margin: 36px 0 24px;
-    color: #1a1a1a;
+    color: #0c1f35;
     letter-spacing: -0.01em;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：投稿フォームコンテナ
-[対象要素]：.post-form（フォーム全体を囲むカード型コンテナ）
-========================================== */
 .post-form {
     max-width: 720px;
     margin: 0 auto 60px;
     background: #fff;
     padding: 40px 44px;
-    border: 1px solid #c5dff0;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     box-sizing: border-box;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-
-/* ===========================
-   フォーム 入力欄共通
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム ラベル
-[対象要素]：.post-form label（各入力欄のフィールド名テキスト）
-========================================== */
 .post-form label {
     display: block;
     font-weight: 700;
     font-size: 14px;
     margin-bottom: 8px;
-    color: #333;
+    color: #0c1f35;
     letter-spacing: 0.02em;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム テキスト入力・セレクト
-[対象要素]：.post-form input[type="text"]・select（通常状態・フォーカス状態）
-========================================== */
 .post-form input[type="text"],
 .post-form select {
     width: 100% !important;
     padding: 10px 14px;
     font-size: 15px;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     box-sizing: border-box;
     margin-bottom: 22px;
     outline: none;
-    background-color: #f5f9fd;
-    color: #1a1a1a;
-    transition: border-color 0.18s, background 0.18s;
+    background-color: #f0f9ff;
+    color: #0c1f35;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
     font-family: inherit;
 }
 
 .post-form input[type="text"]:focus,
 .post-form select:focus {
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
     background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム 本文テキストエリア
-[対象要素]：.post-form textarea（マークダウン入力欄・等幅フォント・縦リサイズ可）
-========================================== */
 .post-form textarea {
     width: 100% !important;
     padding: 18px !important;
     font-size: 20px !important;
     line-height: 1.9 !important;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Noto Sans JP", "MS Gothic", monospace !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
     letter-spacing: normal !important;
-    border: 1.5px solid #c5dff0 !important;
+    border: 1px solid #7dd3fa !important;
     border-radius: 8px !important;
     box-sizing: border-box !important;
     margin-bottom: 22px !important;
     outline: none !important;
-    background-color: #f5f9fd !important;
-    color: #1a1a1a !important;
+    background-color: #f0f9ff !important;
+    color: #0c1f35 !important;
     min-height: 520px !important;
     resize: vertical !important;
     transition: border-color 0.18s, background 0.18s !important;
 }
 
 .post-form textarea:focus {
-    border-color: #1a7aad !important;
+    border-color: #0ea5e9 !important;
     background-color: #fff !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12) !important;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム 補足説明テキスト
-[対象要素]：.post-form p（各フィールドの説明テキスト）
-========================================== */
-.post-form p {
-    font-size: 15px;
-    color: #555;
-    margin: 0 0 8px;
-    line-height: 1.5;
-}
+.post-form p { font-size: 15px; color: #2a4a5e; margin: 0 0 8px; line-height: 1.5; font-weight: 500; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム ファイル選択入力
-[対象要素]：.post-form input[type="file"]（画像アップロード入力欄）
-========================================== */
-.post-form input[type="file"] {
-    display: block;
-    margin-bottom: 24px;
-    font-size: 13px;
-    color: #333;
-    width: 100%;
-}
+.post-form input[type="file"] { display: block; margin-bottom: 24px; font-size: 13px; color: #0c1f35; width: 100%; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム 送信ボタン
-[対象要素]：.post-form input[type="submit"]（「投稿する」「更新」ボタン・ホバー状態）
-========================================== */
 .post-form input[type="submit"] {
     display: block;
     width: 100%;
     padding: 14px;
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -156,83 +98,43 @@ h1 {
     letter-spacing: 0.02em;
 }
 
-.post-form input[type="submit"]:hover {
-    background-color: #155f8a;
-}
+.post-form input[type="submit"]:hover { background-color: #0369a1; }
 
-
-/* ===========================
-   画像アップロード プレビュー
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビューカード
-[対象要素]：.preview-item（個別画像プレビューの外枠カード）
-========================================== */
+/* プレビューカード */
 .preview-item {
     position: relative;
-    border: 1px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     overflow: hidden;
-    background: #f5f9fd;
+    background: #f0f9ff;
     width: 150px;
     margin-bottom: 8px;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビュー サムネイル
-[対象要素]：.preview-item img（プレビュー画像・固定サイズ・object-fit）
-========================================== */
-.preview-item img {
-    width: 150px;
-    height: 112px;
-    object-fit: cover;
-    display: block;
-}
+.preview-item img { width: 150px; height: 112px; object-fit: cover; display: block; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビュー [imgN]ラベル
-[対象要素]：.preview-label（「[img1]」などの挿入番号ラベル）
-========================================== */
 .preview-label {
     text-align: center;
     font-size: 11px;
     font-weight: 700;
-    color: #333;
+    color: #0369a1;
     padding: 5px 0 3px;
-    background: #dff0fb;
-    border-top: 1px solid #c5dff0;
+    background: #dbeafe;
+    border-top: 1px solid #7dd3fa;
     letter-spacing: 0.03em;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビュー ファイル名
-[対象要素]：.preview-filename（プレビュー下部のファイル名テキスト・省略表示）
-========================================== */
 .preview-filename {
     text-align: center;
     font-size: 10px;
-    color: #888;
+    color: #4a7a96;
     padding: 2px 6px 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-
-/* ===========================
-   公開設定トグルボタン
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：公開設定トグルボタン
-[対象要素]：.toggle-status-btn（「非公開」「全体公開」切替ボタン・状態別スタイル）
-========================================== */
+/* 公開設定トグル */
 .toggle-status-btn {
     display: inline-flex;
     align-items: center;
@@ -243,93 +145,58 @@ h1 {
     font-weight: 700;
     border-radius: 20px;
     cursor: pointer;
-    border: 1.5px solid transparent;
+    border: 1px solid transparent;
     transition: all 0.2s ease;
     font-family: inherit;
     margin-bottom: 22px;
     outline: none;
 }
 
-/* 非公開状態 */
 .toggle-status-btn.private {
-    background-color: #eef6fb;
-    color: #333;
-    border-color: #c5dff0;
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border-color: #7dd3fa;
 }
 
-.toggle-status-btn.private:hover {
-    background-color: #dff0fb;
-}
+.toggle-status-btn.private:hover { background-color: #dbeafe; border-color: #38bdf8; }
 
-/* 全体公開状態 */
 .toggle-status-btn.published {
-    background-color: #dff0fb;
-    color: #1a7aad;
-    border-color: #8cc8e8;
+    background-color: #dbeafe;
+    color: #0369a1;
+    border-color: #38bdf8;
 }
 
-.toggle-status-btn.published:hover {
-    background-color: #c5dff0;
-}
+.toggle-status-btn.published:hover { background-color: #bae6fd; border-color: #0ea5e9; }
 
+/* ツールバー */
+.md-toolbar-wrapper { position: relative; }
 
-/* ===========================
-   マークダウンツールバー
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー ラッパー
-[対象要素]：.md-toolbar-wrapper（ツールバー+texareaをまとめるstickyの基準コンテナ）
-========================================== */
-.md-toolbar-wrapper {
-    position: relative; 
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー本体
-[対象要素]：.md-toolbar（ボタン群を並べるツールバー・sticky固定・スクロール時影追加）
-========================================== */
 .md-toolbar {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     padding: 10px 12px;
-    background: #eef6fb;
-    border: 1.5px solid #c5dff0;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fa;
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     margin-bottom: 0 !important;
     position: sticky;
     top: 85px;
     z-index: 50;
-    box-shadow: 0 4px 12px rgba(26, 122, 173, 0.12);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
     transition: box-shadow 0.2s ease;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー sticky 追従中クラス（JSによる付与）
-[対象要素]：.md-toolbar.is-sticky（スクロール追従中にボーダー・影を強調）
-========================================== */
-.md-toolbar.is-sticky {
-    box-shadow: 0 6px 20px rgba(26, 122, 173, 0.18);
-    border-color: #8cc8e8;
-}
+.md-toolbar.is-sticky { box-shadow: 0 6px 20px rgba(14, 165, 233, 0.18); border-color: #38bdf8; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 共通ボタン
-[対象要素]：.md-btn（ツールバー内の各操作ボタン・ホバー状態）
-========================================== */
 .md-btn {
     padding: 7px 13px;
     font-size: 13px;
     font-weight: 600;
-    color: #333;
+    color: #0c1f35;
     background: #fff;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s;
@@ -340,140 +207,40 @@ h1 {
     text-align: center;
 }
 
-.md-btn:hover,
-.md-btn:active {
-    background: #dff0fb;
-    border-color: #5aaedc;
-    color: #1a1a1a;
-}
+.md-btn:hover, .md-btn:active { background: #dbeafe; border-color: #38bdf8; color: #0c1f35; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー ボタン間区切り線
-[対象要素]：.md-btn-separator（ボタングループ間の縦線）
-========================================== */
 .md-btn-separator {
     display: inline-block;
     width: 1px;
     height: 24px;
-    background: #c5dff0;
+    background: #7dd3fa;
     margin: 0 4px;
     vertical-align: middle;
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 画像挿入ボタン（[imgN]）
-[対象要素]：.md-btn-img（画像挿入ボタン・水色アクセント）
-========================================== */
-.md-btn-img {
-    color: #1a5f85;
-    background: #e7f7ff;
-    border-color: #8cc8e8;
-}
+.md-btn-img { color: #0369a1; background: #dbeafe; border-color: #38bdf8; }
+.md-btn-img:hover, .md-btn-img:active { background: #bae6fd; border-color: #0ea5e9; color: #0c1f35; }
 
-.md-btn-img:hover,
-.md-btn-img:active {
-    background: #c5dff0;
-    border-color: #1a7aad;
-    color: #0d3a52;
-}
+.md-btn-map { color: #166534; background: #dcfce7; border-color: #86efac; }
+.md-btn-map:hover, .md-btn-map:active { background: #bbf7d0; border-color: #4ade80; color: #14532d; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 地図挿入ボタン
-[対象要素]：.md-btn-map（地図挿入ボタン・緑系アクセント）
-========================================== */
-.md-btn-map {
-    color: #1a5f85;
-    background: #e7f7e7;
-    border-color: #7bc87b;
-}
+.md-btn-youtube { color: #fff; background: rgba(220,38,38,0.75); border-color: rgba(185,28,28,0.6); font-weight: 700; }
+.md-btn-youtube:hover, .md-btn-youtube:active { background: rgba(185,28,28,0.85); color: #fff; }
 
-.md-btn-map:hover,
-.md-btn-map:active {
-    background: #c8eec8;
-    border-color: #4caf50;
-    color: #1a3a1a;
-}
+.md-btn-list { display: inline-flex; align-items: center; gap: 5px; color: #0c1f35; }
+.md-btn-list:hover, .md-btn-list:active { background: #dbeafe; border-color: #38bdf8; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー YouTube挿入ボタン
-[対象要素]：.md-btn-youtube（YouTube動画挿入ボタン・赤系アクセント）
-========================================== */
-.md-btn-youtube {
-    color: #fff;
-    background: #ff000082;
-    border-color: #cc000078;
-    font-weight: 700;
-}
-
-.md-btn-youtube:hover,
-.md-btn-youtube:active {
-    background: #cc000096;
-    border-color: #99000094;
-    color: #fff;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 箇条書きリストボタン
-[対象要素]：.md-btn-list（箇条書き挿入ボタン・SVGアイコン付き）
-========================================== */
-.md-btn-list {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: #333;
-}
-
-.md-btn-list:hover,
-.md-btn-list:active {
-    background: #dff0fb;
-    border-color: #5aaedc;
-    color: #1a1a1a;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウン本文テキストエリア
-[対象要素]：#bodyTextarea（ツールバーと接続する本文入力欄・上角丸なし）
-========================================== */
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
-    scroll-margin-top: calc(85px + 48px + 8px); 
+    scroll-margin-top: calc(85px + 48px + 8px);
 }
 
+/* 地図モーダル */
+.map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(12,31,53,0.45); z-index: 1100; }
+.map-modal-overlay.open { display: block; }
 
-/* ===========================
-   地図挿入モーダル
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル オーバーレイ
-[対象要素]：.map-modal-overlay（モーダル背景暗転マスク・open状態制御）
-========================================== */
-.map-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(13, 58, 82, 0.45);
-    z-index: 1100;
-}
-
-.map-modal-overlay.open {
-    display: block;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル 本体
-[対象要素]：.map-modal（中央配置のモーダルダイアログ・open状態制御）
-========================================== */
 .map-modal {
     display: none;
     position: fixed;
@@ -483,42 +250,30 @@ h1 {
     width: min(560px, calc(100vw - 32px));
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(26, 122, 173, 0.18);
+    box-shadow: 0 8px 32px rgba(14,165,233,0.18);
     z-index: 1200;
     overflow: hidden;
     flex-direction: column;
 }
 
-.map-modal.open {
-    display: flex;
-}
+.map-modal.open { display: flex; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル ヘッダー部
-[対象要素]：.map-modal-header（タイトル・閉じるボタンを並べるエリア）
-========================================== */
 .map-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid #dff0fb;
-    background: #f4fbff;
+    border-bottom: 1px solid #e0f2fe;
+    background: #f0f9ff;
 }
 
-.map-modal-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0d3a52;
-}
 
 .map-modal-close {
     background: none;
     border: none;
     font-size: 20px;
     cursor: pointer;
-    color: #5a8ba8;
+    color: #4a7a96;
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -529,87 +284,48 @@ h1 {
     padding: 0;
 }
 
-.map-modal-close:hover {
-    background: #dff0fb;
-    color: #0d3a52;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル ボディ部（入力・プレビュー）
-[対象要素]：.map-modal-body・.map-modal-label・.map-modal-input・.map-preview-area・.map-preview-placeholder・.map-preview-iframe
-========================================== */
-.map-modal-body {
-    padding: 20px 20px 8px;
-}
-
-.map-modal-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a5f85;
-    margin-bottom: 8px;
-}
+.map-modal-close:hover { background: #dbeafe; color: #0c1f35; }
+.map-modal-body { padding: 20px 20px 8px; }
+.map-modal-label { display: block; font-size: 13px; font-weight: 700; color: #0369a1; margin-bottom: 8px; }
 
 .map-modal-input {
     width: 100%;
     padding: 10px 14px;
     font-size: 15px;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     box-sizing: border-box;
     outline: none;
-    background: #f5f9fd;
-    color: #0d3a52;
+    background: #f0f9ff;
+    color: #0c1f35;
     font-family: inherit;
     transition: border-color 0.18s, background 0.18s;
     margin-bottom: 14px;
 }
 
-.map-modal-input:focus {
-    border-color: #1a7aad;
-    background: #fff;
-}
+.map-modal-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
 
-/* プレビューエリア */
 .map-preview-area {
     width: 100%;
     height: 260px;
-    border: 1px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     overflow: hidden;
-    background: #f0f8fd;
+    background: #f0f9ff;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.map-preview-placeholder {
-    color: #7aaec8;
-    font-size: 14px;
-    text-align: center;
-    margin: 0;
-    padding: 0 20px;
-}
+.map-preview-placeholder { color: #4a7a96; font-size: 14px; text-align: center; margin: 0; padding: 0 20px; }
+.map-preview-iframe { width: 100%; height: 100%; border: none; display: block; }
 
-.map-preview-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル フッター部（キャンセル・挿入ボタン）
-[対象要素]：.map-modal-footer・.map-modal-cancel・.map-modal-insert
-========================================== */
 .map-modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     padding: 14px 20px 18px;
-    border-top: 1px solid #dff0fb;
+    border-top: 1px solid #e0f2fe;
 }
 
 .map-modal-cancel {
@@ -617,23 +333,21 @@ h1 {
     font-size: 14px;
     font-weight: 600;
     background: #fff;
-    color: #5a8ba8;
-    border: 1.5px solid #c5dff0;
+    color: #4a7a96;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     cursor: pointer;
     font-family: inherit;
     transition: background 0.15s;
 }
 
-.map-modal-cancel:hover {
-    background: #eef6fb;
-}
+.map-modal-cancel:hover { background: #f0f9ff; }
 
 .map-modal-insert {
     padding: 9px 22px;
     font-size: 14px;
     font-weight: 700;
-    background: #1a7aad;
+    background: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -642,230 +356,46 @@ h1 {
     transition: background 0.18s;
 }
 
-.map-modal-insert:hover:not(:disabled) {
-    background: #155f8a;
-}
+.map-modal-insert:hover:not(:disabled) { background: #0369a1; }
+.map-modal-insert:disabled { background: #bae6fd; cursor: not-allowed; }
 
-.map-modal-insert:disabled {
-    background: #b0d5ec;
-    cursor: not-allowed;
-}
-
-
-/* ===========================
-   画像キャプション入力
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像キャプション入力欄
-[対象要素]：.preview-caption-wrapper・.preview-caption-input（各プレビューカード下部のキャプション入力）
-========================================== */
-.preview-caption-wrapper {
-    padding: 15px 8px 2px;
-    background: #ecf5ff;
-    border-top: 1px solid #c0e6ff;
-}
+/* 画像キャプション */
+.preview-caption-wrapper { padding: 8px 8px 2px; background: #dbeafe; border-top: 1px solid #7dd3fa; }
 
 .preview-caption-input {
     width: 100%;
     padding: 5px 10px;
     font-size: 12px;
-    border: 1.5px solid #b6e0fc;
+    border: 1px solid #38bdf8;
     border-radius: 6px;
     box-sizing: border-box;
     outline: none;
     background: #fff;
-    color: #1a1a1a;
+    color: #0c1f35;
     font-family: inherit;
     transition: border-color 0.18s;
 }
 
-.preview-caption-input:focus {
-    border-color: #1a7aad;
-}
+.preview-caption-input:focus { border-color: #0ea5e9; }
+.preview-caption-input::placeholder { color: #7dd3fa; font-size: 11px; }
 
-.preview-caption-input::placeholder {
-    color: #aac8dc;
-    font-size: 11px;
-}
-
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：ページタイトル（スマホ縮小）
-    [対象要素]：h1
-    ========================================== */
-    h1 {
-        font-size: 17px;
-        margin: 20px 0 16px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：投稿フォームコンテナ（スマホ全幅・角丸なし）
-    [対象要素]：.post-form
-    ========================================== */
-    .post-form {
-        padding: 24px 16px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        margin-bottom: 0;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：フォーム 補足説明・ラベル・入力欄（スマホ縮小・iOS自動ズーム防止）
-    [対象要素]：.post-form p・label・input[type="text"]・select・textarea
-    ========================================== */
-    .post-form p {
-        font-size: 13px;
-        margin: 0 0 6px;
-        line-height: 1.5;
-    }
-
-    .post-form label {
-        font-size: 13px;
-    }
-
-    .post-form input[type="text"],
-    .post-form select {
-        font-size: 16px !important;
-        padding: 12px !important;
-        border-radius: 6px;
-        margin-bottom: 16px;
-    }
-
-    .post-form textarea {
-        font-size: 16px !important;
-        line-height: 1.75 !important;
-        padding: 14px !important;
-        min-height: 320px !important;
-        border-radius: 6px !important;
-        margin-bottom: 16px !important;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：フォーム 送信ボタン（スマホタップ領域確保）
-    [対象要素]：.post-form input[type="submit"]
-    ========================================== */
-    .post-form input[type="submit"] {
-        padding: 14px;
-        font-size: 15px;
-        border-radius: 8px;
-        min-height: 48px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：画像アップロード プレビュー（スマホ2列グリッド）
-    [対象要素]：#preview-list・.preview-item・img
-    ========================================== */
-    #preview-list,
-    .post-form div[style*="display: flex"] {
-        gap: 12px !important;
-        justify-content: flex-start;
-    }
-
-    .preview-item {
-        width: calc(50% - 6px);
-        box-sizing: border-box;
-        margin-bottom: 12px;
-    }
-
-    .preview-item img {
-        width: 100%;
-        height: 110px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：公開設定トグルボタン（スマホ全幅）
-    [対象要素]：.toggle-status-btn
-    ========================================== */
-    .toggle-status-btn {
-        padding: 12px 20px;
-        font-size: 14px;
-        margin-bottom: 16px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：マークダウンツールバー ボタン（スマホタップ領域確保）
-    [対象要素]：.md-btn・.md-btn-list
-    ========================================== */
-    .md-btn {
-        padding: 10px 12px;
-        font-size: 14px;
-        min-width: 48px;
-        min-height: 44px;
-    }
-
-    .md-btn-list {
-        padding: 10px 12px;
-        font-size: 14px;
-        min-width: 48px;
-        min-height: 44px;
-        gap: 4px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：マークダウンツールバー sticky（スマホヘッダー高さ対応）
-    [対象要素]：.md-toolbar・#bodyTextarea
-    ========================================== */
-    .md-toolbar {
-        /* スマホヘッダーは 63px */
-        top: 63px;
-        padding: 8px 10px;
-        gap: 5px;
-        overflow-x: hidden;
-    }
-
-    #bodyTextarea {
-        scroll-margin-top: calc(63px + 56px + 8px);
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：地図挿入モーダル（スマホ下部シート型）
-    [対象要素]：.map-modal・.map-preview-area
-    ========================================== */
-    .map-modal {
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        transform: none;
-        width: 100%;
-        border-radius: 16px 16px 0 0;
-        max-height: 90dvh;
-        overflow-y: auto;
-    }
-
-    .map-preview-area {
-        height: 200px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：画像キャプション入力（スマホ文字サイズ調整）
-    [対象要素]：.preview-caption-input
-    ========================================== */
-    .preview-caption-input {
-        font-size: 14px;
-    }
+    h1 { font-size: 17px; margin: 20px 0 16px; }
+    .post-form { padding: 24px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 0; width: 100% !important; box-sizing: border-box; }
+    .post-form p { font-size: 13px; margin: 0 0 6px; line-height: 1.5; }
+    .post-form label { font-size: 13px; }
+    .post-form input[type="text"], .post-form select { font-size: 16px !important; padding: 12px !important; border-radius: 6px; margin-bottom: 16px; }
+    .post-form textarea { font-size: 16px !important; line-height: 1.75 !important; padding: 14px !important; min-height: 320px !important; border-radius: 6px !important; margin-bottom: 16px !important; }
+    .post-form input[type="submit"] { padding: 14px; font-size: 15px; border-radius: 8px; min-height: 48px; }
+    #preview-list, .post-form div[style*="display: flex"] { gap: 12px !important; justify-content: flex-start; }
+    .preview-item { width: calc(50% - 6px); box-sizing: border-box; margin-bottom: 12px; }
+    .preview-item img { width: 100%; height: 110px; }
+    .toggle-status-btn { padding: 12px 20px; font-size: 14px; margin-bottom: 16px; width: 100%; box-sizing: border-box; }
+    .md-btn { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; }
+    .md-btn-list { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; gap: 4px; }
+    .md-toolbar { top: 63px; padding: 8px 10px; gap: 5px; overflow-x: hidden; }
+    #bodyTextarea { scroll-margin-top: calc(63px + 56px + 8px); }
+    .map-modal { top: auto; bottom: 0; left: 0; right: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 90dvh; overflow-y: auto; }
+    .map-preview-area { height: 200px; }
+    .preview-caption-input { font-size: 14px; }
 }

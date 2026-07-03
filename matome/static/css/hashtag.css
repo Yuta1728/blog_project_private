@@ -1,22 +1,14 @@
-/* static/css/hashtag.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/hashtag.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   ハッシュタグバッジ（共通）
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ・detailページ
-[機能名]：ハッシュタグバッジ（記事カード・詳細ページ共通）
-[対象要素]：.hashtag-badge（タグ名リンクバッジ・通常状態・ホバー状態）
-========================================== */
+/* ハッシュタグバッジ（共通） */
 .hashtag-badge {
     display: inline-block;
-    padding: 3px 10px;
+    padding: 2px 9px;
     font-size: 12px;
     font-weight: 600;
-    color: #0086cf;
-    background-color: #eeeeee;
+    color: #0369a1;
+    background-color: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 7px;
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
@@ -24,17 +16,12 @@
 }
 
 .hashtag-badge:hover {
-    background-color: #c5dff0;
-    border-color: #5aaedc;
-    color: #0d3a52;
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：記事カード内 ハッシュタグバッジ群
-[対象要素]：.post-hashtags（カード内バッジを横並び・折り返しで並べるコンテナ）
-========================================== */
 .post-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -42,11 +29,6 @@
     margin: 4px 0 8px;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事詳細ページ内 ハッシュタグバッジ群
-[対象要素]：.detail-hashtags（詳細ページのメタ情報内バッジコンテナ）
-========================================== */
 .detail-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -54,47 +36,30 @@
     margin-top: 4px;
 }
 
-
-/* ===========================
-   ハッシュタグ絞り込みバー（indexページ）
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ジャンル選択時のハッシュタグ絞り込みバー
-[対象要素]：.hashtag-filter-bar（絞り込みバー全体の枠）
-========================================== */
+/* ハッシュタグ絞り込みバー */
 .hashtag-filter-bar {
     display: flex;
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 10px;
-    background: #fcffff;
-    border: 1px solid #72c9ff;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1.5px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 10px 10px 0;
     padding: 14px 18px;
     margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.08);
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー ラベル
-[対象要素]：.hashtag-filter-label（「タグで絞り込む：」テキスト）
-========================================== */
 .hashtag-filter-label {
     font-size: 13px;
     font-weight: 700;
-    color: #1a5f85;
+    color: #0369a1;
     white-space: nowrap;
     padding-top: 2px;
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー タグリスト
-[対象要素]：.hashtag-filter-list（バッジを横並びで並べるコンテナ）
-========================================== */
 .hashtag-filter-list {
     display: flex;
     flex-wrap: wrap;
@@ -102,19 +67,14 @@
     align-items: center;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー 各タグバッジ
-[対象要素]：.hashtag-filter-badge（通常状態・ホバー状態・選択中状態）
-========================================== */
 .hashtag-filter-badge {
     display: inline-block;
     padding: 4px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #0e5e8a;
-    background-color: #f5ffff;
-    border: 1.5px solid #74cdfd;
+    color: #0369a1;
+    background-color: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -122,30 +82,24 @@
 }
 
 .hashtag-filter-badge:hover {
-    background-color: #dff0fb;
-    border-color: #5aaedc;
-    color: #0d3a52;
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-/* 選択中バッジ */
 .hashtag-filter-badge.active {
-    background-color: #1a7aad;
-    border-color: #1a7aad;
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
     color: #fff;
 }
 
 .hashtag-filter-badge.active:hover {
-    background-color: #155f8a;
-    border-color: #155f8a;
+    background-color: #0369a1;
+    border-color: #0369a1;
     color: #fff;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー タグ解除ボタン
-[対象要素]：.hashtag-filter-clear（「✕ タグ解除」リンク・ホバー状態）
-========================================== */
 .hashtag-filter-clear {
     display: inline-block;
     padding: 4px 12px;
@@ -153,7 +107,7 @@
     font-weight: 700;
     color: #c0392b;
     background-color: #fff;
-    border: 1.5px solid #f5b7b1;
+    border: 1px solid #f5b7b1;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -167,23 +121,14 @@
     text-decoration: none;
 }
 
-
-/* ===========================
-   ハッシュタグ入力エリア（create・updateページ）
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム ラッパー
-[対象要素]：.hashtag-input-wrapper（入力欄全体のボーダー付きラッパー・フォーカス状態）
-========================================== */
+/* ハッシュタグ入力エリア（create/update） */
 .hashtag-input-wrapper {
     display: flex;
     align-items: center;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     padding: 8px 14px;
-    background: #f5f9fd;
+    background: #f0f9ff;
     margin-bottom: 10px;
     transition: border-color 0.18s, background 0.18s;
     box-sizing: border-box;
@@ -191,36 +136,27 @@
 }
 
 .hashtag-input-wrapper:focus-within {
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
     background: #fff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム 「#」プレフィックス
-[対象要素]：.hashtag-prefix（入力欄左端に常時表示する「#」記号）
-========================================== */
 .hashtag-prefix {
     font-size: 16px;
     font-weight: 700;
-    color: #1a7aad;
+    color: #0ea5e9;
     margin-right: 6px;
     user-select: none;
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム テキスト入力
-[対象要素]：.hashtag-text-input（実際の文字入力フィールド）
-========================================== */
 .hashtag-text-input {
     flex: 1;
     border: none !important;
     outline: none !important;
     background: transparent !important;
     font-size: 15px;
-    color: #0d3a52;
+    color: #0c1f35;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -228,11 +164,6 @@
     font-family: inherit;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム リアルタイムプレビューエリア
-[対象要素]：.hashtag-preview-area（入力中のタグをバッジとしてリアルタイム表示するエリア）
-========================================== */
 .hashtag-preview-area {
     display: flex;
     flex-wrap: wrap;
@@ -241,83 +172,34 @@
     margin-bottom: 22px;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム プレビューバッジ
-[対象要素]：.hashtag-badge-preview（プレビューエリア内に表示されるバッジ・出現アニメーション）
-========================================== */
 .hashtag-badge-preview {
     display: inline-block;
     padding: 3px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #1a5f85;
-    background-color: #dff0fb;
-    border: 1px solid #8cc8e8;
+    color: #0369a1;
+    background-color: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 20px;
     animation: badgePop 0.15s ease;
 }
 
 @keyframes badgePop {
     from { transform: scale(0.85); opacity: 0.6; }
-    to   { transform: scale(1);    opacity: 1;   }
+    to   { transform: scale(1);    opacity: 1; }
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：indexページ（スマホ）
-    [機能名]：ハッシュタグ絞り込みバー（スマホ縦積み）
-    [対象要素]：.hashtag-filter-bar・.hashtag-filter-list・.hashtag-filter-badge・.hashtag-filter-clear
-    ========================================== */
     .hashtag-filter-bar {
         flex-direction: column;
         gap: 8px;
         padding: 12px 14px;
         margin-bottom: 16px;
     }
-
-    .hashtag-filter-list {
-        gap: 6px;
-    }
-
-    .hashtag-filter-badge,
-    .hashtag-filter-clear {
-        font-size: 12px;
-        padding: 5px 12px;
-    }
-
-    /* ==========================================
-    [画面名]：indexページ・mypageページ・detailページ（スマホ）
-    [機能名]：ハッシュタグバッジ（スマホ縮小）
-    [対象要素]：.post-hashtags・.detail-hashtags・.hashtag-badge
-    ========================================== */
-    .post-hashtags,
-    .detail-hashtags {
-        gap: 5px;
-    }
-
-    .hashtag-badge {
-        font-size: 11px;
-        padding: 2px 8px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：ハッシュタグ入力フォーム（スマホ調整）
-    [対象要素]：.hashtag-input-wrapper・.hashtag-text-input
-    ========================================== */
-    .hashtag-input-wrapper {
-        padding: 10px 12px;
-    }
-
-    .hashtag-text-input {
-        font-size: 16px !important;
-    }
+    .hashtag-filter-list { gap: 6px; }
+    .hashtag-filter-badge, .hashtag-filter-clear { font-size: 12px; padding: 5px 12px; }
+    .post-hashtags, .detail-hashtags { gap: 5px; }
+    .hashtag-badge { font-size: 11px; padding: 2px 8px; }
+    .hashtag-input-wrapper { padding: 10px 12px; }
+    .hashtag-text-input { font-size: 16px !important; }
 }
