@@ -1,173 +1,196 @@
 # MIT Blog
 
-Flask + PostgreSQL で構築された、個人運用を想定したブログアプリケーションです。
-管理者（単一ユーザー）が記事を投稿・編集し、訪問者は記事の閲覧・検索・ジャンルやハッシュタグでの絞り込みができます。
+Flask + PostgreSQL で構築された個人ブログアプリケーションです。
+マークダウン記法での記事執筆、ジャンル・ハッシュタグによる分類、画像アップロード、Googleマップ/YouTube動画の埋め込みなど、個人ブログ運用に必要な機能を一通り備えています。
 
 ## 主な機能
 
-### 公開ページ
-- 記事一覧（トップページ）／キーワード検索／ジャンル絞り込み／ハッシュタグ絞り込み
-- 記事詳細ページ（マークダウン本文の表示、目次の自動生成）
-- 関連記事の自動表示（同ジャンル＋同タグ → 同タグ → 同ジャンル → 最新記事の順で補完）
-- 「もっと見る」によるページ内の段階的な記事読み込み
-- 自己紹介ページ（/about）、使い方ページ（/howto）、ジャンル一覧ページ（/genre）
+### 記事管理
+- マークダウン形式での記事執筆（見出し・太字・箇条書き・目次 `[toc]` に対応）
+- 本文中に `[img1]` `[img2]` ... と書くだけで任意の位置に画像を挿入
+- `[map:場所名]` でGoogleマップを、`[youtube:URL]` でYouTube動画（クリックで再生するファサード方式）を埋め込み
+- 画像ごとにキャプションを設定可能
+- 画像未アップロード時に使えるプリセットのデフォルトサムネイル（11種類）
+- 公開 / 非公開の切り替え
+- ジャンル分類（プリセットジャンル + 自由入力）
+- ハッシュタグ機能（複数タグ付与、タグからの絞り込み）
 
-### 管理者専用ページ（ログイン必須）
-- 新規投稿（/create）／編集（/update）／削除（/delete）
-- マークダウンエディタ（見出し・太字・箇条書き・目次・地図・YouTube埋め込みのツールバー付き）
-- 画像の複数アップロード、画像ごとのキャプション設定、本文中への `[img1]` 形式での挿入
-- デフォルトサムネイル（画像未アップロード時のジャンル別アイコン）の選択
-- ジャンルの選択またはユーザー独自ジャンルの新規作成
-- ハッシュタグ入力（スペース・カンマ区切り、リアルタイムプレビュー）
-- 記事の公開／非公開切り替え
-- マイページ（投稿一覧、ニックネーム変更、使用ジャンル一覧）
+### 一覧・閲覧
+- トップページでの記事一覧表示（もっと見る／表示を減らすボタンによる段階表示）
+- ジャンル別・ハッシュタグ別の絞り込み
+- キーワード検索（タイトル・ハッシュタグを横断）
+- 記事詳細ページでの自動目次生成
+- ジャンル・ハッシュタグに基づく関連記事のレコメンド（4段階のフォールバックロジック）
+- 投稿数・ハッシュタグ数・最終更新日の統計表示
 
-### 本文中の独自記法
-- `[toc]` … 目次を挿入
-- `[img1]`, `[img2]`, ... … アップロードした画像を順番に挿入（キャプション対応）
-- `[map:場所名]` … Google Maps の埋め込み
-- `[youtube:URL]` … YouTube 動画のサムネイル表示＋クリック再生（ファサード方式）
+### 管理者機能
+- マイページ（自分の投稿一覧、ニックネーム変更）
+- 記事の新規作成・編集・削除
 
-### セキュリティ対策
-- CSRF トークンによるフォーム保護（Flask-WTF）
-- 画像アップロードの多層検証（拡張子チェック → MIME タイプ判定 → ファイル名サニタイズ → UUID によるファイル名ランダム化）
+### セキュリティ
+- CSRF保護（Flask-WTF）
+- ログインURLを環境変数で秘匿化（Security through obscurity）
+- ログイン試行のレート制限（5回失敗で5分間ロックアウト）
+- パスワードはハッシュ化して保存（平文比較を行わない）
+- 画像アップロードの多層検証（拡張子チェック → MIMEタイプ実体チェック → ファイル名サニタイズ → UUIDによるファイル名ランダム化）
 - アップロード合計サイズ制限（30MB）
-- ログインページ URL の隠蔽（`.env` でパスを指定）
-- ログイン試行回数制限によるブルートフォース対策（5回失敗で5分間ロック）
-- 削除処理における Open Redirect 対策（リダイレクト先のオリジン検証）
+- 記事削除後リダイレクトのOpen Redirect対策
 
 ## 技術スタック
 
 | 分類 | 使用技術 |
 |---|---|
-| 言語 | Python 3.10 |
-| フレームワーク | Flask 3.x |
+| フレームワーク | Flask 3.1 |
 | ORM / マイグレーション | Flask-SQLAlchemy, Flask-Migrate (Alembic) |
 | 認証 | Flask-Login |
-| フォーム保護 | Flask-WTF (CSRF) |
-| データベース | PostgreSQL（Docker Compose で起動） |
-| マークダウン変換 | Markdown（toc, nl2br 拡張） |
+| フォーム / CSRF | Flask-WTF |
+| データベース | PostgreSQL 18 (Docker) |
+| DBドライバ | psycopg 3 |
+| マークダウン変換 | Markdown (toc, nl2br 拡張) |
 | 画像検証 | filetype |
-| テンプレートエンジン | Jinja2 |
-| フロントエンド | 素の HTML / CSS / JavaScript（フレームワーク不使用） |
+| フロントエンド | Jinja2テンプレート + Vanilla JS + CSS（フレームワーク非依存） |
 
 ## ディレクトリ構成
 
 ```
 .
-├── app.py                 # アプリケーションファクトリ（create_app）
-├── config.py               # .env から環境変数を読み込み
-├── constants.py             # デフォルトジャンル一覧
-├── extensions.py            # db / login_manager / migrate のインスタンス定義
-├── models.py                # User, Post, Hashtag モデル
-├── docker-compose.yml        # PostgreSQL コンテナ定義
+├── app.py                  # アプリケーションファクトリ（create_app）
+├── config.py                # 環境変数の読み込み
+├── constants.py              # デフォルトジャンル一覧などの定数
+├── extensions.py             # db / login_manager / migrate のインスタンス
+├── models.py                 # User, Post, Hashtag モデル定義
+├── docker-compose.yml         # PostgreSQL コンテナ定義
 ├── migrations/               # Alembic マイグレーションファイル
 ├── views/
-│   ├── auth.py             # ログイン・ログアウト
-│   ├── blog.py             # 一般公開ページ
-│   └── admin.py             # 管理者専用ページ
-├── templates/               # Jinja2 テンプレート
+│   ├── auth.py              # ログイン・ログアウト
+│   ├── blog.py              # 一般公開ページ（一覧・詳細・ジャンル）
+│   └── admin.py             # 管理者専用ページ（投稿・編集・削除・マイページ）
+├── templates/                # Jinja2 テンプレート
 └── static/
-    ├── css/                # 画面別スタイルシート
-    └── img/                # アップロード画像・デフォルトサムネイル
+    ├── css/
+    └── img/
+        ├── posts/           # アップロードされた記事画像
+        └── thbnails/        # プリセットのデフォルトサムネイル
 ```
 
 ## セットアップ
 
-### 1. 必要環境
-- Python 3.10.11
-- Docker / Docker Compose（PostgreSQL 用）
+### 前提条件
+- Python 3.10.11（`.python-version` 参照）
+- Docker / Docker Compose（PostgreSQLコンテナ用）
 
-### 2. リポジトリの取得と仮想環境の作成
+### 1. リポジトリの取得と仮想環境の作成
 
 ```bash
 git clone <このリポジトリのURL>
 cd <リポジトリ名>
 python -m venv venv
-source venv/bin/activate  # Windows の場合は venv\Scripts\activate
+source venv/bin/activate  # Windows の場合: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. 環境変数の設定
+### 2. 環境変数の設定
 
-プロジェクトルートに `.env` ファイルを作成し、以下の値を設定してください。
+プロジェクトルートに `.env` ファイルを作成し、以下の変数を設定してください。
 
 ```env
-# PostgreSQL（docker-compose.yml と一致させる）
+# PostgreSQL 接続情報（docker-compose.yml と対応）
 POSTGRES_USER=your_db_user
 POSTGRES_PASSWORD=your_db_password
 POSTGRES_DB=your_db_name
 
-# 管理者アカウント
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=ハッシュ化済みパスワード
-ADMIN_LOGIN_PATH=推測されにくいログインパス（例: secret-login-xxxx）
+# 管理者認証情報
+ADMIN_USERNAME=your_admin_username
+ADMIN_PASSWORD=your_hashed_password   # werkzeug.security.generate_password_hash() で生成した値
+ADMIN_LOGIN_PATH=your-secret-login-path  # 推測されにくいランダムな文字列を推奨
 
-# Flask
-SECRET_KEY=任意のランダム文字列（本番環境では必須）
+# セッション・CSRF署名用（本番環境では必須）
+SECRET_KEY=your_random_secret_key
 ```
 
-`ADMIN_PASSWORD` は平文ではなく、Werkzeug の `generate_password_hash()` で生成したハッシュ値を使用します。
+管理者パスワードのハッシュ値は、以下のように生成できます。
 
 ```bash
-python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('設定したいパスワード'))"
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your_password'))"
 ```
 
-### 4. データベースの起動
+### 3. データベースの起動
 
 ```bash
 docker compose up -d
 ```
 
-`docker-compose.yml` ではホストの `55432` 番ポートにマッピングされています。
+PostgreSQL コンテナがホストの `55432` 番ポートで起動します（`docker-compose.yml` 参照）。
 
-### 5. マイグレーションの適用
+### 4. マイグレーションの適用
 
 ```bash
 flask db upgrade
 ```
 
-### 6. 管理者ユーザーの作成
+### 5. 管理者ユーザーの作成
 
-初回のみ、`User` テーブルに管理者レコードを手動で投入する必要があります（`username` は `.env` の `ADMIN_USERNAME`、`password` は同じくハッシュ化済みの値）。Flask シェルなどから登録してください。
+初回のみ、Flaskシェルなどから管理者ユーザーをDBに直接作成してください。
 
 ```bash
 flask shell
 ```
+
 ```python
 from extensions import db
 from models import User
+from werkzeug.security import generate_password_hash
 import config
 
-user = User(username=config.ADMIN_USERNAME, password=config.ADMIN_PASSWORD)
+user = User(
+    username=config.ADMIN_USERNAME,
+    password=generate_password_hash("your_password"),
+    nickname="表示したい名前"
+)
 db.session.add(user)
 db.session.commit()
 ```
 
-### 7. アプリケーションの起動
+### 6. アプリケーションの起動
 
 ```bash
 python app.py
 ```
 
-`http://localhost:5000` でトップページにアクセスできます。管理者ログインは `.env` で設定した `ADMIN_LOGIN_PATH` のパス（例: `http://localhost:5000/secret-login-xxxx`）からアクセスしてください。
-
-## データベーススキーマ概要
-
-- **User** … 管理者情報（username, password ハッシュ, nickname）
-- **Post** … 記事本体（title, body, genre, 画像情報, 公開設定, 投稿・更新日時 など）
-- **Hashtag** … ハッシュタグ名（一意）
-- **post_hashtags** … Post と Hashtag の多対多中間テーブル
-
-## マイグレーションの運用
-
-モデルを変更した場合は、以下のコマンドで差分マイグレーションを生成・適用します。
+または
 
 ```bash
-flask db migrate -m "変更内容の説明"
-flask db upgrade
+flask run
 ```
+
+`http://localhost:5000` でアプリケーションにアクセスできます。
+管理者ログインページは `http://localhost:5000/<ADMIN_LOGIN_PATH>` です。
+
+## 主なルート一覧
+
+| メソッド | パス | 説明 |
+|---|---|---|
+| GET | `/` | 記事一覧（検索・ジャンル・ハッシュタグ絞り込み対応） |
+| GET | `/about` | 管理者自己紹介ページ |
+| GET | `/howto` | 使い方ガイド |
+| GET | `/genre` | ジャンル一覧 |
+| GET | `/<id>/detail` | 記事詳細 |
+| GET/POST | `/<ADMIN_LOGIN_PATH>` | 管理者ログイン |
+| GET | `/logout` | ログアウト |
+| GET/POST | `/create` | 記事新規作成（要ログイン） |
+| GET/POST | `/<id>/update` | 記事編集（要ログイン・投稿者本人のみ） |
+| POST | `/<id>/delete` | 記事削除（要ログイン・投稿者本人のみ） |
+| GET/POST | `/mypage` | マイページ（要ログイン） |
+
+## データベース設計（概要）
+
+- **User**: 管理者情報（`username`, `password`, `nickname`）
+- **Post**: 記事本体（タイトル・本文・ジャンル・公開設定・画像情報・作成/更新日時など）
+- **Hashtag**: ハッシュタグ（`name` を一意制約付きで管理）
+- **post_hashtags**: Post と Hashtag の多対多を表す中間テーブル
+
+詳細は `models.py` および `migrations/versions/` 以下のマイグレーション履歴を参照してください。
 
 ## ライセンス
 
-このリポジトリ固有のライセンス表記は設定されていません。利用条件についてはリポジトリ管理者にご確認ください。
+このプロジェクトのライセンスは未定義です。利用・改変時はリポジトリ管理者にご確認ください。

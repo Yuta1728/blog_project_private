@@ -57,7 +57,6 @@ migrations/versions/add_img_captions_to_post.py
 migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
 migrations/versions/make_update_at_nullable.py
 models.py
-README.md
 requirements.txt
 save_path
 static/css/auth.css
@@ -999,182 +998,6 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
 </file>
 
-<file path="README.md">
-# MIT Blog
-
-Flask + PostgreSQL で構築された、個人運用を想定したブログアプリケーションです。
-管理者（単一ユーザー）が記事を投稿・編集し、訪問者は記事の閲覧・検索・ジャンルやハッシュタグでの絞り込みができます。
-
-## 主な機能
-
-### 公開ページ
-- 記事一覧（トップページ）／キーワード検索／ジャンル絞り込み／ハッシュタグ絞り込み
-- 記事詳細ページ（マークダウン本文の表示、目次の自動生成）
-- 関連記事の自動表示（同ジャンル＋同タグ → 同タグ → 同ジャンル → 最新記事の順で補完）
-- 「もっと見る」によるページ内の段階的な記事読み込み
-- 自己紹介ページ（/about）、使い方ページ（/howto）、ジャンル一覧ページ（/genre）
-
-### 管理者専用ページ（ログイン必須）
-- 新規投稿（/create）／編集（/update）／削除（/delete）
-- マークダウンエディタ（見出し・太字・箇条書き・目次・地図・YouTube埋め込みのツールバー付き）
-- 画像の複数アップロード、画像ごとのキャプション設定、本文中への `[img1]` 形式での挿入
-- デフォルトサムネイル（画像未アップロード時のジャンル別アイコン）の選択
-- ジャンルの選択またはユーザー独自ジャンルの新規作成
-- ハッシュタグ入力（スペース・カンマ区切り、リアルタイムプレビュー）
-- 記事の公開／非公開切り替え
-- マイページ（投稿一覧、ニックネーム変更、使用ジャンル一覧）
-
-### 本文中の独自記法
-- `[toc]` … 目次を挿入
-- `[img1]`, `[img2]`, ... … アップロードした画像を順番に挿入（キャプション対応）
-- `[map:場所名]` … Google Maps の埋め込み
-- `[youtube:URL]` … YouTube 動画のサムネイル表示＋クリック再生（ファサード方式）
-
-### セキュリティ対策
-- CSRF トークンによるフォーム保護（Flask-WTF）
-- 画像アップロードの多層検証（拡張子チェック → MIME タイプ判定 → ファイル名サニタイズ → UUID によるファイル名ランダム化）
-- アップロード合計サイズ制限（30MB）
-- ログインページ URL の隠蔽（`.env` でパスを指定）
-- ログイン試行回数制限によるブルートフォース対策（5回失敗で5分間ロック）
-- 削除処理における Open Redirect 対策（リダイレクト先のオリジン検証）
-
-## 技術スタック
-
-| 分類 | 使用技術 |
-|---|---|
-| 言語 | Python 3.10 |
-| フレームワーク | Flask 3.x |
-| ORM / マイグレーション | Flask-SQLAlchemy, Flask-Migrate (Alembic) |
-| 認証 | Flask-Login |
-| フォーム保護 | Flask-WTF (CSRF) |
-| データベース | PostgreSQL（Docker Compose で起動） |
-| マークダウン変換 | Markdown（toc, nl2br 拡張） |
-| 画像検証 | filetype |
-| テンプレートエンジン | Jinja2 |
-| フロントエンド | 素の HTML / CSS / JavaScript（フレームワーク不使用） |
-
-## ディレクトリ構成
-
-```
-.
-├── app.py                 # アプリケーションファクトリ（create_app）
-├── config.py               # .env から環境変数を読み込み
-├── constants.py             # デフォルトジャンル一覧
-├── extensions.py            # db / login_manager / migrate のインスタンス定義
-├── models.py                # User, Post, Hashtag モデル
-├── docker-compose.yml        # PostgreSQL コンテナ定義
-├── migrations/               # Alembic マイグレーションファイル
-├── views/
-│   ├── auth.py             # ログイン・ログアウト
-│   ├── blog.py             # 一般公開ページ
-│   └── admin.py             # 管理者専用ページ
-├── templates/               # Jinja2 テンプレート
-└── static/
-    ├── css/                # 画面別スタイルシート
-    └── img/                # アップロード画像・デフォルトサムネイル
-```
-
-## セットアップ
-
-### 1. 必要環境
-- Python 3.10.11
-- Docker / Docker Compose（PostgreSQL 用）
-
-### 2. リポジトリの取得と仮想環境の作成
-
-```bash
-git clone <このリポジトリのURL>
-cd <リポジトリ名>
-python -m venv venv
-source venv/bin/activate  # Windows の場合は venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 3. 環境変数の設定
-
-プロジェクトルートに `.env` ファイルを作成し、以下の値を設定してください。
-
-```env
-# PostgreSQL（docker-compose.yml と一致させる）
-POSTGRES_USER=your_db_user
-POSTGRES_PASSWORD=your_db_password
-POSTGRES_DB=your_db_name
-
-# 管理者アカウント
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=ハッシュ化済みパスワード
-ADMIN_LOGIN_PATH=推測されにくいログインパス（例: secret-login-xxxx）
-
-# Flask
-SECRET_KEY=任意のランダム文字列（本番環境では必須）
-```
-
-`ADMIN_PASSWORD` は平文ではなく、Werkzeug の `generate_password_hash()` で生成したハッシュ値を使用します。
-
-```bash
-python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('設定したいパスワード'))"
-```
-
-### 4. データベースの起動
-
-```bash
-docker compose up -d
-```
-
-`docker-compose.yml` ではホストの `55432` 番ポートにマッピングされています。
-
-### 5. マイグレーションの適用
-
-```bash
-flask db upgrade
-```
-
-### 6. 管理者ユーザーの作成
-
-初回のみ、`User` テーブルに管理者レコードを手動で投入する必要があります（`username` は `.env` の `ADMIN_USERNAME`、`password` は同じくハッシュ化済みの値）。Flask シェルなどから登録してください。
-
-```bash
-flask shell
-```
-```python
-from extensions import db
-from models import User
-import config
-
-user = User(username=config.ADMIN_USERNAME, password=config.ADMIN_PASSWORD)
-db.session.add(user)
-db.session.commit()
-```
-
-### 7. アプリケーションの起動
-
-```bash
-python app.py
-```
-
-`http://localhost:5000` でトップページにアクセスできます。管理者ログインは `.env` で設定した `ADMIN_LOGIN_PATH` のパス（例: `http://localhost:5000/secret-login-xxxx`）からアクセスしてください。
-
-## データベーススキーマ概要
-
-- **User** … 管理者情報（username, password ハッシュ, nickname）
-- **Post** … 記事本体（title, body, genre, 画像情報, 公開設定, 投稿・更新日時 など）
-- **Hashtag** … ハッシュタグ名（一意）
-- **post_hashtags** … Post と Hashtag の多対多中間テーブル
-
-## マイグレーションの運用
-
-モデルを変更した場合は、以下のコマンドで差分マイグレーションを生成・適用します。
-
-```bash
-flask db migrate -m "変更内容の説明"
-flask db upgrade
-```
-
-## ライセンス
-
-このリポジトリ固有のライセンス表記は設定されていません。利用条件についてはリポジトリ管理者にご確認ください。
-</file>
-
 <file path="requirements.txt">
 alembic==1.16.5                                                                         
 blinker==1.9.0
@@ -1207,106 +1030,72 @@ WTForms==3.2.1
 zipp==3.23.1
 </file>
 
-<file path="save_path">
-
-</file>
 
 <file path="static/css/auth.css">
-/* static/css/auth.css - 水色×白 爽やかテーマ版 */
+/* static/css/auth.css - Coastal Dawn v2 */
 
 
-/* ===========================
-   ログインページ
-   =========================== */
-
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォームコンテナ
-[対象要素]：.auth-container（フォーム全体の外枠・中央寄せ・カード型レイアウト）
-========================================== */
 .auth-container {
     max-width: 400px;
     margin: 72px auto 60px;
     padding: 40px 40px 36px;
-    background-color: #fff;
-    border-radius: 12px;
-    border: 1px solid #c5dff0;
+    background-color: #ffffff;
+    border-radius: 0 12px 12px 0;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
     box-sizing: border-box;
     font-family: inherit;
 }
 
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォーム見出し
-[対象要素]：h2（「管理者画面」タイトル）
-========================================== */
 h2 {
     text-align: center;
-    color: #0d3a52;
+    color: #0c1f35;
     margin: 0 0 20px;
-    font-size: 24px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 700;
     letter-spacing: -0.02em;
 }
 
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォーム 各フィールドグループ
-[対象要素]：.form-group（ユーザー名・パスワード各入力欄のラッパー）
-========================================== */
 .form-group {
     margin-bottom: 20px;
 }
 
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォーム ラベル
-[対象要素]：label（フィールド名テキスト）
-========================================== */
 label {
     display: block;
     margin-bottom: 8px;
     font-weight: 700;
     font-size: 13px;
-    color: #7aaec8;
+    color: #0369a1;
     letter-spacing: 0.03em;
 }
 
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォーム テキスト・パスワード入力欄
-[対象要素]：input[type="text"]・input[type="password"]（通常状態・フォーカス状態）
-========================================== */
 input[type="text"],
 input[type="password"] {
     width: 100%;
-    padding: 12px 16px;
-    border: 1.5px solid #c5dff0;
+    padding: 11px 14px;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     box-sizing: border-box;
     font-size: 16px;
     outline: none;
-    background: #f5f9fd;
-    color: #0d3a52;
+    background: #f0f9ff;
+    color: #0c1f35;
     transition: border-color 0.18s, background 0.18s;
     font-family: inherit;
 }
 
 input[type="text"]:focus,
 input[type="password"]:focus {
-    border-color: #1a7aad;
-    background: #fff;
+    border-color: #0ea5e9;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォーム 送信ボタン
-[対象要素]：.submit-btn（ログインボタン・ホバー状態）
-========================================== */
 .submit-btn {
     width: 100%;
-    padding: 13px;
-    background-color: #1a7aad;
+    padding: 12px;
+    background-color: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -1319,53 +1108,25 @@ input[type="password"]:focus {
 }
 
 .submit-btn:hover {
-    background-color: #155f8a;
+    background-color: #0369a1;
 }
 
-/* ==========================================
-[画面名]：loginページ
-[機能名]：ログインフォーム フッターリンク
-[対象要素]：.footer-link（フォーム下部の補足リンクエリア）
-========================================== */
 .footer-link {
     text-align: center;
     margin-top: 18px;
     font-size: 13px;
-    color: #7aaec8;
+    color: #0369a1;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：loginページ（スマホ）
-    [機能名]：ログインフォームコンテナ・見出し・フィールドグループ・ボタン（スマホ調整）
-    [対象要素]：.auth-container・h2・.form-group・.submit-btn
-    ========================================== */
     .auth-container {
         margin: 24px 16px;
         padding: 28px 22px;
-        border-radius: 12px;
+        border-radius: 0 10px 10px 0;
     }
-
-    h2 {
-        font-size: 18px;
-        margin-bottom: 20px;
-    }
-
-    .form-group {
-        margin-bottom: 16px;
-    }
-
-    .submit-btn {
-        padding: 14px;
-        font-size: 15px;
-    }
+    h2 { font-size: 18px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .submit-btn { padding: 14px; font-size: 15px; }
 }
 </file>
 
@@ -1375,7 +1136,6 @@ input[type="password"]:focus {
 /* ===========================
    Google Fonts
    =========================== */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
 /* ===========================
    グローバルリセット・基本設定
@@ -1384,17 +1144,20 @@ input[type="password"]:focus {
     box-sizing: border-box;
 }
 
+
 /* ========================================
    [修正] body 背景を #f0f9ff（淡い水色）に統一。
    ドットグリッドは視認性を下げるため削除。
    テキストカラーは #2a4a5e（元の値）を維持し
    白背景・淡水色背景のどちらでも読みやすくする。
    ======================================== */
+
 body {
-    font-family: 'Noto Sans JP', "Hiragino Kaku Gothic ProN", "Hiragino Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: #2a4a5e;
     background-color: #f0f9ff;
     line-height: 1.7;
+    font-weight: 500;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
@@ -1461,7 +1224,6 @@ a:hover {
 .main-header {
     background-color: #ffffff;
     border-bottom: 3px solid #0ea5e9;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.10);
     width: 100%;
     position: sticky;
     top: 0;
@@ -1505,7 +1267,6 @@ a:hover {
 .header-logo a {
     color: #0c1f35 !important;
     text-decoration: none !important;
-    font-family: 'Noto Serif JP', Georgia, serif;
     font-size: 32px;
     font-weight: 700;
     letter-spacing: -0.04em;
@@ -1559,7 +1320,7 @@ a:hover {
     font-size: 14px;
     color: #0c1f35;
     width: 100%;
-    font-family: 'Noto Sans JP', sans-serif;
+    font-family: inherit;
 }
 
 .header-search-box input[type="text"]::placeholder {
@@ -1739,7 +1500,6 @@ a:hover {
     font-weight: 700;
     letter-spacing: -0.04em;
     color: #0c1f35;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .mobile-nav-close {
@@ -1890,153 +1650,95 @@ a:hover {
 </file>
 
 <file path="static/css/create_update.css">
-/* static/css/create_update.css - 水色×白 爽やかテーマ版（文字色修正済み） */
+/* static/css/create_update.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   create・updateページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ページタイトル
-[対象要素]：h1（「新規投稿作成」「編集」見出し）
-========================================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     margin: 36px 0 24px;
-    color: #1a1a1a;
+    color: #0c1f35;
     letter-spacing: -0.01em;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：投稿フォームコンテナ
-[対象要素]：.post-form（フォーム全体を囲むカード型コンテナ）
-========================================== */
 .post-form {
     max-width: 720px;
     margin: 0 auto 60px;
     background: #fff;
     padding: 40px 44px;
-    border: 1px solid #c5dff0;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     box-sizing: border-box;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-
-/* ===========================
-   フォーム 入力欄共通
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム ラベル
-[対象要素]：.post-form label（各入力欄のフィールド名テキスト）
-========================================== */
 .post-form label {
     display: block;
     font-weight: 700;
     font-size: 14px;
     margin-bottom: 8px;
-    color: #333;
+    color: #0c1f35;
     letter-spacing: 0.02em;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム テキスト入力・セレクト
-[対象要素]：.post-form input[type="text"]・select（通常状態・フォーカス状態）
-========================================== */
 .post-form input[type="text"],
 .post-form select {
     width: 100% !important;
     padding: 10px 14px;
     font-size: 15px;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     box-sizing: border-box;
     margin-bottom: 22px;
     outline: none;
-    background-color: #f5f9fd;
-    color: #1a1a1a;
-    transition: border-color 0.18s, background 0.18s;
+    background-color: #f0f9ff;
+    color: #0c1f35;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
     font-family: inherit;
 }
 
 .post-form input[type="text"]:focus,
 .post-form select:focus {
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
     background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム 本文テキストエリア
-[対象要素]：.post-form textarea（マークダウン入力欄・等幅フォント・縦リサイズ可）
-========================================== */
 .post-form textarea {
     width: 100% !important;
     padding: 18px !important;
     font-size: 20px !important;
     line-height: 1.9 !important;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Noto Sans JP", "MS Gothic", monospace !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
     letter-spacing: normal !important;
-    border: 1.5px solid #c5dff0 !important;
+    border: 1px solid #7dd3fa !important;
     border-radius: 8px !important;
     box-sizing: border-box !important;
     margin-bottom: 22px !important;
     outline: none !important;
-    background-color: #f5f9fd !important;
-    color: #1a1a1a !important;
+    background-color: #f0f9ff !important;
+    color: #0c1f35 !important;
     min-height: 520px !important;
     resize: vertical !important;
     transition: border-color 0.18s, background 0.18s !important;
 }
 
 .post-form textarea:focus {
-    border-color: #1a7aad !important;
+    border-color: #0ea5e9 !important;
     background-color: #fff !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12) !important;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム 補足説明テキスト
-[対象要素]：.post-form p（各フィールドの説明テキスト）
-========================================== */
-.post-form p {
-    font-size: 15px;
-    color: #555;
-    margin: 0 0 8px;
-    line-height: 1.5;
-}
+.post-form p { font-size: 15px; color: #2a4a5e; margin: 0 0 8px; line-height: 1.5; font-weight: 500; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム ファイル選択入力
-[対象要素]：.post-form input[type="file"]（画像アップロード入力欄）
-========================================== */
-.post-form input[type="file"] {
-    display: block;
-    margin-bottom: 24px;
-    font-size: 13px;
-    color: #333;
-    width: 100%;
-}
+.post-form input[type="file"] { display: block; margin-bottom: 24px; font-size: 13px; color: #0c1f35; width: 100%; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：フォーム 送信ボタン
-[対象要素]：.post-form input[type="submit"]（「投稿する」「更新」ボタン・ホバー状態）
-========================================== */
 .post-form input[type="submit"] {
     display: block;
     width: 100%;
     padding: 14px;
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -2048,83 +1750,43 @@ h1 {
     letter-spacing: 0.02em;
 }
 
-.post-form input[type="submit"]:hover {
-    background-color: #155f8a;
-}
+.post-form input[type="submit"]:hover { background-color: #0369a1; }
 
-
-/* ===========================
-   画像アップロード プレビュー
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビューカード
-[対象要素]：.preview-item（個別画像プレビューの外枠カード）
-========================================== */
+/* プレビューカード */
 .preview-item {
     position: relative;
-    border: 1px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     overflow: hidden;
-    background: #f5f9fd;
+    background: #f0f9ff;
     width: 150px;
     margin-bottom: 8px;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビュー サムネイル
-[対象要素]：.preview-item img（プレビュー画像・固定サイズ・object-fit）
-========================================== */
-.preview-item img {
-    width: 150px;
-    height: 112px;
-    object-fit: cover;
-    display: block;
-}
+.preview-item img { width: 150px; height: 112px; object-fit: cover; display: block; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビュー [imgN]ラベル
-[対象要素]：.preview-label（「[img1]」などの挿入番号ラベル）
-========================================== */
 .preview-label {
     text-align: center;
     font-size: 11px;
     font-weight: 700;
-    color: #333;
+    color: #0369a1;
     padding: 5px 0 3px;
-    background: #dff0fb;
-    border-top: 1px solid #c5dff0;
+    background: #dbeafe;
+    border-top: 1px solid #7dd3fa;
     letter-spacing: 0.03em;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像アップロード プレビュー ファイル名
-[対象要素]：.preview-filename（プレビュー下部のファイル名テキスト・省略表示）
-========================================== */
 .preview-filename {
     text-align: center;
     font-size: 10px;
-    color: #888;
+    color: #4a7a96;
     padding: 2px 6px 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-
-/* ===========================
-   公開設定トグルボタン
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：公開設定トグルボタン
-[対象要素]：.toggle-status-btn（「非公開」「全体公開」切替ボタン・状態別スタイル）
-========================================== */
+/* 公開設定トグル */
 .toggle-status-btn {
     display: inline-flex;
     align-items: center;
@@ -2135,93 +1797,58 @@ h1 {
     font-weight: 700;
     border-radius: 20px;
     cursor: pointer;
-    border: 1.5px solid transparent;
+    border: 1px solid transparent;
     transition: all 0.2s ease;
     font-family: inherit;
     margin-bottom: 22px;
     outline: none;
 }
 
-/* 非公開状態 */
 .toggle-status-btn.private {
-    background-color: #eef6fb;
-    color: #333;
-    border-color: #c5dff0;
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border-color: #7dd3fa;
 }
 
-.toggle-status-btn.private:hover {
-    background-color: #dff0fb;
-}
+.toggle-status-btn.private:hover { background-color: #dbeafe; border-color: #38bdf8; }
 
-/* 全体公開状態 */
 .toggle-status-btn.published {
-    background-color: #dff0fb;
-    color: #1a7aad;
-    border-color: #8cc8e8;
+    background-color: #dbeafe;
+    color: #0369a1;
+    border-color: #38bdf8;
 }
 
-.toggle-status-btn.published:hover {
-    background-color: #c5dff0;
-}
+.toggle-status-btn.published:hover { background-color: #bae6fd; border-color: #0ea5e9; }
 
+/* ツールバー */
+.md-toolbar-wrapper { position: relative; }
 
-/* ===========================
-   マークダウンツールバー
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー ラッパー
-[対象要素]：.md-toolbar-wrapper（ツールバー+texareaをまとめるstickyの基準コンテナ）
-========================================== */
-.md-toolbar-wrapper {
-    position: relative; 
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー本体
-[対象要素]：.md-toolbar（ボタン群を並べるツールバー・sticky固定・スクロール時影追加）
-========================================== */
 .md-toolbar {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     padding: 10px 12px;
-    background: #eef6fb;
-    border: 1.5px solid #c5dff0;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fa;
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     margin-bottom: 0 !important;
     position: sticky;
     top: 85px;
     z-index: 50;
-    box-shadow: 0 4px 12px rgba(26, 122, 173, 0.12);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
     transition: box-shadow 0.2s ease;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー sticky 追従中クラス（JSによる付与）
-[対象要素]：.md-toolbar.is-sticky（スクロール追従中にボーダー・影を強調）
-========================================== */
-.md-toolbar.is-sticky {
-    box-shadow: 0 6px 20px rgba(26, 122, 173, 0.18);
-    border-color: #8cc8e8;
-}
+.md-toolbar.is-sticky { box-shadow: 0 6px 20px rgba(14, 165, 233, 0.18); border-color: #38bdf8; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 共通ボタン
-[対象要素]：.md-btn（ツールバー内の各操作ボタン・ホバー状態）
-========================================== */
 .md-btn {
     padding: 7px 13px;
     font-size: 13px;
     font-weight: 600;
-    color: #333;
+    color: #0c1f35;
     background: #fff;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s;
@@ -2232,140 +1859,40 @@ h1 {
     text-align: center;
 }
 
-.md-btn:hover,
-.md-btn:active {
-    background: #dff0fb;
-    border-color: #5aaedc;
-    color: #1a1a1a;
-}
+.md-btn:hover, .md-btn:active { background: #dbeafe; border-color: #38bdf8; color: #0c1f35; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー ボタン間区切り線
-[対象要素]：.md-btn-separator（ボタングループ間の縦線）
-========================================== */
 .md-btn-separator {
     display: inline-block;
     width: 1px;
     height: 24px;
-    background: #c5dff0;
+    background: #7dd3fa;
     margin: 0 4px;
     vertical-align: middle;
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 画像挿入ボタン（[imgN]）
-[対象要素]：.md-btn-img（画像挿入ボタン・水色アクセント）
-========================================== */
-.md-btn-img {
-    color: #1a5f85;
-    background: #e7f7ff;
-    border-color: #8cc8e8;
-}
+.md-btn-img { color: #0369a1; background: #dbeafe; border-color: #38bdf8; }
+.md-btn-img:hover, .md-btn-img:active { background: #bae6fd; border-color: #0ea5e9; color: #0c1f35; }
 
-.md-btn-img:hover,
-.md-btn-img:active {
-    background: #c5dff0;
-    border-color: #1a7aad;
-    color: #0d3a52;
-}
+.md-btn-map { color: #166534; background: #dcfce7; border-color: #86efac; }
+.md-btn-map:hover, .md-btn-map:active { background: #bbf7d0; border-color: #4ade80; color: #14532d; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 地図挿入ボタン
-[対象要素]：.md-btn-map（地図挿入ボタン・緑系アクセント）
-========================================== */
-.md-btn-map {
-    color: #1a5f85;
-    background: #e7f7e7;
-    border-color: #7bc87b;
-}
+.md-btn-youtube { color: #fff; background: rgba(220,38,38,0.75); border-color: rgba(185,28,28,0.6); font-weight: 700; }
+.md-btn-youtube:hover, .md-btn-youtube:active { background: rgba(185,28,28,0.85); color: #fff; }
 
-.md-btn-map:hover,
-.md-btn-map:active {
-    background: #c8eec8;
-    border-color: #4caf50;
-    color: #1a3a1a;
-}
+.md-btn-list { display: inline-flex; align-items: center; gap: 5px; color: #0c1f35; }
+.md-btn-list:hover, .md-btn-list:active { background: #dbeafe; border-color: #38bdf8; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー YouTube挿入ボタン
-[対象要素]：.md-btn-youtube（YouTube動画挿入ボタン・赤系アクセント）
-========================================== */
-.md-btn-youtube {
-    color: #fff;
-    background: #ff000082;
-    border-color: #cc000078;
-    font-weight: 700;
-}
-
-.md-btn-youtube:hover,
-.md-btn-youtube:active {
-    background: #cc000096;
-    border-color: #99000094;
-    color: #fff;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウンツールバー 箇条書きリストボタン
-[対象要素]：.md-btn-list（箇条書き挿入ボタン・SVGアイコン付き）
-========================================== */
-.md-btn-list {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: #333;
-}
-
-.md-btn-list:hover,
-.md-btn-list:active {
-    background: #dff0fb;
-    border-color: #5aaedc;
-    color: #1a1a1a;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：マークダウン本文テキストエリア
-[対象要素]：#bodyTextarea（ツールバーと接続する本文入力欄・上角丸なし）
-========================================== */
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
-    scroll-margin-top: calc(85px + 48px + 8px); 
+    scroll-margin-top: calc(85px + 48px + 8px);
 }
 
+/* 地図モーダル */
+.map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(12,31,53,0.45); z-index: 1100; }
+.map-modal-overlay.open { display: block; }
 
-/* ===========================
-   地図挿入モーダル
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル オーバーレイ
-[対象要素]：.map-modal-overlay（モーダル背景暗転マスク・open状態制御）
-========================================== */
-.map-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(13, 58, 82, 0.45);
-    z-index: 1100;
-}
-
-.map-modal-overlay.open {
-    display: block;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル 本体
-[対象要素]：.map-modal（中央配置のモーダルダイアログ・open状態制御）
-========================================== */
 .map-modal {
     display: none;
     position: fixed;
@@ -2375,42 +1902,30 @@ h1 {
     width: min(560px, calc(100vw - 32px));
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(26, 122, 173, 0.18);
+    box-shadow: 0 8px 32px rgba(14,165,233,0.18);
     z-index: 1200;
     overflow: hidden;
     flex-direction: column;
 }
 
-.map-modal.open {
-    display: flex;
-}
+.map-modal.open { display: flex; }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル ヘッダー部
-[対象要素]：.map-modal-header（タイトル・閉じるボタンを並べるエリア）
-========================================== */
 .map-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid #dff0fb;
-    background: #f4fbff;
+    border-bottom: 1px solid #e0f2fe;
+    background: #f0f9ff;
 }
 
-.map-modal-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0d3a52;
-}
 
 .map-modal-close {
     background: none;
     border: none;
     font-size: 20px;
     cursor: pointer;
-    color: #5a8ba8;
+    color: #4a7a96;
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -2421,87 +1936,48 @@ h1 {
     padding: 0;
 }
 
-.map-modal-close:hover {
-    background: #dff0fb;
-    color: #0d3a52;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル ボディ部（入力・プレビュー）
-[対象要素]：.map-modal-body・.map-modal-label・.map-modal-input・.map-preview-area・.map-preview-placeholder・.map-preview-iframe
-========================================== */
-.map-modal-body {
-    padding: 20px 20px 8px;
-}
-
-.map-modal-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a5f85;
-    margin-bottom: 8px;
-}
+.map-modal-close:hover { background: #dbeafe; color: #0c1f35; }
+.map-modal-body { padding: 20px 20px 8px; }
+.map-modal-label { display: block; font-size: 13px; font-weight: 700; color: #0369a1; margin-bottom: 8px; }
 
 .map-modal-input {
     width: 100%;
     padding: 10px 14px;
     font-size: 15px;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     box-sizing: border-box;
     outline: none;
-    background: #f5f9fd;
-    color: #0d3a52;
+    background: #f0f9ff;
+    color: #0c1f35;
     font-family: inherit;
     transition: border-color 0.18s, background 0.18s;
     margin-bottom: 14px;
 }
 
-.map-modal-input:focus {
-    border-color: #1a7aad;
-    background: #fff;
-}
+.map-modal-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
 
-/* プレビューエリア */
 .map-preview-area {
     width: 100%;
     height: 260px;
-    border: 1px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     overflow: hidden;
-    background: #f0f8fd;
+    background: #f0f9ff;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.map-preview-placeholder {
-    color: #7aaec8;
-    font-size: 14px;
-    text-align: center;
-    margin: 0;
-    padding: 0 20px;
-}
+.map-preview-placeholder { color: #4a7a96; font-size: 14px; text-align: center; margin: 0; padding: 0 20px; }
+.map-preview-iframe { width: 100%; height: 100%; border: none; display: block; }
 
-.map-preview-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-}
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：地図挿入モーダル フッター部（キャンセル・挿入ボタン）
-[対象要素]：.map-modal-footer・.map-modal-cancel・.map-modal-insert
-========================================== */
 .map-modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     padding: 14px 20px 18px;
-    border-top: 1px solid #dff0fb;
+    border-top: 1px solid #e0f2fe;
 }
 
 .map-modal-cancel {
@@ -2509,23 +1985,21 @@ h1 {
     font-size: 14px;
     font-weight: 600;
     background: #fff;
-    color: #5a8ba8;
-    border: 1.5px solid #c5dff0;
+    color: #4a7a96;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     cursor: pointer;
     font-family: inherit;
     transition: background 0.15s;
 }
 
-.map-modal-cancel:hover {
-    background: #eef6fb;
-}
+.map-modal-cancel:hover { background: #f0f9ff; }
 
 .map-modal-insert {
     padding: 9px 22px;
     font-size: 14px;
     font-weight: 700;
-    background: #1a7aad;
+    background: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -2534,248 +2008,54 @@ h1 {
     transition: background 0.18s;
 }
 
-.map-modal-insert:hover:not(:disabled) {
-    background: #155f8a;
-}
+.map-modal-insert:hover:not(:disabled) { background: #0369a1; }
+.map-modal-insert:disabled { background: #bae6fd; cursor: not-allowed; }
 
-.map-modal-insert:disabled {
-    background: #b0d5ec;
-    cursor: not-allowed;
-}
-
-
-/* ===========================
-   画像キャプション入力
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：画像キャプション入力欄
-[対象要素]：.preview-caption-wrapper・.preview-caption-input（各プレビューカード下部のキャプション入力）
-========================================== */
-.preview-caption-wrapper {
-    padding: 15px 8px 2px;
-    background: #ecf5ff;
-    border-top: 1px solid #c0e6ff;
-}
+/* 画像キャプション */
+.preview-caption-wrapper { padding: 8px 8px 2px; background: #dbeafe; border-top: 1px solid #7dd3fa; }
 
 .preview-caption-input {
     width: 100%;
     padding: 5px 10px;
     font-size: 12px;
-    border: 1.5px solid #b6e0fc;
+    border: 1px solid #38bdf8;
     border-radius: 6px;
     box-sizing: border-box;
     outline: none;
     background: #fff;
-    color: #1a1a1a;
+    color: #0c1f35;
     font-family: inherit;
     transition: border-color 0.18s;
 }
 
-.preview-caption-input:focus {
-    border-color: #1a7aad;
-}
+.preview-caption-input:focus { border-color: #0ea5e9; }
+.preview-caption-input::placeholder { color: #7dd3fa; font-size: 11px; }
 
-.preview-caption-input::placeholder {
-    color: #aac8dc;
-    font-size: 11px;
-}
-
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：ページタイトル（スマホ縮小）
-    [対象要素]：h1
-    ========================================== */
-    h1 {
-        font-size: 17px;
-        margin: 20px 0 16px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：投稿フォームコンテナ（スマホ全幅・角丸なし）
-    [対象要素]：.post-form
-    ========================================== */
-    .post-form {
-        padding: 24px 16px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        margin-bottom: 0;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：フォーム 補足説明・ラベル・入力欄（スマホ縮小・iOS自動ズーム防止）
-    [対象要素]：.post-form p・label・input[type="text"]・select・textarea
-    ========================================== */
-    .post-form p {
-        font-size: 13px;
-        margin: 0 0 6px;
-        line-height: 1.5;
-    }
-
-    .post-form label {
-        font-size: 13px;
-    }
-
-    .post-form input[type="text"],
-    .post-form select {
-        font-size: 16px !important;
-        padding: 12px !important;
-        border-radius: 6px;
-        margin-bottom: 16px;
-    }
-
-    .post-form textarea {
-        font-size: 16px !important;
-        line-height: 1.75 !important;
-        padding: 14px !important;
-        min-height: 320px !important;
-        border-radius: 6px !important;
-        margin-bottom: 16px !important;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：フォーム 送信ボタン（スマホタップ領域確保）
-    [対象要素]：.post-form input[type="submit"]
-    ========================================== */
-    .post-form input[type="submit"] {
-        padding: 14px;
-        font-size: 15px;
-        border-radius: 8px;
-        min-height: 48px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：画像アップロード プレビュー（スマホ2列グリッド）
-    [対象要素]：#preview-list・.preview-item・img
-    ========================================== */
-    #preview-list,
-    .post-form div[style*="display: flex"] {
-        gap: 12px !important;
-        justify-content: flex-start;
-    }
-
-    .preview-item {
-        width: calc(50% - 6px);
-        box-sizing: border-box;
-        margin-bottom: 12px;
-    }
-
-    .preview-item img {
-        width: 100%;
-        height: 110px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：公開設定トグルボタン（スマホ全幅）
-    [対象要素]：.toggle-status-btn
-    ========================================== */
-    .toggle-status-btn {
-        padding: 12px 20px;
-        font-size: 14px;
-        margin-bottom: 16px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：マークダウンツールバー ボタン（スマホタップ領域確保）
-    [対象要素]：.md-btn・.md-btn-list
-    ========================================== */
-    .md-btn {
-        padding: 10px 12px;
-        font-size: 14px;
-        min-width: 48px;
-        min-height: 44px;
-    }
-
-    .md-btn-list {
-        padding: 10px 12px;
-        font-size: 14px;
-        min-width: 48px;
-        min-height: 44px;
-        gap: 4px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：マークダウンツールバー sticky（スマホヘッダー高さ対応）
-    [対象要素]：.md-toolbar・#bodyTextarea
-    ========================================== */
-    .md-toolbar {
-        /* スマホヘッダーは 63px */
-        top: 63px;
-        padding: 8px 10px;
-        gap: 5px;
-        overflow-x: hidden;
-    }
-
-    #bodyTextarea {
-        scroll-margin-top: calc(63px + 56px + 8px);
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：地図挿入モーダル（スマホ下部シート型）
-    [対象要素]：.map-modal・.map-preview-area
-    ========================================== */
-    .map-modal {
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        transform: none;
-        width: 100%;
-        border-radius: 16px 16px 0 0;
-        max-height: 90dvh;
-        overflow-y: auto;
-    }
-
-    .map-preview-area {
-        height: 200px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：画像キャプション入力（スマホ文字サイズ調整）
-    [対象要素]：.preview-caption-input
-    ========================================== */
-    .preview-caption-input {
-        font-size: 14px;
-    }
+    h1 { font-size: 17px; margin: 20px 0 16px; }
+    .post-form { padding: 24px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 0; width: 100% !important; box-sizing: border-box; }
+    .post-form p { font-size: 13px; margin: 0 0 6px; line-height: 1.5; }
+    .post-form label { font-size: 13px; }
+    .post-form input[type="text"], .post-form select { font-size: 16px !important; padding: 12px !important; border-radius: 6px; margin-bottom: 16px; }
+    .post-form textarea { font-size: 16px !important; line-height: 1.75 !important; padding: 14px !important; min-height: 320px !important; border-radius: 6px !important; margin-bottom: 16px !important; }
+    .post-form input[type="submit"] { padding: 14px; font-size: 15px; border-radius: 8px; min-height: 48px; }
+    #preview-list, .post-form div[style*="display: flex"] { gap: 12px !important; justify-content: flex-start; }
+    .preview-item { width: calc(50% - 6px); box-sizing: border-box; margin-bottom: 12px; }
+    .preview-item img { width: 100%; height: 110px; }
+    .toggle-status-btn { padding: 12px 20px; font-size: 14px; margin-bottom: 16px; width: 100%; box-sizing: border-box; }
+    .md-btn { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; }
+    .md-btn-list { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; gap: 4px; }
+    .md-toolbar { top: 63px; padding: 8px 10px; gap: 5px; overflow-x: hidden; }
+    #bodyTextarea { scroll-margin-top: calc(63px + 56px + 8px); }
+    .map-modal { top: auto; bottom: 0; left: 0; right: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 90dvh; overflow-y: auto; }
+    .map-preview-area { height: 200px; }
+    .preview-caption-input { font-size: 14px; }
 }
 </file>
 
 <file path="static/css/detail.css">
-/* static/css/detail.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/detail.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   detailページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事詳細ページ コンテナ
-[対象要素]：.detail-container（最大幅・中央寄せ・余白）
-========================================== */
 .detail-container {
     max-width: 860px !important;
     margin: 0 auto;
@@ -2783,84 +2063,57 @@ h1 {
     box-sizing: border-box;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文カード
-[対象要素]：article（本文全体を囲むカード型コンテナ）
-========================================== */
+/* 記事本文カード — 左アクセントラインで一覧カードと統一 */
 article {
     background: #fff;
     padding: 52px 60px;
-    border: 1px solid #c5dff0;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     margin-bottom: 32px;
     box-sizing: border-box;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事タイトル
-[対象要素]：h1（記事の大タイトル）
-========================================== */
 h1 {
-    font-size: 25px;
-    font-weight: 800;
-    color: #0d3a52;
+    font-size: 24px;
+    font-weight: 700;
+    color: #0c1f35;
     margin: 0 0 20px;
     text-align: left;
     line-height: 1.4;
     letter-spacing: -0.02em;
 }
 
-
-/* ===========================
-   記事メタ情報
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事ジャンルバッジ
-[対象要素]：.genre-badge（ジャンル名を示すバッジ）
-========================================== */
+/* メタ情報 */
 .genre-badge {
-    background-color: #e7f7ff;
-    color: #1a5f85;
+    background-color: #dbeafe;
+    color: #0369a1;
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 13px;
     margin-bottom: 8px;
     font-weight: 600;
-    border: 1px solid #9fd0ec;
+    border: 1px solid #38bdf8;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事メタ情報エリア
-[対象要素]：.post-meta（ジャンル・投稿者・日時・タグをまとめるエリア）
-========================================== */
 .post-meta {
     display: flex;
     flex-direction: column;
     gap: 8px;
     font-size: 13px;
-    color: #5a8ba8;
+    color: #4a7a96;
     margin-bottom: 36px;
     padding-bottom: 24px;
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 1px solid #e0f2fe;
     width: 100%;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事 投稿者情報
-[対象要素]：.post-user-info（アバター画像・ニックネームを横並びで表示）
-========================================== */
 .post-user-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #1a5f85;
+    color: #0369a1;
     font-weight: 600;
     font-size: 12px;
 }
@@ -2869,54 +2122,32 @@ h1 {
     width: 21px;
     height: 21px;
     border-radius: 50%;
-    background: #dff0fb;
-    border: 1px solid #c5dff0;
+    background: #dbeafe;
+    border: 1px solid #7dd3fa;
     margin: 0 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事 投稿・更新日時テキスト
-[対象要素]：.post-time（「投稿日時：〇〇」「更新日時：〇〇」テキスト）
-========================================== */
-.post-time {
-    color: #5a8ba8;
-    font-size: 12px;
-}
+.post-time { color: #4a7a96; font-size: 12px; }
 
-
-/* ===========================
-   目次（TOC）
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次ブロック コンテナ
-[対象要素]：.post-toc・.detail-article-body .toc（目次全体の枠・左アクセントライン）
-========================================== */
+/* 目次 */
 .post-toc,
 .detail-article-body .toc {
-    background-color: #f4fbff !important;
-    border: 1px solid #90c6e8 !important;
-    border-left: 4px solid #1a7aad !important;
-    border-radius: 8px;
+    background-color: #f0f9ff !important;
+    border: 1px solid #7dd3fa !important;
+    border-left: 4px solid #0ea5e9 !important;
+    border-radius: 0 8px 8px 0;
     padding: 20px 24px;
     margin: 36px 0;
     box-sizing: border-box;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 タイトル（.toc直上の::before疑似要素）
-[対象要素]：.detail-article-body .toc::before（「目次」テキストの自動挿入）
-========================================== */
 .detail-article-body .toc::before {
     content: "目次" !important;
     display: block !important;
     font-weight: 700 !important;
     font-size: 15px !important;
     margin: 0 0 14px !important;
-    color: #0d3a52 !important;
+    color: #0c1f35 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -2924,19 +2155,12 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 タイトルテキスト
-[対象要素]：.toc-title・.toc-fixed .toc-title・.toc-sticky .toc-title（「目次」見出し）
-========================================== */
-.post-toc .toc-title,
-.toc-fixed .toc-title,
-.toc-sticky .toc-title {
+.post-toc .toc-title, .toc-fixed .toc-title, .toc-sticky .toc-title {
     display: block !important;
     font-weight: 700 !important;
-    font-size: 17px !important;
+    font-size: 16px !important;
     margin: 0 0 14px !important;
-    color: #0d3a52 !important;
+    color: #0c1f35 !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -2944,14 +2168,7 @@ h1 {
     padding-bottom: 0 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 リスト外枠（h2レベル）
-[対象要素]：.post-toc > ul・.detail-article-body .toc > ul（最外ul）
-========================================== */
-.post-toc > ul,
-.post-toc .toc > ul,
-.detail-article-body .toc > ul {
+.post-toc > ul, .post-toc .toc > ul, .detail-article-body .toc > ul {
     list-style-type: none !important;
     padding-left: 0 !important;
     margin: 0 !important;
@@ -2959,25 +2176,11 @@ h1 {
     display: block !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 見出しへのスクロールオフセット
-[対象要素]：.detail-article-body h1・h2・h3（目次クリック時の到達位置をstickyヘッダー分オフセット）
-========================================== */
 .detail-article-body h1,
 .detail-article-body h2,
-.detail-article-body h3 {
-    scroll-margin-top: 100px;
-}
+.detail-article-body h3 { scroll-margin-top: 100px; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 大見出し項目（h2レベル）
-[対象要素]：.post-toc > ul > li・.detail-article-body .toc > ul > li
-========================================== */
-.post-toc > ul > li,
-.post-toc .toc > ul > li,
-.detail-article-body .toc > ul > li {
+.post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li {
     text-align: left !important;
     margin-bottom: 0 !important;
     padding: 11px 0 !important;
@@ -2986,32 +2189,18 @@ h1 {
     display: block !important;
     background: none !important;
     border: none !important;
-    border-bottom: 1px solid #9ccced !important;
-    color: #0d3a52 !important;
+    border-bottom: 1px solid #bae6fd !important;
+    color: #0c1f35 !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 中見出しリスト（h3レベル）
-[対象要素]：.post-toc ul ul・.detail-article-body .toc ul ul（入れ子ul）
-========================================== */
-.post-toc ul ul,
-.post-toc .toc ul ul,
-.detail-article-body .toc ul ul {
+.post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul {
     list-style-type: none !important;
     padding-left: 20px !important;
     margin: 6px 0 0 !important;
     display: block !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 中見出し項目（h3レベル）
-[対象要素]：.post-toc ul ul li・.detail-article-body .toc ul ul li（・マーカー付き）
-========================================== */
-.post-toc ul ul li,
-.post-toc .toc ul ul li,
-.detail-article-body .toc ul ul li {
+.post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
     font-size: 14px !important;
     font-weight: normal !important;
     padding: 4px 0 !important;
@@ -3021,61 +2210,38 @@ h1 {
     color: #2a4a5e !important;
 }
 
-.post-toc ul ul li::before,
-.post-toc .toc ul ul li::before,
-.detail-article-body .toc ul ul li::before {
+.post-toc ul ul li::before, .post-toc .toc ul ul li::before, .detail-article-body .toc ul ul li::before {
     content: "•" !important;
-    color: #5a8ba8 !important;
+    color: #38bdf8 !important;
     margin-right: 6px !important;
     font-size: 13px !important;
 }
 
-/* 最後の大見出し項目*/
-.post-toc > ul > li:last-child,
-.post-toc .toc > ul > li:last-child,
-.detail-article-body .toc > ul > li:last-child {
+.post-toc > ul > li:last-child, .post-toc .toc > ul > li:last-child, .detail-article-body .toc > ul > li:last-child {
     margin-bottom: 0 !important;
     border-bottom: none !important;
     padding-bottom: 0 !important;
 }
 
-/* 最初の大見出し項目*/
-.post-toc > ul > li:first-child,
-.post-toc .toc > ul > li:first-child,
-.detail-article-body .toc > ul > li:first-child {
+.post-toc > ul > li:first-child, .post-toc .toc > ul > li:first-child, .detail-article-body .toc > ul > li:first-child {
     padding-top: 4px !important;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：目次 リンク
-[対象要素]：.post-toc a・.detail-article-body .toc a（クリックで見出しへ移動・ホバー状態）
-========================================== */
-.post-toc a,
-.detail-article-body .toc a {
-    color: #1a6a96 !important;
+.post-toc a, .detail-article-body .toc a {
+    color: #0369a1 !important;
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
 }
 
-.post-toc a:hover,
-.detail-article-body .toc a:hover {
-    color: #1a7aad !important;
+.post-toc a:hover, .detail-article-body .toc a:hover {
+    color: #0ea5e9 !important;
     text-decoration: underline !important;
 }
 
-
-/* ===========================
-   記事本文
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文エリア 基本スタイル
-[対象要素]：.detail-article-body（マークダウン変換後HTML全体の文字・行間）
-========================================== */
+/* 記事本文 */
 .detail-article-body {
+    font-weight: 400;
     font-size: 17px;
     line-height: 1.8;
     word-break: break-word;
@@ -3084,298 +2250,60 @@ h1 {
     color: #1e3a4f;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 太字テキスト
-[対象要素]：.detail-article-body strong
-========================================== */
-.detail-article-body strong {
-    font-weight: 700 !important;
-    color: #0d3a52;
-}
+.detail-article-body strong { font-weight: 700 !important; color: #0c1f35; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 段落
-[対象要素]：.detail-article-body p
-========================================== */
-.detail-article-body p {
-    margin-top: 9px !important;
-    margin-bottom: 1.4em;
-    font-size: 17px;
-}
+.detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 17px; font-weight: 400; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 H2見出し
-[対象要素]：.detail-article-body h2（下線付き大見出し）
-========================================== */
 .detail-article-body h2 {
-    font-size: 23px;
+    font-size: 22px;
     font-weight: 700;
-    border-bottom: 2px solid #b0d5ec;
+    border-bottom: 2px solid #7dd3fa;
     padding-bottom: 6px;
     margin: 40px 0 16px;
     text-align: left;
-    color: #0d3a52;
+    color: #0c1f35;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文 H3見出し
-[対象要素]：.detail-article-body h3（左線付き中見出し）
-========================================== */
 .detail-article-body h3 {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     margin: 28px 0 0;
     text-align: left;
-    color: #0d3a52;
-    border-left: 3px solid #5aaedc;
+    color: #0c1f35;
+    border-left: 4px solid #0ea5e9;
     padding-left: 10px;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事本文内 埋め込み画像
-[対象要素]：article img（本文中の画像・中央寄せ・角丸）
-========================================== */
-article img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 25px auto;
-    border-radius: 5px;
-}
+article img { max-width: 100%; height: auto; display: block; margin: 25px auto; border-radius: 5px; }
 
+/* 画像キャプション */
+.post-figure { display: block; margin: 16px auto 8px; text-align: center; }
+.post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
+.post-figcaption { margin-top: 6px; text-align: center !important; font-size: 15px; color: #0369a1; line-height: 1.5; display: block; width: 100%; }
+.post-figure + p { margin-top: 0.6em; }
 
-/* ===========================
-   画像キャプション表示
-   =========================== */
+/* 地図 */
+.post-map-wrapper { margin: 24px 0; border-radius: 0 10px 10px 0; overflow: hidden; border: 1.5px solid #7dd3fa; border-left: 4px solid #0ea5e9; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); }
+.post-map-label { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0369a1; background: #f0f9ff; border-bottom: 1px solid #7dd3fa; }
+.post-map-iframe { width: 100%; height: 380px; border: none; display: block; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：画像キャプション付き figure
-[対象要素]：.post-figure（figureタグ全体・中央寄せ）
-========================================== */
-.post-figure {
-    display: block;
-    margin: 16px auto 8px;
-    text-align: center;
-}
+/* YouTube */
+.post-youtube-wrapper { margin: 24px 0; border-radius: 10px; overflow: hidden; border: 1px solid #7dd3fa; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.post-youtube-facade { position: absolute; inset: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.post-youtube-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s ease; }
+.post-youtube-facade:hover .post-youtube-thumb { filter: brightness(0.85); }
+.post-youtube-play-btn { position: absolute; background: none; border: none; cursor: pointer; padding: 0; transition: transform 0.15s ease; }
+.post-youtube-facade:hover .post-youtube-play-btn { transform: scale(1.1); }
+.yt-btn-bg { fill: #ff0000; fill-opacity: 0.9; transition: fill-opacity 0.15s ease; }
+.post-youtube-facade:hover .yt-btn-bg { fill-opacity: 1; }
+.yt-btn-icon { fill: #fff; }
+.post-youtube-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：画像キャプション付き figure 内画像
-[対象要素]：.post-figure img（figure内画像・article imgのmarginを上書き）
-========================================== */
-.post-figure img {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block !important;
-    margin: 0 auto !important;
-    border-radius: 5px;
-}
+/* 下部ボタン */
+hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：画像キャプションテキスト
-[対象要素]：.post-figcaption（画像下部のキャプション・中央寄せ）
-========================================== */
-.post-figcaption {
-    margin-top: 6px;
-    text-align: center !important;
-    font-size: 15px;
-    color: #214f69;
-    line-height: 1.5;
-    display: block;
-    width: 100%;
-}
+.detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 32px; flex-wrap: wrap; }
 
-.post-figure + p {
-    margin-top: 0.6em;
-}
-
-
-/* ===========================
-   Google Maps 埋め込み
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：Google Maps 埋め込みブロック
-[対象要素]：.post-map-wrapper（地図全体の外枠・角丸・影）
-========================================== */
-.post-map-wrapper {
-    margin: 24px 0;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #c5dff0;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.09);
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：Google Maps 埋め込みブロック ラベル
-[対象要素]：.post-map-label（地図上部の場所名テキスト）
-========================================== */
-.post-map-label {
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a5f85;
-    background: #f0faff;
-    border-bottom: 1px solid #c5dff0;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：Google Maps 埋め込みブロック iframeエリア
-[対象要素]：.post-map-iframe（実際の地図iframe・高さ380px）
-========================================== */
-.post-map-iframe {
-    width: 100%;
-    height: 380px;
-    border: none;
-    display: block;
-}
-
-
-/* ===========================
-   YouTube 動画埋め込み
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み コンテナ
-[対象要素]：.post-youtube-wrapper（16:9アスペクト比を維持するラッパー）
-========================================== */
-.post-youtube-wrapper {
-    margin: 24px 0;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #c5dff0;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.09);
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #000;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み ファサード（サムネイル表示層）
-[対象要素]：.post-youtube-facade（クリックで再生に切り替わる前面レイヤー）
-========================================== */
-.post-youtube-facade {
-    position: absolute;
-    inset: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み サムネイル画像
-[対象要素]：.post-youtube-thumb（ファサード内のサムネイル・ホバー時に暗転）
-========================================== */
-.post-youtube-thumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: filter 0.2s ease;
-}
-
-.post-youtube-facade:hover .post-youtube-thumb {
-    filter: brightness(0.85);
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み 再生ボタン
-[対象要素]：.post-youtube-play-btn（YouTube公式デザイン準拠の再生ボタンSVG・ホバー拡大）
-========================================== */
-.post-youtube-play-btn {
-    position: absolute;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: transform 0.15s ease;
-}
-
-.post-youtube-facade:hover .post-youtube-play-btn {
-    transform: scale(1.1);
-}
-
-
-.yt-btn-bg {
-    fill: #ff0000;
-    fill-opacity: 0.9;
-    transition: fill-opacity 0.15s ease;
-}
-
-.post-youtube-facade:hover .yt-btn-bg {
-    fill-opacity: 1;
-}
-
-
-.yt-btn-icon {
-    fill: #fff;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：YouTube 動画埋め込み 再生後iframe
-[対象要素]：.post-youtube-iframe（クリック後に動的挿入されるiframe）
-========================================== */
-.post-youtube-iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-}
-
-
-/* ===========================
-   記事下部ボタンエリア
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 区切り線
-[対象要素]：hr（本文とボタンエリアを区切る横線）
-========================================== */
-hr {
-    border: 0;
-    border-top: 1px solid #dff0fb;
-    margin: 0 0 24px;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 ボタンエリア
-[対象要素]：.detail-actions（「前の画面に戻る」「編集する」ボタンを並べるコンテナ）
-========================================== */
-.detail-actions {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    padding: 4px 0 32px;
-    flex-wrap: wrap;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 ボタン共通スタイル
-[対象要素]：.detail-btn（ボタン全種共通の形状・トランジション）
-========================================== */
 .detail-btn {
     display: inline-flex;
     align-items: center;
@@ -3388,123 +2316,75 @@ hr {
     font-family: inherit;
     letter-spacing: 0.02em;
     text-decoration: none;
-    transition: background-color 0.18s, border-color 0.18s,
-                color 0.18s, box-shadow 0.18s, transform 0.13s;
+    transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.13s;
     white-space: nowrap;
     min-height: 44px;
     line-height: 1;
 }
 
-.detail-btn-icon {
-    width: 17px;
-    height: 17px;
-    flex-shrink: 0;
-}
+.detail-btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 「前の画面に戻る」ボタン
-[対象要素]：.detail-btn-back（アウトライン・グレー系・ホバー・押下状態）
-========================================== */
 .detail-btn-back {
     background-color: #ffffff;
     color: #4a7a96;
-    border: 1.5px solid #a8cfe0;
-    box-shadow: 0 1px 4px rgba(26, 122, 173, 0.07);
+    border: 1px solid #7dd3fa;
+    box-shadow: 0 1px 4px rgba(14, 165, 233, 0.08);
 }
 
 .detail-btn-back:hover {
-    background-color: #f0f8fd;
-    border-color: #5aaedc;
-    color: #0d3a52;
-    box-shadow: 0 3px 10px rgba(26, 122, 173, 0.13);
+    background-color: #f0f9ff;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.14);
     transform: translateY(-1px);
 }
 
-.detail-btn-back:active {
-    transform: translateY(0);
-    box-shadow: none;
-    background-color: #dff0fb;
-}
+.detail-btn-back:active { transform: translateY(0); box-shadow: none; background-color: #dbeafe; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 「この記事を編集する」ボタン（管理者のみ表示）
-[対象要素]：.detail-btn-edit（塗りつぶしアクセントブルー・ホバー・押下状態）
-========================================== */
 .detail-btn-edit {
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #ffffff;
-    border: 1.5px solid #1a7aad;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.22);
+    border: 1px solid #0ea5e9;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
 .detail-btn-edit:hover {
-    background-color: #155f8a;
-    border-color: #155f8a;
+    background-color: #0369a1;
+    border-color: #0369a1;
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.30);
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.30);
     transform: translateY(-1px);
     text-decoration: none;
 }
 
-.detail-btn-edit:active {
-    transform: translateY(0);
-    box-shadow: none;
-    background-color: #0f4a6e;
-}
+.detail-btn-edit:active { transform: translateY(0); box-shadow: none; background-color: #075985; }
 
+/* 関連記事 */
+.related-section { margin-top: 20px; padding-top: 8px; }
 
-/* ===========================
-   関連記事セクション
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事セクション 外枠
-[対象要素]：.related-section（記事下部の関連記事エリア全体）
-========================================== */
-.related-section {
-    margin-top: 30px;
-    padding-top: 8px;
-}
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事セクション 見出し
-[対象要素]：.related-heading（「関連記事」見出し・アイコン・サブラベルを横並び）
-========================================== */
 .related-heading {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 700;
-    color: #0d3a52;
-    border-bottom: 2px solid #1a7aad;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
     padding-bottom: 10px;
     margin: 32px 0 14px;
     text-align: left;
     letter-spacing: 0.02em;
 }
 
-.related-heading-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-}
+.related-heading-icon { font-size: 16px; flex-shrink: 0; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事セクション 見出しサブラベル
-[対象要素]：.related-heading-sub（「〇〇を表示中」などのバッジ形式サブラベル）
-========================================== */
 .related-heading-sub {
     font-size: 13px;
     font-weight: 500;
-    color: #2e7198;
-    background: #f8fdff;
-    border: 1px solid #c5dff0;
+    color: #0369a1;
+    background: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 10px;
     padding: 2px 10px;
     margin-left: 4px;
@@ -3514,506 +2394,167 @@ hr {
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 カードリスト
-[対象要素]：.related-list（関連記事カードを縦に並べるulコンテナ）
-========================================== */
-.related-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+.related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 1件分カード
-[対象要素]：.related-card（サムネイル+テキストを横並びにするリンクカード・ホバー状態）
-========================================== */
+/* 関連記事カードも左アクセントラインデザインで統一 */
 .related-card {
     display: flex;
     align-items: center;
-    gap: 18px; 
+    gap: 18px;
     background: #fff;
-    border: 1px solid #c5dff0;
-    border-radius: 10px;
-    padding: 14px 18px 14px 14px; 
+    border: 1.5px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px 14px 14px;
     text-decoration: none;
     color: inherit;
-    transition: box-shadow 0.18s, border-color 0.18s, transform 0.15s;
+    transition: box-shadow 0.18s, border-color 0.18s, background 0.18s, transform 0.15s;
     overflow: hidden;
 }
 
 .related-card:hover {
-    border-color: #5aaedc;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.12);
+    border-left-color: #f59e0b;
+    border-color: #fbbf24;
+    background: #fffbeb;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
     transform: translateY(-1px);
     text-decoration: none;
     color: inherit;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 サムネイル
-[対象要素]：.related-thumb・img（関連記事カード左側のサムネイル画像）
-========================================== */
 .related-thumb {
-    flex: 0 0 120px; 
-    width: 120px;    
-    height: 85px;    
+    flex: 0 0 120px;
+    width: 120px;
+    height: 85px;
     border-radius: 6px;
     overflow: hidden;
-    background: #dff0fb;
-    border: 1px solid #c5dff0;
+    background: #dbeafe;
+    border: 1px solid #7dd3fa;
+    transition: border-color 0.18s;
 }
 
-.related-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-    margin: 0 !important;
-    border-radius: 0;
-}
+.related-card:hover .related-thumb { border-color: #fbbf24; background: #fef3c7; }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：関連記事 テキストエリア
-[対象要素]：.related-body・.related-title・.related-date（タイトル・日付テキスト）
-========================================== */
-.related-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+.related-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; margin: 0 !important; border-radius: 0; }
+
+.related-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 
 .related-title {
-    font-size: 16px; 
+    font-size: 15px;
     font-weight: 600;
-    color: #0d3a52;
+    color: #0c1f35;
     line-height: 1.45;
     margin: 0;
     overflow: hidden;
     display: -webkit-box;
-    /* stylelint-disable-next-line */
     -webkit-line-clamp: 2;
     line-clamp: 2;
-    /* stylelint-disable-next-line */
     -webkit-box-orient: vertical;
 }
 
-.related-card:hover .related-title {
-    color: #1a7aad;
-}
+.related-card:hover .related-title { color: #0369a1; }
+.related-date { font-size: 12px; color: #0369a1; margin: 0; font-weight: 500; }
 
-.related-date {
-    font-size: 13px; 
-    color: #548ba7;
-    margin: 0;
-}
+/* 後方互換ボタン */
+.detail-ul { display: flex; justify-content: center; gap: 16px; padding: 0; margin: 0; list-style: none; flex-wrap: wrap; }
+.detail-ul-li { background: none; border: none; padding: 0; }
+.detail-ul-li-a { font-size: 14px; color: #0369a1; text-decoration: none; padding: 10px 22px; border: 1px solid #7dd3fa; border-radius: 20px; display: inline-block; transition: all 0.18s; background: none; cursor: pointer; font-family: inherit; }
+.detail-ul-li-a:hover { border-color: #0ea5e9; color: #0c1f35; background: #dbeafe; text-decoration: none; }
 
-
-/* ===========================
-   旧ボタンエリア（後方互換）
-   =========================== */
-
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事下部 旧ボタンリスト（後方互換）
-[対象要素]：.detail-ul・.detail-ul-li・.detail-ul-li-a（旧デザインのボタン群・ホバー状態）
-========================================== */
-.detail-ul {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 0;
-    margin: 0;
-    list-style: none;
-    flex-wrap: wrap;
-}
-
-.detail-ul-li {
-    background: none;
-    border: none;
-    padding: 0;
-}
-
-.detail-ul-li-a {
-    font-size: 14px;
-    color: #1a5f85;
-    text-decoration: none;
-    padding: 10px 22px;
-    border: 1.5px solid #8cc8e8;
-    border-radius: 20px;
-    display: inline-block;
-    transition: all 0.18s;
-    background: none;
-    cursor: pointer;
-    font-family: inherit;
-}
-
-.detail-ul-li-a:hover {
-    border-color: #1a7aad;
-    color: #1a7aad;
-    background: #dff0fb;
-    text-decoration: none;
-}
-
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
+/* スマホ */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事詳細コンテナ・本文カード（スマホ全幅・角丸なし）
-    [対象要素]：.detail-container・article・h1
-    ========================================== */
-    .detail-container {
-        padding: 16px 0 48px !important;
-        width: 100% !important;
-        overflow-x: hidden;
-    }
-
-    article {
-        padding: 28px 16px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        margin-bottom: 16px;
-    }
-
-    h1 {
-        font-size: 21px;
-        letter-spacing: -0.01em;
-        line-height: 1.45;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事メタ情報（スマホ縮小）
-    [対象要素]：.post-meta・.post-user-info
-    ========================================== */
-    .post-meta {
-        font-size: 12px;
-        gap: 6px;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-    }
-
-    .post-user-info {
-        font-size: 13px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事本文（スマホ文字サイズ・コードブロック横スクロール対応）
-    [対象要素]：.detail-article-body・p・pre・code・table・h2・h3
-    ========================================== */
+    .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
+    article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }
+    h1 { font-size: 20px; letter-spacing: -0.01em; line-height: 1.45; }
+    .post-meta { font-size: 12px; gap: 6px; margin-bottom: 24px; padding-bottom: 16px; }
+    .post-user-info { font-size: 13px; }
     .detail-article-body {
-        font-size: 15px !important;
-        line-height: 1.75 !important;
-        word-break: break-all;
-    }
-
-    .detail-article-body p {
-        margin-top: 9px !important;
-        margin-bottom: 1.4em;
-        font-size: 15px;
-    }
-
-    .detail-article-body pre,
-    .detail-article-body code,
-    .detail-article-body table {
-        max-width: 100% !important;
-        overflow-x: auto !important;
-        display: block;
-        word-break: normal;
-    }
-
-    .detail-article-body h2 {
-        font-size: 19px;
-        margin: 32px 0 12px;
-    }
-
-    .detail-article-body h3 {
-        font-size: 17px;
-        margin: 24px 0 0;
-        padding-left: 8px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：目次ブロック（スマホ縮小）
-    [対象要素]：.post-toc・.detail-article-body .toc・各li
-    ========================================== */
-    .post-toc,
-    .detail-article-body .toc {
-        padding: 16px !important;
-        border-radius: 6px !important;
-        margin: 24px 0 !important;
-    }
-
-    .post-toc > ul > li,
-    .post-toc .toc > ul > li,
-    .detail-article-body .toc > ul > li {
-        font-size: 14px !important;
-        padding: 10px 0 !important;
-    }
-
-    .post-toc ul ul,
-    .post-toc .toc ul ul,
-    .detail-article-body .toc ul ul {
-        padding-left: 16px !important;
-        margin: 4px 0 0 !important;
-    }
-
-    .post-toc ul ul li,
-    .post-toc .toc ul ul li,
-    .detail-article-body .toc ul ul li {
-        font-size: 13px !important;
-        padding: 5px 0 !important;
-    }
-
-    .post-toc ul ul li::before,
-    .post-toc .toc ul ul li::before,
-    .detail-article-body .toc ul ul li::before {
-        font-size: 12px !important;
-        margin-right: 5px !important;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：Google Maps 埋め込み（スマホ高さ縮小）
-    [対象要素]：.post-map-iframe
-    ========================================== */
-    .post-map-iframe {
-        height: 260px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：YouTube 動画埋め込み（スマホ角丸縮小）
-    [対象要素]：.post-youtube-wrapper
-    ========================================== */
-    .post-youtube-wrapper {
-        border-radius: 6px;
-        margin: 16px 0;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：記事下部 区切り線・ボタンエリア（スマホ縦積み）
-    [対象要素]：hr・.detail-actions・.detail-btn・.detail-ul・.detail-ul-li-a
-    ========================================== */
-    hr {
-        margin: 0 16px 20px;
-    }
-
-    .detail-actions {
-        flex-direction: column;
-        gap: 10px;
-        padding: 0 16px 28px;
-    }
-
-    .detail-btn {
-        width: 100%;
-        justify-content: center;
-        padding: 13px 24px;
-        font-size: 15px;
-        border-radius: 8px;
-        box-sizing: border-box;
-    }
-
-    .detail-ul {
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        padding: 0 16px 12px;
-        box-sizing: border-box;
-    }
-
-    .detail-ul-li {
-        width: 100%;
-    }
-
-    .detail-ul-li-a {
-        font-size: 15px;
-        padding: 13px 24px;
-        display: block;
-        text-align: center;
-        width: 100%;
-        box-sizing: border-box;
-        min-height: 48px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：画像キャプション（スマホ縮小）
-    [対象要素]：.post-figure・.post-figcaption
-    ========================================== */
-    .post-figure {
-        margin: 12px auto 6px;
-    }
-
-    .post-figcaption {
-        font-size: 12px;
-    }
-
-    /* ==========================================
-    [画面名]：detailページ（スマホ）
-    [機能名]：関連記事セクション（スマホ縮小）
-    [対象要素]：.related-section・.related-heading・.related-card・.related-thumb・.related-title
-    ========================================== */
-    .related-section {
-        margin-top: 28px;
-        padding: 0 0 8px;
-    }
-
-    .related-heading {
-        font-size: 16px;
-        margin: 24px 0 12px;
-        padding-bottom: 8px;
-    }
-
-    .related-heading-sub {
-        margin-left: 0;
-        font-size: 11px;
-    }
-
-    .related-list {
-        gap: 8px;
-    }
-
-    .related-card {
-        gap: 14px;                   
-        padding: 12px 14px 12px 12px; 
-        border-radius: 8px;
-    }
-
-    .related-thumb {
-        flex: 0 0 100px; 
-        width: 100px;    
-        height: 70px;    
-    }
-
-    .related-title {
-        font-size: 14px; 
-    }
-
-    .related-date {
-        font-size: 12px; 
-    }
+    font-weight: 500; font-size: 15px !important; line-height: 1.75 !important; word-break: break-all; }
+    .detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 15px; }
+    .detail-article-body pre, .detail-article-body code, .detail-article-body table { max-width: 100% !important; overflow-x: auto !important; display: block; word-break: normal; }
+    .detail-article-body h2 { font-size: 18px; margin: 32px 0 12px; }
+    .detail-article-body h3 { font-size: 16px; margin: 24px 0 0; padding-left: 8px; }
+    .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
+    .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 14px !important; padding: 10px 0 !important; }
+    .post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
+    .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 13px !important; padding: 5px 0 !important; }
+    .post-map-iframe { height: 260px; }
+    .post-youtube-wrapper { border-radius: 6px; margin: 16px 0; }
+    hr { margin: 0 16px 20px; }
+    .detail-actions { flex-direction: column; gap: 10px; padding: 0 16px 28px; }
+    .detail-btn { width: 100%; justify-content: center; padding: 13px 24px; font-size: 15px; border-radius: 8px; box-sizing: border-box; }
+    .detail-ul { flex-direction: column; align-items: center; gap: 12px; padding: 0 16px 12px; box-sizing: border-box; }
+    .detail-ul-li { width: 100%; }
+    .detail-ul-li-a { font-size: 15px; padding: 13px 24px; display: block; text-align: center; width: 100%; box-sizing: border-box; min-height: 48px; }
+    .post-figure { margin: 12px auto 6px; }
+    .post-figcaption { font-size: 12px; }
+    .related-section { margin-top: 28px; padding: 0 0 8px; }
+    .related-heading { font-size: 16px; margin: 24px 0 12px; padding-bottom: 8px; }
+    .related-heading-sub { margin-left: 0; font-size: 11px; }
+    .related-list { gap: 8px; }
+    .related-card { gap: 14px; padding: 12px 14px 12px 12px; border-radius: 0 8px 8px 0; }
+    .related-thumb { flex: 0 0 100px; width: 100px; height: 70px; }
+    .related-title { font-size: 14px; }
+    .related-date { font-size: 12px; }
 }
 </file>
 
 <file path="static/css/genre.css">
-/* static/css/genre.css - 水色×白 爽やかテーマ版（文字色修正済み） */
+/* static/css/genre.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   genreページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンル一覧ページ タイトル
-[対象要素]：h1（「ジャンル一覧」見出し）
-========================================== */
 h1 {
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     margin: 36px 0 20px;
-    color: #1a1a1a;
+    color: #0c1f35;
     letter-spacing: -0.01em;
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンル一覧 コンテナ
-[対象要素]：.genre-container（リスト全体を囲むカード型コンテナ）
-========================================== */
 .genre-container {
     max-width: 480px;
     margin: 0 auto 60px;
     background: #fff;
-    border: 1px solid #c5dff0;
+    border: 1.5px solid #7dd3fa;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンル一覧 リスト基本スタイル
-[対象要素]：.genre-list・.sub-genre-list（アウターリスト・サブリストの余白リセット）
-========================================== */
 .genre-list, .sub-genre-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-
-/* ===========================
-   「全て表示」リンク
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：「全て表示」リンク
-[対象要素]：.genre-item-all a（全記事表示リンク・ホバー状態）
-========================================== */
+/* 「全て表示」リンク */
 .genre-item-all a {
     display: block;
     padding: 16px 24px;
     font-size: 15px !important;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #0369a1;
     text-decoration: none;
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 1px solid #e0f2fe;
     transition: background 0.15s;
 }
 
 .genre-item-all a:hover {
-    background: #f0f8fd;
-    color: #1a7aad;
+    background: #dbeafe;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-
-/* ===========================
-   ジャンルグループ（アコーディオン）
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンルグループ アコーディオン外枠
-[対象要素]：.genre-group（各カテゴリグループの境界線）
-========================================== */
+/* アコーディオン外枠 */
 .genre-group {
-    border-bottom: 1px solid #dff0fb;
+    border-bottom: 1px solid #e0f2fe;
 }
 
 .genre-group:last-child {
     border-bottom: none;
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンルグループ アコーディオン 見出し行
-[対象要素]：.group-title（summary要素・クリックで開閉・矢印アイコン）
-========================================== */
+/* アコーディオン見出し */
 .group-title {
     display: flex;
     justify-content: space-between;
@@ -4021,7 +2562,7 @@ h1 {
     padding: 15px 24px;
     font-size: 15px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #0c1f35;
     cursor: pointer;
     user-select: none;
     outline: none;
@@ -4032,21 +2573,16 @@ h1 {
 }
 
 .group-title:hover {
-    background: #f0f8fd;
+    background: #f0f9ff;
 }
 
 .group-title::-webkit-details-marker {
     display: none;
 }
 
-/* ==========================================
-[画面名]：genreページ
-[機能名]：ジャンルグループ アコーディオン 矢印アイコン
-[対象要素]：.group-title .arrow（開閉状態を示す矢印・回転アニメーション）
-========================================== */
 .group-title .arrow {
     font-size: 10px;
-    color: #8cc8e8;
+    color: #38bdf8;
     display: inline-block;
     transition: transform 0.22s ease, color 0.22s;
     flex-shrink: 0;
@@ -4054,36 +2590,28 @@ h1 {
 
 details[open] .group-title .arrow {
     transform: rotate(90deg);
-    color: #1a7aad;
+    color: #0ea5e9;
 }
 
 details[open] .group-title {
-    color: #1a1a1a;
-    background: #f0f8fd;
-    border-bottom: 1px solid #dff0fb;
+    color: #0c1f35;
+    background: #f0f9ff;
+    border-bottom: 1px solid #e0f2fe;
 }
 
-
-/* ===========================
-   サブジャンルリスト（アコーディオン内）
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：サブジャンルリスト
-[対象要素]：.sub-genre-list・li・a（アコーディオン内の個別ジャンルリンク・ホバー）
-========================================== */
+/* サブジャンルリスト */
 .sub-genre-list {
-    background: #f8fbfe;
+    background: #f8fdff;
     padding: 4px 0;
 }
 
 .sub-genre-list li a {
+    font-weight: 500;
     display: flex;
     align-items: center;
     padding: 12px 24px 12px 36px;
     font-size: 14px !important;
-    color: #333;
+    color: #0369a1;
     text-decoration: none;
     transition: background 0.15s, color 0.15s;
     min-height: 44px;
@@ -4093,26 +2621,17 @@ details[open] .group-title {
 .sub-genre-list li a::before {
     content: "–";
     margin-right: 8px;
-    color: #8cc8e8;
+    color: #38bdf8;
     flex-shrink: 0;
 }
 
 .sub-genre-list li a:hover {
-    background: #dff0fb;
-    color: #095984;
+    background: #dbeafe;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-
-/* ===========================
-   フッターリンク
-   =========================== */
-
-/* ==========================================
-[画面名]：genreページ
-[機能名]：一覧に戻るフッターリンク
-[対象要素]：.genre-footer・a（「一覧画面に戻る」リンクボタン・ホバー）
-========================================== */
+/* フッターリンク */
 .genre-footer {
     text-align: center;
     margin: 20px 0 48px;
@@ -4120,83 +2639,44 @@ details[open] .group-title {
 
 .genre-footer a {
     font-size: 14px;
-    color: #333;
+    color: #0369a1;
     text-decoration: none;
     padding: 10px 22px;
-    border: 1.5px solid #8cc8e8;
+    border: 1px solid #7dd3fa;
     border-radius: 20px;
     display: inline-block;
     transition: all 0.18s;
+    background: #ffffff;
 }
 
 .genre-footer a:hover {
-    border-color: #1a7aad;
-    color: #0c5b86;
-    background: #dff0fb;
+    border-color: #0ea5e9;
+    color: #0c1f35;
+    background: #dbeafe;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：genreページ（スマホ）
-    [機能名]：ページタイトル・コンテナ・リンク（スマホ縮小）
-    [対象要素]：h1・.genre-container・.genre-item-all a・.group-title・.sub-genre-list li a
-    ========================================== */
-    h1 {
-        font-size: 18px;
-        margin: 24px 0 16px;
-    }
-
-    .genre-container {
-        margin: 0 16px 48px;
-        border-radius: 10px;
-    }
-
-    .genre-item-all a {
-        padding: 16px 18px;
-        font-size: 14px !important;
-    }
-
-    .group-title {
-        padding: 14px 18px;
-        font-size: 14px;
-        min-height: 50px;
-    }
-
+    h1 { font-size: 18px; margin: 24px 0 16px; }
+    .genre-container { margin: 0 16px 48px; border-radius: 10px; }
+    .genre-item-all a { padding: 16px 18px; font-size: 14px !important; }
+    .group-title { padding: 14px 18px; font-size: 14px; min-height: 50px; }
     .sub-genre-list li a {
-        padding: 12px 18px 12px 30px;
-        font-size: 14px !important;
-        min-height: 48px;
-    }
+    font-weight: 500; padding: 12px 18px 12px 30px; font-size: 14px !important; min-height: 48px; }
 }
 </file>
 
 <file path="static/css/hashtag.css">
-/* static/css/hashtag.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/hashtag.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   ハッシュタグバッジ（共通）
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ・detailページ
-[機能名]：ハッシュタグバッジ（記事カード・詳細ページ共通）
-[対象要素]：.hashtag-badge（タグ名リンクバッジ・通常状態・ホバー状態）
-========================================== */
+/* ハッシュタグバッジ（共通） */
 .hashtag-badge {
     display: inline-block;
-    padding: 3px 10px;
+    padding: 2px 9px;
     font-size: 12px;
     font-weight: 600;
-    color: #0086cf;
-    background-color: #eeeeee;
+    color: #0369a1;
+    background-color: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 7px;
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
@@ -4204,17 +2684,12 @@ details[open] .group-title {
 }
 
 .hashtag-badge:hover {
-    background-color: #c5dff0;
-    border-color: #5aaedc;
-    color: #0d3a52;
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：記事カード内 ハッシュタグバッジ群
-[対象要素]：.post-hashtags（カード内バッジを横並び・折り返しで並べるコンテナ）
-========================================== */
 .post-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -4222,11 +2697,6 @@ details[open] .group-title {
     margin: 4px 0 8px;
 }
 
-/* ==========================================
-[画面名]：detailページ
-[機能名]：記事詳細ページ内 ハッシュタグバッジ群
-[対象要素]：.detail-hashtags（詳細ページのメタ情報内バッジコンテナ）
-========================================== */
 .detail-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -4234,47 +2704,30 @@ details[open] .group-title {
     margin-top: 4px;
 }
 
-
-/* ===========================
-   ハッシュタグ絞り込みバー（indexページ）
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ジャンル選択時のハッシュタグ絞り込みバー
-[対象要素]：.hashtag-filter-bar（絞り込みバー全体の枠）
-========================================== */
+/* ハッシュタグ絞り込みバー */
 .hashtag-filter-bar {
     display: flex;
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 10px;
-    background: #fcffff;
-    border: 1px solid #72c9ff;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1.5px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 10px 10px 0;
     padding: 14px 18px;
-    margin-bottom: 24px;
+    margin-bottom: 35px;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.08);
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー ラベル
-[対象要素]：.hashtag-filter-label（「タグで絞り込む：」テキスト）
-========================================== */
 .hashtag-filter-label {
     font-size: 13px;
     font-weight: 700;
-    color: #1a5f85;
+    color: #0369a1;
     white-space: nowrap;
     padding-top: 2px;
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー タグリスト
-[対象要素]：.hashtag-filter-list（バッジを横並びで並べるコンテナ）
-========================================== */
 .hashtag-filter-list {
     display: flex;
     flex-wrap: wrap;
@@ -4282,19 +2735,14 @@ details[open] .group-title {
     align-items: center;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー 各タグバッジ
-[対象要素]：.hashtag-filter-badge（通常状態・ホバー状態・選択中状態）
-========================================== */
 .hashtag-filter-badge {
     display: inline-block;
     padding: 4px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #0e5e8a;
-    background-color: #f5ffff;
-    border: 1.5px solid #74cdfd;
+    color: #0369a1;
+    background-color: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -4302,30 +2750,24 @@ details[open] .group-title {
 }
 
 .hashtag-filter-badge:hover {
-    background-color: #dff0fb;
-    border-color: #5aaedc;
-    color: #0d3a52;
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
     text-decoration: none;
 }
 
-/* 選択中バッジ */
 .hashtag-filter-badge.active {
-    background-color: #1a7aad;
-    border-color: #1a7aad;
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
     color: #fff;
 }
 
 .hashtag-filter-badge.active:hover {
-    background-color: #155f8a;
-    border-color: #155f8a;
+    background-color: #0369a1;
+    border-color: #0369a1;
     color: #fff;
 }
 
-/* ==========================================
-[画面名]：indexページ
-[機能名]：ハッシュタグ絞り込みバー タグ解除ボタン
-[対象要素]：.hashtag-filter-clear（「✕ タグ解除」リンク・ホバー状態）
-========================================== */
 .hashtag-filter-clear {
     display: inline-block;
     padding: 4px 12px;
@@ -4333,7 +2775,7 @@ details[open] .group-title {
     font-weight: 700;
     color: #c0392b;
     background-color: #fff;
-    border: 1.5px solid #f5b7b1;
+    border: 1px solid #f5b7b1;
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.15s;
@@ -4347,23 +2789,14 @@ details[open] .group-title {
     text-decoration: none;
 }
 
-
-/* ===========================
-   ハッシュタグ入力エリア（create・updateページ）
-   =========================== */
-
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム ラッパー
-[対象要素]：.hashtag-input-wrapper（入力欄全体のボーダー付きラッパー・フォーカス状態）
-========================================== */
+/* ハッシュタグ入力エリア（create/update） */
 .hashtag-input-wrapper {
     display: flex;
     align-items: center;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 8px;
     padding: 8px 14px;
-    background: #f5f9fd;
+    background: #f0f9ff;
     margin-bottom: 10px;
     transition: border-color 0.18s, background 0.18s;
     box-sizing: border-box;
@@ -4371,36 +2804,27 @@ details[open] .group-title {
 }
 
 .hashtag-input-wrapper:focus-within {
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
     background: #fff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム 「#」プレフィックス
-[対象要素]：.hashtag-prefix（入力欄左端に常時表示する「#」記号）
-========================================== */
 .hashtag-prefix {
     font-size: 16px;
     font-weight: 700;
-    color: #1a7aad;
+    color: #0ea5e9;
     margin-right: 6px;
     user-select: none;
     flex-shrink: 0;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム テキスト入力
-[対象要素]：.hashtag-text-input（実際の文字入力フィールド）
-========================================== */
 .hashtag-text-input {
     flex: 1;
     border: none !important;
     outline: none !important;
     background: transparent !important;
     font-size: 15px;
-    color: #0d3a52;
+    color: #0c1f35;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -4408,11 +2832,6 @@ details[open] .group-title {
     font-family: inherit;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム リアルタイムプレビューエリア
-[対象要素]：.hashtag-preview-area（入力中のタグをバッジとしてリアルタイム表示するエリア）
-========================================== */
 .hashtag-preview-area {
     display: flex;
     flex-wrap: wrap;
@@ -4421,85 +2840,36 @@ details[open] .group-title {
     margin-bottom: 22px;
 }
 
-/* ==========================================
-[画面名]：createページ・updateページ
-[機能名]：ハッシュタグ入力フォーム プレビューバッジ
-[対象要素]：.hashtag-badge-preview（プレビューエリア内に表示されるバッジ・出現アニメーション）
-========================================== */
 .hashtag-badge-preview {
     display: inline-block;
     padding: 3px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #1a5f85;
-    background-color: #dff0fb;
-    border: 1px solid #8cc8e8;
+    color: #0369a1;
+    background-color: #dbeafe;
+    border: 1px solid #38bdf8;
     border-radius: 20px;
     animation: badgePop 0.15s ease;
 }
 
 @keyframes badgePop {
     from { transform: scale(0.85); opacity: 0.6; }
-    to   { transform: scale(1);    opacity: 1;   }
+    to   { transform: scale(1);    opacity: 1; }
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：indexページ（スマホ）
-    [機能名]：ハッシュタグ絞り込みバー（スマホ縦積み）
-    [対象要素]：.hashtag-filter-bar・.hashtag-filter-list・.hashtag-filter-badge・.hashtag-filter-clear
-    ========================================== */
     .hashtag-filter-bar {
         flex-direction: column;
         gap: 8px;
         padding: 12px 14px;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
     }
-
-    .hashtag-filter-list {
-        gap: 6px;
-    }
-
-    .hashtag-filter-badge,
-    .hashtag-filter-clear {
-        font-size: 12px;
-        padding: 5px 12px;
-    }
-
-    /* ==========================================
-    [画面名]：indexページ・mypageページ・detailページ（スマホ）
-    [機能名]：ハッシュタグバッジ（スマホ縮小）
-    [対象要素]：.post-hashtags・.detail-hashtags・.hashtag-badge
-    ========================================== */
-    .post-hashtags,
-    .detail-hashtags {
-        gap: 5px;
-    }
-
-    .hashtag-badge {
-        font-size: 11px;
-        padding: 2px 8px;
-    }
-
-    /* ==========================================
-    [画面名]：createページ・updateページ（スマホ）
-    [機能名]：ハッシュタグ入力フォーム（スマホ調整）
-    [対象要素]：.hashtag-input-wrapper・.hashtag-text-input
-    ========================================== */
-    .hashtag-input-wrapper {
-        padding: 10px 12px;
-    }
-
-    .hashtag-text-input {
-        font-size: 16px !important;
-    }
+    .hashtag-filter-list { gap: 6px; }
+    .hashtag-filter-badge, .hashtag-filter-clear { font-size: 12px; padding: 5px 12px; }
+    .post-hashtags, .detail-hashtags { gap: 5px; }
+    .hashtag-badge { font-size: 11px; padding: 2px 8px; }
+    .hashtag-input-wrapper { padding: 10px 12px; }
+    .hashtag-text-input { font-size: 16px !important; }
 }
 </file>
 
@@ -4549,7 +2919,7 @@ a[role="button"]:hover {
     font-size: 19px;
     color: #0c1f35;
     font-weight: 600;
-    margin-bottom: 27px;
+    margin-bottom: 10px;
     display: inline-block;
 }
 
@@ -4558,6 +2928,18 @@ a[role="button"]:hover {
    記事一覧セクション
    =========================== */
 .posts-section-title {
+    font-size: 1.4rem !important;
+    font-weight: 700;
+    color: #0c1f35;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+}
+
+
+/* ===========================
+   自己紹介見出し
+   =========================== */
+.hero-section-title {
     font-size: 1.4rem !important;
     font-weight: 700;
     color: #0c1f35;
@@ -4689,7 +3071,6 @@ a[role="button"]:hover {
     font-weight: 600;
     line-height: 1.5;
     text-align: left !important;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .post-title a {
@@ -4833,23 +3214,10 @@ a[role="button"]:hover {
 </file>
 
 <file path="static/css/load_more.css">
-/* static/css/load_more.css
-   「もっと見る」「表示を減らす」ボタン共通スタイル
-   index.html / mypage.html の両方から読み込む
-   ================================================= */
+/* static/css/load_more.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   もっと見る / 表示を減らす ボタン共通
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」「表示を減らす」ボタン ラッパー
-[対象要素]：.load-more-wrap（ボタンを中央寄せするflexコンテナ・JS制御で表示切替）
-========================================== */
 .load-more-wrap {
-    display: none;         
+    display: none;
     align-items: center;
     justify-content: center;
     gap: 12px;
@@ -4857,11 +3225,6 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」「表示を減らす」ボタン 共通スタイル
-[対象要素]：.load-more-btn・.load-less-btn（形状・トランジション共通定義）
-========================================== */
 .load-more-btn,
 .load-less-btn {
     display: inline-flex;
@@ -4874,89 +3237,56 @@ a[role="button"]:hover {
     cursor: pointer;
     font-family: inherit;
     letter-spacing: 0.02em;
-    transition: background-color 0.2s ease,
-                border-color     0.2s ease,
-                color            0.2s ease,
-                box-shadow       0.2s ease,
-                transform        0.15s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-
-/* ===========================
-   「もっと見る」ボタン
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」ボタン
-[対象要素]：.load-more-btn（通常状態・ホバー状態・押下状態）
-========================================== */
 .load-more-btn {
     background-color: #ffffff;
-    color: #1a5f85;
-    border: 1.5px solid #8cc8e8;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.08);
+    color: #0369a1;
+    border: 1px solid #7dd3fa;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.10);
 }
 
 .load-more-btn:hover {
-    background-color: #dff0fb;
-    border-color: #5aaedc;
-    color: #0d3a52;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.14);
+    background-color: #dbeafe;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.18);
     transform: translateY(-1px);
 }
 
 .load-more-btn:active {
     transform: translateY(0);
     box-shadow: none;
-    background-color: #c5dff0;
+    background-color: #bae6fd;
 }
 
-
-/* ===========================
-   「表示を減らす」ボタン
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「表示を減らす」ボタン
-[対象要素]：.load-less-btn（通常状態・ホバー状態・押下状態）
-========================================== */
 .load-less-btn {
     background-color: #ffffff;
-    color: #5a8ba8;
-    border: 1.5px solid #c5dff0;
-    box-shadow: 0 2px 8px rgba(26, 122, 173, 0.05);
+    color: #4a7a96;
+    border: 1px solid #bae6fd;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.06);
 }
 
 .load-less-btn:hover {
-    background-color: #f4fbff;
-    border-color: #8cc8e8;
-    color: #0d3a52;
-    box-shadow: 0 4px 14px rgba(26, 122, 173, 0.10);
+    background-color: #f0f9ff;
+    border-color: #7dd3fa;
+    color: #0c1f35;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
     transform: translateY(-1px);
 }
 
 .load-less-btn:active {
     transform: translateY(0);
     box-shadow: none;
-    background-color: #e4f3fb;
+    background-color: #e0f2fe;
 }
 
-
-/* ===========================
-   残件数バッジ
-   =========================== */
-
-/* ==========================================
-[画面名]：indexページ・mypageページ
-[機能名]：「もっと見る」ボタン内 残件数バッジ
-[対象要素]：.load-more-count（「あと〇件」バッジ・ホバー時色変更）
-========================================== */
 .load-more-count {
     display: inline-block;
-    background: #e4f3fb;
-    color: #1a7aad;
+    background: #dbeafe;
+    color: #0369a1;
     font-size: 12px;
     font-weight: 700;
     padding: 2px 10px;
@@ -4968,29 +3298,12 @@ a[role="button"]:hover {
 }
 
 .load-more-btn:hover .load-more-count {
-    background-color: #c5dff0;
+    background-color: #bae6fd;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜600px） */
 @media (max-width: 600px) {
-
-    /* ==========================================
-    [画面名]：indexページ・mypageページ（スマホ）
-    [機能名]：「もっと見る」「表示を減らす」ボタン（スマホ全幅・縦積み）
-    [対象要素]：.load-more-wrap・.load-more-btn・.load-less-btn
-    ========================================== */
-    .load-more-wrap {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .load-more-btn,
-    .load-less-btn {
+    .load-more-wrap { flex-direction: column; gap: 8px; }
+    .load-more-btn, .load-less-btn {
         width: 100%;
         justify-content: center;
         padding: 14px 24px;
@@ -5001,18 +3314,8 @@ a[role="button"]:hover {
 </file>
 
 <file path="static/css/mypage.css">
-/* static/css/mypage.css - 水色×白 爽やかテーマ版 v2（差し色・視認性改善） */
+/* static/css/mypage.css - Coastal Dawn v2 */
 
-
-/* ===========================
-   mypageページ 全体レイアウト
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：マイページ全体コンテナ
-[対象要素]：.mypage-container（最大幅・中央寄せ・余白）
-========================================== */
 .mypage-container {
     max-width: 940px;
     margin: 0 auto;
@@ -5020,185 +3323,117 @@ a[role="button"]:hover {
     box-sizing: border-box;
 }
 
-
-/* ===========================
-   プロフィールヘッダー
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィールヘッダーカード
-[対象要素]：.profile-header（ニックネーム・投稿数・変更フォームをまとめるカード）
-========================================== */
+/* プロフィールヘッダー */
 .profile-header {
     background: #fff;
     padding: 28px 28px 24px;
-    border-radius: 12px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
     margin-bottom: 30px;
-    border: 1px solid #c5dff0;
-    box-shadow: 0 4px 16px rgba(26, 122, 173, 0.07);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィール表示名
-[対象要素]：.profile-title（「〇〇さんのマイページ」タイトル）
-========================================== */
 .profile-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     margin: 0 0 8px 0;
-    color: #0d3a52;
+    color: #0c1f35;
     letter-spacing: -0.01em;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィール ユーザー名表示
-[対象要素]：.profile-username（ログインユーザー名テキスト）
-========================================== */
 .profile-username {
     margin: 4px 0 0;
-    color: #5a8ba8;
+    color: #4a7a96;
     font-size: 13px;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：プロフィール 総投稿数表示
-[対象要素]：.profile-post-count（総投稿数テキスト・強調数値）
-========================================== */
 .profile-post-count {
+    font-weight: 500;
     margin: 10px 0 0;
     color: #2a4a5e;
     font-size: 14px;
 }
 
 .profile-post-count strong {
-    color: #1a7aad;
+    color: #0369a1;
     font-weight: 700;
 }
 
-
-/* ===========================
-   ニックネーム変更フォーム
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム ラッパー
-[対象要素]：.nickname-form-wrapper（フォームを区切り線で分けるラッパー）
-========================================== */
+/* ニックネーム変更フォーム */
 .nickname-form-wrapper {
     margin-top: 20px;
     padding-top: 18px;
-    border-top: 1px solid #dff0fb;
+    border-top: 1px solid #e0f2fe;
 }
 
 .nickname-form-wrapper > p,
 .nickname-form label {
     font-size: 13px;
-    color: #5a8ba8;
+    color: #4a7a96;
     margin: 0 0 8px;
     font-weight: 500;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム本体
-[対象要素]：.nickname-form（input・ボタンの横並びflex）
-========================================== */
 .nickname-form {
     display: flex;
     gap: 8px;
     align-items: center;
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム テキスト入力欄
-[対象要素]：.nickname-input（ニックネーム入力・フォーカス状態）
-========================================== */
 .nickname-input {
     flex: 1;
     min-width: 0;
     padding: 8px 14px;
-    border: 1.5px solid #c5dff0;
+    border: 1px solid #7dd3fa;
     border-radius: 20px;
     font-size: 14px;
     outline: none;
-    transition: border-color 0.18s;
-    background: #f5f9fd;
-    color: #0d3a52;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    background: #f0f9ff;
+    color: #0c1f35;
+    font-family: inherit;
 }
 
 .nickname-input:focus {
-    border-color: #1a7aad;
+    border-color: #0ea5e9;
     background: #fff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ニックネーム変更フォーム 送信ボタン
-[対象要素]：.nickname-submit-btn（「変更する」ボタン・ホバー状態）
-========================================== */
 .nickname-submit-btn {
     padding: 8px 18px;
-    background-color: #1a7aad;
+    background-color: #0ea5e9;
     color: #fff;
     border: none;
     border-radius: 20px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     transition: background 0.18s;
     white-space: nowrap;
     flex-shrink: 0;
+    font-family: inherit;
 }
 
 .nickname-submit-btn:hover {
-    background-color: #155f8a;
+    background-color: #0369a1;
 }
 
-
-/* ===========================
-   セクション見出し
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：ジャンル一覧セクション見出し
-[対象要素]：.section-title-genre（「あなたのジャンル」セクションタイトル）
-========================================== */
+/* セクション見出し */
 .section-title-genre,
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：投稿一覧セクション見出し
-[対象要素]：.section-title-posts（「投稿一覧」セクションタイトル）
-========================================== */
 .section-title-posts {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    color: #0d3a52;
-    border-bottom: 2px solid #1a7aad;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
     padding-bottom: 10px;
     margin: 36px 0 20px;
     letter-spacing: 0.02em;
 }
 
-
-/* ===========================
-   ジャンルタグ一覧
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：使用ジャンルタグ一覧
-[対象要素]：.user-genre-list・.genre-tags・.genre-tag-item・.genre-tag-link
-========================================== */
-.user-genre-list {
-    margin-bottom: 8px;
-}
+/* ジャンルタグ一覧 */
+.user-genre-list { margin-bottom: 8px; }
 
 .genre-tags {
     list-style: none;
@@ -5210,8 +3445,8 @@ a[role="button"]:hover {
 }
 
 .genre-tag-item {
-    background: #ffffff;
-    border: 1px solid #8cc8e8;
+    background: #dbeafe;
+    border: 1px solid #38bdf8;
     padding: 4px 14px;
     border-radius: 15px;
     display: inline-block;
@@ -5219,29 +3454,20 @@ a[role="button"]:hover {
 }
 
 .genre-tag-item:hover {
-    background: #dff0fb;
-    border-color: #5aaedc;
+    background: #bae6fd;
+    border-color: #0ea5e9;
 }
 
 .genre-tag-link {
     text-decoration: none;
-    color: #1a5f85;
+    color: #0369a1;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-
-/* ===========================
-   空状態メッセージ
-   =========================== */
-
-/* ==========================================
-[画面名]：mypageページ
-[機能名]：投稿ゼロ時の空状態メッセージ
-[対象要素]：.empty-message（投稿がない場合のメッセージ・誘導リンク）
-========================================== */
+/* 空状態メッセージ */
 .empty-message {
-    color: #5a8ba8;
+    color: #4a7a96;
     text-align: center;
     margin-top: 48px;
     font-size: 15px;
@@ -5249,91 +3475,40 @@ a[role="button"]:hover {
 }
 
 .empty-message a {
-    color: #1a7aad;
+    color: #0369a1;
     text-decoration: underline;
 }
 
-
-/* ==========================================================================
-   レスポンシブ（スマホ）
-   ========================================================================== */
-
-/* スマホ（〜767px） */
 @media (max-width: 767px) {
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：マイページコンテナ（スマホ余白縮小）
-    [対象要素]：.mypage-container
-    ========================================== */
-    .mypage-container {
-        padding: 15px 12px 48px;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：プロフィールヘッダー（スマホ縮小）
-    [対象要素]：.profile-header・.profile-title
-    ========================================== */
-    .profile-header {
-        padding: 20px 16px 18px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-
-    .profile-title {
-        font-size: 18px;
-    }
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：ニックネーム変更フォーム（スマホ縦積み）
-    [対象要素]：.nickname-form・.nickname-input・.nickname-submit-btn
-    ========================================== */
-    .nickname-form {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-    }
-
-    .nickname-input {
-        font-size: 16px;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    .nickname-submit-btn {
-        text-align: center;
-        margin-top: 4px;
-        padding: 10px;
-        font-size: 14px;
-        border-radius: 20px;
-        width: 100%;
-        min-height: 40px;
-    }
-
-    /* ==========================================
-    [画面名]：mypageページ（スマホ）
-    [機能名]：セクション見出し・ジャンルタグ（スマホ縮小）
-    [対象要素]：.section-title-genre・.section-title-posts・.genre-tag-item
-    ========================================== */
-    .section-title-genre,
-    .section-title-posts {
-        font-size: 15px;
-        margin: 28px 0 16px;
-    }
-
-    .genre-tag-item {
-        padding: 6px 14px;
-        background-color: #ffffff;
-    }
+    .mypage-container { padding: 15px 12px 48px; width: 100% !important; box-sizing: border-box; }
+    .profile-header { padding: 20px 16px 18px; border-radius: 0 10px 10px 0; margin-bottom: 20px; }
+    .profile-title { font-size: 17px; }
+    .nickname-form { flex-direction: column; align-items: stretch; gap: 8px; }
+    .nickname-input { font-size: 16px; width: 100% !important; box-sizing: border-box; }
+    .nickname-submit-btn { text-align: center; margin-top: 4px; padding: 10px; font-size: 14px; width: 100%; min-height: 40px; }
+    .section-title-genre, .section-title-posts { font-size: 15px; margin: 28px 0 16px; }
+    .genre-tag-item { padding: 6px 14px; }
 }
 </file>
 
 <file path="static/css/top_sections.css">
 /* static/css/top_sections.css - Coastal Dawn v2（白ヘッダー・視認性改善版） */
+
+
+/* ===========================
+   自己紹介見出し 
+   =========================== */
+.hero-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
+    padding-bottom: 10px;
+    margin: 0 0 20px;
+    text-align: left;
+    letter-spacing: 0.02em;
+    margin-top: 45px;
+}
 
 
 /* ===========================
@@ -5392,10 +3567,10 @@ a[role="button"]:hover {
     margin: 0 0 10px;
     text-align: left;
     letter-spacing: -0.02em;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .hero-bio {
+    font-weight: 500;
     font-size: 15px;
     color: #2a4a5e;
     line-height: 1.75;
@@ -5460,7 +3635,6 @@ a[role="button"]:hover {
     color: #0c1f35;
     margin: 0 0 16px;
     text-align: left;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .howto-list {
@@ -5473,6 +3647,7 @@ a[role="button"]:hover {
 }
 
 .howto-item {
+    font-weight: 500;
     display: flex;
     align-items: flex-start;
     gap: 14px;
@@ -5542,7 +3717,6 @@ a[role="button"]:hover {
     color: #0369a1;
     line-height: 1.2;
     letter-spacing: -0.03em;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .stats-label {
@@ -5565,7 +3739,7 @@ a[role="button"]:hover {
     margin: 0 0 20px;
     text-align: left;
     letter-spacing: 0.02em;
-    font-family: 'Noto Serif JP', Georgia, serif;
+    border-top: 100px;
 }
 
 
@@ -5602,7 +3776,6 @@ a[role="button"]:hover {
     margin: 0;
     text-align: left;
     letter-spacing: -0.02em;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .info-page-body {
@@ -5631,10 +3804,10 @@ a[role="button"]:hover {
     padding-left: 12px;
     margin: 0 0 12px;
     text-align: left;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .info-section p {
+    font-weight: 500;
     font-size: 15px;
     color: #2a4a5e;
     line-height: 1.8;
@@ -5678,7 +3851,7 @@ a[role="button"]:hover {
     border: 1.5px solid #7dd3fa;
     border-radius: 12px;
     padding: 20px 24px 22px;
-    margin-bottom: 28px;
+    margin-bottom: 30px;
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
@@ -5688,7 +3861,6 @@ a[role="button"]:hover {
     color: #0369a1;
     margin: 0 0 18px;
     letter-spacing: 0.03em;
-    font-family: 'Noto Serif JP', Georgia, serif;
 }
 
 .index-search-form {
@@ -5759,7 +3931,7 @@ a[role="button"]:hover {
     border-radius: 8px;
     outline: none;
     cursor: pointer;
-    font-family: 'Noto Sans JP', sans-serif;
+    font-family: inherit;
     transition: border-color 0.18s, background 0.18s;
     white-space: nowrap;
     overflow: hidden;
@@ -5817,7 +3989,7 @@ a[role="button"]:hover {
     border: 1px solid #7dd3fa;
     border-radius: 8px;
     outline: none;
-    font-family: 'Noto Sans JP', sans-serif;
+    font-family: inherit;
     box-sizing: border-box;
     transition: border-color 0.18s, background 0.18s;
 }
@@ -5872,7 +4044,7 @@ a[role="button"]:hover {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Noto Sans JP', sans-serif;
+    font-family: inherit;
     letter-spacing: 0.02em;
     white-space: nowrap;
     transition: background-color 0.18s, transform 0.13s;
@@ -5935,6 +4107,7 @@ a[role="button"]:hover {
     }
 
     .hero-bio {
+    font-weight: 500;
         font-size: 14px;
     }
 
@@ -5956,6 +4129,7 @@ a[role="button"]:hover {
     }
 
     .howto-item {
+    font-weight: 500;
         font-size: 13px;
         gap: 10px;
     }
@@ -5977,7 +4151,7 @@ a[role="button"]:hover {
     }
 
     .stats-number {
-        font-size: 22px;
+        font-size: 20px;
     }
 
     .stats-label {
@@ -6013,6 +4187,7 @@ a[role="button"]:hover {
     }
 
     .info-section p {
+    font-weight: 500;
         font-size: 14px;
     }
 
@@ -7348,6 +5523,9 @@ function ytPlay(facadeEl) {
 
 <file path="templates/hero.html">
 {# templates/hero.html #}
+
+<h3 class="hero-section-title">📋 自己紹介</h3>
+
 <section class="hero-section">
     <div class="hero-avatar">
         <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
@@ -7565,7 +5743,7 @@ function ytPlay(facadeEl) {
 
 <script>
 (function () {
-    var INITIAL = 3;   // 初期表示件数（これより多い記事数がある場合に「もっと見る」を表示）
+    var INITIAL = 4;   // 初期表示件数（これより多い記事数がある場合に「もっと見る」を表示）
     var STEP    = 4;   // 「もっと見る」クリック時の追加表示件数
 
     var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
