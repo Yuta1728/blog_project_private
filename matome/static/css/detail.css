@@ -30,7 +30,16 @@ h1 {
 }
 
 /* メタ情報 */
+
+/* ========================================
+   [修正] .genre-badge を <span> から <a> へ変更したことに伴い、
+   ハッシュタグバッジ（.hashtag-badge）と統一感のある
+   インタラクティブなスタイルを追加。
+   display: inline-block / text-decoration: none / transition / hover
+   を付与し、「タップできるタグ」であることが視覚的に伝わるようにする。
+   ======================================== */
 .genre-badge {
+    display: inline-block;
     background-color: #dbeafe;
     color: #0369a1;
     padding: 4px 10px;
@@ -39,6 +48,15 @@ h1 {
     margin-bottom: 8px;
     font-weight: 600;
     border: 1px solid #38bdf8;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.genre-badge:hover {
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
+    text-decoration: none;
 }
 
 .post-meta {
