@@ -357,7 +357,7 @@
     border: 1.5px solid #7dd3fa;
     border-radius: 12px;
     padding: 20px 24px 22px;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
@@ -700,7 +700,7 @@
     .index-search-area {
         padding: 16px 14px 18px;
         border-radius: 10px;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
 
     .index-search-title {
