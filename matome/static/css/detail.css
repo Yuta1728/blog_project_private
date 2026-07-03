@@ -1,5 +1,15 @@
-/* static/css/detail.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/detail.css - Coastal Dawn v2
+   【対象ページ】 detail.html（記事詳細ページ）
+   ============================================================
+   このファイルは記事詳細ページ専用のスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【detail.html】ページ全体のコンテナ
+   ------------------------------------------------------------ */
 .detail-container {
     max-width: 860px !important;
     margin: 0 auto;
@@ -7,7 +17,9 @@
     box-sizing: border-box;
 }
 
-/* 記事本文カード — 左アクセントラインで一覧カードと統一 */
+/* ------------------------------------------------------------
+   【detail.html】記事本文カード（一覧カードと左アクセントラインで統一）
+   ------------------------------------------------------------ */
 article {
     background: #fff;
     padding: 52px 60px;
@@ -19,6 +31,9 @@ article {
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
+/* ------------------------------------------------------------
+   【detail.html】記事タイトル
+   ------------------------------------------------------------ */
 h1 {
     font-size: 24px;
     font-weight: 700;
@@ -29,15 +44,15 @@ h1 {
     letter-spacing: -0.02em;
 }
 
-/* メタ情報 */
-
-/* ========================================
-   [修正] .genre-badge を <span> から <a> へ変更したことに伴い、
+/* ------------------------------------------------------------
+   【detail.html】ジャンルバッジ（クリックでジャンル絞り込みへ遷移するリンク）
+   ------------------------------------------------------------
+   .genre-badge を <span> から <a> へ変更したことに伴い、
    ハッシュタグバッジ（.hashtag-badge）と統一感のある
    インタラクティブなスタイルを追加。
    display: inline-block / text-decoration: none / transition / hover
    を付与し、「タップできるタグ」であることが視覚的に伝わるようにする。
-   ======================================== */
+   ------------------------------------------------------------ */
 .genre-badge {
     display: inline-block;
     background-color: #dbeafe;
@@ -59,6 +74,9 @@ h1 {
     text-decoration: none;
 }
 
+/* ------------------------------------------------------------
+   【detail.html】メタ情報エリア（ジャンル・投稿者・日時・ハッシュタグをまとめる領域）
+   ------------------------------------------------------------ */
 .post-meta {
     display: flex;
     flex-direction: column;
@@ -71,6 +89,7 @@ h1 {
     width: 100%;
 }
 
+/* 投稿者アイコン＋ニックネーム表示 */
 .post-user-info {
     display: flex;
     align-items: center;
@@ -89,9 +108,12 @@ h1 {
     margin: 0 !important;
 }
 
+/* 投稿日時・更新日時テキスト */
 .post-time { color: #4a7a96; font-size: 12px; }
 
-/* 目次 */
+/* ============================================================
+   【detail.html】目次（本文中の [toc] マーカーから自動生成）
+   ============================================================ */
 .post-toc,
 .detail-article-body .toc {
     background-color: #f0f9ff !important;
@@ -103,6 +125,7 @@ h1 {
     box-sizing: border-box;
 }
 
+/* 本文中の[toc]位置に挿入された目次の見出しラベル */
 .detail-article-body .toc::before {
     content: "目次" !important;
     display: block !important;
@@ -117,6 +140,7 @@ h1 {
     padding-bottom: 0 !important;
 }
 
+/* 記事先頭に自動表示される目次の見出しラベル（[toc]未使用時） */
 .post-toc .toc-title, .toc-fixed .toc-title, .toc-sticky .toc-title {
     display: block !important;
     font-weight: 700 !important;
@@ -138,6 +162,7 @@ h1 {
     display: block !important;
 }
 
+/* 本文中の見出し（H1〜H3）に、固定ヘッダー分のスクロール余白を確保 */
 .detail-article-body h1,
 .detail-article-body h2,
 .detail-article-body h3 { scroll-margin-top: 100px; }
@@ -201,7 +226,9 @@ h1 {
     text-decoration: underline !important;
 }
 
-/* 記事本文 */
+/* ============================================================
+   【detail.html】記事本文（Markdown→HTML変換後のテキスト）
+   ============================================================ */
 .detail-article-body {
     font-weight: 400;
     font-size: 17px;
@@ -236,20 +263,28 @@ h1 {
     padding-left: 10px;
 }
 
+/* 本文内の画像共通スタイル */
 article img { max-width: 100%; height: auto; display: block; margin: 25px auto; border-radius: 5px; }
 
-/* 画像キャプション */
+/* ------------------------------------------------------------
+   【detail.html】本文内の画像キャプション（[imgN]＋キャプション文）
+   ------------------------------------------------------------ */
 .post-figure { display: block; margin: 16px auto 8px; text-align: center; }
 .post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
 .post-figcaption { margin-top: 6px; text-align: center !important; font-size: 15px; color: #0369a1; line-height: 1.5; display: block; width: 100%; }
 .post-figure + p { margin-top: 0.6em; }
 
-/* 地図 */
+/* ------------------------------------------------------------
+   【detail.html】本文内の地図埋め込み（[map:場所名]タグから生成）
+   ------------------------------------------------------------ */
 .post-map-wrapper { margin: 24px 0; border-radius: 0 10px 10px 0; overflow: hidden; border: 1.5px solid #7dd3fa; border-left: 4px solid #0ea5e9; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); }
 .post-map-label { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0369a1; background: #f0f9ff; border-bottom: 1px solid #7dd3fa; }
 .post-map-iframe { width: 100%; height: 380px; border: none; display: block; }
 
-/* YouTube */
+/* ------------------------------------------------------------
+   【detail.html】本文内のYouTube埋め込み（[youtube:URL]タグから生成、
+   サムネイルをタップすると再生が始まる「ファサード」形式）
+   ------------------------------------------------------------ */
 .post-youtube-wrapper { margin: 24px 0; border-radius: 10px; overflow: hidden; border: 1px solid #7dd3fa; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
 .post-youtube-facade { position: absolute; inset: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .post-youtube-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s ease; }
@@ -261,9 +296,14 @@ article img { max-width: 100%; height: auto; display: block; margin: 25px auto; 
 .yt-btn-icon { fill: #fff; }
 .post-youtube-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
 
-/* 下部ボタン */
+/* ------------------------------------------------------------
+   【detail.html】本文下の区切り線
+   ------------------------------------------------------------ */
 hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
+/* ------------------------------------------------------------
+   【detail.html】「前の画面に戻る」「この記事を編集する」ボタン行
+   ------------------------------------------------------------ */
 .detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 32px; flex-wrap: wrap; }
 
 .detail-btn {
@@ -286,6 +326,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .detail-btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
 
+/* 「前の画面に戻る」ボタン（白背景） */
 .detail-btn-back {
     background-color: #ffffff;
     color: #4a7a96;
@@ -303,6 +344,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .detail-btn-back:active { transform: translateY(0); box-shadow: none; background-color: #dbeafe; }
 
+/* 「この記事を編集する」ボタン（セルリアン塗りつぶし・投稿者本人のみ表示） */
 .detail-btn-edit {
     background-color: #0ea5e9;
     color: #ffffff;
@@ -321,7 +363,9 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .detail-btn-edit:active { transform: translateY(0); box-shadow: none; background-color: #075985; }
 
-/* 関連記事 */
+/* ============================================================
+   【detail.html】関連記事セクション（記事末尾、最大4件表示）
+   ============================================================ */
 .related-section { margin-top: 20px; padding-top: 8px; }
 
 .related-heading {
@@ -341,6 +385,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .related-heading-icon { font-size: 16px; flex-shrink: 0; }
 
+/* 「📂○○ / #タグ を表示中」のサブラベルバッジ */
 .related-heading-sub {
     font-size: 13px;
     font-weight: 500;
@@ -358,7 +403,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
-/* 関連記事カードも左アクセントラインデザインで統一 */
+/* 関連記事カード（一覧カードと同じ左アクセントラインデザイン、ホバーでゴールドに変化） */
 .related-card {
     display: flex;
     align-items: center;
@@ -417,13 +462,17 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 .related-card:hover .related-title { color: #0369a1; }
 .related-date { font-size: 12px; color: #0369a1; margin: 0; font-weight: 500; }
 
-/* 後方互換ボタン */
+/* ------------------------------------------------------------
+   【detail.html】後方互換用の旧ボタンデザイン（現状未使用の予備クラス）
+   ------------------------------------------------------------ */
 .detail-ul { display: flex; justify-content: center; gap: 16px; padding: 0; margin: 0; list-style: none; flex-wrap: wrap; }
 .detail-ul-li { background: none; border: none; padding: 0; }
 .detail-ul-li-a { font-size: 14px; color: #0369a1; text-decoration: none; padding: 10px 22px; border: 1px solid #7dd3fa; border-radius: 20px; display: inline-block; transition: all 0.18s; background: none; cursor: pointer; font-family: inherit; }
 .detail-ul-li-a:hover { border-color: #0ea5e9; color: #0c1f35; background: #dbeafe; text-decoration: none; }
 
-/* スマホ */
+/* ------------------------------------------------------------
+   【detail.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
     article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }

@@ -1,5 +1,15 @@
-/* static/css/create_update.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/create_update.css - Coastal Dawn v2
+   【対象ページ】 create.html（新規投稿）／ update.html（記事編集）
+   ============================================================
+   このファイルは投稿作成・編集フォーム専用のスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【create.html / update.html】ページ見出し（「新規投稿作成」「編集」）
+   ------------------------------------------------------------ */
 h1 {
     font-size: 20px;
     font-weight: 700;
@@ -9,6 +19,9 @@ h1 {
     letter-spacing: -0.01em;
 }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】フォームカード全体
+   ------------------------------------------------------------ */
 .post-form {
     max-width: 720px;
     margin: 0 auto 60px;
@@ -30,6 +43,9 @@ h1 {
     letter-spacing: 0.02em;
 }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】タイトル入力欄・ジャンル選択セレクト
+   ------------------------------------------------------------ */
 .post-form input[type="text"],
 .post-form select {
     width: 100% !important;
@@ -53,6 +69,9 @@ h1 {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】本文（Markdown）入力用テキストエリア
+   ------------------------------------------------------------ */
 .post-form textarea {
     width: 100% !important;
     padding: 18px !important;
@@ -78,10 +97,15 @@ h1 {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12) !important;
 }
 
+/* フォーム内の補足説明テキスト（各項目のヘルプ文） */
 .post-form p { font-size: 15px; color: #2a4a5e; margin: 0 0 8px; line-height: 1.5; font-weight: 500; }
 
+/* 画像アップロード用のネイティブ input[type=file]（JS制御で非表示にする場合あり） */
 .post-form input[type="file"] { display: block; margin-bottom: 24px; font-size: 13px; color: #0c1f35; width: 100%; }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】「投稿する」「更新」送信ボタン
+   ------------------------------------------------------------ */
 .post-form input[type="submit"] {
     display: block;
     width: 100%;
@@ -100,7 +124,10 @@ h1 {
 
 .post-form input[type="submit"]:hover { background-color: #0369a1; }
 
-/* プレビューカード */
+/* ------------------------------------------------------------
+   【create.html / update.html】画像アップロードのプレビューカード
+   （[imgN]ラベル・ファイル名・削除ボタンを含むカード）
+   ------------------------------------------------------------ */
 .preview-item {
     position: relative;
     border: 1px solid #7dd3fa;
@@ -134,7 +161,9 @@ h1 {
     text-overflow: ellipsis;
 }
 
-/* 公開設定トグル */
+/* ------------------------------------------------------------
+   【create.html / update.html】公開設定トグルボタン（🔒非公開／🔓全体公開）
+   ------------------------------------------------------------ */
 .toggle-status-btn {
     display: inline-flex;
     align-items: center;
@@ -168,9 +197,13 @@ h1 {
 
 .toggle-status-btn.published:hover { background-color: #bae6fd; border-color: #0ea5e9; }
 
-/* ツールバー */
+/* ============================================================
+   【create.html / update.html】Markdown編集ツールバー
+   （H2/H3見出し・太字・目次・リスト・地図・YouTubeの各挿入ボタン）
+   ============================================================ */
 .md-toolbar-wrapper { position: relative; }
 
+/* ツールバー本体：本文欄の上に張り付くスティッキーバー */
 .md-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -188,8 +221,10 @@ h1 {
     transition: box-shadow 0.2s ease;
 }
 
+/* スクロールでツールバーが本文上部に貼り付いた際の強調影 */
 .md-toolbar.is-sticky { box-shadow: 0 6px 20px rgba(14, 165, 233, 0.18); border-color: #38bdf8; }
 
+/* ツールバー内の各ボタン共通スタイル（H2見出し・太字・[toc]目次など） */
 .md-btn {
     padding: 7px 13px;
     font-size: 13px;
@@ -209,6 +244,7 @@ h1 {
 
 .md-btn:hover, .md-btn:active { background: #dbeafe; border-color: #38bdf8; color: #0c1f35; }
 
+/* ツールバー内のボタン間の区切り線 */
 .md-btn-separator {
     display: inline-block;
     width: 1px;
@@ -219,25 +255,36 @@ h1 {
     flex-shrink: 0;
 }
 
+/* [imgN] 画像挿入ボタン（アップロード枚数に応じて動的に生成） */
 .md-btn-img { color: #0369a1; background: #dbeafe; border-color: #38bdf8; }
 .md-btn-img:hover, .md-btn-img:active { background: #bae6fd; border-color: #0ea5e9; color: #0c1f35; }
 
+/* 🗺️ 地図挿入ボタン */
 .md-btn-map { color: #166534; background: #dcfce7; border-color: #86efac; }
 .md-btn-map:hover, .md-btn-map:active { background: #bbf7d0; border-color: #4ade80; color: #14532d; }
 
+/* ▶ YouTube挿入ボタン */
 .md-btn-youtube { color: #fff; background: rgba(220,38,38,0.75); border-color: rgba(185,28,28,0.6); font-weight: 700; }
 .md-btn-youtube:hover, .md-btn-youtube:active { background: rgba(185,28,28,0.85); color: #fff; }
 
+/* 箇条書きリスト挿入ボタン（SVGアイコン付き） */
 .md-btn-list { display: inline-flex; align-items: center; gap: 5px; color: #0c1f35; }
 .md-btn-list:hover, .md-btn-list:active { background: #dbeafe; border-color: #38bdf8; }
 
+/* ツールバー直下に接続する本文テキストエリアの角丸調整 */
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
     scroll-margin-top: calc(85px + 48px + 8px);
 }
 
-/* 地図モーダル */
+/* ============================================================
+   【create.html / update.html】🗺️ 地図挿入モーダル
+   （md-btn-map クリックで開くポップアップ）
+   ============================================================
+   同じ .map-modal 系クラスは、下部の ▶ YouTube挿入モーダル
+   （youtube-modal-overlay / youtube-modal）でも共用している。
+   ============================================================ */
 .map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(12,31,53,0.45); z-index: 1100; }
 .map-modal-overlay.open { display: block; }
 
@@ -288,6 +335,7 @@ h1 {
 .map-modal-body { padding: 20px 20px 8px; }
 .map-modal-label { display: block; font-size: 13px; font-weight: 700; color: #0369a1; margin-bottom: 8px; }
 
+/* モーダル内の場所・URL入力欄（地図／YouTube共通デザイン） */
 .map-modal-input {
     width: 100%;
     padding: 10px 14px;
@@ -305,6 +353,7 @@ h1 {
 
 .map-modal-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
 
+/* モーダル内プレビュー領域（地図iframe／YouTubeサムネイル共通の枠） */
 .map-preview-area {
     width: 100%;
     height: 260px;
@@ -320,6 +369,7 @@ h1 {
 .map-preview-placeholder { color: #4a7a96; font-size: 14px; text-align: center; margin: 0; padding: 0 20px; }
 .map-preview-iframe { width: 100%; height: 100%; border: none; display: block; }
 
+/* モーダル下部のキャンセル／挿入ボタン行 */
 .map-modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -359,7 +409,9 @@ h1 {
 .map-modal-insert:hover:not(:disabled) { background: #0369a1; }
 .map-modal-insert:disabled { background: #bae6fd; cursor: not-allowed; }
 
-/* 画像キャプション */
+/* ------------------------------------------------------------
+   【create.html / update.html】画像プレビューのキャプション入力欄
+   ------------------------------------------------------------ */
 .preview-caption-wrapper { padding: 8px 8px 2px; background: #dbeafe; border-top: 1px solid #7dd3fa; }
 
 .preview-caption-input {
@@ -379,6 +431,9 @@ h1 {
 .preview-caption-input:focus { border-color: #0ea5e9; }
 .preview-caption-input::placeholder { color: #7dd3fa; font-size: 11px; }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     h1 { font-size: 17px; margin: 20px 0 16px; }
     .post-form { padding: 24px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 0; width: 100% !important; box-sizing: border-box; }

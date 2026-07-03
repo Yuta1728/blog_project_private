@@ -1134,7 +1134,7 @@ input[type="password"]:focus {
 </file>
 
 <file path="static/css/base.css">
-/* static/css/base.css - Coastal Dawn v2（白ヘッダー・視認性改善版） */
+/* static/css/base.css - Coastal Dawn v2（白ヘッダー・視認性改善版 / ヘッダー固定化対応） */
 
 /* ===========================
    Google Fonts
@@ -1149,48 +1149,37 @@ input[type="password"]:focus {
 
 
 /* ========================================
-   [修正] オーバースクロール（ラバーバンド）対策
+   [修正] ヘッダーを position: fixed 化したことに伴う変更
    -----------------------------------------------
+   従来は .main-header を position: sticky で実装しており、
    スマホ／macOSトラックパッド等で発生する
-   「ページ端を超えて引っ張るとバウンドする」挙動では、
-   実際には html 要素の背景色がその領域に描画される。
+   「ページ端を超えて引っ張るとバウンドする」オーバースクロール時に、
+   sticky 要素はドキュメントの流れの中に存在するため、
+   その要素の“外側”（＝ページ最上部より上の領域）に
+   html 要素の背景色がそのまま露出してしまう問題があった。
 
-   単純に html 全体を白 (#fff) にしてしまうと、
-     - 下端を超えてスクロールしたとき
-     - コンテンツが短いページ（ログイン画面など）で
-       body の高さがビューポートに満たないとき
-   に、本来のページ背景色 (#f0f9ff) ではなく白がはみ出して
-   見えてしまう副作用がある。
+   これを解消するため、ヘッダーを画面（ビューポート）基準で
+   常に固定される position: fixed に変更した（note等の大手ブログサービスと同様の実装）。
+   fixed 要素はスクロール量やバウンドの影響を一切受けず、
+   常に画面最上部を覆い続けるため、
+   「限界までスクロールしても背景が見えてしまう」現象が根本的に解消される。
 
-   そこで html の背景を「ベースはページ背景色、
-   最上部のみヘッダーの高さ分だけ白」という
-   グラデーション（実質は単色の帯）で表現する。
-   これにより：
-     - 上端を超えるオーバースクロール → 白（ヘッダーと一体化）
-     - 下端を超えるオーバースクロール → ページ背景色（bodyと一体化）
-     - 短いページの余白部分         → ページ背景色（bodyと一体化）
-   という、上下で異なる挙動を 1 つの背景指定で両立できる。
-
-   background-size の高さは .header-container の高さ
-   （PC: 85px / スマホ: 63px）と一致させている。
+   これに伴い、以前 html 要素に施していた
+   「オーバースクロール時だけヘッダー分の高さを白くする」
+   グラデーションによる応急処置は不要になったため削除し、
+   代わりに body 要素に固定ヘッダーの高さ分の padding-top を設定して
+   本文がヘッダーの下に隠れないよう調整している。
+   （sticky 時代にヘッダーがドキュメントの流れの中で占めていた
+     スペースを、そのまま padding-top で再現しているだけなので、
+     見た目の余白は従来と変わらない。）
    ======================================== */
 html {
     background-color: #f0f9ff;
-    background-image: linear-gradient(#ffffff, #ffffff);
-    background-repeat: no-repeat;
-    background-size: 100% 85px;
-}
-
-@media (max-width: 767px) {
-    html {
-        /* スマホ版ヘッダーの高さ(63px)に合わせる */
-        background-size: 100% 63px;
-    }
 }
 
 
 /* ========================================
-   [修正] body 背景を #f0f9ff（淡い水色）に統一。
+   body 背景を #f0f9ff（淡い水色）に統一。
    ドットグリッドは視認性を下げるため削除。
    テキストカラーは #2a4a5e（元の値）を維持し
    白背景・淡水色背景のどちらでも読みやすくする。
@@ -1198,8 +1187,11 @@ html {
    [追加] min-height を指定し、コンテンツが短いページ
    （ログイン画面など）でも body の背景色が
    ビューポート全体を必ず覆うようにする。
-   これにより html の背景（上記グラデーション）が
-   コンテンツ末尾からはみ出して見える事故を防ぐ。
+
+   [追加] padding-top: 85px（PC）／63px（スマホ）
+   ヘッダーを position: fixed にしてドキュメントの流れから
+   外した分、本文の開始位置がヘッダーの高さ（.header-container の
+   height と一致）だけ下にずれるよう補正する。
    ======================================== */
 
 body {
@@ -1210,6 +1202,7 @@ body {
     font-weight: 500;
     margin: 0;
     padding: 0;
+    padding-top: 85px;   /* 固定ヘッダー（PC: 85px）の高さ分だけ本文を押し下げる */
     min-height: 100vh;   /* フォールバック（dvh未対応ブラウザ向け） */
     min-height: 100dvh;  /* モバイルのアドレスバー分の高さ変動を考慮 */
     -webkit-font-smoothing: antialiased;
@@ -1268,17 +1261,41 @@ a:hover {
    =========================== */
 
 /* ========================================
-   [修正] 黒ヘッダーを廃止し、白ヘッダーに変更。
+   黒ヘッダーを廃止し、白ヘッダーに変更。
    下部に 3px のセルリアンラインを引くことで
    「爽やかな水色」らしさを保ちながら
    清潔感のある仕上がりにする。
+   ======================================== */
+
+/* ========================================
+   [修正] position: sticky → position: fixed に変更。
+   -----------------------------------------------
+   sticky はドキュメントの流れの中に留まりながら
+   スクロール位置に応じて画面上に張り付く実装だが、
+   オーバースクロール（バウンド）時には
+   要素の外側の背景が露出してしまう弱点があった。
+
+   fixed はビューポート基準で常に同じ位置に描画されるため、
+   スクロール量やバウンドの影響を受けず、
+   限界までスクロールしてもヘッダーが画面最上部を
+   覆い続ける（＝背景が見えることがない）。
+
+   left: 0; right: 0; を明示することで
+   width: 100% と合わせて画面幅いっぱいに固定表示する。
+
+   これまで通り、スクロール方向に応じて
+   transform: translateY(-100%) でヘッダーを
+   スライドイン／スライドアウトさせる挙動（下記 JS）は
+   fixed 化後もそのまま機能する。
    ======================================== */
 .main-header {
     background-color: #ffffff;
     border-bottom: 3px solid #0ea5e9;
     width: 100%;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
     transform: translateY(0);
     visibility: visible;
@@ -1308,7 +1325,7 @@ a:hover {
 /* ロゴ */
 
 /* ========================================
-   [修正] ロゴは Noto Serif JP（明朝体）の
+   ロゴは Noto Serif JP（明朝体）の
    インク色（#0c1f35）。白背景上でくっきりと
    読める十分なコントラストを確保。
    ======================================== */
@@ -1334,7 +1351,7 @@ a:hover {
 /* 検索フォーム */
 
 /* ========================================
-   [修正] 検索バーを白背景に戻し、
+   検索バーを白背景に戻し、
    セルリアン系のボーダーで統一感を出す。
    プレースホルダーは #7ab8d8 で
    薄すぎず、邪魔にならないトーンに。
@@ -1414,7 +1431,7 @@ a:hover {
 /* ナビゲーション */
 
 /* ========================================
-   [修正] 白背景上のナビリンク。
+   白背景上のナビリンク。
    テキストを #0369a1（濃いセルリアン）に設定し
    白背景でも確実に視認できるコントラストを確保。
    ======================================== */
@@ -1491,7 +1508,7 @@ a:hover {
 }
 
 /* ========================================
-   [修正] 白ヘッダー上のハンバーガーラインは
+   白ヘッダー上のハンバーガーラインは
    セルリアン系の濃い色で視認性を確保。
    ======================================== */
 .hamburger-btn span {
@@ -1633,6 +1650,12 @@ a:hover {
         padding: 0 15px;
         height: 63px;
         gap: 12px;
+    }
+
+    /* [追加] 固定ヘッダーの高さがスマホでは63pxになるため、
+       本文の押し下げ量もそれに合わせて上書きする。 */
+    body {
+        padding-top: 63px;
     }
 
     .header-logo a {
@@ -2138,7 +2161,16 @@ h1 {
 }
 
 /* メタ情報 */
+
+/* ========================================
+   [修正] .genre-badge を <span> から <a> へ変更したことに伴い、
+   ハッシュタグバッジ（.hashtag-badge）と統一感のある
+   インタラクティブなスタイルを追加。
+   display: inline-block / text-decoration: none / transition / hover
+   を付与し、「タップできるタグ」であることが視覚的に伝わるようにする。
+   ======================================== */
 .genre-badge {
+    display: inline-block;
     background-color: #dbeafe;
     color: #0369a1;
     padding: 4px 10px;
@@ -2147,6 +2179,15 @@ h1 {
     margin-bottom: 8px;
     font-weight: 600;
     border: 1px solid #38bdf8;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.genre-badge:hover {
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
+    text-decoration: none;
 }
 
 .post-meta {
@@ -2939,6 +2980,21 @@ details[open] .group-title {
     margin-top: 15px;
 }
 
+/* ========================================
+   [追加] ページ送り時にスクロールを戻す目印。
+   固定ヘッダー（position: fixed）の下に隠れないよう
+   scroll-margin-top をヘッダーの高さ分だけ確保しておく。
+   ======================================== */
+#index-articles-anchor {
+    scroll-margin-top: 100px;
+}
+
+@media (max-width: 767px) {
+    #index-articles-anchor {
+        scroll-margin-top: 80px;
+    }
+}
+
 
 /* ===========================
    記事カード共通
@@ -3187,6 +3243,85 @@ a[role="button"]:hover {
 }
 
 
+/* ===========================
+   ページ番号によるページ送り
+   =========================== */
+
+/* ========================================
+   [追加] 「もっと見る／表示を減らす」ボタンを廃止し、
+   ページ番号によるページ送り UI に置き換え。
+   ボタン群は load_more.css の配色トーンを踏襲しつつ、
+   現在のページを塗りつぶし（.active）で強調する。
+   ======================================== */
+.index-pagination {
+    display: none; /* JS側で totalPages > 1 のときだけ flex に切り替える */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0 40px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #0369a1;
+    background-color: #ffffff;
+    border: 1px solid #7dd3fa;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    background-color: #dbeafe;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
+    transform: translateY(-1px);
+}
+
+.page-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #bae6fd;
+}
+
+.page-btn.active {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+}
+
+.page-btn.active:hover {
+    background-color: #0369a1;
+    border-color: #0369a1;
+    color: #ffffff;
+}
+
+.page-btn-arrow {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+
 /* ==========================================================================
    レスポンシブ（スマホ）
    ========================================================================== */
@@ -3261,6 +3396,18 @@ a[role="button"]:hover {
     .post-title a::after {
         inset: 0;
         z-index: 1;
+    }
+
+    .index-pagination {
+        gap: 6px;
+        margin: 8px 0 32px;
+    }
+
+    .page-btn {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        font-size: 13px;
     }
 }
 </file>
@@ -5312,11 +5459,13 @@ document.addEventListener('keydown', function(e) {
         <h1>
             {{ post.title }}
         </h1>
-        
+
+        {% set genre_display = post.genre if post.genre else '未分類' %}
+
         <div class="post-meta" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-            <span class="genre-badge">
-                📂 {{ post.genre if post.genre else '未分類' }}
-            </span>
+            <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
+                📂 {{ genre_display }}
+            </a>
 
             <div class="post-user-info">
                 <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
@@ -5610,37 +5759,51 @@ function ytPlay(facadeEl) {
     </div>
 
     <div class="info-page-body">
+
         <section class="info-section">
-            <h2 class="info-section-title">🔍 キーワード検索</h2>
+            <h2 class="info-section-title">🔍 記事を探す（キーワード×ジャンル検索）</h2>
             <p>
-                ヘッダーの検索バーからキーワードを入力すると、記事タイトルやハッシュタグを横断して検索できます。
-                気になるワードを入力して探してみてください。
+                トップページ上の検索エリアでは、「ジャンル」と「キーワード」を組み合わせて記事を絞り込めます。
+                ジャンルだけ、キーワードだけの検索も可能です。<br>
+                ヘッダー上部の検索バーからも、キーワード検索を行えます。
+                絞り込み中は「絞り込みを解除」から、いつでも一覧表示に戻れます。
             </p>
         </section>
 
         <section class="info-section">
-            <h2 class="info-section-title">📂 ジャンルで絞り込む</h2>
+            <h2 class="info-section-title">📂 ジャンル + ハッシュタグの使い方</h2>
             <p>
-                ヘッダーの「ジャンル検索」から興味のあるカテゴリを選ぶと、そのジャンルの記事だけを表示できます。
-                旅行・技術・日常など、テーマ別に読み進めたいときに活用してください。
+                ヘッダーの「ジャンル検索」を開くとジャンル一覧が表示されます。
+                ジャンルを選択後、そのジャンル内で使われているハッシュタグが絞り込みバーに表示されます。
+                タグをタップすると、ジャンル×タグでさらに細かく記事を絞り込めます。
             </p>
         </section>
 
         <section class="info-section">
-            <h2 class="info-section-title">🏷️ ハッシュタグで絞り込む</h2>
+            <h2 class="info-section-title">🗺️ 地図・YouTube動画の埋め込み</h2>
             <p>
-                「ジャンル検索」からカテゴリを選択すると、ハッシュタグでの絞り込みが可能になります。
-                記事をさらに細かく絞りたいときに活用してください。
+                旅行先やお店などの記事では、本文中にGoogleマップが埋め込まれ、その場で確認が可能です。
+                また、YouTube動画が紹介されている記事ではサムネイル画像が表示され、
+                タップするとその場で動画の再生が始まります（別サイトへ移動する必要はありません）。
             </p>
         </section>
 
         <section class="info-section">
-            <h2 class="info-section-title">📜 もっと見る</h2>
+            <h2 class="info-section-title">📊 サイトの統計情報</h2>
             <p>
-                一覧ページでは最新記事から順に表示されます。<br>
-                「もっと見る」ボタンを押すと、追加で記事が表示されます。
+                トップページでは、総投稿数・使用されているハッシュタグ数・最終更新日を
+                まとめた統計エリアが表示されています。ブログ全体の更新状況をひと目で確認できます。
             </p>
         </section>
+
+        <section class="info-section">
+            <h2 class="info-section-title">👤 管理者について</h2>
+            <p>
+                トップページ下部の自己紹介エリア、または「自己紹介を読む」リンクから、
+                このブログを書いている管理者のプロフィールを見ることができます。
+            </p>
+        </section>
+
     </div>
 
     <div class="info-page-footer">
@@ -5656,7 +5819,6 @@ function ytPlay(facadeEl) {
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
 
 
@@ -5700,6 +5862,10 @@ function ytPlay(facadeEl) {
             </div>
         </div>
     {% endif %}
+    {# ========================================================= #}
+
+    {# ===== ページ送り時にここへスクロールを戻すための目印 ===== #}
+    <div id="index-articles-anchor"></div>
     {# ========================================================= #}
 
     {# ===== 記事一覧の見出し ===== #}
@@ -5770,18 +5936,8 @@ function ytPlay(facadeEl) {
         </p>
     {% endfor %}
 
-    {# ===== 「もっと見る」「表示を減らす」ボタン ===== #}
-    <div class="load-more-wrap" id="index-load-more-wrap">
-        <button class="load-less-btn" id="index-load-less-btn" type="button"
-                onclick="indexLoadLess()">
-            ▲ 表示を減らす
-        </button>
-        <button class="load-more-btn" id="index-load-more-btn" type="button"
-                onclick="indexLoadMore()">
-            もっと見る
-            <span class="load-more-count" id="index-load-more-count"></span>
-        </button>
-    </div>
+    {# ===== ページ番号によるページ送り ===== #}
+    <nav class="index-pagination" id="index-pagination" aria-label="記事一覧のページ送り"></nav>
     {# ================================================ #}
 
 
@@ -5794,58 +5950,103 @@ function ytPlay(facadeEl) {
 </div>
 
 <script>
+/* ============================================================
+   記事一覧のページ送り（ページ番号方式）
+   ------------------------------------------------------------
+   従来の「もっと見る／表示を減らす」による追加表示方式は、
+   ページが縦に伸び続けてスクロール量が増えてしまい、
+   どこからが新しく表示された記事なのか分かりにくいという
+   課題があったため、1ページあたり PAGE_SIZE 件ずつを表示し、
+   下部のページ番号ボタンで表示を「切り替える」方式に変更した。
+
+   記事自体はこれまでと同様にサーバー側で全件レンダリングされており、
+   JS側では表示するカードを display: none / '' で切り替えているだけ
+   （サーバーへの再リクエストは発生しない）。
+
+   ページを切り替えた際は、ユーザーが毎回一覧の先頭まで
+   手動でスクロールし直す必要がないよう、
+   #index-articles-anchor へ自動でスムーズスクロールする。
+   ============================================================ */
 (function () {
-    var INITIAL = 4;   // 初期表示件数（これより多い記事数がある場合に「もっと見る」を表示）
-    var STEP    = 4;   // 「もっと見る」クリック時の追加表示件数
+    var PAGE_SIZE = 5;   // 1ページあたりの表示件数
 
-    var cards   = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
-    var total   = cards.length;
-    var shown   = 0;
+    var cards = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
+    var total = cards.length;
+    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var currentPage = 1;
 
-    var wrap      = document.getElementById('index-load-more-wrap');
-    var countEl   = document.getElementById('index-load-more-count');
-    var lessBtn   = document.getElementById('index-load-less-btn');
-    var moreBtn   = document.getElementById('index-load-more-btn');
+    var nav    = document.getElementById('index-pagination');
+    var anchor = document.getElementById('index-articles-anchor');
 
-    cards.forEach(function (c) { c.style.display = 'none'; });
+    function showPage(page, opts) {
+        opts = opts || {};
+        currentPage = Math.min(Math.max(page, 1), totalPages);
 
-    function showCards(n) {
-        var end = Math.min(shown + n, total);
-        for (var i = shown; i < end; i++) {
-            cards[i].style.display = '';
+        var start = (currentPage - 1) * PAGE_SIZE;
+        var end   = start + PAGE_SIZE;
+
+        cards.forEach(function (card, i) {
+            card.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        renderPagination();
+
+        if (opts.scroll && anchor) {
+            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        shown = end;
-        updateBtn();
     }
 
-    function hideCards(n) {
-        var end = Math.max(shown - n, INITIAL);
-        for (var i = end; i < shown; i++) {
-            cards[i].style.display = 'none';
+    function makeButton(label, extraClass) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'page-btn' + (extraClass ? ' ' + extraClass : '');
+        btn.textContent = label;
+        return btn;
+    }
+
+    function renderPagination() {
+        if (!nav) return;
+        nav.innerHTML = '';
+
+        /* 1ページに収まる件数しかない場合はページ送り自体を表示しない */
+        if (totalPages <= 1) {
+            nav.style.display = 'none';
+            return;
         }
-        shown = end;
-        updateBtn();
+        nav.style.display = 'flex';
+
+        /* 前へ */
+        var prevBtn = makeButton('‹', 'page-btn-arrow');
+        prevBtn.setAttribute('aria-label', '前のページ');
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', function () {
+            showPage(currentPage - 1, { scroll: true });
+        });
+        nav.appendChild(prevBtn);
+
+        /* ページ番号 1, 2, 3 ... */
+        for (var p = 1; p <= totalPages; p++) {
+            (function (pageNum) {
+                var btn = makeButton(String(pageNum), pageNum === currentPage ? 'active' : '');
+                btn.setAttribute('aria-current', pageNum === currentPage ? 'page' : 'false');
+                btn.addEventListener('click', function () {
+                    showPage(pageNum, { scroll: true });
+                });
+                nav.appendChild(btn);
+            })(p);
+        }
+
+        /* 次へ */
+        var nextBtn = makeButton('›', 'page-btn-arrow');
+        nextBtn.setAttribute('aria-label', '次のページ');
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', function () {
+            showPage(currentPage + 1, { scroll: true });
+        });
+        nav.appendChild(nextBtn);
     }
 
-    function updateBtn() {
-        var remaining = total - shown;
-
-        /* ラッパー：記事数が INITIAL 件以下なら常に非表示。
-           それ以外（INITIAL 件より多い）は「もっと見る」or「表示を減らす」のどちらかが必ず必要なので表示。 */
-        wrap.style.display = (total <= INITIAL) ? 'none' : 'flex';
-
-        /* もっと見るボタン：残件数0なら非表示 */
-        moreBtn.style.display  = remaining > 0 ? 'inline-flex' : 'none';
-        countEl.textContent    = 'あと ' + remaining + ' 件';
-
-        /* 表示を減らすボタン：INITIAL件より多く表示中なら表示 */
-        lessBtn.style.display  = shown > INITIAL ? 'inline-flex' : 'none';
-    }
-
-    window.indexLoadMore = function () { showCards(STEP); };
-    window.indexLoadLess = function () { hideCards(STEP); };
-
-    showCards(INITIAL);
+    showPage(1);
 })();
 </script>
 

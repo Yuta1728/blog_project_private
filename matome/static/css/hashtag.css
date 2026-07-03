@@ -1,6 +1,19 @@
-/* static/css/hashtag.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/hashtag.css - Coastal Dawn v2
+   【対象ページ】 全ページ共通（base.htmlで読み込み）
+   ハッシュタグ関連の表示・入力・絞り込みUIをまとめたファイル。
+   ============================================================
+   使用ページの内訳:
+   - index.html / mypage.html   : 記事カードのハッシュタグバッジ、絞り込みバー
+   - detail.html                : 記事詳細のハッシュタグバッジ
+   - create.html / update.html  : ハッシュタグ入力欄・プレビュー
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
-/* ハッシュタグバッジ（共通） */
+/* ------------------------------------------------------------
+   【共通】ハッシュタグバッジ本体（記事カード・記事詳細で表示するタグ）
+   ------------------------------------------------------------ */
 .hashtag-badge {
     display: inline-block;
     padding: 2px 9px;
@@ -22,6 +35,7 @@
     text-decoration: none;
 }
 
+/* 【index.html / mypage.html】記事カード内のタグ一覧の並び方 */
 .post-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -29,6 +43,7 @@
     margin: 4px 0 8px;
 }
 
+/* 【detail.html】記事詳細メタ情報内のタグ一覧の並び方 */
 .detail-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -36,7 +51,9 @@
     margin-top: 4px;
 }
 
-/* ハッシュタグ絞り込みバー */
+/* ============================================================
+   【index.html】ハッシュタグ絞り込みバー（ジャンル選択中のみ表示）
+   ============================================================ */
 .hashtag-filter-bar {
     display: flex;
     align-items: flex-start;
@@ -67,6 +84,7 @@
     align-items: center;
 }
 
+/* 絞り込みバー内の各タグボタン */
 .hashtag-filter-badge {
     display: inline-block;
     padding: 4px 14px;
@@ -88,6 +106,7 @@
     text-decoration: none;
 }
 
+/* 現在選択中のタグ（塗りつぶし強調） */
 .hashtag-filter-badge.active {
     background-color: #0ea5e9;
     border-color: #0ea5e9;
@@ -100,6 +119,7 @@
     color: #fff;
 }
 
+/* 「✕ タグ解除」ボタン */
 .hashtag-filter-clear {
     display: inline-block;
     padding: 4px 12px;
@@ -121,7 +141,9 @@
     text-decoration: none;
 }
 
-/* ハッシュタグ入力エリア（create/update） */
+/* ============================================================
+   【create.html / update.html】ハッシュタグ入力エリア
+   ============================================================ */
 .hashtag-input-wrapper {
     display: flex;
     align-items: center;
@@ -141,6 +163,7 @@
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* 入力欄先頭に固定表示される「#」記号 */
 .hashtag-prefix {
     font-size: 16px;
     font-weight: 700;
@@ -164,6 +187,7 @@
     font-family: inherit;
 }
 
+/* 入力内容からリアルタイム生成されるタグプレビューの並び */
 .hashtag-preview-area {
     display: flex;
     flex-wrap: wrap;
@@ -172,6 +196,7 @@
     margin-bottom: 22px;
 }
 
+/* プレビュー用タグバッジ（ポップアニメーション付き） */
 .hashtag-badge-preview {
     display: inline-block;
     padding: 3px 12px;
@@ -189,6 +214,9 @@
     to   { transform: scale(1);    opacity: 1; }
 }
 
+/* ------------------------------------------------------------
+   【共通】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     .hashtag-filter-bar {
         flex-direction: column;
