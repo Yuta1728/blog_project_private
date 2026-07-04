@@ -5,16 +5,29 @@
 #
 # セキュリティ設計のポイント:
 #   1. ログインページ URL を .env で隠蔽（秘密の URL = Security through obscurity）
-#   2. ブルートフォース攻撃対策（連続失敗でセッションロックアウト）
-#   3. パスワードはハッシュ値と照合（平文比較は行わない）
+#   2. ゲートキー方式（案A）: 合言葉 Cookie を持たない訪問者には
+#      ログインページの存在自体を隠す（404 を返す）
+#   3. ブルートフォース攻撃対策（連続失敗でセッションロックアウト）
+#   4. パスワードはハッシュ値と照合（平文比較は行わない）
+#   5. ログアウト後はトップページへリダイレクトし、
+#      推測可能な URL（/logout）にログイン画面を紐付けない
+#
+# 【突破に必要な要素（多層防御）】
+#   ① 秘密の URL（ADMIN_LOGIN_PATH）
+#   ② ゲートキー（ADMIN_GATE_KEY による Cookie）
+#   ③ ユーザー名（ADMIN_USERNAME）
+#   ④ パスワード
+#   → ①〜④ がすべて揃わない限り管理画面には到達できない。
 
-from flask import Blueprint, render_template, request, redirect, flash, session
+import os
+import time  # ロックアウト時間計算に使用
+from flask import (Blueprint, render_template, request, redirect,
+                   flash, session, abort, make_response)
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash  # ハッシュ済みパスワードとの照合
 from extensions import db
 from models import User
 import config
-import time  # ロックアウト時間計算に使用
 
 # Blueprint 定義: 'auth' という名前空間でルートを管理
 # url_for('auth.secret_login') のように参照される
@@ -25,6 +38,81 @@ auth_bp = Blueprint('auth', __name__)
 # ===================================================================
 _MAX_ATTEMPTS    = 5    # この回数を超えてログイン失敗するとロックアウト
 _LOCKOUT_SECONDS = 300  # ロック継続時間（秒）= 5分
+
+# ===================================================================
+# ゲートキー方式（案A）用定数
+# ===================================================================
+# ADMIN_GATE_KEY: ログインページを表示するための「合言葉」。
+#   .env に長いランダム文字列を設定する。
+#   生成例: python -c "import secrets; print(secrets.token_urlsafe(32))"
+#
+# 仕組み:
+#   1. 管理者は「秘密URL?key=合言葉」をブックマークしておく
+#   2. 初回アクセス時にサーバーが合言葉を検証し、Cookie を発行して
+#      key なしの URL へリダイレクトする
+#   3. 以降 _GATE_COOKIE_MAX_AGE の期間は Cookie だけでアクセス可能
+#   4. Cookie を持たない第三者には 404 を返し、ページの存在自体を隠す
+_GATE_KEY            = os.getenv("ADMIN_GATE_KEY")
+_GATE_COOKIE_NAME    = 'admin_gate'
+_GATE_COOKIE_MAX_AGE = 60 * 60 * 24 * 90  # 90日
+
+
+# ===================================================================
+# ゲートキー検証ヘルパー
+# ===================================================================
+def _check_gate():
+    """
+    ゲートキーによるアクセス制御を行う。
+
+    戻り値:
+      - Response オブジェクト: Cookie 発行のためのリダイレクトが必要な場合
+      - None: ゲートを通過（ログイン処理へ進んで良い）
+
+    通過できない場合はこの関数内で abort(404) する。
+
+    【フェイルクローズ設計】
+    ADMIN_GATE_KEY が未設定（設定忘れ・タイポ）の場合は、
+    「無条件で通す」のではなく「無条件で 404」にする。
+    設定ミスでゲートが無効化されて無防備になる事故を防ぐため。
+    """
+    # ゲートキー未設定 → 安全側に倒して常に 404
+    if not _GATE_KEY:
+        abort(404)
+
+    # -------------------------------------------------------------------
+    # ステップ 1: クエリパラメータで合言葉が来た場合
+    # Cookie を発行して「key なしの URL」へリダイレクトする。
+    #
+    # リダイレクトする理由:
+    #   ?key=xxx 付きの URL のままログイン画面を表示すると、
+    #   その後のブラウザ履歴・アクセスログ・Referer に
+    #   合言葉入りの URL が残り続けてしまう。
+    #   即座に key なし URL へ付け替えることで露出を最小化する。
+    # -------------------------------------------------------------------
+    if request.args.get('key') == _GATE_KEY:
+        resp = make_response(redirect(f'/{config.ADMIN_LOGIN_PATH}'))
+        resp.set_cookie(
+            _GATE_COOKIE_NAME,
+            _GATE_KEY,
+            httponly=True,                 # JavaScript から読み取れないようにする（XSS 対策）
+            secure=request.is_secure,      # HTTPS 接続時のみ secure 属性を付与
+                                           # （本番は HTTPS なので常に True、
+                                           #   ローカル開発の http://localhost でも動作するよう動的に判定）
+            samesite='Lax',                # 外部サイトからのリクエストに Cookie が乗らないようにする
+            max_age=_GATE_COOKIE_MAX_AGE,  # 90日間有効
+        )
+        return resp
+
+    # -------------------------------------------------------------------
+    # ステップ 2: Cookie の検証
+    # 正しいゲート Cookie を持っていない訪問者には 404 を返し、
+    # 「そんなページは存在しない」ように見せる。
+    # -------------------------------------------------------------------
+    if request.cookies.get(_GATE_COOKIE_NAME) != _GATE_KEY:
+        abort(404)
+
+    # ゲート通過
+    return None
 
 
 # ===================================================================
@@ -73,9 +161,20 @@ def _is_locked_out() -> bool:
 # 例: ADMIN_LOGIN_PATH=secret-xyz なら /secret-xyz でアクセス可能になる
 @auth_bp.route(f'/{config.ADMIN_LOGIN_PATH}', methods=['GET', 'POST'])
 def secret_login():
-    # すでにログイン済みの場合はトップページへリダイレクト（二重ログイン防止）
+    # ===================================================================
+    # 【案A】ゲートキー検証（最優先で実行）
+    # ===================================================================
+    # 秘密 URL を知っているだけではログイン画面は表示されない。
+    # 合言葉（?key=xxx）またはゲート Cookie を持たない訪問者には
+    # 404 を返してページの存在自体を隠す。
+    gate_response = _check_gate()
+    if gate_response is not None:
+        # 合言葉付きアクセスだった場合: Cookie 発行のリダイレクトを返す
+        return gate_response
+
+    # すでにログイン済みの場合はマイページへリダイレクト（二重ログイン防止）
     if current_user.is_authenticated:
-        return redirect('/')
+        return redirect('/mypage')
 
     if request.method == 'POST':
         # ロックアウト中であればフラッシュを出してリダイレクト（認証処理を行わない）
@@ -134,11 +233,18 @@ def secret_login():
 # ログアウトビュー
 # ===================================================================
 @auth_bp.route('/logout')
-@login_required  # 未ログイン状態でのアクセスを拒否（login_manager.login_view へリダイレクト）
+@login_required  # 未ログイン時は app.py の unauthorized_handler により 404 を返す
 def logout():
-    # Flask-Login のセッションからユーザー情報を削除する
-    # これにより current_user が AnonymousUser に戻る
+    # -------------------------------------------------------------------
+    # ログアウト後はトップページへリダイレクトする。
+    # ログイン画面を直接レンダリングすると、推測可能な URL（/logout）に
+    # ログイン画面の HTML が紐付いてしまうため、リダイレクトのみ行う。
+    #
+    # なお、ゲート Cookie（admin_gate）はログアウトしても削除しない。
+    # ログアウトは「認証の解除」であり「ゲート通過状態の解除」ではないため、
+    # 同じブラウザからの再ログインは ?key= なしの秘密 URL で行える。
+    # ゲート状態も破棄したい場合はブラウザの Cookie を削除する。
+    # -------------------------------------------------------------------
     logout_user()
     flash('ログアウトしました。')
-    # ログアウト後はログインフォームを表示（リダイレクトではなく直接レンダリング）
-    return render_template('login.html')
+    return redirect('/')

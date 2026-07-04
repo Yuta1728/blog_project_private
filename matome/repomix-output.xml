@@ -159,7 +159,7 @@ Thumbs.db
 #   - extensions.py と組み合わせることで循環インポートを避けられる
 
 import os
-from flask import Flask, flash, redirect, url_for
+from flask import Flask, flash, redirect, url_for, abort
 from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
 from extensions import db, login_manager, migrate
 from models import User
@@ -207,7 +207,7 @@ def create_app():
     # ===================================================================
     # データベース接続 URL の設定
     # ===================================================================
-    # ローカル開発用 URL（docker-compose で 54321 番ポートにマッピングした PostgreSQL）
+    # ローカル開発用 URL（docker-compose で 55432 番ポートにマッピングした PostgreSQL）
     local_db_url = (
         f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
         f"@localhost:55432/{config.postgre_DB}"
@@ -238,11 +238,28 @@ def create_app():
     # ===================================================================
     # Flask-Login の詳細設定
     # ===================================================================
-    # 未ログイン状態で @login_required なページにアクセスした場合の
-    # リダイレクト先エンドポイント名（'auth.secret_login' は Blueprint名.関数名）
-    login_manager.login_view = 'auth.secret_login'
-    login_manager.login_message = "ログインしてください。"
-    login_manager.login_message_category = "info"  # フラッシュメッセージのスタイル分類
+    # -------------------------------------------------------------------
+    # 【セキュリティ修正】login_view を設定しない（= 秘密 URL の隠蔽）
+    #
+    # 従来は login_view = 'auth.secret_login' としていたため、
+    # 未ログインの一般ユーザーが /create や /mypage のような
+    # 推測しやすい URL にアクセスすると、Flask-Login が親切に
+    # 「秘密のログインページ」へリダイレクトしてしまい、
+    # ADMIN_LOGIN_PATH で隠したはずの URL が漏洩する経路になっていた。
+    #
+    # 対策:
+    #   - login_view を None のままにする
+    #   - unauthorized_handler で 404 を返し、
+    #     管理者専用ページの「存在自体」を隠す
+    #     （一般ユーザーには「そんなページは無い」ように見える）
+    # -------------------------------------------------------------------
+    login_manager.login_view = None
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        # 未ログイン状態で @login_required なページへアクセスされた場合、
+        # ログインページへ誘導せず 404 Not Found を返して存在を偽装する。
+        abort(404)
 
     # -------------------------------------------------------------------
     # user_loader コールバック
@@ -1035,9 +1052,19 @@ zipp==3.23.1
 </file>
 
 <file path="static/css/auth.css">
-/* static/css/auth.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/auth.css - Coastal Dawn v2
+   【対象ページ】 login.html（管理者ログインページ）
+   ============================================================
+   このファイルはログインページ専用のスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
 
+/* ------------------------------------------------------------
+   【login.html】カード全体（フォームを囲む枠）
+   ------------------------------------------------------------ */
 .auth-container {
     max-width: 400px;
     margin: 72px auto 60px;
@@ -1051,6 +1078,9 @@ zipp==3.23.1
     font-family: inherit;
 }
 
+/* ------------------------------------------------------------
+   【login.html】見出し「管理者画面」
+   ------------------------------------------------------------ */
 h2 {
     text-align: center;
     color: #0c1f35;
@@ -1060,10 +1090,16 @@ h2 {
     letter-spacing: -0.02em;
 }
 
+/* ------------------------------------------------------------
+   【login.html】フォームグループ（ユーザー名／パスワード欄の間隔）
+   ------------------------------------------------------------ */
 .form-group {
     margin-bottom: 20px;
 }
 
+/* ------------------------------------------------------------
+   【login.html】各入力欄のラベル（「ユーザー名」「パスワード」）
+   ------------------------------------------------------------ */
 label {
     display: block;
     margin-bottom: 8px;
@@ -1073,6 +1109,9 @@ label {
     letter-spacing: 0.03em;
 }
 
+/* ------------------------------------------------------------
+   【login.html】ユーザー名・パスワードの入力欄
+   ------------------------------------------------------------ */
 input[type="text"],
 input[type="password"] {
     width: 100%;
@@ -1095,6 +1134,9 @@ input[type="password"]:focus {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* ------------------------------------------------------------
+   【login.html】「ログイン」送信ボタン
+   ------------------------------------------------------------ */
 .submit-btn {
     width: 100%;
     padding: 12px;
@@ -1114,6 +1156,9 @@ input[type="password"]:focus {
     background-color: #0369a1;
 }
 
+/* ------------------------------------------------------------
+   【login.html】カード下部の補足リンク（現状未使用の予備クラス）
+   ------------------------------------------------------------ */
 .footer-link {
     text-align: center;
     margin-top: 18px;
@@ -1121,6 +1166,9 @@ input[type="password"]:focus {
     color: #0369a1;
 }
 
+/* ------------------------------------------------------------
+   【login.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     .auth-container {
         margin: 24px 16px;
@@ -1134,23 +1182,28 @@ input[type="password"]:focus {
 </file>
 
 <file path="static/css/base.css">
-/* static/css/base.css - Coastal Dawn v2（白ヘッダー・視認性改善版 / ヘッダー固定化対応） */
+/* ============================================================
+   static/css/base.css - Coastal Dawn v2（白ヘッダー・視認性改善版 / ヘッダー固定化対応）
+   【対象ページ】 base.html（全ページ共通のレイアウト・ヘッダー・ドロワー）
+   ============================================================
+   このファイルは全ページで読み込まれる共通パーツ
+   （ページ背景・ヘッダー・スマホ用ドロワーメニュー・フラッシュメッセージ）
+   のスタイルをまとめている。機能・パーツ単位で見出しコメントを付け、
+   どのUI要素のデザインかが一目でわかるように整理している。
+   ============================================================ */
 
-/* ===========================
-   Google Fonts
-   =========================== */
-
-/* ===========================
-   グローバルリセット・基本設定
-   =========================== */
+/* ------------------------------------------------------------
+   【共通】グローバルリセット
+   ------------------------------------------------------------ */
 *, *::before, *::after {
     box-sizing: border-box;
 }
 
 
-/* ========================================
-   [修正] ヘッダーを position: fixed 化したことに伴う変更
-   -----------------------------------------------
+/* ------------------------------------------------------------
+   【共通レイアウト】ページ背景（html要素）
+   ------------------------------------------------------------
+   ヘッダーを position: fixed 化したことに伴う変更点:
    従来は .main-header を position: sticky で実装しており、
    スマホ／macOSトラックパッド等で発生する
    「ページ端を超えて引っ張るとバウンドする」オーバースクロール時に、
@@ -1169,31 +1222,24 @@ input[type="password"]:focus {
    グラデーションによる応急処置は不要になったため削除し、
    代わりに body 要素に固定ヘッダーの高さ分の padding-top を設定して
    本文がヘッダーの下に隠れないよう調整している。
-   （sticky 時代にヘッダーがドキュメントの流れの中で占めていた
-     スペースを、そのまま padding-top で再現しているだけなので、
-     見た目の余白は従来と変わらない。）
-   ======================================== */
+   ------------------------------------------------------------ */
 html {
     background-color: #f0f9ff;
 }
 
 
-/* ========================================
-   body 背景を #f0f9ff（淡い水色）に統一。
-   ドットグリッドは視認性を下げるため削除。
-   テキストカラーは #2a4a5e（元の値）を維持し
-   白背景・淡水色背景のどちらでも読みやすくする。
-
-   [追加] min-height を指定し、コンテンツが短いページ
+/* ------------------------------------------------------------
+   【共通レイアウト】ページ背景（body要素）
+   ------------------------------------------------------------
+   min-height を指定し、コンテンツが短いページ
    （ログイン画面など）でも body の背景色が
    ビューポート全体を必ず覆うようにする。
 
-   [追加] padding-top: 85px（PC）／63px（スマホ）
+   padding-top: 85px（PC）／63px（スマホ、@mediaで上書き）
    ヘッダーを position: fixed にしてドキュメントの流れから
    外した分、本文の開始位置がヘッダーの高さ（.header-container の
    height と一致）だけ下にずれるよう補正する。
-   ======================================== */
-
+   ------------------------------------------------------------ */
 body {
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: #2a4a5e;
@@ -1208,6 +1254,9 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+/* ------------------------------------------------------------
+   【共通】見出し（h2）の汎用スタイル
+   ------------------------------------------------------------ */
 h2 {
     font-size: 28px;
     font-weight: 700;
@@ -1217,6 +1266,9 @@ h2 {
     color: #0c1f35;
 }
 
+/* ------------------------------------------------------------
+   【共通】リンクの基本スタイル
+   ------------------------------------------------------------ */
 a {
     color: #0369a1;
     text-decoration: none;
@@ -1228,9 +1280,9 @@ a:hover {
 }
 
 
-/* ===========================
-   フラッシュメッセージ
-   =========================== */
+/* ------------------------------------------------------------
+   【共通】フラッシュメッセージ（ログイン成功／エラー通知など）
+   ------------------------------------------------------------ */
 .flash-messages {
     list-style: none;
     padding: 0;
@@ -1256,20 +1308,15 @@ a:hover {
 }
 
 
-/* ===========================
-   ヘッダー
-   =========================== */
-
-/* ========================================
+/* ============================================================
+   【共通ヘッダー】ヘッダー本体（固定ヘッダー）
+   ============================================================
    黒ヘッダーを廃止し、白ヘッダーに変更。
    下部に 3px のセルリアンラインを引くことで
    「爽やかな水色」らしさを保ちながら
    清潔感のある仕上がりにする。
-   ======================================== */
 
-/* ========================================
-   [修正] position: sticky → position: fixed に変更。
-   -----------------------------------------------
+   position: sticky → position: fixed に変更した理由:
    sticky はドキュメントの流れの中に留まりながら
    スクロール位置に応じて画面上に張り付く実装だが、
    オーバースクロール（バウンド）時には
@@ -1283,11 +1330,10 @@ a:hover {
    left: 0; right: 0; を明示することで
    width: 100% と合わせて画面幅いっぱいに固定表示する。
 
-   これまで通り、スクロール方向に応じて
-   transform: translateY(-100%) でヘッダーを
-   スライドイン／スライドアウトさせる挙動（下記 JS）は
+   スクロール方向に応じて transform: translateY(-100%) で
+   ヘッダーをスライドイン／スライドアウトさせる挙動（base.html側のJS）は
    fixed 化後もそのまま機能する。
-   ======================================== */
+   ============================================================ */
 .main-header {
     background-color: #ffffff;
     border-bottom: 3px solid #0ea5e9;
@@ -1303,6 +1349,7 @@ a:hover {
                 visibility 0s linear 0s;
 }
 
+/* 下スクロール時にヘッダーを画面外へスライドアウトさせる状態（JSが付与） */
 .main-header.header-hidden {
     transform: translateY(-100%);
     visibility: hidden;
@@ -1310,6 +1357,7 @@ a:hover {
                 visibility 0s linear 0.2s;
 }
 
+/* ヘッダー内側のレイアウト（ロゴ／検索／ナビを横並びに配置） */
 .header-container {
     display: flex;
     align-items: center;
@@ -1322,13 +1370,12 @@ a:hover {
     gap: 24px;
 }
 
-/* ロゴ */
-
-/* ========================================
-   ロゴは Noto Serif JP（明朝体）の
-   インク色（#0c1f35）。白背景上でくっきりと
-   読める十分なコントラストを確保。
-   ======================================== */
+/* ------------------------------------------------------------
+   【共通ヘッダー】ロゴ（「MIT Blog」）
+   ------------------------------------------------------------
+   ロゴは Noto Serif JP（明朝体）のインク色（#0c1f35）。
+   白背景上でくっきりと読める十分なコントラストを確保。
+   ------------------------------------------------------------ */
 .header-logo {
     flex: 0 0 auto;
 }
@@ -1348,14 +1395,12 @@ a:hover {
     text-decoration: none !important;
 }
 
-/* 検索フォーム */
-
-/* ========================================
-   検索バーを白背景に戻し、
-   セルリアン系のボーダーで統一感を出す。
-   プレースホルダーは #7ab8d8 で
-   薄すぎず、邪魔にならないトーンに。
-   ======================================== */
+/* ------------------------------------------------------------
+   【共通ヘッダー】キーワード検索フォーム（ヘッダー上部の検索バー）
+   ------------------------------------------------------------
+   検索バーは白背景に、セルリアン系のボーダーで統一感を出す。
+   プレースホルダーは #7ab8d8 で薄すぎず、邪魔にならないトーンに。
+   ------------------------------------------------------------ */
 .header-search-box {
     flex: 1;
     display: flex;
@@ -1396,6 +1441,7 @@ a:hover {
     color: #5a8ba8;
 }
 
+/* 検索実行ボタン（虫眼鏡アイコン） */
 .search-submit-btn {
     border: none;
     background: transparent;
@@ -1414,6 +1460,7 @@ a:hover {
     background-color: #e0f2fe;
 }
 
+/* 検索解除ボタン（✕）※検索中・絞り込み中のみ表示 */
 .search-clear-btn {
     color: #c12c1c;
     text-decoration: none;
@@ -1428,13 +1475,12 @@ a:hover {
     text-decoration: none;
 }
 
-/* ナビゲーション */
-
-/* ========================================
-   白背景上のナビリンク。
-   テキストを #0369a1（濃いセルリアン）に設定し
+/* ------------------------------------------------------------
+   【共通ヘッダー】PC用ナビゲーション（新規投稿／ジャンル検索／マイページ／ログアウト）
+   ------------------------------------------------------------
+   白背景上のナビリンク。テキストを #0369a1（濃いセルリアン）に設定し
    白背景でも確実に視認できるコントラストを確保。
-   ======================================== */
+   ------------------------------------------------------------ */
 .header-nav {
     flex: 0 0 auto;
     display: flex;
@@ -1477,7 +1523,7 @@ a:hover {
     text-decoration: none;
 }
 
-/* 「新規投稿」はセルリアン塗りつぶし */
+/* 先頭の「新規投稿」だけセルリアン塗りつぶしで強調 */
 .header-nav ul li:first-child a {
     background-color: #0ea5e9;
     color: #ffffff;
@@ -1492,9 +1538,11 @@ a:hover {
 }
 
 
-/* ===========================
-   ハンバーガーボタン（スマホ）
-   =========================== */
+/* ------------------------------------------------------------
+   【共通ヘッダー】ハンバーガーボタン（スマホ・PC非表示のメニュー開閉ボタン）
+   ------------------------------------------------------------
+   白ヘッダー上のハンバーガーラインはセルリアン系の濃い色で視認性を確保。
+   ------------------------------------------------------------ */
 .hamburger-btn {
     display: none;
     background: none;
@@ -1507,10 +1555,6 @@ a:hover {
     flex-shrink: 0;
 }
 
-/* ========================================
-   白ヘッダー上のハンバーガーラインは
-   セルリアン系の濃い色で視認性を確保。
-   ======================================== */
 .hamburger-btn span {
     display: block;
     width: 20px;
@@ -1521,9 +1565,11 @@ a:hover {
 }
 
 
-/* ===========================
-   ドロワーナビ（スマホ）
-   =========================== */
+/* ============================================================
+   【共通ヘッダー】スマホ用ドロワーメニュー（ハンバーガーで開閉）
+   ============================================================ */
+
+/* 背景を暗く覆うオーバーレイ */
 .mobile-nav-overlay {
     display: none;
     position: fixed;
@@ -1536,6 +1582,7 @@ a:hover {
     display: block;
 }
 
+/* 右からスライドインするドロワー本体 */
 .mobile-nav-drawer {
     position: fixed;
     top: 0;
@@ -1555,6 +1602,7 @@ a:hover {
     right: 0;
 }
 
+/* ドロワー上部（ロゴ＋閉じるボタン） */
 .mobile-nav-header {
     display: flex;
     align-items: center;
@@ -1593,6 +1641,7 @@ a:hover {
     background: #e0f2fe;
 }
 
+/* ドロワー内のメニュー項目 */
 .mobile-nav-drawer ul {
     list-style: none;
     margin: 12px 0 0;
@@ -1624,6 +1673,7 @@ a:hover {
     border-left-color: #0ea5e9;
 }
 
+/* 先頭の「新規投稿」だけ強調表示 */
 .mobile-nav-drawer ul li:first-child a {
     background-color: #0ea5e9;
     color: #fff;
@@ -1638,11 +1688,12 @@ a:hover {
     background-color: #0369a1;
 }
 
+/* 【共通】floatクリア用ユーティリティ */
 .clear { clear: both; }
 
 
 /* ==========================================================================
-   レスポンシブ（スマホ）
+   【共通ヘッダー】レスポンシブ（スマホ）
    ========================================================================== */
 
 @media (max-width: 767px) {
@@ -1652,7 +1703,7 @@ a:hover {
         gap: 12px;
     }
 
-    /* [追加] 固定ヘッダーの高さがスマホでは63pxになるため、
+    /* 固定ヘッダーの高さがスマホでは63pxになるため、
        本文の押し下げ量もそれに合わせて上書きする。 */
     body {
         padding-top: 63px;
@@ -1725,8 +1776,18 @@ a:hover {
 </file>
 
 <file path="static/css/create_update.css">
-/* static/css/create_update.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/create_update.css - Coastal Dawn v2
+   【対象ページ】 create.html（新規投稿）／ update.html（記事編集）
+   ============================================================
+   このファイルは投稿作成・編集フォーム専用のスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【create.html / update.html】ページ見出し（「新規投稿作成」「編集」）
+   ------------------------------------------------------------ */
 h1 {
     font-size: 20px;
     font-weight: 700;
@@ -1736,6 +1797,9 @@ h1 {
     letter-spacing: -0.01em;
 }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】フォームカード全体
+   ------------------------------------------------------------ */
 .post-form {
     max-width: 720px;
     margin: 0 auto 60px;
@@ -1757,6 +1821,9 @@ h1 {
     letter-spacing: 0.02em;
 }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】タイトル入力欄・ジャンル選択セレクト
+   ------------------------------------------------------------ */
 .post-form input[type="text"],
 .post-form select {
     width: 100% !important;
@@ -1780,6 +1847,9 @@ h1 {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】本文（Markdown）入力用テキストエリア
+   ------------------------------------------------------------ */
 .post-form textarea {
     width: 100% !important;
     padding: 18px !important;
@@ -1805,10 +1875,15 @@ h1 {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12) !important;
 }
 
+/* フォーム内の補足説明テキスト（各項目のヘルプ文） */
 .post-form p { font-size: 15px; color: #2a4a5e; margin: 0 0 8px; line-height: 1.5; font-weight: 500; }
 
+/* 画像アップロード用のネイティブ input[type=file]（JS制御で非表示にする場合あり） */
 .post-form input[type="file"] { display: block; margin-bottom: 24px; font-size: 13px; color: #0c1f35; width: 100%; }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】「投稿する」「更新」送信ボタン
+   ------------------------------------------------------------ */
 .post-form input[type="submit"] {
     display: block;
     width: 100%;
@@ -1827,7 +1902,10 @@ h1 {
 
 .post-form input[type="submit"]:hover { background-color: #0369a1; }
 
-/* プレビューカード */
+/* ------------------------------------------------------------
+   【create.html / update.html】画像アップロードのプレビューカード
+   （[imgN]ラベル・ファイル名・削除ボタンを含むカード）
+   ------------------------------------------------------------ */
 .preview-item {
     position: relative;
     border: 1px solid #7dd3fa;
@@ -1861,7 +1939,9 @@ h1 {
     text-overflow: ellipsis;
 }
 
-/* 公開設定トグル */
+/* ------------------------------------------------------------
+   【create.html / update.html】公開設定トグルボタン（🔒非公開／🔓全体公開）
+   ------------------------------------------------------------ */
 .toggle-status-btn {
     display: inline-flex;
     align-items: center;
@@ -1895,9 +1975,13 @@ h1 {
 
 .toggle-status-btn.published:hover { background-color: #bae6fd; border-color: #0ea5e9; }
 
-/* ツールバー */
+/* ============================================================
+   【create.html / update.html】Markdown編集ツールバー
+   （H2/H3見出し・太字・目次・リスト・地図・YouTubeの各挿入ボタン）
+   ============================================================ */
 .md-toolbar-wrapper { position: relative; }
 
+/* ツールバー本体：本文欄の上に張り付くスティッキーバー */
 .md-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -1915,8 +1999,10 @@ h1 {
     transition: box-shadow 0.2s ease;
 }
 
+/* スクロールでツールバーが本文上部に貼り付いた際の強調影 */
 .md-toolbar.is-sticky { box-shadow: 0 6px 20px rgba(14, 165, 233, 0.18); border-color: #38bdf8; }
 
+/* ツールバー内の各ボタン共通スタイル（H2見出し・太字・[toc]目次など） */
 .md-btn {
     padding: 7px 13px;
     font-size: 13px;
@@ -1936,6 +2022,7 @@ h1 {
 
 .md-btn:hover, .md-btn:active { background: #dbeafe; border-color: #38bdf8; color: #0c1f35; }
 
+/* ツールバー内のボタン間の区切り線 */
 .md-btn-separator {
     display: inline-block;
     width: 1px;
@@ -1946,25 +2033,36 @@ h1 {
     flex-shrink: 0;
 }
 
+/* [imgN] 画像挿入ボタン（アップロード枚数に応じて動的に生成） */
 .md-btn-img { color: #0369a1; background: #dbeafe; border-color: #38bdf8; }
 .md-btn-img:hover, .md-btn-img:active { background: #bae6fd; border-color: #0ea5e9; color: #0c1f35; }
 
+/* 🗺️ 地図挿入ボタン */
 .md-btn-map { color: #166534; background: #dcfce7; border-color: #86efac; }
 .md-btn-map:hover, .md-btn-map:active { background: #bbf7d0; border-color: #4ade80; color: #14532d; }
 
+/* ▶ YouTube挿入ボタン */
 .md-btn-youtube { color: #fff; background: rgba(220,38,38,0.75); border-color: rgba(185,28,28,0.6); font-weight: 700; }
 .md-btn-youtube:hover, .md-btn-youtube:active { background: rgba(185,28,28,0.85); color: #fff; }
 
+/* 箇条書きリスト挿入ボタン（SVGアイコン付き） */
 .md-btn-list { display: inline-flex; align-items: center; gap: 5px; color: #0c1f35; }
 .md-btn-list:hover, .md-btn-list:active { background: #dbeafe; border-color: #38bdf8; }
 
+/* ツールバー直下に接続する本文テキストエリアの角丸調整 */
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
     scroll-margin-top: calc(85px + 48px + 8px);
 }
 
-/* 地図モーダル */
+/* ============================================================
+   【create.html / update.html】🗺️ 地図挿入モーダル
+   （md-btn-map クリックで開くポップアップ）
+   ============================================================
+   同じ .map-modal 系クラスは、下部の ▶ YouTube挿入モーダル
+   （youtube-modal-overlay / youtube-modal）でも共用している。
+   ============================================================ */
 .map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(12,31,53,0.45); z-index: 1100; }
 .map-modal-overlay.open { display: block; }
 
@@ -2015,6 +2113,7 @@ h1 {
 .map-modal-body { padding: 20px 20px 8px; }
 .map-modal-label { display: block; font-size: 13px; font-weight: 700; color: #0369a1; margin-bottom: 8px; }
 
+/* モーダル内の場所・URL入力欄（地図／YouTube共通デザイン） */
 .map-modal-input {
     width: 100%;
     padding: 10px 14px;
@@ -2032,6 +2131,7 @@ h1 {
 
 .map-modal-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
 
+/* モーダル内プレビュー領域（地図iframe／YouTubeサムネイル共通の枠） */
 .map-preview-area {
     width: 100%;
     height: 260px;
@@ -2047,6 +2147,7 @@ h1 {
 .map-preview-placeholder { color: #4a7a96; font-size: 14px; text-align: center; margin: 0; padding: 0 20px; }
 .map-preview-iframe { width: 100%; height: 100%; border: none; display: block; }
 
+/* モーダル下部のキャンセル／挿入ボタン行 */
 .map-modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -2086,7 +2187,9 @@ h1 {
 .map-modal-insert:hover:not(:disabled) { background: #0369a1; }
 .map-modal-insert:disabled { background: #bae6fd; cursor: not-allowed; }
 
-/* 画像キャプション */
+/* ------------------------------------------------------------
+   【create.html / update.html】画像プレビューのキャプション入力欄
+   ------------------------------------------------------------ */
 .preview-caption-wrapper { padding: 8px 8px 2px; background: #dbeafe; border-top: 1px solid #7dd3fa; }
 
 .preview-caption-input {
@@ -2106,6 +2209,9 @@ h1 {
 .preview-caption-input:focus { border-color: #0ea5e9; }
 .preview-caption-input::placeholder { color: #7dd3fa; font-size: 11px; }
 
+/* ------------------------------------------------------------
+   【create.html / update.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     h1 { font-size: 17px; margin: 20px 0 16px; }
     .post-form { padding: 24px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 0; width: 100% !important; box-sizing: border-box; }
@@ -2129,8 +2235,18 @@ h1 {
 </file>
 
 <file path="static/css/detail.css">
-/* static/css/detail.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/detail.css - Coastal Dawn v2
+   【対象ページ】 detail.html（記事詳細ページ）
+   ============================================================
+   このファイルは記事詳細ページ専用のスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【detail.html】ページ全体のコンテナ
+   ------------------------------------------------------------ */
 .detail-container {
     max-width: 860px !important;
     margin: 0 auto;
@@ -2138,7 +2254,9 @@ h1 {
     box-sizing: border-box;
 }
 
-/* 記事本文カード — 左アクセントラインで一覧カードと統一 */
+/* ------------------------------------------------------------
+   【detail.html】記事本文カード（一覧カードと左アクセントラインで統一）
+   ------------------------------------------------------------ */
 article {
     background: #fff;
     padding: 52px 60px;
@@ -2150,6 +2268,9 @@ article {
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
+/* ------------------------------------------------------------
+   【detail.html】記事タイトル
+   ------------------------------------------------------------ */
 h1 {
     font-size: 24px;
     font-weight: 700;
@@ -2160,15 +2281,15 @@ h1 {
     letter-spacing: -0.02em;
 }
 
-/* メタ情報 */
-
-/* ========================================
-   [修正] .genre-badge を <span> から <a> へ変更したことに伴い、
+/* ------------------------------------------------------------
+   【detail.html】ジャンルバッジ（クリックでジャンル絞り込みへ遷移するリンク）
+   ------------------------------------------------------------
+   .genre-badge を <span> から <a> へ変更したことに伴い、
    ハッシュタグバッジ（.hashtag-badge）と統一感のある
    インタラクティブなスタイルを追加。
    display: inline-block / text-decoration: none / transition / hover
    を付与し、「タップできるタグ」であることが視覚的に伝わるようにする。
-   ======================================== */
+   ------------------------------------------------------------ */
 .genre-badge {
     display: inline-block;
     background-color: #dbeafe;
@@ -2190,6 +2311,9 @@ h1 {
     text-decoration: none;
 }
 
+/* ------------------------------------------------------------
+   【detail.html】メタ情報エリア（ジャンル・投稿者・日時・ハッシュタグをまとめる領域）
+   ------------------------------------------------------------ */
 .post-meta {
     display: flex;
     flex-direction: column;
@@ -2202,6 +2326,7 @@ h1 {
     width: 100%;
 }
 
+/* 投稿者アイコン＋ニックネーム表示 */
 .post-user-info {
     display: flex;
     align-items: center;
@@ -2220,9 +2345,12 @@ h1 {
     margin: 0 !important;
 }
 
+/* 投稿日時・更新日時テキスト */
 .post-time { color: #4a7a96; font-size: 12px; }
 
-/* 目次 */
+/* ============================================================
+   【detail.html】目次（本文中の [toc] マーカーから自動生成）
+   ============================================================ */
 .post-toc,
 .detail-article-body .toc {
     background-color: #f0f9ff !important;
@@ -2234,6 +2362,7 @@ h1 {
     box-sizing: border-box;
 }
 
+/* 本文中の[toc]位置に挿入された目次の見出しラベル */
 .detail-article-body .toc::before {
     content: "目次" !important;
     display: block !important;
@@ -2248,6 +2377,7 @@ h1 {
     padding-bottom: 0 !important;
 }
 
+/* 記事先頭に自動表示される目次の見出しラベル（[toc]未使用時） */
 .post-toc .toc-title, .toc-fixed .toc-title, .toc-sticky .toc-title {
     display: block !important;
     font-weight: 700 !important;
@@ -2269,6 +2399,7 @@ h1 {
     display: block !important;
 }
 
+/* 本文中の見出し（H1〜H3）に、固定ヘッダー分のスクロール余白を確保 */
 .detail-article-body h1,
 .detail-article-body h2,
 .detail-article-body h3 { scroll-margin-top: 100px; }
@@ -2332,7 +2463,9 @@ h1 {
     text-decoration: underline !important;
 }
 
-/* 記事本文 */
+/* ============================================================
+   【detail.html】記事本文（Markdown→HTML変換後のテキスト）
+   ============================================================ */
 .detail-article-body {
     font-weight: 400;
     font-size: 17px;
@@ -2367,20 +2500,28 @@ h1 {
     padding-left: 10px;
 }
 
+/* 本文内の画像共通スタイル */
 article img { max-width: 100%; height: auto; display: block; margin: 25px auto; border-radius: 5px; }
 
-/* 画像キャプション */
+/* ------------------------------------------------------------
+   【detail.html】本文内の画像キャプション（[imgN]＋キャプション文）
+   ------------------------------------------------------------ */
 .post-figure { display: block; margin: 16px auto 8px; text-align: center; }
 .post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
 .post-figcaption { margin-top: 6px; text-align: center !important; font-size: 15px; color: #0369a1; line-height: 1.5; display: block; width: 100%; }
 .post-figure + p { margin-top: 0.6em; }
 
-/* 地図 */
+/* ------------------------------------------------------------
+   【detail.html】本文内の地図埋め込み（[map:場所名]タグから生成）
+   ------------------------------------------------------------ */
 .post-map-wrapper { margin: 24px 0; border-radius: 0 10px 10px 0; overflow: hidden; border: 1.5px solid #7dd3fa; border-left: 4px solid #0ea5e9; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); }
 .post-map-label { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0369a1; background: #f0f9ff; border-bottom: 1px solid #7dd3fa; }
 .post-map-iframe { width: 100%; height: 380px; border: none; display: block; }
 
-/* YouTube */
+/* ------------------------------------------------------------
+   【detail.html】本文内のYouTube埋め込み（[youtube:URL]タグから生成、
+   サムネイルをタップすると再生が始まる「ファサード」形式）
+   ------------------------------------------------------------ */
 .post-youtube-wrapper { margin: 24px 0; border-radius: 10px; overflow: hidden; border: 1px solid #7dd3fa; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
 .post-youtube-facade { position: absolute; inset: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .post-youtube-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s ease; }
@@ -2392,9 +2533,14 @@ article img { max-width: 100%; height: auto; display: block; margin: 25px auto; 
 .yt-btn-icon { fill: #fff; }
 .post-youtube-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
 
-/* 下部ボタン */
+/* ------------------------------------------------------------
+   【detail.html】本文下の区切り線
+   ------------------------------------------------------------ */
 hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
+/* ------------------------------------------------------------
+   【detail.html】「前の画面に戻る」「この記事を編集する」ボタン行
+   ------------------------------------------------------------ */
 .detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 32px; flex-wrap: wrap; }
 
 .detail-btn {
@@ -2417,6 +2563,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .detail-btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
 
+/* 「前の画面に戻る」ボタン（白背景） */
 .detail-btn-back {
     background-color: #ffffff;
     color: #4a7a96;
@@ -2434,6 +2581,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .detail-btn-back:active { transform: translateY(0); box-shadow: none; background-color: #dbeafe; }
 
+/* 「この記事を編集する」ボタン（セルリアン塗りつぶし・投稿者本人のみ表示） */
 .detail-btn-edit {
     background-color: #0ea5e9;
     color: #ffffff;
@@ -2452,7 +2600,9 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .detail-btn-edit:active { transform: translateY(0); box-shadow: none; background-color: #075985; }
 
-/* 関連記事 */
+/* ============================================================
+   【detail.html】関連記事セクション（記事末尾、最大4件表示）
+   ============================================================ */
 .related-section { margin-top: 20px; padding-top: 8px; }
 
 .related-heading {
@@ -2472,6 +2622,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .related-heading-icon { font-size: 16px; flex-shrink: 0; }
 
+/* 「📂○○ / #タグ を表示中」のサブラベルバッジ */
 .related-heading-sub {
     font-size: 13px;
     font-weight: 500;
@@ -2489,7 +2640,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
-/* 関連記事カードも左アクセントラインデザインで統一 */
+/* 関連記事カード（一覧カードと同じ左アクセントラインデザイン、ホバーでゴールドに変化） */
 .related-card {
     display: flex;
     align-items: center;
@@ -2548,13 +2699,17 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 .related-card:hover .related-title { color: #0369a1; }
 .related-date { font-size: 12px; color: #0369a1; margin: 0; font-weight: 500; }
 
-/* 後方互換ボタン */
+/* ------------------------------------------------------------
+   【detail.html】後方互換用の旧ボタンデザイン（現状未使用の予備クラス）
+   ------------------------------------------------------------ */
 .detail-ul { display: flex; justify-content: center; gap: 16px; padding: 0; margin: 0; list-style: none; flex-wrap: wrap; }
 .detail-ul-li { background: none; border: none; padding: 0; }
 .detail-ul-li-a { font-size: 14px; color: #0369a1; text-decoration: none; padding: 10px 22px; border: 1px solid #7dd3fa; border-radius: 20px; display: inline-block; transition: all 0.18s; background: none; cursor: pointer; font-family: inherit; }
 .detail-ul-li-a:hover { border-color: #0ea5e9; color: #0c1f35; background: #dbeafe; text-decoration: none; }
 
-/* スマホ */
+/* ------------------------------------------------------------
+   【detail.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
     article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }
@@ -2593,8 +2748,18 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 </file>
 
 <file path="static/css/genre.css">
-/* static/css/genre.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/genre.css - Coastal Dawn v2
+   【対象ページ】 genre.html（ジャンル一覧ページ）
+   ============================================================
+   このファイルはジャンル一覧ページ専用のスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【genre.html】ページ見出し「ジャンル一覧」
+   ------------------------------------------------------------ */
 h1 {
     font-size: 20px;
     font-weight: 700;
@@ -2604,6 +2769,9 @@ h1 {
     letter-spacing: -0.01em;
 }
 
+/* ------------------------------------------------------------
+   【genre.html】カード全体（ジャンル一覧を囲む枠）
+   ------------------------------------------------------------ */
 .genre-container {
     max-width: 480px;
     margin: 0 auto 60px;
@@ -2620,7 +2788,9 @@ h1 {
     margin: 0;
 }
 
-/* 「全て表示」リンク */
+/* ------------------------------------------------------------
+   【genre.html】「📁 全て表示」リンク（一覧最上部）
+   ------------------------------------------------------------ */
 .genre-item-all a {
     display: block;
     padding: 16px 24px;
@@ -2638,7 +2808,12 @@ h1 {
     text-decoration: none;
 }
 
-/* アコーディオン外枠 */
+/* ============================================================
+   【genre.html】アコーディオン形式のカテゴリグループ
+   （ライフスタイル／社会経済／技術学習／スポーツ／娯楽／仕事）
+   ============================================================ */
+
+/* グループ全体の外枠（<details>要素） */
 .genre-group {
     border-bottom: 1px solid #e0f2fe;
 }
@@ -2647,7 +2822,7 @@ h1 {
     border-bottom: none;
 }
 
-/* アコーディオン見出し */
+/* グループの見出し行（<summary>要素、クリックで開閉） */
 .group-title {
     display: flex;
     justify-content: space-between;
@@ -2673,6 +2848,7 @@ h1 {
     display: none;
 }
 
+/* 開閉状態を示す矢印アイコン（▶ → 開いたら90度回転） */
 .group-title .arrow {
     font-size: 10px;
     color: #38bdf8;
@@ -2692,7 +2868,9 @@ details[open] .group-title {
     border-bottom: 1px solid #e0f2fe;
 }
 
-/* サブジャンルリスト */
+/* ------------------------------------------------------------
+   【genre.html】展開時に表示されるサブジャンルのリンク一覧
+   ------------------------------------------------------------ */
 .sub-genre-list {
     background: #f8fdff;
     padding: 4px 0;
@@ -2724,7 +2902,9 @@ details[open] .group-title {
     text-decoration: none;
 }
 
-/* フッターリンク */
+/* ------------------------------------------------------------
+   【genre.html】カード下部の「一覧画面に戻る」フッターリンク
+   ------------------------------------------------------------ */
 .genre-footer {
     text-align: center;
     margin: 20px 0 48px;
@@ -2748,6 +2928,9 @@ details[open] .group-title {
     background: #dbeafe;
 }
 
+/* ------------------------------------------------------------
+   【genre.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     h1 { font-size: 18px; margin: 24px 0 16px; }
     .genre-container { margin: 0 16px 48px; border-radius: 10px; }
@@ -2759,9 +2942,22 @@ details[open] .group-title {
 </file>
 
 <file path="static/css/hashtag.css">
-/* static/css/hashtag.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/hashtag.css - Coastal Dawn v2
+   【対象ページ】 全ページ共通（base.htmlで読み込み）
+   ハッシュタグ関連の表示・入力・絞り込みUIをまとめたファイル。
+   ============================================================
+   使用ページの内訳:
+   - index.html / mypage.html   : 記事カードのハッシュタグバッジ、絞り込みバー
+   - detail.html                : 記事詳細のハッシュタグバッジ
+   - create.html / update.html  : ハッシュタグ入力欄・プレビュー
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
-/* ハッシュタグバッジ（共通） */
+/* ------------------------------------------------------------
+   【共通】ハッシュタグバッジ本体（記事カード・記事詳細で表示するタグ）
+   ------------------------------------------------------------ */
 .hashtag-badge {
     display: inline-block;
     padding: 2px 9px;
@@ -2783,6 +2979,7 @@ details[open] .group-title {
     text-decoration: none;
 }
 
+/* 【index.html / mypage.html】記事カード内のタグ一覧の並び方 */
 .post-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -2790,6 +2987,7 @@ details[open] .group-title {
     margin: 4px 0 8px;
 }
 
+/* 【detail.html】記事詳細メタ情報内のタグ一覧の並び方 */
 .detail-hashtags {
     display: flex;
     flex-wrap: wrap;
@@ -2797,7 +2995,9 @@ details[open] .group-title {
     margin-top: 4px;
 }
 
-/* ハッシュタグ絞り込みバー */
+/* ============================================================
+   【index.html】ハッシュタグ絞り込みバー（ジャンル選択中のみ表示）
+   ============================================================ */
 .hashtag-filter-bar {
     display: flex;
     align-items: flex-start;
@@ -2828,6 +3028,7 @@ details[open] .group-title {
     align-items: center;
 }
 
+/* 絞り込みバー内の各タグボタン */
 .hashtag-filter-badge {
     display: inline-block;
     padding: 4px 14px;
@@ -2849,6 +3050,7 @@ details[open] .group-title {
     text-decoration: none;
 }
 
+/* 現在選択中のタグ（塗りつぶし強調） */
 .hashtag-filter-badge.active {
     background-color: #0ea5e9;
     border-color: #0ea5e9;
@@ -2861,6 +3063,7 @@ details[open] .group-title {
     color: #fff;
 }
 
+/* 「✕ タグ解除」ボタン */
 .hashtag-filter-clear {
     display: inline-block;
     padding: 4px 12px;
@@ -2882,7 +3085,9 @@ details[open] .group-title {
     text-decoration: none;
 }
 
-/* ハッシュタグ入力エリア（create/update） */
+/* ============================================================
+   【create.html / update.html】ハッシュタグ入力エリア
+   ============================================================ */
 .hashtag-input-wrapper {
     display: flex;
     align-items: center;
@@ -2902,6 +3107,7 @@ details[open] .group-title {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* 入力欄先頭に固定表示される「#」記号 */
 .hashtag-prefix {
     font-size: 16px;
     font-weight: 700;
@@ -2925,6 +3131,7 @@ details[open] .group-title {
     font-family: inherit;
 }
 
+/* 入力内容からリアルタイム生成されるタグプレビューの並び */
 .hashtag-preview-area {
     display: flex;
     flex-wrap: wrap;
@@ -2933,6 +3140,7 @@ details[open] .group-title {
     margin-bottom: 22px;
 }
 
+/* プレビュー用タグバッジ（ポップアニメーション付き） */
 .hashtag-badge-preview {
     display: inline-block;
     padding: 3px 12px;
@@ -2950,6 +3158,9 @@ details[open] .group-title {
     to   { transform: scale(1);    opacity: 1; }
 }
 
+/* ------------------------------------------------------------
+   【共通】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     .hashtag-filter-bar {
         flex-direction: column;
@@ -2967,12 +3178,20 @@ details[open] .group-title {
 </file>
 
 <file path="static/css/index.css">
-/* static/css/index.css - Coastal Dawn v2（白ヘッダー・視認性改善版） */
+/* ============================================================
+   static/css/index.css - Coastal Dawn v2（白ヘッダー・視認性改善版）
+   【対象ページ】 index.html（トップページ・記事一覧）
+   ============================================================
+   このファイルはトップページの記事一覧・記事カード・
+   ページ番号ページ送りのスタイルをまとめている。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
 
-/* ===========================
-   メインレイアウト
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html】メインレイアウト（記事一覧全体を囲む余白）
+   ------------------------------------------------------------ */
 .page-wrapper {
     max-width: 940px;
     margin: 0 auto;
@@ -2980,11 +3199,12 @@ details[open] .group-title {
     margin-top: 15px;
 }
 
-/* ========================================
-   [追加] ページ送り時にスクロールを戻す目印。
+/* ------------------------------------------------------------
+   【index.html】ページ送り時にスクロールを戻す目印（非表示要素）
+   ------------------------------------------------------------
    固定ヘッダー（position: fixed）の下に隠れないよう
    scroll-margin-top をヘッダーの高さ分だけ確保しておく。
-   ======================================== */
+   ------------------------------------------------------------ */
 #index-articles-anchor {
     scroll-margin-top: 100px;
 }
@@ -2996,9 +3216,9 @@ details[open] .group-title {
 }
 
 
-/* ===========================
-   記事カード共通
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】記事カードの「編集」リンクボタン
+   ------------------------------------------------------------ */
 .btn-edit {
     display: inline-block;
     padding: 3px 14px;
@@ -3020,9 +3240,9 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   検索・フィルター表示
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html】検索・絞り込み結果ラベル（「🔍「◯◯」の検索結果」）
+   ------------------------------------------------------------ */
 .filter-label {
     font-size: 19px;
     color: #0c1f35;
@@ -3032,9 +3252,9 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   記事一覧セクション
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html】「📋 最新の記事」セクション見出し
+   ------------------------------------------------------------ */
 .posts-section-title {
     font-size: 1.4rem !important;
     font-weight: 700;
@@ -3044,9 +3264,10 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   自己紹介見出し
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html】自己紹介（hero）セクションの見出し
+   （実際の詳細レイアウトは top_sections.css で定義）
+   ------------------------------------------------------------ */
 .hero-section-title {
     font-size: 1.4rem !important;
     font-weight: 700;
@@ -3056,16 +3277,9 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   記事カードバッジ
-   =========================== */
-
-/* ========================================
-   [修正] ジャンルバッジの背景を #e0f2fe、
-   テキストを #0369a1 に設定。
-   #f0f9ff の背景の上でも確実に見える
-   コントラストを確保。
-   ======================================== */
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】記事カードのジャンル・非公開バッジ
+   ------------------------------------------------------------ */
 .badge-genre {
     font-size: 13px;
     font-weight: 600;
@@ -3089,21 +3303,13 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   記事カード本体
-   =========================== */
-
-/* ========================================
-   [シグネチャ要素・維持]
-   左端に 4px のセルリアンアクセントライン。
-   ホバー時にゴールド (#f59e0b) へ変化する。
-   カードは角丸なし（左）＋角丸あり（右）で
-   「ページから飛び出す」ような奥行きを演出。
-
-   [修正] 外枠ボーダーを #bae6fd → #7dd3fa に
-   強化し、淡水色の背景上でカードの輪郭を
-   はっきり見えるようにした。
-   ======================================== */
+/* ============================================================
+   【index.html / mypage.html 共通】記事カード本体
+   ============================================================
+   左端に 4px のセルリアンアクセントライン。ホバー時にゴールド
+   (#f59e0b) へ変化する。カードは角丸なし（左）＋角丸あり（右）で
+   「ページから飛び出す」ような奥行きを演出するシグネチャー要素。
+   ============================================================ */
 .post-card {
     display: flex;
     gap: 36px;
@@ -3130,6 +3336,7 @@ a[role="button"]:hover {
                 0 2px 8px rgba(14, 165, 233, 0.08);
 }
 
+/* カード左側のサムネイル画像枠 */
 .post-thumbnail {
     flex: 0 0 260px;
     height: 158px;
@@ -3152,6 +3359,7 @@ a[role="button"]:hover {
     object-position: center;
 }
 
+/* カード右側のコンテンツ（ジャンル・タイトル・日付・操作ボタン）レイアウト */
 .post-content {
     flex: 1;
     display: flex;
@@ -3168,11 +3376,9 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
-/* ========================================
-   [変更・維持] タイトルを明朝体に変更。
-   color は #0c1f35（深いインク色）で
-   白カード上での視認性を最大化する。
-   ======================================== */
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】記事タイトルリンク
+   ------------------------------------------------------------ */
 .post-title {
     margin: 8px 0 8px 0;
     font-size: 1.25rem;
@@ -3188,7 +3394,7 @@ a[role="button"]:hover {
     transition: color 0.22s ease;
 }
 
-/* 全域タップ化 */
+/* カード全域をタップ可能にする透明レイヤー */
 .post-title a::after {
     content: "";
     position: absolute;
@@ -3201,6 +3407,9 @@ a[role="button"]:hover {
     font-weight: 700;
 }
 
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】「編集」「削除」ボタン行（投稿者本人のみ表示）
+   ------------------------------------------------------------ */
 .post-actions {
     position: relative;
     z-index: 2;
@@ -3225,11 +3434,9 @@ a[role="button"]:hover {
     color: #a93226;
 }
 
-/* ========================================
-   [修正] 投稿日付のカラーを #0369a1 に設定。
-   従来の #3a82ac より濃く、淡い背景上でも
-   十分に読み取れるコントラストを確保。
-   ======================================== */
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】投稿日・更新日の表示
+   ------------------------------------------------------------ */
 .post-date {
     margin: 1px 0 0 0;
     font-size: 0.80rem;
@@ -3243,18 +3450,18 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   ページ番号によるページ送り
-   =========================== */
-
-/* ========================================
-   [追加] 「もっと見る／表示を減らす」ボタンを廃止し、
-   ページ番号によるページ送り UI に置き換え。
+/* ============================================================
+   【index.html】ページ番号によるページ送り（1ページ5件表示）
+   ============================================================
+   「もっと見る／表示を減らす」ボタンを廃止し、
+   ページ番号によるページ送り UI に置き換えたもの。
    ボタン群は load_more.css の配色トーンを踏襲しつつ、
    現在のページを塗りつぶし（.active）で強調する。
-   ======================================== */
+   ============================================================ */
+
+/* ページ送りナビ全体（JS側で totalPages > 1 のときだけ flex 表示） */
 .index-pagination {
-    display: none; /* JS側で totalPages > 1 のときだけ flex に切り替える */
+    display: none;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -3262,6 +3469,7 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
+/* ページ番号・前へ／次へ の共通ボタンデザイン */
 .page-btn {
     display: inline-flex;
     align-items: center;
@@ -3296,6 +3504,7 @@ a[role="button"]:hover {
     background-color: #bae6fd;
 }
 
+/* 現在表示中のページ番号ボタン（塗りつぶし強調） */
 .page-btn.active {
     background-color: #0ea5e9;
     border-color: #0ea5e9;
@@ -3309,11 +3518,13 @@ a[role="button"]:hover {
     color: #ffffff;
 }
 
+/* 「‹」「›」前へ／次へ ボタン */
 .page-btn-arrow {
     font-size: 16px;
     font-weight: 700;
 }
 
+/* 先頭・末尾ページで無効化された前へ／次へボタン */
 .page-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -3323,7 +3534,7 @@ a[role="button"]:hover {
 
 
 /* ==========================================================================
-   レスポンシブ（スマホ）
+   【index.html / mypage.html 共通】レスポンシブ（スマホ）
    ========================================================================== */
 
 @media (max-width: 600px) {
@@ -3413,8 +3624,20 @@ a[role="button"]:hover {
 </file>
 
 <file path="static/css/load_more.css">
-/* static/css/load_more.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/load_more.css - Coastal Dawn v2
+   【対象ページ】 mypage.html（マイページの投稿一覧）
+   ============================================================
+   以前は index.html でも使用していたが、index.html は
+   ページ番号方式のページ送り（index.css の .index-pagination）に
+   置き換えたため、現在この CSS を読み込んでいるのは
+   mypage.html のみ。学習用サンプルとしてこのファイル自体は
+   そのまま残してある。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【mypage.html】「もっと見る／表示を減らす」ボタンのラッパー
+   ------------------------------------------------------------ */
 .load-more-wrap {
     display: none;
     align-items: center;
@@ -3424,6 +3647,9 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
+/* ------------------------------------------------------------
+   【mypage.html】「もっと見る」「▲ 表示を減らす」ボタン共通デザイン
+   ------------------------------------------------------------ */
 .load-more-btn,
 .load-less-btn {
     display: inline-flex;
@@ -3440,6 +3666,7 @@ a[role="button"]:hover {
                 color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
+/* 「もっと見る」ボタン（白背景） */
 .load-more-btn {
     background-color: #ffffff;
     color: #0369a1;
@@ -3461,6 +3688,7 @@ a[role="button"]:hover {
     background-color: #bae6fd;
 }
 
+/* 「▲ 表示を減らす」ボタン（控えめなグレー系） */
 .load-less-btn {
     background-color: #ffffff;
     color: #4a7a96;
@@ -3482,6 +3710,9 @@ a[role="button"]:hover {
     background-color: #e0f2fe;
 }
 
+/* ------------------------------------------------------------
+   【mypage.html】「もっと見る」ボタン内の残り件数バッジ（「あと◯件」）
+   ------------------------------------------------------------ */
 .load-more-count {
     display: inline-block;
     background: #dbeafe;
@@ -3500,6 +3731,9 @@ a[role="button"]:hover {
     background-color: #bae6fd;
 }
 
+/* ------------------------------------------------------------
+   【mypage.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 600px) {
     .load-more-wrap { flex-direction: column; gap: 8px; }
     .load-more-btn, .load-less-btn {
@@ -3513,8 +3747,19 @@ a[role="button"]:hover {
 </file>
 
 <file path="static/css/mypage.css">
-/* static/css/mypage.css - Coastal Dawn v2 */
+/* ============================================================
+   static/css/mypage.css - Coastal Dawn v2
+   【対象ページ】 mypage.html（マイページ）
+   ============================================================
+   このファイルはマイページ専用のスタイルをまとめている
+   （記事カード自体のデザインは index.css を共用）。
+   機能・パーツ単位で見出しコメントを付け、どのUI要素の
+   デザインかが一目でわかるように整理している。
+   ============================================================ */
 
+/* ------------------------------------------------------------
+   【mypage.html】ページ全体のレイアウト
+   ------------------------------------------------------------ */
 .mypage-container {
     max-width: 940px;
     margin: 0 auto;
@@ -3522,7 +3767,9 @@ a[role="button"]:hover {
     box-sizing: border-box;
 }
 
-/* プロフィールヘッダー */
+/* ============================================================
+   【mypage.html】プロフィールカード（ニックネーム・投稿数・変更フォーム）
+   ============================================================ */
 .profile-header {
     background: #fff;
     padding: 28px 28px 24px;
@@ -3559,7 +3806,9 @@ a[role="button"]:hover {
     font-weight: 700;
 }
 
-/* ニックネーム変更フォーム */
+/* ------------------------------------------------------------
+   【mypage.html】ニックネーム変更フォーム
+   ------------------------------------------------------------ */
 .nickname-form-wrapper {
     margin-top: 20px;
     padding-top: 18px;
@@ -3619,7 +3868,9 @@ a[role="button"]:hover {
     background-color: #0369a1;
 }
 
-/* セクション見出し */
+/* ------------------------------------------------------------
+   【mypage.html】セクション見出し（「📂 使用ジャンル」「📝 投稿一覧」）
+   ------------------------------------------------------------ */
 .section-title-genre,
 .section-title-posts {
     font-size: 1.15rem;
@@ -3631,7 +3882,9 @@ a[role="button"]:hover {
     letter-spacing: 0.02em;
 }
 
-/* ジャンルタグ一覧 */
+/* ------------------------------------------------------------
+   【mypage.html】使用ジャンルのタグ一覧
+   ------------------------------------------------------------ */
 .user-genre-list { margin-bottom: 8px; }
 
 .genre-tags {
@@ -3664,7 +3917,9 @@ a[role="button"]:hover {
     font-weight: 600;
 }
 
-/* 空状態メッセージ */
+/* ------------------------------------------------------------
+   【mypage.html】投稿が1件もない場合の案内メッセージ
+   ------------------------------------------------------------ */
 .empty-message {
     color: #4a7a96;
     text-align: center;
@@ -3678,6 +3933,9 @@ a[role="button"]:hover {
     text-decoration: underline;
 }
 
+/* ------------------------------------------------------------
+   【mypage.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
 @media (max-width: 767px) {
     .mypage-container { padding: 15px 12px 48px; width: 100% !important; box-sizing: border-box; }
     .profile-header { padding: 20px 16px 18px; border-radius: 0 10px 10px 0; margin-bottom: 20px; }
@@ -3691,12 +3949,19 @@ a[role="button"]:hover {
 </file>
 
 <file path="static/css/top_sections.css">
-/* static/css/top_sections.css - Coastal Dawn v2（白ヘッダー・視認性改善版） */
+/* ============================================================
+   static/css/top_sections.css - Coastal Dawn v2（白ヘッダー・視認性改善版）
+   【対象ページ】 index.html（hero・stats・記事一覧見出し・検索エリア）
+                 about.html / howto.html（静的情報ページ共通レイアウト）
+   ============================================================
+   複数ページで共用する「セクション単位」のパーツをまとめたファイル。
+   どのページ・どの機能のデザインかをブロックごとに明記している。
+   ============================================================ */
 
 
-/* ===========================
-   自己紹介見出し 
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html】hero（自己紹介）セクションの見出し「📋 自己紹介」
+   ------------------------------------------------------------ */
 .hero-section-title {
     font-size: 16px;
     font-weight: 700;
@@ -3710,9 +3975,9 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   共通：セクション間余白
-   =========================== */
+/* ------------------------------------------------------------
+   【共通】セクション間の余白（hero / howto / stats 共通）
+   ------------------------------------------------------------ */
 .hero-section,
 .howto-section,
 .stats-section {
@@ -3720,15 +3985,12 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   hero セクション
-   =========================== */
-
-/* ========================================
-   [修正] hero カードも記事カードと同じ
-   左アクセントラインデザインに統一。
+/* ============================================================
+   【index.html】hero（自己紹介）セクション本体（hero.htmlをinclude）
+   ============================================================
+   hero カードは記事カードと同じ左アクセントラインデザインに統一。
    背景は白、外枠は #bae6fd で視認性◎。
-   ======================================== */
+   ============================================================ */
 .hero-section {
     display: flex;
     align-items: center;
@@ -3741,6 +4003,7 @@ a[role="button"]:hover {
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
 }
 
+/* 管理者アバター画像 */
 .hero-avatar img {
     width: 80px;
     height: 80px;
@@ -3755,10 +4018,7 @@ a[role="button"]:hover {
     flex: 1;
 }
 
-/* ========================================
-   [変更・維持] ブログ名を明朝体に変更。
-   色は #0c1f35 で白背景上の視認性を確保。
-   ======================================== */
+/* ブログ名見出し（「◯◯ のブログ」） */
 .hero-name {
     font-size: 20px;
     font-weight: 700;
@@ -3768,6 +4028,7 @@ a[role="button"]:hover {
     letter-spacing: -0.02em;
 }
 
+/* 自己紹介の一言テキスト */
 .hero-bio {
     font-weight: 500;
     font-size: 15px;
@@ -3776,6 +4037,7 @@ a[role="button"]:hover {
     margin: 0;
 }
 
+/* 「👤 自己紹介を読む」「📖 使い方を見る」リンクボタン */
 .hero-links {
     display: flex;
     gap: 10px;
@@ -3783,11 +4045,6 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
-/* ========================================
-   [修正] hero リンクボタンのテキストを
-   #0369a1 に強化。#e0f2fe 背景上でも
-   明確に視認できるコントラストを確保。
-   ======================================== */
 .hero-link-btn {
     display: inline-block;
     padding: 8px 18px;
@@ -3810,15 +4067,17 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   howto セクション
-   =========================== */
-
-/* ========================================
-   [修正] howto も左アクセントラインデザインに
-   統一。背景を #f4fbff に設定し白カードとの
-   差を出しつつ、文字は十分に読める色に。
-   ======================================== */
+/* ============================================================
+   【現状未使用】howto セクション用スタイル
+   ============================================================
+   このブロックは元々 howto.html 内の「使い方リスト」表示用に
+   作られたものだが、howto.html は現在
+   about.html と同じ .info-page-container 系レイアウト
+   （このファイル内の「about/howtoページ共通」セクション）
+   に統一されているため、.howto-section 系クラスは
+   現状どのテンプレートからも参照されていない。
+   将来 howto 用の別レイアウトを作る際の下敷きとして残している。
+   ============================================================ */
 .howto-section {
     background: #f4fbff;
     border: 1.5px solid #7dd3fa;
@@ -3867,23 +4126,21 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   stats セクション
-   =========================== */
-
-/* ========================================
-   [修正] stats カードの上部に 3px の
-   セルリアンラインを追加（ヘッダーと連動）。
+/* ============================================================
+   【index.html】サイト統計セクション（stats.htmlをinclude、
+   絞り込みなしのトップ表示時のみ表示）
+   ============================================================
+   stats カードの上部に 3px のセルリアンラインを追加（ヘッダーと連動）。
    数値は明朝体×#0369a1 で品格を出す。
-   白背景カードを #f0f9ff の page 上に
-   置くことで浮き上がり感が生まれる。
-   ======================================== */
+   白背景カードを #f0f9ff の page 上に置くことで浮き上がり感が生まれる。
+   ============================================================ */
 .stats-section {
     display: flex;
     gap: 16px;
     height: 70%;
 }
 
+/* 「総投稿数」「ハッシュタグ数」「最終更新日」の各カード */
 .stats-card {
     flex: 1;
     display: flex;
@@ -3905,11 +4162,6 @@ a[role="button"]:hover {
     line-height: 1;
 }
 
-/* ========================================
-   [修正] 数値を #0369a1（濃いセルリアン）に。
-   従来の #1a7aad より明確に読める。
-   明朝体で記念碑的な存在感を持たせる。
-   ======================================== */
 .stats-number {
     font-size: 26px;
     font-weight: 700;
@@ -3926,9 +4178,13 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   記事一覧見出し（indexページ）
-   =========================== */
+/* ------------------------------------------------------------
+   【index.html】「📋 最新の記事」一覧見出し
+   ------------------------------------------------------------
+   注意: 同名クラス .posts-section-title は index.css 側でも
+   フォントサイズ等を再定義している（index.css の定義が優先される）。
+   ここではスマホ以外の基本デザインを担当。
+   ------------------------------------------------------------ */
 .posts-section-title {
     font-size: 16px;
     font-weight: 700;
@@ -3942,9 +4198,9 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   about・howto 静的情報ページ共通
-   =========================== */
+/* ============================================================
+   【about.html / howto.html 共通】静的情報ページのレイアウト
+   ============================================================ */
 .info-page-container {
     max-width: 720px;
     margin: 0 auto;
@@ -3952,6 +4208,7 @@ a[role="button"]:hover {
     box-sizing: border-box;
 }
 
+/* ページ上部のアバター＋タイトル行 */
 .info-page-header {
     display: flex;
     align-items: center;
@@ -3977,6 +4234,7 @@ a[role="button"]:hover {
     letter-spacing: -0.02em;
 }
 
+/* 本文を囲むカード */
 .info-page-body {
     background: #ffffff;
     border: 1.5px solid #7dd3fa;
@@ -3987,6 +4245,7 @@ a[role="button"]:hover {
     margin-bottom: 28px;
 }
 
+/* 本文内の各セクション（見出し＋段落のセット） */
 .info-section {
     margin-bottom: 32px;
 }
@@ -4013,6 +4272,7 @@ a[role="button"]:hover {
     margin: 0;
 }
 
+/* 「← トップに戻る」フッターボタン */
 .info-page-footer {
     text-align: center;
 }
@@ -4037,14 +4297,12 @@ a[role="button"]:hover {
 }
 
 
-/* ===========================
-   インページ検索エリア（indexページ）
-   =========================== */
-
-/* ========================================
-   [修正] 検索エリアは白カード。
-   #f0f9ff の page 背景上でしっかり浮き上がる。
-   ======================================== */
+/* ============================================================
+   【index.html】インページ検索エリア（search_area.htmlをinclude、常に表示）
+   ジャンル選択＋キーワード入力を同時に指定できる検索フォーム
+   ============================================================
+   検索エリアは白カード。#f0f9ff の page 背景上でしっかり浮き上がる。
+   ============================================================ */
 .index-search-area {
     background: #ffffff;
     border: 1.5px solid #7dd3fa;
@@ -4088,11 +4346,7 @@ a[role="button"]:hover {
     flex: 0 0 auto;
 }
 
-/* ========================================
-   [修正] ラベルテキストを #4a7a96 に強化。
-   従来の #5a8ba8 より濃く、白背景上でも
-   明確に読める。
-   ======================================== */
+/* 各入力欄のラベル（「ジャンル」「キーワード」） */
 .index-search-label {
     font-size: 12px;
     font-weight: 700;
@@ -4101,23 +4355,22 @@ a[role="button"]:hover {
     white-space: nowrap;
 }
 
+/* 検索ボタン列でラベルと縦位置を揃えるための空白スペーサー（PCのみ） */
 .index-search-label-spacer {
     display: block;
     height: 18px;
     pointer-events: none;
 }
 
+/* ------------------------------------------------------------
+   【index.html】検索エリア内「ジャンル」セレクトボックス
+   ------------------------------------------------------------ */
 .index-search-select-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-/* ========================================
-   [修正] セレクト・テキスト入力の背景を
-   #f0f9ff（淡水色）に設定。白カード上で
-   入力エリアと背景の区別がつきやすい。
-   ======================================== */
 .index-search-select {
     width: 100%;
     appearance: none;
@@ -4143,6 +4396,7 @@ a[role="button"]:hover {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
+/* セレクトボックスのカスタム矢印アイコン */
 .index-search-select-arrow {
     position: absolute;
     right: 10px;
@@ -4158,12 +4412,16 @@ a[role="button"]:hover {
     color: #0ea5e9;
 }
 
+/* ------------------------------------------------------------
+   【index.html】検索エリア内「キーワード」テキスト入力欄
+   ------------------------------------------------------------ */
 .index-search-input-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
 
+/* 入力欄左側の虫眼鏡アイコン */
 .index-search-input-icon {
     position: absolute;
     left: 12px;
@@ -4199,14 +4457,11 @@ a[role="button"]:hover {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
-/* ========================================
-   [修正] プレースホルダーを #7ab8d8 に。
-   存在はわかるが邪魔にならないトーン。
-   ======================================== */
 .index-search-input::placeholder {
     color: #7ab8d8;
 }
 
+/* 入力内容をクリアする「✕」ボタン（JSで表示切替） */
 .index-search-clear {
     position: absolute;
     right: 8px;
@@ -4231,6 +4486,9 @@ a[role="button"]:hover {
     background: #fff0ee;
 }
 
+/* ------------------------------------------------------------
+   【index.html】検索エリア内「検索する」ボタン・「絞り込みを解除」リンク
+   ------------------------------------------------------------ */
 .index-search-btn {
     display: inline-flex;
     align-items: center;
@@ -4285,10 +4543,11 @@ a[role="button"]:hover {
 
 
 /* ==========================================================================
-   レスポンシブ（スマホ）
+   【共通】レスポンシブ（スマホ）
    ========================================================================== */
 
 @media (max-width: 600px) {
+    /* --- hero（自己紹介）セクション --- */
     .hero-section {
         flex-direction: column;
         align-items: flex-start;
@@ -4319,6 +4578,7 @@ a[role="button"]:hover {
         text-align: center;
     }
 
+    /* --- howto セクション（現状未使用） --- */
     .howto-section {
         padding: 18px 16px;
     }
@@ -4337,6 +4597,7 @@ a[role="button"]:hover {
         font-size: 18px;
     }
 
+    /* --- stats（統計）セクション --- */
     .stats-section {
         gap: 10px;
     }
@@ -4357,6 +4618,7 @@ a[role="button"]:hover {
         font-size: 11px;
     }
 
+    /* --- about/howto 静的ページ共通レイアウト --- */
     .info-page-container {
         padding: 20px 0 48px;
     }
@@ -4390,6 +4652,7 @@ a[role="button"]:hover {
         font-size: 14px;
     }
 
+    /* --- インページ検索エリア --- */
     .index-search-area {
         padding: 16px 14px 18px;
         border-radius: 10px;
@@ -7791,16 +8054,29 @@ def mypage():
 #
 # セキュリティ設計のポイント:
 #   1. ログインページ URL を .env で隠蔽（秘密の URL = Security through obscurity）
-#   2. ブルートフォース攻撃対策（連続失敗でセッションロックアウト）
-#   3. パスワードはハッシュ値と照合（平文比較は行わない）
+#   2. ゲートキー方式（案A）: 合言葉 Cookie を持たない訪問者には
+#      ログインページの存在自体を隠す（404 を返す）
+#   3. ブルートフォース攻撃対策（連続失敗でセッションロックアウト）
+#   4. パスワードはハッシュ値と照合（平文比較は行わない）
+#   5. ログアウト後はトップページへリダイレクトし、
+#      推測可能な URL（/logout）にログイン画面を紐付けない
+#
+# 【突破に必要な要素（多層防御）】
+#   ① 秘密の URL（ADMIN_LOGIN_PATH）
+#   ② ゲートキー（ADMIN_GATE_KEY による Cookie）
+#   ③ ユーザー名（ADMIN_USERNAME）
+#   ④ パスワード
+#   → ①〜④ がすべて揃わない限り管理画面には到達できない。
 
-from flask import Blueprint, render_template, request, redirect, flash, session
+import os
+import time  # ロックアウト時間計算に使用
+from flask import (Blueprint, render_template, request, redirect,
+                   flash, session, abort, make_response)
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash  # ハッシュ済みパスワードとの照合
 from extensions import db
 from models import User
 import config
-import time  # ロックアウト時間計算に使用
 
 # Blueprint 定義: 'auth' という名前空間でルートを管理
 # url_for('auth.secret_login') のように参照される
@@ -7811,6 +8087,81 @@ auth_bp = Blueprint('auth', __name__)
 # ===================================================================
 _MAX_ATTEMPTS    = 5    # この回数を超えてログイン失敗するとロックアウト
 _LOCKOUT_SECONDS = 300  # ロック継続時間（秒）= 5分
+
+# ===================================================================
+# ゲートキー方式（案A）用定数
+# ===================================================================
+# ADMIN_GATE_KEY: ログインページを表示するための「合言葉」。
+#   .env に長いランダム文字列を設定する。
+#   生成例: python -c "import secrets; print(secrets.token_urlsafe(32))"
+#
+# 仕組み:
+#   1. 管理者は「秘密URL?key=合言葉」をブックマークしておく
+#   2. 初回アクセス時にサーバーが合言葉を検証し、Cookie を発行して
+#      key なしの URL へリダイレクトする
+#   3. 以降 _GATE_COOKIE_MAX_AGE の期間は Cookie だけでアクセス可能
+#   4. Cookie を持たない第三者には 404 を返し、ページの存在自体を隠す
+_GATE_KEY            = os.getenv("ADMIN_GATE_KEY")
+_GATE_COOKIE_NAME    = 'admin_gate'
+_GATE_COOKIE_MAX_AGE = 60 * 60 * 24 * 90  # 90日
+
+
+# ===================================================================
+# ゲートキー検証ヘルパー
+# ===================================================================
+def _check_gate():
+    """
+    ゲートキーによるアクセス制御を行う。
+
+    戻り値:
+      - Response オブジェクト: Cookie 発行のためのリダイレクトが必要な場合
+      - None: ゲートを通過（ログイン処理へ進んで良い）
+
+    通過できない場合はこの関数内で abort(404) する。
+
+    【フェイルクローズ設計】
+    ADMIN_GATE_KEY が未設定（設定忘れ・タイポ）の場合は、
+    「無条件で通す」のではなく「無条件で 404」にする。
+    設定ミスでゲートが無効化されて無防備になる事故を防ぐため。
+    """
+    # ゲートキー未設定 → 安全側に倒して常に 404
+    if not _GATE_KEY:
+        abort(404)
+
+    # -------------------------------------------------------------------
+    # ステップ 1: クエリパラメータで合言葉が来た場合
+    # Cookie を発行して「key なしの URL」へリダイレクトする。
+    #
+    # リダイレクトする理由:
+    #   ?key=xxx 付きの URL のままログイン画面を表示すると、
+    #   その後のブラウザ履歴・アクセスログ・Referer に
+    #   合言葉入りの URL が残り続けてしまう。
+    #   即座に key なし URL へ付け替えることで露出を最小化する。
+    # -------------------------------------------------------------------
+    if request.args.get('key') == _GATE_KEY:
+        resp = make_response(redirect(f'/{config.ADMIN_LOGIN_PATH}'))
+        resp.set_cookie(
+            _GATE_COOKIE_NAME,
+            _GATE_KEY,
+            httponly=True,                 # JavaScript から読み取れないようにする（XSS 対策）
+            secure=request.is_secure,      # HTTPS 接続時のみ secure 属性を付与
+                                           # （本番は HTTPS なので常に True、
+                                           #   ローカル開発の http://localhost でも動作するよう動的に判定）
+            samesite='Lax',                # 外部サイトからのリクエストに Cookie が乗らないようにする
+            max_age=_GATE_COOKIE_MAX_AGE,  # 90日間有効
+        )
+        return resp
+
+    # -------------------------------------------------------------------
+    # ステップ 2: Cookie の検証
+    # 正しいゲート Cookie を持っていない訪問者には 404 を返し、
+    # 「そんなページは存在しない」ように見せる。
+    # -------------------------------------------------------------------
+    if request.cookies.get(_GATE_COOKIE_NAME) != _GATE_KEY:
+        abort(404)
+
+    # ゲート通過
+    return None
 
 
 # ===================================================================
@@ -7859,9 +8210,20 @@ def _is_locked_out() -> bool:
 # 例: ADMIN_LOGIN_PATH=secret-xyz なら /secret-xyz でアクセス可能になる
 @auth_bp.route(f'/{config.ADMIN_LOGIN_PATH}', methods=['GET', 'POST'])
 def secret_login():
-    # すでにログイン済みの場合はトップページへリダイレクト（二重ログイン防止）
+    # ===================================================================
+    # 【案A】ゲートキー検証（最優先で実行）
+    # ===================================================================
+    # 秘密 URL を知っているだけではログイン画面は表示されない。
+    # 合言葉（?key=xxx）またはゲート Cookie を持たない訪問者には
+    # 404 を返してページの存在自体を隠す。
+    gate_response = _check_gate()
+    if gate_response is not None:
+        # 合言葉付きアクセスだった場合: Cookie 発行のリダイレクトを返す
+        return gate_response
+
+    # すでにログイン済みの場合はマイページへリダイレクト（二重ログイン防止）
     if current_user.is_authenticated:
-        return redirect('/')
+        return redirect('/mypage')
 
     if request.method == 'POST':
         # ロックアウト中であればフラッシュを出してリダイレクト（認証処理を行わない）
@@ -7920,14 +8282,21 @@ def secret_login():
 # ログアウトビュー
 # ===================================================================
 @auth_bp.route('/logout')
-@login_required  # 未ログイン状態でのアクセスを拒否（login_manager.login_view へリダイレクト）
+@login_required  # 未ログイン時は app.py の unauthorized_handler により 404 を返す
 def logout():
-    # Flask-Login のセッションからユーザー情報を削除する
-    # これにより current_user が AnonymousUser に戻る
+    # -------------------------------------------------------------------
+    # ログアウト後はトップページへリダイレクトする。
+    # ログイン画面を直接レンダリングすると、推測可能な URL（/logout）に
+    # ログイン画面の HTML が紐付いてしまうため、リダイレクトのみ行う。
+    #
+    # なお、ゲート Cookie（admin_gate）はログアウトしても削除しない。
+    # ログアウトは「認証の解除」であり「ゲート通過状態の解除」ではないため、
+    # 同じブラウザからの再ログインは ?key= なしの秘密 URL で行える。
+    # ゲート状態も破棄したい場合はブラウザの Cookie を削除する。
+    # -------------------------------------------------------------------
     logout_user()
     flash('ログアウトしました。')
-    # ログアウト後はログインフォームを表示（リダイレクトではなく直接レンダリング）
-    return render_template('login.html')
+    return redirect('/')
 </file>
 
 <file path="views/blog.py">

@@ -9,7 +9,7 @@
 #   - extensions.py と組み合わせることで循環インポートを避けられる
 
 import os
-from flask import Flask, flash, redirect, url_for
+from flask import Flask, flash, redirect, url_for, abort
 from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
 from extensions import db, login_manager, migrate
 from models import User
@@ -57,7 +57,7 @@ def create_app():
     # ===================================================================
     # データベース接続 URL の設定
     # ===================================================================
-    # ローカル開発用 URL（docker-compose で 54321 番ポートにマッピングした PostgreSQL）
+    # ローカル開発用 URL（docker-compose で 55432 番ポートにマッピングした PostgreSQL）
     local_db_url = (
         f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
         f"@localhost:55432/{config.postgre_DB}"
@@ -88,11 +88,28 @@ def create_app():
     # ===================================================================
     # Flask-Login の詳細設定
     # ===================================================================
-    # 未ログイン状態で @login_required なページにアクセスした場合の
-    # リダイレクト先エンドポイント名（'auth.secret_login' は Blueprint名.関数名）
-    login_manager.login_view = 'auth.secret_login'
-    login_manager.login_message = "ログインしてください。"
-    login_manager.login_message_category = "info"  # フラッシュメッセージのスタイル分類
+    # -------------------------------------------------------------------
+    # 【セキュリティ修正】login_view を設定しない（= 秘密 URL の隠蔽）
+    #
+    # 従来は login_view = 'auth.secret_login' としていたため、
+    # 未ログインの一般ユーザーが /create や /mypage のような
+    # 推測しやすい URL にアクセスすると、Flask-Login が親切に
+    # 「秘密のログインページ」へリダイレクトしてしまい、
+    # ADMIN_LOGIN_PATH で隠したはずの URL が漏洩する経路になっていた。
+    #
+    # 対策:
+    #   - login_view を None のままにする
+    #   - unauthorized_handler で 404 を返し、
+    #     管理者専用ページの「存在自体」を隠す
+    #     （一般ユーザーには「そんなページは無い」ように見える）
+    # -------------------------------------------------------------------
+    login_manager.login_view = None
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        # 未ログイン状態で @login_required なページへアクセスされた場合、
+        # ログインページへ誘導せず 404 Not Found を返して存在を偽装する。
+        abort(404)
 
     # -------------------------------------------------------------------
     # user_loader コールバック

@@ -27,7 +27,7 @@ load_dotenv()
 # docker-compose.yml の environment セクションと同じキー名で .env に記載する。
 #
 # app.py でこれらを使って接続 URL を組み立てる：
-#   f"postgresql+psycopg://{postgre_user}:{postgre_password}@localhost:54321/{postgre_DB}"
+#   f"postgresql+psycopg://{postgre_user}:{postgre_password}@localhost:55432/{postgre_DB}"
 # -------------------------------------------------------------------
 postgre_user     = os.getenv("POSTGRES_USER")      # DB ユーザー名
 postgre_password = os.getenv("POSTGRES_PASSWORD")  # DB パスワード

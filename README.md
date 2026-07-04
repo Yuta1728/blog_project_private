@@ -1,139 +1,144 @@
-# MIT Blog
+# MIT Blog — 個人用ブログアプリ
 
-Flask + PostgreSQL で構築された個人ブログアプリケーションです。
-Markdown形式での記事執筆、ジャンル・ハッシュタグ管理、画像アップロード、地図・YouTube埋め込みなど、ブログ運営に必要な機能をひと通り備えています。
+Flask + PostgreSQL で構築した、単一管理者向けの個人ブログアプリケーションです。
+マークダウンによる記事執筆、画像・Google マップ・YouTube の埋め込み、ジャンル×ハッシュタグによる柔軟な記事検索に対応しています。
 
 ## 主な機能
 
-### 記事管理
-- Markdown形式での記事執筆（見出し・太字・箇条書き・目次[toc]に対応）
-- 複数画像のアップロードとキャプション設定（`[img1]`, `[img2]`のようなタグで本文中の任意の位置に挿入可能）
-- 画像未アップロード時に選べるデフォルトサムネイル（11種類）
-- 記事ごとの公開／非公開設定
-- 本文中へのGoogleマップ埋め込み（`[map:場所名]`）
-- 本文中へのYouTube動画埋め込み（`[youtube:URL]`、サムネイルクリックで再生するファサード形式）
+### 閲覧者向け
 
-### 分類・検索
-- ジャンル分類（デフォルトジャンル + ユーザー独自ジャンルの追加が可能）
-- ハッシュタグ機能（複数タグ付け、タグ単位での絞り込み）
-- トップページの検索エリアから「ジャンル×キーワード」を同時に指定して検索可能
-- ジャンル×ハッシュタグの組み合わせ絞り込み
-- 記事詳細ページのジャンルバッジ／ハッシュタグバッジをクリックすると、そのままジャンル・タグで絞り込んだ一覧へ遷移
-- 関連記事の自動表示（同ジャンル×同タグ → 同タグ → 同ジャンル → 最新記事、の優先順位で選出）
+- **記事一覧・詳細表示**（マークダウン → HTML 変換、目次 `[toc]` 自動生成）
+- **キーワード × ジャンル × ハッシュタグの組み合わせ検索**
+  - ヘッダー検索バー／トップページ内検索エリアの 2 系統
+  - ジャンル選択中は、そのジャンル内で使用中のタグによる絞り込みバーを表示
+- **リッチな記事表現**
+  - 本文中への画像埋め込み（`[img1]` 形式、キャプション対応）
+  - Google マップ埋め込み（`[map:場所名]`）
+  - YouTube 埋め込み（`[youtube:URL]`、サムネイルのファサード表示でクリック時のみ再生 iframe をロード）
+- **関連記事の自動表示**（同ジャンル×同タグ → 同タグ → 同ジャンル → 最新記事の 4 段階フォールバックで最大 4 件）
+- **サイト統計**（総投稿数・ハッシュタグ数・最終更新日）
+- **レスポンシブ対応**（スマホ用ドロワーナビ、スクロール連動の固定ヘッダー）
 
-### 記事一覧の表示
-- トップページはページ番号方式のページ送り（1ページ5件表示、下部の「‹ 1 2 3 ›」で切り替え）。ページ送り時は一覧の先頭へ自動スクロールする
-- マイページは「もっと見る／表示を減らす」ボタンによる追加表示方式（学習用サンプルとして両方式を実装・維持）
+### 管理者向け
 
-### 管理者機能
-- 推測されにくい隠しURLでのログイン（`.env`で任意のパスを設定）
-- ブルートフォース攻撃対策（5回失敗で5分間ロックアウト）
-- マイページ（投稿一覧、ニックネーム変更、使用ジャンル一覧）
-- 記事の新規作成・編集・削除
-
-### UI/UX
-- レスポンシブ対応（PC／スマホ）
-- `position: fixed` による常時表示のヘッダー（スクロールバウンド時も背景が露出しない）。下スクロールでスライドアウト、上スクロールで再表示
-- サイト統計（総投稿数・ハッシュタグ数・最終更新日）の表示
+- **秘密の URL からのログイン**（ログインパスを環境変数で隠蔽）
+- **ブルートフォース対策**（5 回連続失敗で 5 分間のセッションロックアウト）
+- **記事の投稿・編集・削除**
+  - マークダウンツールバー（見出し / 太字 / 目次 / リスト / 地図 / YouTube / 画像タグ挿入）
+  - 複数画像アップロード（一括・1 枚ずつ追加、プレビュー、キャプション編集、個別削除）
+  - 公開／非公開のトグル切り替え（非公開記事は管理者のみ閲覧可能）
+  - デフォルトサムネイルの選択（画像なし記事用に 11 種類のプリセット）
+- **ジャンル管理**（プリセット 26 種 + 自由な新規ジャンル作成）
+- **ハッシュタグ管理**（スペース・カンマ区切りで複数入力、孤立タグの自動削除）
+- **マイページ**（自分の投稿一覧、使用ジャンル一覧、ニックネーム変更）
 
 ## 技術スタック
 
-| 分類 | 使用技術 |
-|---|---|
-| バックエンド | Flask 3.1 |
-| ORM | Flask-SQLAlchemy / SQLAlchemy 2.0 |
-| DB | PostgreSQL 18 |
-| マイグレーション | Flask-Migrate（Alembic） |
+| 分類 | 技術 |
+| --- | --- |
+| 言語 | Python 3.10.11 |
+| フレームワーク | Flask 3.1 |
+| ORM / マイグレーション | Flask-SQLAlchemy 3.1 (SQLAlchemy 2.0) / Flask-Migrate (Alembic) |
 | 認証 | Flask-Login |
-| フォーム／CSRF対策 | Flask-WTF |
-| Markdown変換 | Python-Markdown（toc, nl2br拡張） |
-| 画像検証 | filetype（MIMEタイプ判定） |
-| インフラ | Docker Compose（PostgreSQLコンテナ） |
+| CSRF 保護 | Flask-WTF (CSRFProtect) |
+| データベース | PostgreSQL 18 (Docker) / psycopg 3 |
+| マークダウン変換 | Markdown（toc / nl2br 拡張） |
+| ファイル検証 | filetype（MIME タイプ判定） |
+| フロントエンド | Jinja2 テンプレート + バニラ JS + 自作 CSS（Coastal Dawn テーマ） |
 
 ## ディレクトリ構成
 
 ```
 .
-├── app.py                 # アプリケーションファクトリ（エントリーポイント）
-├── config.py               # 環境変数の読み込み
-├── constants.py             # デフォルトジャンル一覧などの定数
-├── extensions.py             # Flask拡張機能（db, login_manager, migrate）の初期化
-├── models.py               # DBモデル（User, Post, Hashtag）
-├── docker-compose.yml         # PostgreSQLコンテナ定義
-├── migrations/              # Alembicマイグレーションファイル
-├── static/
-│   ├── css/                # ページ・機能別スタイルシート（ファイル冒頭に対象ページを明記）
-│   │   ├── base.css        # 全ページ共通：固定ヘッダー・スマホ用ドロワー
-│   │   ├── auth.css        # ログインページ
-│   │   ├── index.css       # トップページ：記事カード・ページ送り
-│   │   ├── detail.css      # 記事詳細ページ
-│   │   ├── create_update.css # 投稿作成・編集ページ
-│   │   ├── genre.css       # ジャンル一覧ページ
-│   │   ├── hashtag.css     # ハッシュタグ関連UI（複数ページ共通）
-│   │   ├── mypage.css      # マイページ
-│   │   ├── load_more.css   # マイページの「もっと見る」機能
-│   │   └── top_sections.css # hero/統計/検索エリア/about・howto共通レイアウト
-│   └── img/
-│       ├── posts/          # アップロードされた記事画像
-│       └── thbnails/        # デフォルトサムネイル画像
-├── templates/               # Jinja2テンプレート
-└── views/
-    ├── auth.py             # ログイン・ログアウト
-    ├── blog.py             # 一般公開ページ（一覧・詳細・ジャンル）
-    └── admin.py             # 管理者専用ページ（投稿・編集・削除・マイページ）
+├── app.py                 # Application Factory（アプリ生成・設定・Blueprint 登録）
+├── config.py              # .env の読み込みと設定値の提供
+├── constants.py           # デフォルトジャンル一覧などの定数
+├── extensions.py          # db / login_manager / migrate インスタンス（循環インポート回避）
+├── models.py              # ORM モデル（User / Post / Hashtag / post_hashtags）
+├── docker-compose.yml     # PostgreSQL コンテナ定義
+├── requirements.txt
+├── migrations/            # Alembic マイグレーション
+├── views/
+│   ├── auth.py            # ログイン・ログアウト（秘密 URL、ロックアウト）
+│   ├── blog.py            # 公開ページ（一覧・詳細・ジャンル・about・howto）
+│   └── admin.py           # 管理ページ（投稿・編集・削除・マイページ）
+├── templates/             # Jinja2 テンプレート
+└── static/
+    ├── css/               # ページ別 CSS
+    └── img/
+        ├── posts/         # アップロード画像（UUID ファイル名）
+        └── thbnails/      # デフォルトサムネイル
 ```
+
+## データベース設計
+
+| テーブル | 説明 |
+| --- | --- |
+| `user` | 管理者情報（username / ハッシュ化パスワード / nickname） |
+| `post` | 記事（タイトル・本文・ジャンル・画像・キャプション・公開設定・日時） |
+| `hashtag` | ハッシュタグ（name は一意） |
+| `post_hashtags` | Post ↔ Hashtag の多対多中間テーブル |
+
+- `Post.updated_at` は **nullable** で、一度も編集されていない記事は NULL（更新日時の誤表示を防止）
+- `Post.hashtags` は `lazy='selectin'` により一覧表示時の N+1 問題を回避
+- どの記事にも紐付かなくなったハッシュタグは、記事の編集・削除時に自動でクリーンアップ
 
 ## セットアップ
 
-### 1. リポジトリの取得と仮想環境の作成
+### 1. 前提
+
+- Python 3.10.11
+- Docker / Docker Compose
+
+### 2. リポジトリの取得と依存インストール
 
 ```bash
 git clone <このリポジトリのURL>
 cd <リポジトリ名>
+
 python -m venv venv
-source venv/bin/activate   # Windowsの場合: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-対応Pythonバージョン: `3.10.11`（`.python-version`参照）
+### 3. 環境変数（.env）の作成
 
-### 2. 環境変数の設定
+プロジェクトルートに `.env` を作成します（`.gitignore` 済み）。
 
-プロジェクトルートに `.env` ファイルを作成し、以下を設定してください。
+```dotenv
+# PostgreSQL（docker-compose と共有）
+POSTGRES_USER=bloguser
+POSTGRES_PASSWORD=your-db-password
+POSTGRES_DB=blogdb
 
-```env
-# PostgreSQL接続情報（docker-compose.ymlと一致させる）
-POSTGRES_USER=your_db_user
-POSTGRES_PASSWORD=your_db_password
-POSTGRES_DB=your_db_name
+# Flask セッション・CSRF 署名用（本番では必ずランダムな値を設定）
+SECRET_KEY=your-random-secret-key
 
-# 管理者認証情報
-ADMIN_USERNAME=your_admin_username
-ADMIN_PASSWORD=your_hashed_password   # werkzeug.security.generate_password_hash() でハッシュ化した値
-ADMIN_LOGIN_PATH=your-secret-login-path   # ログインページのURLパス（推測されにくい文字列を推奨）
-
-# 本番環境のみ必須（開発環境では未設定でも動作します）
-SECRET_KEY=your_secret_key
-DATABASE_URL=postgresql+psycopg://...
+# 管理者認証
+ADMIN_USERNAME=your-admin-name
+ADMIN_PASSWORD=<werkzeugでハッシュ化した値>   # ※下記参照
+ADMIN_LOGIN_PATH=secret-login-abc123          # ログインページの秘密パス
 ```
 
-### 3. データベースの起動
+`ADMIN_PASSWORD` はハッシュ化した値を保存します。生成例:
 
 ```bash
-docker-compose up -d
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('平文パスワード'))"
 ```
 
-PostgreSQLコンテナがホストの `55432` ポートで起動します。
-
-### 4. マイグレーションの適用
+### 4. データベースの起動とマイグレーション
 
 ```bash
+# PostgreSQL コンテナを起動（ホスト側ポート 55432）
+docker compose up -d
+
+# テーブルを作成
 flask db upgrade
 ```
 
-### 5. 管理者ユーザーの作成
+### 5. 管理者ユーザーの登録
 
-初回のみ、Flaskシェルなどから管理者ユーザーをDBに登録してください。
+Flask シェルから初回のみ登録します。
 
 ```bash
 flask shell
@@ -142,35 +147,65 @@ flask shell
 ```python
 from extensions import db
 from models import User
-from werkzeug.security import generate_password_hash
-import config
+import os
 
 user = User(
-    username=config.ADMIN_USERNAME,
-    password=generate_password_hash("設定したい平文パスワード"),
+    username=os.getenv("ADMIN_USERNAME"),
+    password=os.getenv("ADMIN_PASSWORD"),   # ハッシュ化済みの値
 )
 db.session.add(user)
 db.session.commit()
 ```
 
-### 6. アプリケーションの起動
+### 6. 起動
 
 ```bash
 python app.py
 ```
 
-`http://localhost:5000` でアクセスできます。管理者ログインは `.env` で設定した `ADMIN_LOGIN_PATH` のURL（例: `http://localhost:5000/your-secret-login-path`）からアクセスしてください。
+- トップページ: `http://localhost:5000/`
+- 管理者ログイン: `http://localhost:5000/<ADMIN_LOGIN_PATH>`
 
-## セキュリティ上の工夫
+## 記事本文で使える記法
 
-- **CSRF対策**: Flask-WTFの`CSRFProtect`を全フォームに適用
-- **ファイルアップロード検証**: 拡張子チェック → MIMEタイプ判定（`filetype`ライブラリでファイルの中身を確認）→ ファイル名のサニタイズ（`secure_filename`）→ UUIDによるファイル名のランダム化、の多層防御
-- **アップロードサイズ制限**: リクエスト全体で30MBを上限に設定
-- **ログインページの隠蔽**: URLパスを環境変数化し、既定のパスを推測されにくくする
-- **ブルートフォース対策**: セッションベースでログイン失敗回数を記録し、一定回数超過で一時ロックアウト
-- **Open Redirect対策**: 記事削除後のリダイレクト先が同一オリジンかどうかを検証
-- **パスワードのハッシュ化**: `werkzeug.security`によるハッシュ化のみを保存し、平文比較は行わない
+| 記法 | 効果 |
+| --- | --- |
+| `## 見出し` / `### 見出し` | H2 / H3 見出し（目次の対象） |
+| `**太字**` | 太字 |
+| `[toc]` | その位置に目次を挿入（未記載の場合は先頭に自動表示） |
+| `[img1]` `[img2]` … | アップロードした画像を順番に埋め込み |
+| `[map:東京スカイツリー]` | Google マップの埋め込み |
+| `[youtube:URL または動画ID]` | YouTube 動画の埋め込み（watch / youtu.be / shorts / embed 形式に対応） |
+
+これらは投稿・編集画面のツールバーからワンクリックで挿入できます。
+
+## セキュリティ対策
+
+- **CSRF 保護**: Flask-WTF の CSRFProtect を全フォームに適用
+- **パスワード**: Werkzeug によるハッシュ化保存・照合（平文比較なし）
+- **ログイン保護**: 秘密 URL + 連続失敗時のロックアウト + 失敗理由を明かさないエラーメッセージ
+- **ファイルアップロードの多層防御**
+  1. 拡張子ホワイトリスト（png / jpg / jpeg / gif / webp）
+  2. マジックナンバーによる MIME タイプ検証（拡張子偽装の検出）
+  3. `secure_filename()` によるパストラバーサル対策
+  4. UUID によるファイル名ランダム化
+  5. リクエストサイズ 30MB 制限（DoS 対策）
+- **Open Redirect 対策**: リダイレクト先の referer を同一オリジン検証
+- **本番環境ガード**: 本番判定時に `SECRET_KEY` 未設定なら起動を拒否
+
+## デプロイ（本番環境）
+
+本番では PaaS（Render / Heroku など）が提供する `DATABASE_URL` を自動で使用します。以下の環境変数を設定してください。
+
+| 変数 | 説明 |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL 接続 URL（設定されると本番環境と判定） |
+| `SECRET_KEY` | ランダムな秘密鍵（未設定だと起動エラー） |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_LOGIN_PATH` | 管理者認証情報 |
+
+> **注意**: 本番では `debug=True` を使わず、Gunicorn などの WSGI サーバーでの起動を推奨します。
+> 例: `gunicorn "app:create_app()"`
 
 ## ライセンス
 
-このプロジェクトのライセンスについては、リポジトリ管理者にご確認ください。
+個人利用を目的としたプロジェクトです。
