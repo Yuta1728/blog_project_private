@@ -595,14 +595,28 @@ function _mdListWrapSelection(ta, prefix, start, end) {
 
 /* =========================================================
    ハッシュタグ入力プレビュー
+   =========================================================
+   【セキュリティ修正】innerHTML による文字列組み立てを廃止し、
+   DOM API（createElement + textContent）に置き換えた。
+   従来は入力値をそのまま HTML 文字列に連結していたため、
+   <img src=x onerror=...> のような入力がそのまま実行される
+   自己 XSS の経路になっていた。textContent への代入は
+   ブラウザが常にプレーンテキストとして扱うため安全。
    ========================================================= */
 function renderHashtagPreview(value) {
     var area   = document.getElementById('hashtag-preview');
     var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
-    area.innerHTML = tokens.map(function(t) {
+
+    // 一旦クリアしてから安全な DOM ノードとして再構築する
+    area.textContent = '';
+    tokens.forEach(function(t) {
         var name = t.replace(/^#+/, '');
-        return name ? '<span class="hashtag-badge-preview">#' + name + '</span>' : '';
-    }).join('');
+        if (!name) return;
+        var span = document.createElement('span');
+        span.className   = 'hashtag-badge-preview';
+        span.textContent = '#' + name;   // textContent なので HTML として解釈されない
+        area.appendChild(span);
+    });
 }
 
 /* =========================================================

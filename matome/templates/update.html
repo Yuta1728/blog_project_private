@@ -430,7 +430,16 @@ function renderPreviews() {
             captionWrapper.className = 'preview-caption-wrapper';
             var captionInput = document.createElement('input');
             captionInput.type        = 'text';
-            captionInput.name        = 'img_caption_' + (index + 1);
+            /* -----------------------------------------------------------
+               【バグ修正】新規画像のキャプション名を new_img_caption_N に変更
+               従来は既存画像のキャプション欄（img_caption_N）と同名だったため、
+               画像を差し替えて更新すると、サーバー側の request.form.get() が
+               フォーム上で先に現れる「旧画像のキャプション」を拾ってしまい、
+               新規画像に旧キャプションが割り当てられる（ずれる）バグがあった。
+               views/admin.py の update() 側も
+               parse_img_captions(..., prefix='new_img_caption_') で対応済み。
+               ----------------------------------------------------------- */
+            captionInput.name        = 'new_img_caption_' + (index + 1);
             captionInput.placeholder = '画像の説明（省略可）';
             captionInput.className   = 'preview-caption-input';
             captionInput.maxLength   = 100;
@@ -617,14 +626,28 @@ function _mdListWrapSelection(ta, prefix, start, end) {
 
 /* =========================================================
    ハッシュタグ入力プレビュー
+   =========================================================
+   【セキュリティ修正】innerHTML による文字列組み立てを廃止し、
+   DOM API（createElement + textContent）に置き換えた。
+   従来は入力値をそのまま HTML 文字列に連結していたため、
+   <img src=x onerror=...> のような入力がそのまま実行される
+   自己 XSS の経路になっていた。textContent への代入は
+   ブラウザが常にプレーンテキストとして扱うため安全。
    ========================================================= */
 function renderHashtagPreview(value) {
     var area   = document.getElementById('hashtag-preview');
     var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
-    area.innerHTML = tokens.map(function(t) {
+
+    // 一旦クリアしてから安全な DOM ノードとして再構築する
+    area.textContent = '';
+    tokens.forEach(function(t) {
         var name = t.replace(/^#+/, '');
-        return name ? '<span class="hashtag-badge-preview">#' + name + '</span>' : '';
-    }).join('');
+        if (!name) return;
+        var span = document.createElement('span');
+        span.className   = 'hashtag-badge-preview';
+        span.textContent = '#' + name;   // textContent なので HTML として解釈されない
+        area.appendChild(span);
+    });
 }
 
 /* =========================================================

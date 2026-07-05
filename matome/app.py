@@ -71,6 +71,21 @@ def create_app():
     app.config['SECRET_KEY'] = secret_key
 
     # ===================================================================
+    # 【セキュリティ修正】セッション Cookie の属性を明示的に設定
+    # ===================================================================
+    # Flask のデフォルトでも HttpOnly は有効だが、暗黙のデフォルトに
+    # 依存せず明示することで「設定意図」をコードに残す。
+    #
+    #   HTTPONLY : JavaScript からセッション Cookie を読めなくする（XSS 対策）
+    #   SAMESITE : 外部サイト起点のリクエストに Cookie を乗せない（CSRF の追加防御層）
+    #   SECURE   : HTTPS 接続時のみ Cookie を送信する。
+    #              ローカル開発は http://localhost のため本番判定時のみ有効化する。
+    #              （本番では ProxyFix によりプロキシ配下でも HTTPS が正しく判定される）
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SECURE']   = is_production
+
+    # ===================================================================
     # ファイルアップロードサイズ制限
     # ===================================================================
     # 30MB を超えるリクエストは Werkzeug が 413 エラーを返す。
@@ -145,6 +160,34 @@ def create_app():
         return User.query.get(int(user_id))
 
     # ===================================================================
+    # 【セキュリティ修正】セキュリティヘッダーの付与
+    # ===================================================================
+    # 全レスポンスに基本的なセキュリティヘッダーを追加する。
+    #
+    #   X-Content-Type-Options: nosniff
+    #     → ブラウザによる MIME タイプの推測（sniffing）を禁止。
+    #       画像として配信したファイルが HTML/JS として解釈される攻撃を防ぐ。
+    #       アップロード画像を扱う本アプリでは特に重要。
+    #
+    #   X-Frame-Options: SAMEORIGIN
+    #     → 外部サイトの iframe に本サイトを埋め込むことを禁止
+    #       （クリックジャッキング対策）。
+    #       本サイト「から」Google マップ/YouTube を埋め込むのは影響なし。
+    #
+    #   Referrer-Policy: strict-origin-when-cross-origin
+    #     → 外部サイトへの遷移時に URL のパス部分を送信しない。
+    #       秘密のログイン URL などが Referer 経由で漏れるのを防ぐ。
+    #
+    # setdefault() を使うことで、個別ビューで明示的に
+    # 上書きしたい場合はそちらを優先できる。
+    @app.after_request
+    def set_security_headers(response):
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        return response
+
+    # ===================================================================
     # カスタムエラーハンドラー: 413 Request Entity Too Large
     # ===================================================================
     # MAX_CONTENT_LENGTH を超えるファイルがアップロードされたとき、
@@ -170,14 +213,30 @@ def create_app():
 # ===================================================================
 # 直接実行時のエントリポイント（python app.py で起動）
 # ===================================================================
-# `flask run` コマンドではなく python app.py で直接実行する場合に使われる。
-# debug=True にすると:
-#   - コード変更時にサーバーが自動リロードされる
-#   - エラー発生時にブラウザ上でトレースバックが確認できる
-# 本番環境では debug=True にしてはいけない（内部情報が漏洩するリスクあり）
+# 【セキュリティ修正】debug=True のハードコードを廃止
+#
+# 従来は app.run(debug=True) 固定だったため、本番サーバーで誤って
+# python app.py で起動された場合に Werkzeug デバッガ
+# （ブラウザから任意の Python コードを実行できるコンソール）が
+# 露出してしまうリスクがあった。
+#
+# 対策:
+#   - デバッグモードは環境変数 FLASK_DEBUG=1 を明示した場合のみ有効
+#   - さらに本番環境（DATABASE_URL あり or FLASK_ENV=production）では
+#     FLASK_DEBUG が設定されていても強制的に無効化する
+#
+# ローカル開発では .env などで FLASK_DEBUG=1 を設定すれば
+# 従来どおり自動リロード・トレースバック表示が使える。
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
 
+    is_production = (
+        os.getenv("DATABASE_URL") is not None
+        or os.getenv("FLASK_ENV") == "production"
+    )
+    debug_mode = (
+        not is_production
+        and os.getenv("FLASK_DEBUG", "").lower() in ("1", "true")
+    )
 
-    
+    app.run(debug=debug_mode)

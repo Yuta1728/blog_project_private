@@ -84,7 +84,14 @@ class Post(db.Model):
     # img_name: アップロード画像のファイル名をカンマ区切りで保存
     #   例: "uuid1.jpg,uuid2.png"
     #   複数画像に対応するため 1 カラムにまとめて格納している
-    img_name      = db.Column(db.String(100), nullable=True)
+    #
+    #   【バグ修正】String(100) → Text に変更
+    #   UUID 化したファイル名は 1 件あたり約 40 文字（UUID 36 文字 + 拡張子）あり、
+    #   3 枚以上アップロードするとカンマ区切り文字列が 100 文字を超えて
+    #   PostgreSQL で "value too long for type character varying(100)"
+    #   エラーになっていた。枚数上限を設けない設計のため可変長の Text にする。
+    #   （migrations/versions/change_img_name_to_text.py で DB 側も変更）
+    img_name      = db.Column(db.Text, nullable=True)
 
     # default_thumb: 画像未アップロード時に使うデフォルトサムネイルのファイル名
     #   例: "thumb_option1.jpg"（static/img/thbnails/ 以下に配置済みの画像）

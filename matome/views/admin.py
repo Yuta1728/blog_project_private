@@ -17,7 +17,6 @@ import os
 import uuid        # 画像ファイル名を UUID でユニーク化するため
 import pytz
 import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
-from werkzeug.utils import secure_filename  # アップロードファイル名のサニタイズ
 from extensions import db
 from models import Post, Hashtag
 from constants import DEFAULT_GENRES
@@ -144,20 +143,31 @@ def delete_orphaned_hashtags() -> None:
 # 画像キャプション関連ヘルパー
 # ===================================================================
 
-def parse_img_captions(file_count: int) -> list[str]:
+def parse_img_captions(file_count: int, prefix: str = 'img_caption_') -> list[str]:
     """
     フォームから各画像のキャプションを取得してリストにまとめる。
 
     フォームの入力フィールド名の命名規則:
-      img_caption_1, img_caption_2, img_caption_3, ...
+      {prefix}1, {prefix}2, {prefix}3, ...
     （create.html / update.html の JavaScript で動的に生成される）
 
+    【バグ修正】prefix 引数を追加
+    update.html では「既存画像のキャプション欄（img_caption_N）」と
+    「新規画像のキャプション欄」が同名だったため、画像を差し替えた際に
+    request.form.get() が先に現れる旧画像側の値を拾ってしまい、
+    新規画像のキャプションがずれるバグがあった。
+    新規画像側のフィールド名を new_img_caption_N に分離し、
+    呼び出し側で prefix を切り替えて取得する。
+
     @param file_count: アップロードされた画像の枚数
+    @param prefix: フォームフィールド名のプレフィックス
+                   新規投稿:           'img_caption_'（デフォルト）
+                   編集時の新規画像:   'new_img_caption_'
     @return: キャプション文字列のリスト（インデックスが画像の順番と対応）
     """
     captions = []
     for i in range(1, file_count + 1):
-        caption = request.form.get(f'img_caption_{i}', '').strip()
+        caption = request.form.get(f'{prefix}{i}', '').strip()
         captions.append(caption)
     return captions
 
@@ -202,10 +212,22 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
 
     all_genres_set.discard('未分類')  # '未分類' は select の先頭に固定で置くので除外
 
-    # DEFAULT_GENRES の順番を優先してソート（プリセット外のジャンルは末尾）
+    # -------------------------------------------------------------------
+    # 【バグ修正】ソートキーを hash(x) からタプルキーに変更
+    #
+    # 従来は独自ジャンルのキーに len(DEFAULT_GENRES) + hash(x) を使っていたが、
+    # hash() は負値を返しうるため、独自ジャンルがプリセットより
+    # 前に並んでしまうことがあった（さらに実行のたびに順序が変わり不安定）。
+    #
+    # タプルキーによる 2 段階ソートに変更:
+    #   プリセットジャンル → (0, DEFAULT_GENRES 内のインデックス)
+    #   独自ジャンル       → (1, ジャンル名の辞書順)
+    # タプル比較では第 1 要素が優先されるため、
+    # 「プリセット順 → 独自ジャンル辞書順」の安定した並びが保証される。
+    # -------------------------------------------------------------------
     return sorted(
         list(all_genres_set),
-        key=lambda x: DEFAULT_GENRES.index(x) if x in DEFAULT_GENRES else len(DEFAULT_GENRES) + hash(x)
+        key=lambda x: (0, DEFAULT_GENRES.index(x)) if x in DEFAULT_GENRES else (1, x)
     )
 
 
@@ -221,9 +243,20 @@ def _save_images(files: list) -> list[str]:
     【セキュリティの多層防御】
     第 1 層: allowed_file() で拡張子チェック
     第 2 層: filetype.guess() で MIME タイプチェック（ファイルの中身を確認）
-    第 3 層: secure_filename() でファイル名のサニタイズ（パストラバーサル対策）
-    第 4 層: UUID でファイル名をランダム化（既存ファイルの上書き防止、URL 推測防止）
-    （第 5 層: app.py で 30MB の容量制限）
+    第 3 層: UUID でファイル名を完全にランダム化
+             （元のファイル名は一切使わないため、パストラバーサルや
+               既存ファイルの上書き・URL 推測を根本的に防げる）
+    （第 4 層: app.py で 30MB の容量制限）
+
+    【バグ修正】拡張子の取得方法を変更
+    従来は secure_filename() でサニタイズした後のファイル名から
+    splitext で拡張子を取得していたが、日本語のみのファイル名
+    （例: 'スクリーンショット.png'）では secure_filename() が
+    非 ASCII 文字を全て除去した後に先頭のドットも落として 'png' を返すため、
+    splitext の結果の拡張子が空文字になり、拡張子なしのファイルが
+    保存されてしまうバグがあった。
+    拡張子は allowed_file() で検証済みの「元のファイル名」の末尾から
+    直接取得するよう修正（保存名自体は UUID なのでサニタイズ不要）。
 
     @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
     @return: 保存したファイル名のリスト
@@ -239,10 +272,9 @@ def _save_images(files: list) -> list[str]:
         if not allowed_file(file.filename):
             raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
 
-        # ファイル名のサニタイズ（第 3 層）
-        # secure_filename() は '../../../etc/passwd' のような危険なパスを除去する
-        safe_filename = secure_filename(file.filename)
-        ext = os.path.splitext(safe_filename)[1]  # 拡張子部分（例: ".jpg"）を取得
+        # 拡張子は検証済みの元ファイル名から直接取得する
+        # （allowed_file() 通過済みなので rsplit の結果はホワイトリスト内の文字列）
+        ext = '.' + file.filename.rsplit('.', 1)[1].lower()
 
         # --- 第 2 層: MIME タイプチェック ---
         # ファイルの先頭 2048 バイトを読み込んでマジックナンバーで実際の形式を判定
@@ -252,7 +284,7 @@ def _save_images(files: list) -> list[str]:
         if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
             raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
 
-        # --- 第 4 層: UUID でファイル名をランダム化 ---
+        # --- 第 3 層: UUID でファイル名をランダム化 ---
         # uuid4() は 128 bit のランダムな識別子を生成する
         # これにより元のファイル名・アップロード順が URL から推測できなくなる
         filename  = f"{uuid.uuid4()}{ext}"
@@ -270,6 +302,14 @@ def _delete_images(img_name_str: str) -> None:
 
     記事削除・画像更新時に呼ばれ、サーバー上の孤立ファイルを防ぐ。
     ファイルが存在しない場合はスキップする（エラーにしない）。
+
+    【バグ修正に伴う運用ルール】
+    この関数は必ず「DB の commit が成功した後」に呼ぶこと。
+    従来は commit 前に物理削除していたため、commit が失敗すると
+    「DB には記事（画像名）が残っているのに実ファイルだけ消えている」
+    という復旧不能な不整合が発生し得た。
+    commit 後の物理削除であれば、万一削除に失敗しても
+    「孤立ファイルが残る」だけで済み、データは壊れない（安全側に倒す）。
 
     @param img_name_str: post.img_name の値（例: "uuid1.jpg,uuid2.png"）
     """
@@ -354,7 +394,21 @@ def create():
         # ハッシュタグの同期（入力文字列 → Hashtag オブジェクト → 中間テーブル登録）
         sync_hashtags(post, parse_hashtag_input(hashtag_input))
 
-        db.session.commit()  # ここで全変更を DB に書き込む
+        # -------------------------------------------------------------------
+        # 【バグ修正】commit 失敗時に保存済みファイルを掃除する
+        # 画像ファイルは commit より先にディスク保存されるため、
+        # commit が失敗した場合はそのままだと孤立ファイルが残る。
+        # rollback 後に今回保存したファイルを削除して整合性を保つ。
+        # -------------------------------------------------------------------
+        try:
+            db.session.commit()  # ここで全変更を DB に書き込む
+        except Exception:
+            db.session.rollback()
+            if img_name_str:
+                _delete_images(img_name_str)
+            flash('投稿の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
+            return redirect('/create')
+
         return redirect('/')
 
     # GET: 投稿フォームを表示
@@ -427,19 +481,36 @@ def update(id):
     # 孤立ハッシュタグを削除（commit 前に呼ぶことでトランザクションをまとめる）
     delete_orphaned_hashtags()
 
+    # -------------------------------------------------------------------
     # --- 画像の更新 ---
+    #
+    # 【バグ修正①】新規画像のキャプションは new_img_caption_N から取得
+    # update.html では既存画像のキャプション欄（img_caption_N）と
+    # 新規画像のキャプション欄が同名で衝突していたため、フィールド名を
+    # 分離した（テンプレート側の JS も new_img_caption_N を生成するよう修正済み）。
+    #
+    # 【バグ修正②】旧画像の物理削除を commit 成功後に移動
+    # 従来は commit 前に旧画像を削除していたため、commit 失敗時に
+    # 「DB には旧画像名が残っているのに実ファイルは消えている」状態になった。
+    # 旧画像名を退避しておき、commit 成功後に削除する。
+    # 逆に commit が失敗した場合は、今回新規保存したファイルを掃除する。
+    # -------------------------------------------------------------------
     files = request.files.getlist('img[]')
+    old_img_name  = None   # commit 成功後に物理削除する旧画像（差し替え時のみセット）
+    new_filenames = []     # commit 失敗時に掃除する新規保存ファイル
+
     if files and files[0].filename != '':
-        # 新しい画像が選択された場合 → 旧画像を削除して新画像で置き換え
+        # 新しい画像が選択された場合 → 新画像を保存し、DB 上の参照を差し替える
+        # （旧画像ファイルの物理削除はまだ行わない）
         try:
-            filename_list = _save_images(files)
+            new_filenames = _save_images(files)
         except ValueError as e:
             flash(str(e), 'danger')
             return redirect(f'/{id}/update')
 
-        _delete_images(post.img_name)       # 旧画像ファイルを物理削除
-        post.img_name = ','.join(filename_list)
-        captions = parse_img_captions(len(filename_list))
+        old_img_name  = post.img_name           # 旧画像名を退避（commit 後に削除）
+        post.img_name = ','.join(new_filenames)
+        captions = parse_img_captions(len(new_filenames), prefix='new_img_caption_')
         post.img_captions = '\t'.join(captions) if captions else None
 
     else:
@@ -454,7 +525,20 @@ def update(id):
 
     # 更新日時を現在時刻（日本時間）に更新
     post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
-    db.session.commit()
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        # commit 失敗 → 今回新規保存したファイルを掃除（DB は旧状態のまま無傷）
+        if new_filenames:
+            _delete_images(','.join(new_filenames))
+        flash('更新の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
+        return redirect(f'/{id}/update')
+
+    # commit 成功 → ここで初めて旧画像ファイルを物理削除する
+    if old_img_name:
+        _delete_images(old_img_name)
 
     return redirect(f'/{id}/detail')
 
@@ -477,8 +561,16 @@ def delete(id):
         flash("指定された記事が見つからないか、アクセス権限がありません。", 'danger')
         return redirect('/')
 
-    # 関連する画像ファイルをサーバーから物理削除（DB 削除前に行う）
-    _delete_images(post.img_name)
+    # -------------------------------------------------------------------
+    # 【バグ修正】画像ファイルの物理削除を DB commit 成功後に移動
+    #
+    # 従来は commit 前に _delete_images() を呼んでいたため、
+    # commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
+    # という不整合が発生し得た。
+    # 削除対象の画像名を退避してから DB 削除を commit し、
+    # 成功した場合にのみ実ファイルを削除する。
+    # -------------------------------------------------------------------
+    img_name_to_delete = post.img_name  # commit 成功後に物理削除するため退避
 
     # ハッシュタグのリレーションを先にクリアしてから記事を削除する。
     # post.hashtags = [] にすることで中間テーブルの行が削除予約され、
@@ -491,7 +583,16 @@ def delete(id):
 
     # DB から記事を削除
     db.session.delete(post)
-    db.session.commit()
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('削除中にエラーが発生しました。もう一度お試しください。', 'danger')
+        return redirect('/')
+
+    # commit 成功 → ここで初めて関連画像ファイルを物理削除する
+    _delete_images(img_name_to_delete)
 
     # -------------------------------------------------------------------
     # 削除後のリダイレクト先決定（Open Redirect 対策）

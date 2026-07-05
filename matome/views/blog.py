@@ -14,6 +14,8 @@ from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import current_user
 import markdown    # マークダウン → HTML 変換ライブラリ
 import re          # 正規表現（[img1], [map:xxx], [youtube:xxx] の置換に使用）
+from urllib.parse import quote  # 【セキュリティ修正】地図 URL の正しいエンコードに使用
+from markupsafe import escape   # 【セキュリティ修正】HTML 直組み立て時のエスケープに使用
 from sqlalchemy import func
 from extensions import db
 from models import Post, Hashtag, User
@@ -104,14 +106,29 @@ def index():
             .filter(Post.is_published == True)
             .scalar()
         )
-        latest = (
-            Post.query
+
+        # -------------------------------------------------------------------
+        # 【バグ修正】「最終更新日」の取得ロジックを修正
+        #
+        # 従来は ORDER BY updated_at DESC で先頭 1 件を取得していたが、
+        # PostgreSQL は DESC ソートで NULL を先頭に並べる（NULLS FIRST が既定）ため、
+        # updated_at が NULL の未更新記事が 1 件でもあると常に '---' 表示になっていた。
+        # また、新規投稿（created_at のみ更新される）がサイトの
+        # 「最終更新日」に反映されないという問題もあった。
+        #
+        # 対策: max(coalesce(updated_at, created_at)) で
+        #       「更新日時があればそれ、なければ投稿日時」の最大値を 1 クエリで取得する。
+        #       これにより NULL の影響を受けず、新規投稿も更新として扱われる。
+        # -------------------------------------------------------------------
+        last_activity = (
+            db.session.query(
+                func.max(func.coalesce(Post.updated_at, Post.created_at))
+            )
             .filter(Post.is_published == True)
-            .order_by(Post.updated_at.desc())
-            .with_entities(Post.updated_at)
-            .first()
+            .scalar()
         )
-        last_updated = latest.updated_at.strftime('%Y/%m/%d') if latest and latest.updated_at else '---'
+        last_updated = last_activity.strftime('%Y/%m/%d') if last_activity else '---'
+
         stats = {
             'post_count':    post_count,
             'hashtag_count': hashtag_count,
@@ -291,6 +308,13 @@ def detail(id):
 
     # -------------------------------------------------------------------
     # 画像タグの埋め込み（[img1], [img2] → <img> タグ or <figure> タグ）
+    #
+    # 【セキュリティ修正】キャプションを markupsafe.escape() でエスケープ
+    # キャプションは display_body（| safe で出力される HTML）に
+    # 直接文字列連結されるため、" や < を含む入力があると
+    # alt 属性を突き破って任意の HTML/属性を注入できてしまっていた。
+    # 単一管理者運用でも、自己 XSS・アカウント奪取時の被害拡大防止として
+    # 出力時エスケープを徹底する（防御的プログラミング）。
     # -------------------------------------------------------------------
     if post.img_name:
         images   = post.img_name.split(',')
@@ -298,7 +322,8 @@ def detail(id):
 
         for index, img_file in enumerate(images):
             img_file = re.sub(r'[/\\]', '', img_file.strip())
-            caption  = captions[index].strip() if index < len(captions) else ''
+            raw_caption = captions[index].strip() if index < len(captions) else ''
+            caption     = escape(raw_caption)  # HTML 特殊文字（< > & " '）を無害化
 
             if caption:
                 img_tag = (
@@ -425,12 +450,27 @@ def _expand_blank_lines(text: str) -> str:
 
 
 def _replace_map(m: re.Match) -> str:
-    place   = m.group(1).strip()
-    encoded = place.replace(' ', '+')
+    """
+    [map:場所名] を Google Maps の iframe 埋め込みに変換する。
+
+    【セキュリティ修正】
+    1. ラベル表示用の場所名を markupsafe.escape() でエスケープ。
+       従来は入力がそのまま HTML に埋め込まれていたため、
+       [map:"><script>...] のような入力で div を突き破れた。
+    2. iframe の src に埋め込む URL エンコードを
+       place.replace(' ', '+') から urllib.parse.quote() に変更。
+       replace 方式では " や & などが未エンコードのまま残り、
+       属性値の突き破りや意図しないクエリパラメータ注入が可能だった。
+       quote() は URL 上安全な文字以外を %XX 形式に正しく変換する。
+    """
+    place = m.group(1).strip()
+
+    place_label = escape(place)          # HTML 出力用（ラベル・表示テキスト）
+    encoded     = quote(place, safe='')  # URL クエリ用（すべての予約文字をエンコード）
 
     return (
         f'<div class="post-map-wrapper">'
-        f'<div class="post-map-label">📍 {place}</div>'
+        f'<div class="post-map-label">📍 {place_label}</div>'
         f'<iframe class="post-map-iframe"'
         f' src="https://maps.google.com/maps?q={encoded}&output=embed&hl=ja"'
         f' loading="lazy" allowfullscreen></iframe>'
@@ -469,11 +509,23 @@ def _extract_youtube_id(raw: str) -> str | None:
 
 
 def _replace_youtube(m: re.Match) -> str:
+    """
+    [youtube:URL] をファサード形式の埋め込みに変換する。
+
+    【セキュリティ修正】
+    動画 ID を認識できなかった場合のエラーメッセージに
+    ユーザー入力（raw）をそのまま埋め込んでいたため、
+    [youtube:<script>...] のような入力がそのまま HTML として
+    出力される経路になっていた。escape() を適用して無害化する。
+
+    ※ 正常系の video_id は正規表現 [A-Za-z0-9_-]{11} で
+       抽出済みのため HTML/URL 上安全な文字しか含まない。
+    """
     raw      = m.group(1)
     video_id = _extract_youtube_id(raw)
 
     if not video_id:
-        return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {raw}]</p>'
+        return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {escape(raw)}]</p>'
 
     thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
     embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
