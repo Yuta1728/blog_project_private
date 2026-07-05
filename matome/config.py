@@ -47,3 +47,19 @@ postgre_DB       = os.getenv("POSTGRES_DB")        # DB 名
 ADMIN_USERNAME   = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD")
 ADMIN_LOGIN_PATH = os.getenv("ADMIN_LOGIN_PATH")
+
+# -------------------------------------------------------------------
+# 【セキュリティ改善②】ADMIN_LOGIN_PATH 未設定チェック（フェイルクローズ）
+#
+# ADMIN_LOGIN_PATH が未設定のまま起動すると、os.getenv() が None を返し、
+# views/auth.py のルート定義 f'/{config.ADMIN_LOGIN_PATH}' が
+# 文字どおり「/None」という推測可能なパスになってしまう。
+#
+# ゲートキー（ADMIN_GATE_KEY）のフェイルクローズにより実害は出ないが、
+# 設定漏れに気付かないまま運用を続けるリスクを避けるため、
+# ここで明示的にエラーを発生させて起動自体を拒否する。
+# （config.py は app.py より先に import されるため、
+#   アプリ起動前の最も早い段階で設定漏れを検出できる）
+# -------------------------------------------------------------------
+if not ADMIN_LOGIN_PATH:
+    raise ValueError("【重大なエラー】環境変数 'ADMIN_LOGIN_PATH' が設定されていません。")

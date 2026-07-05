@@ -25,7 +25,6 @@ from flask import (Blueprint, render_template, request, redirect,
                    flash, session, abort, make_response)
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash  # ハッシュ済みパスワードとの照合
-from extensions import db
 from models import User
 import config
 
@@ -96,7 +95,8 @@ def _check_gate():
             _GATE_KEY,
             httponly=True,                 # JavaScript から読み取れないようにする（XSS 対策）
             secure=request.is_secure,      # HTTPS 接続時のみ secure 属性を付与
-                                           # （本番は HTTPS なので常に True、
+                                           # （本番は app.py の ProxyFix により
+                                           #   リバースプロキシ配下でも正しく True と判定される。
                                            #   ローカル開発の http://localhost でも動作するよう動的に判定）
             samesite='Lax',                # 外部サイトからのリクエストに Cookie が乗らないようにする
             max_age=_GATE_COOKIE_MAX_AGE,  # 90日間有効

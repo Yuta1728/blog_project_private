@@ -11,6 +11,7 @@
 import os
 from flask import Flask, flash, redirect, url_for, abort
 from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
+from werkzeug.middleware.proxy_fix import ProxyFix  # リバースプロキシ配下での HTTPS 判定補正
 from extensions import db, login_manager, migrate
 from models import User
 import config
@@ -28,6 +29,28 @@ def create_app():
     関数の中で作ることで設定の柔軟性と循環インポート回避を実現する。
     """
     app = Flask(__name__)
+
+    # ===================================================================
+    # 【セキュリティ改善①】ProxyFix の適用（リバースプロキシ対応）
+    # ===================================================================
+    # Render / Heroku などの PaaS では、HTTPS はリバースプロキシ
+    # （ロードバランサー）で終端され、Flask アプリ自体には HTTP で届く。
+    # そのままだと request.is_secure が本番でも False と判定されてしまい、
+    # views/auth.py のゲート Cookie に Secure 属性が付かなくなる。
+    #
+    # ProxyFix ミドルウェアを適用すると、プロキシが付与する
+    # X-Forwarded-Proto / X-Forwarded-Host ヘッダを信頼して
+    # request.is_secure や url_for(_external=True) が
+    # 「実際のクライアントから見た接続情報（https）」を正しく返すようになる。
+    #
+    # 引数の意味:
+    #   x_proto=1 → 直前 1 段のプロキシの X-Forwarded-Proto を信頼する
+    #   x_host=1  → 直前 1 段のプロキシの X-Forwarded-Host  を信頼する
+    # （PaaS は通常プロキシ 1 段構成のため 1 を指定。多段構成なら段数に合わせる）
+    #
+    # 注意: ローカル開発（プロキシなし・直接アクセス）では
+    #       X-Forwarded-* ヘッダ自体が存在しないため挙動は変わらない。
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # ===================================================================
     # SECRET_KEY の設定（セッション・CSRF トークンの署名に使用）
