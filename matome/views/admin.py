@@ -235,6 +235,9 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
 # 画像ファイル操作ヘルパー
 # ===================================================================
 
+# views/admin.py の既存の _save_images() をこの関数で差し替えてください。
+# （関数の外側・呼び出し側のコードは一切変更不要です）
+
 def _save_images(files: list) -> list[str]:
     """
     アップロードされた画像ファイルを検証・保存し、
@@ -244,53 +247,69 @@ def _save_images(files: list) -> list[str]:
     第 1 層: allowed_file() で拡張子チェック
     第 2 層: filetype.guess() で MIME タイプチェック（ファイルの中身を確認）
     第 3 層: UUID でファイル名を完全にランダム化
-             （元のファイル名は一切使わないため、パストラバーサルや
-               既存ファイルの上書き・URL 推測を根本的に防げる）
     （第 4 層: app.py で 30MB の容量制限）
 
-    【バグ修正】拡張子の取得方法を変更
-    従来は secure_filename() でサニタイズした後のファイル名から
-    splitext で拡張子を取得していたが、日本語のみのファイル名
-    （例: 'スクリーンショット.png'）では secure_filename() が
-    非 ASCII 文字を全て除去した後に先頭のドットも落として 'png' を返すため、
-    splitext の結果の拡張子が空文字になり、拡張子なしのファイルが
-    保存されてしまうバグがあった。
-    拡張子は allowed_file() で検証済みの「元のファイル名」の末尾から
-    直接取得するよう修正（保存名自体は UUID なのでサニタイズ不要）。
+    【バグ修正】途中の検証エラーで保存済みファイルが孤立する問題を解消
+    従来は「1 枚ずつ検証 → 保存」をループしていたため、
+    例えば 3 枚中 3 枚目で ValueError が発生すると、
+    1〜2 枚目はすでにディスク保存済みのまま例外で処理が中断し、
+    どの記事からも参照されない孤立ファイルとして残っていた。
+    （呼び出し側の create() / update() は例外を捕捉して
+      リダイレクトするだけなので、掃除する機会がなかった）
+
+    対策: 例外発生時に、この関数内でそれまでに保存した
+    ファイルを _delete_images() で掃除してから例外を再送出する。
+    これにより「この関数は全ファイルの保存に成功したときだけ
+    ファイルを残す」というアトミックな挙動が保証され、
+    呼び出し側は従来どおり ValueError を捕捉するだけでよい。
+
+    ※ ValueError（検証エラー）だけでなく Exception 全般を対象にするのは、
+       file.save() がディスクフル等で OSError を送出した場合にも
+       同様に途中保存分が孤立し得るため。掃除後は元の例外を
+       そのまま re-raise するので、呼び出し側の挙動は変わらない。
 
     @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
     @return: 保存したファイル名のリスト
     @raises ValueError: 検証エラー時（拡張子不正・MIME タイプ不正）
     """
     filename_list = []
-    for file in files:
-        # ファイルが選択されていない場合はスキップ
-        if not file or file.filename == '':
-            continue
 
-        # --- 第 1 層: 拡張子チェック ---
-        if not allowed_file(file.filename):
-            raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
+    try:
+        for file in files:
+            # ファイルが選択されていない場合はスキップ
+            if not file or file.filename == '':
+                continue
 
-        # 拡張子は検証済みの元ファイル名から直接取得する
-        # （allowed_file() 通過済みなので rsplit の結果はホワイトリスト内の文字列）
-        ext = '.' + file.filename.rsplit('.', 1)[1].lower()
+            # --- 第 1 層: 拡張子チェック ---
+            if not allowed_file(file.filename):
+                raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
 
-        # --- 第 2 層: MIME タイプチェック ---
-        # ファイルの先頭 2048 バイトを読み込んでマジックナンバーで実際の形式を判定
-        header = file.stream.read(2048)
-        file.stream.seek(0)  # ストリーム位置をリセット（後で save() が読めるように）
-        kind = filetype.guess(header)
-        if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
-            raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
+            # 拡張子は検証済みの元ファイル名から直接取得する
+            ext = '.' + file.filename.rsplit('.', 1)[1].lower()
 
-        # --- 第 3 層: UUID でファイル名をランダム化 ---
-        # uuid4() は 128 bit のランダムな識別子を生成する
-        # これにより元のファイル名・アップロード順が URL から推測できなくなる
-        filename  = f"{uuid.uuid4()}{ext}"
-        save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-        file.save(save_path)
-        filename_list.append(filename)
+            # --- 第 2 層: MIME タイプチェック ---
+            header = file.stream.read(2048)
+            file.stream.seek(0)  # ストリーム位置をリセット（後で save() が読めるように）
+            kind = filetype.guess(header)
+            if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+                raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
+
+            # --- 第 3 層: UUID でファイル名をランダム化 ---
+            filename  = f"{uuid.uuid4()}{ext}"
+            save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+            file.save(save_path)
+            filename_list.append(filename)
+
+    except Exception:
+        # -----------------------------------------------------------
+        # 【バグ修正】途中まで保存したファイルをここで掃除する
+        # filename_list には「保存に成功したファイル名」だけが
+        # 入っているので、それらを削除すれば孤立ファイルは残らない。
+        # 掃除後に元の例外を再送出し、エラー通知は呼び出し側に委ねる。
+        # -----------------------------------------------------------
+        if filename_list:
+            _delete_images(','.join(filename_list))
+        raise
 
     return filename_list
 
