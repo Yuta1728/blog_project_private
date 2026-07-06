@@ -171,30 +171,42 @@
             {% endfor %}
         </div>
 
-        <!-- ===== 現在の画像（既存）キャプション編集エリア ===== -->
+
+        <!-- ===== 現在の画像（既存）キャプション編集・削除エリア ===== -->
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
             <p style="font-size:13px; color:#555; margin: -8px 0 12px;">
-                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。
+                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
+                ※「✕ この画像を削除」で個別に削除できます（<strong>「更新」ボタンを押すまで確定しません</strong>）。<br>
+                ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
+                　本文中で [imgN] タグを使っている場合は、必要に応じて本文側も修正してください。
             </p>
-            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;" id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
-                    <div class="preview-item" style="width: 200px;">
+                    <div class="preview-item existing-img-item" style="width: 200px;">
+                        {# 削除フラグ: '1'=残す（デフォルト） / '0'=削除予定。
+                        サーバー側（update() のパターンB）はこの値で残す画像を判定する #}
+                        <input type="hidden" name="keep_img_{{ loop.index }}" value="1" class="keep-img-flag">
+
                         <img src="{{ url_for('static', filename='img/posts/' + img) }}" alt="{{ img }}">
                         <div class="preview-label">[img{{ loop.index }}]（現在）</div>
                         <div class="preview-filename" title="{{ img }}">{{ img }}</div>
                         <div class="preview-caption-wrapper">
                             <input type="text"
-                                   name="img_caption_{{ loop.index }}"
-                                   class="preview-caption-input"
-                                   placeholder="画像の説明（省略可）"
-                                   maxlength="100"
-                                   value="{{ existing_captions[loop.index0] if loop.index0 < existing_captions|length else '' }}">
+                                name="img_caption_{{ loop.index }}"
+                                class="preview-caption-input"
+                                placeholder="画像の説明（省略可）"
+                                maxlength="100"
+                                value="{{ existing_captions[loop.index0] if loop.index0 < existing_captions|length else '' }}">
                         </div>
+                        <button type="button"
+                                class="preview-delete-btn existing-delete-btn"
+                                onclick="toggleExistingDelete(this)">✕ この画像を削除</button>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
+
 
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
@@ -466,6 +478,60 @@ function renderPreviews() {
 
     rebuildImgBtns(_fileList.length);
 }
+
+
+/* =========================================================
+   【機能追加】既存画像の個別削除（削除予定マークのトグル）
+   =========================================================
+   仕組み:
+   - 各既存画像カードは hidden の keep_img_N（'1'=残す）を持つ
+   - 削除ボタンを押すと keep_img_N を '0' に切り替え、
+     カードをグレーアウトして「削除予定」であることを可視化する
+   - もう一度押すと '1' に戻り、削除を取り消せる
+   - 実際の削除（DB 参照の除去 + ファイルの物理削除）は
+     フォーム送信後にサーバー側で行われるため、
+     「更新」を押すまでは何も確定しない（誤操作に強い）
+   ========================================================= */
+function toggleExistingDelete(btn) {
+    var item    = btn.closest('.existing-img-item');
+    var flag    = item.querySelector('.keep-img-flag');
+    var caption = item.querySelector('.preview-caption-input');
+
+    if (flag.value === '0') {
+        /* --- 削除の取り消し --- */
+        flag.value        = '1';
+        item.style.opacity = '';
+        caption.disabled  = false;
+        btn.textContent   = '✕ この画像を削除';
+    } else {
+        /* --- 削除予定としてマーク --- */
+        flag.value        = '0';
+        item.style.opacity = '0.45';
+        /* disabled にした input は送信されないが、
+           サーバー側は削除予定画像のキャプションを読まないため問題ない */
+        caption.disabled  = true;
+        btn.textContent   = '↩ 削除を取り消す';
+    }
+
+    renumberExistingLabels();
+}
+
+/* 削除予定を除いた「更新後の番号」を [imgN] ラベルに反映する。
+   保存後に画像番号が繰り上がることをその場で確認できるようにする */
+function renumberExistingLabels() {
+    var items = document.querySelectorAll('.existing-img-item');
+    var n = 0;
+    items.forEach(function (item) {
+        var label = item.querySelector('.preview-label');
+        if (item.querySelector('.keep-img-flag').value === '0') {
+            label.textContent = '（削除予定）';
+        } else {
+            n += 1;
+            label.textContent = '[img' + n + ']（更新後）';
+        }
+    });
+}
+
 
 /* =========================================================
    ジャンル入力切替

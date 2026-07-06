@@ -439,6 +439,9 @@ def create():
 # 記事編集
 # ===================================================================
 
+# views/admin.py の既存の update() をこの関数で差し替えてください。
+# 変更点は「--- 画像の更新 ---」ブロックのみで、それ以外は現行コードと同一です。
+
 @admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
 @login_required
 def update(id):
@@ -456,10 +459,9 @@ def update(id):
         genres = _get_genre_list(current_user.id, post.genre)
 
         # 既存ハッシュタグを "#Flask #Python" 形式の文字列に変換
-        # （フォームの value に設定してユーザーが編集しやすいように）
         existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
 
-        # 既存キャプションをタブ区切りから配列に変換（テンプレートでインデックスアクセスするため）
+        # 既存キャプションをタブ区切りから配列に変換
         existing_captions = post.img_captions.split('\t') if post.img_captions else []
 
         return render_template('update.html', post=post, genres=genres,
@@ -480,7 +482,7 @@ def update(id):
     selected_default_thumb = request.form.get('default_thumb_select')
     post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
 
-    # 公開設定の更新（フォームで値が送られた場合のみ更新する）
+    # 公開設定の更新
     is_published_form = request.form.get('is_published')
     if is_published_form is not None:
         post.is_published = (is_published_form == 'true')
@@ -490,37 +492,37 @@ def update(id):
     selected_genre = request.form.get('genre_select')
     post.genre = new_genre if new_genre else (selected_genre or '未分類')
 
-    # ハッシュタグの同期（フォームの最新入力で上書き）
-    # ※ sync_hashtags() の時点で post.hashtags が上書きされ、
-    #   セッション上では旧タグの中間テーブルレコードが削除予約される。
-    #   この後 delete_orphaned_hashtags() を呼ぶことで、
-    #   他のどの記事にも使われなくなったタグを同一トランザクション内で削除できる。
+    # ハッシュタグの同期
     sync_hashtags(post, parse_hashtag_input(request.form.get('hashtag_input', '')))
 
-    # 孤立ハッシュタグを削除（commit 前に呼ぶことでトランザクションをまとめる）
+    # 孤立ハッシュタグを削除
     delete_orphaned_hashtags()
 
     # -------------------------------------------------------------------
     # --- 画像の更新 ---
     #
-    # 【バグ修正①】新規画像のキャプションは new_img_caption_N から取得
-    # update.html では既存画像のキャプション欄（img_caption_N）と
-    # 新規画像のキャプション欄が同名で衝突していたため、フィールド名を
-    # 分離した（テンプレート側の JS も new_img_caption_N を生成するよう修正済み）。
+    # 3 つのパターンを扱う:
+    #   A) 新しい画像が選択された        → 全画像を新画像で差し替え
+    #   B) 新画像なし + 個別削除フラグあり → 指定された既存画像だけを削除
+    #   C) 新画像なし + 削除フラグなし     → キャプションのみ更新（従来どおり）
     #
-    # 【バグ修正②】旧画像の物理削除を commit 成功後に移動
-    # 従来は commit 前に旧画像を削除していたため、commit 失敗時に
-    # 「DB には旧画像名が残っているのに実ファイルは消えている」状態になった。
-    # 旧画像名を退避しておき、commit 成功後に削除する。
-    # 逆に commit が失敗した場合は、今回新規保存したファイルを掃除する。
+    # 【機能追加】パターン B: 既存画像の個別削除
+    # update.html の各既存画像カードに hidden フィールド
+    # keep_img_N（'1'=残す / '0'=削除予定）を持たせ、
+    # ここで '0' の画像を除外して img_name / img_captions を再構築する。
+    # 削除対象の実ファイルは old_img_name に積んでおき、
+    # 差し替え時（パターン A）と同じ「commit 成功後に物理削除」の
+    # 経路で処理する（DB とファイルの整合性ルールを一本化するため）。
+    #
+    # ※ パターン A（差し替え）が選ばれた場合、旧画像はどのみち
+    #    全削除されるため、個別削除フラグは無視される（差し替えが優先）。
     # -------------------------------------------------------------------
     files = request.files.getlist('img[]')
-    old_img_name  = None   # commit 成功後に物理削除する旧画像（差し替え時のみセット）
+    old_img_name  = None   # commit 成功後に物理削除する画像（差し替え時: 旧全画像 / 個別削除時: 削除対象のみ）
     new_filenames = []     # commit 失敗時に掃除する新規保存ファイル
 
     if files and files[0].filename != '':
-        # 新しい画像が選択された場合 → 新画像を保存し、DB 上の参照を差し替える
-        # （旧画像ファイルの物理削除はまだ行わない）
+        # --- パターン A: 画像の全差し替え ---
         try:
             new_filenames = _save_images(files)
         except ValueError as e:
@@ -532,15 +534,34 @@ def update(id):
         captions = parse_img_captions(len(new_filenames), prefix='new_img_caption_')
         post.img_captions = '\t'.join(captions) if captions else None
 
-    else:
-        # 画像変更なし → キャプションのみ更新する
-        # 既存画像の枚数分だけフォームを読んでキャプションを更新
-        if post.img_name:
-            existing_imgs = post.img_name.split(',')
-            captions = []
-            for i in range(1, len(existing_imgs) + 1):
-                captions.append(request.form.get(f'img_caption_{i}', '').strip())
-            post.img_captions = '\t'.join(captions)
+    elif post.img_name:
+        # --- パターン B / C: 既存画像の個別削除 + キャプション更新 ---
+        existing_imgs = post.img_name.split(',')
+        kept_imgs     = []   # 残す画像ファイル名
+        kept_captions = []   # 残す画像のキャプション（順番を kept_imgs と対応させる）
+        removed_imgs  = []   # 削除予定の画像ファイル名
+
+        for i, img in enumerate(existing_imgs, start=1):
+            caption = request.form.get(f'img_caption_{i}', '').strip()
+
+            # keep_img_N が '0' なら削除予定。
+            # フィールド自体が送られてこない場合（JS 無効・旧テンプレート）は
+            # デフォルト '1' として「残す」扱いにする（安全側・後方互換）。
+            if request.form.get(f'keep_img_{i}', '1') == '0':
+                removed_imgs.append(img)
+            else:
+                kept_imgs.append(img)
+                kept_captions.append(caption)
+
+        if removed_imgs:
+            # 削除対象を commit 成功後の物理削除キューに積む
+            old_img_name = ','.join(removed_imgs)
+
+        # 残った画像だけで DB 上の参照を再構築する。
+        # 全画像を削除した場合は None にして「画像なし記事」に戻す
+        # （一覧・詳細ではデフォルトサムネイル表示に自然にフォールバックする）。
+        post.img_name     = ','.join(kept_imgs) if kept_imgs else None
+        post.img_captions = '\t'.join(kept_captions) if kept_imgs else None
 
     # 更新日時を現在時刻（日本時間）に更新
     post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
@@ -550,12 +571,15 @@ def update(id):
     except Exception:
         db.session.rollback()
         # commit 失敗 → 今回新規保存したファイルを掃除（DB は旧状態のまま無傷）
+        # 個別削除（パターン B）の場合、物理削除はまだ行っていないため
+        # rollback だけで完全に元の状態に戻る（掃除対象なし）。
         if new_filenames:
             _delete_images(','.join(new_filenames))
         flash('更新の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
         return redirect(f'/{id}/update')
 
-    # commit 成功 → ここで初めて旧画像ファイルを物理削除する
+    # commit 成功 → ここで初めて削除対象のファイルを物理削除する
+    # （差し替え時は旧全画像、個別削除時は削除予定の画像のみ）
     if old_img_name:
         _delete_images(old_img_name)
 
