@@ -7015,30 +7015,42 @@ function ytPlay(facadeEl) {
             {% endfor %}
         </div>
 
-        <!-- ===== 現在の画像（既存）キャプション編集エリア ===== -->
+
+        <!-- ===== 現在の画像（既存）キャプション編集・削除エリア ===== -->
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
             <p style="font-size:13px; color:#555; margin: -8px 0 12px;">
-                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。
+                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
+                ※「✕ この画像を削除」で個別に削除できます（<strong>「更新」ボタンを押すまで確定しません</strong>）。<br>
+                ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
+                　本文中で [imgN] タグを使っている場合は、必要に応じて本文側も修正してください。
             </p>
-            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;" id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
-                    <div class="preview-item" style="width: 200px;">
+                    <div class="preview-item existing-img-item" style="width: 200px;">
+                        {# 削除フラグ: '1'=残す（デフォルト） / '0'=削除予定。
+                        サーバー側（update() のパターンB）はこの値で残す画像を判定する #}
+                        <input type="hidden" name="keep_img_{{ loop.index }}" value="1" class="keep-img-flag">
+
                         <img src="{{ url_for('static', filename='img/posts/' + img) }}" alt="{{ img }}">
                         <div class="preview-label">[img{{ loop.index }}]（現在）</div>
                         <div class="preview-filename" title="{{ img }}">{{ img }}</div>
                         <div class="preview-caption-wrapper">
                             <input type="text"
-                                   name="img_caption_{{ loop.index }}"
-                                   class="preview-caption-input"
-                                   placeholder="画像の説明（省略可）"
-                                   maxlength="100"
-                                   value="{{ existing_captions[loop.index0] if loop.index0 < existing_captions|length else '' }}">
+                                name="img_caption_{{ loop.index }}"
+                                class="preview-caption-input"
+                                placeholder="画像の説明（省略可）"
+                                maxlength="100"
+                                value="{{ existing_captions[loop.index0] if loop.index0 < existing_captions|length else '' }}">
                         </div>
+                        <button type="button"
+                                class="preview-delete-btn existing-delete-btn"
+                                onclick="toggleExistingDelete(this)">✕ この画像を削除</button>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
+
 
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
@@ -7310,6 +7322,60 @@ function renderPreviews() {
 
     rebuildImgBtns(_fileList.length);
 }
+
+
+/* =========================================================
+   【機能追加】既存画像の個別削除（削除予定マークのトグル）
+   =========================================================
+   仕組み:
+   - 各既存画像カードは hidden の keep_img_N（'1'=残す）を持つ
+   - 削除ボタンを押すと keep_img_N を '0' に切り替え、
+     カードをグレーアウトして「削除予定」であることを可視化する
+   - もう一度押すと '1' に戻り、削除を取り消せる
+   - 実際の削除（DB 参照の除去 + ファイルの物理削除）は
+     フォーム送信後にサーバー側で行われるため、
+     「更新」を押すまでは何も確定しない（誤操作に強い）
+   ========================================================= */
+function toggleExistingDelete(btn) {
+    var item    = btn.closest('.existing-img-item');
+    var flag    = item.querySelector('.keep-img-flag');
+    var caption = item.querySelector('.preview-caption-input');
+
+    if (flag.value === '0') {
+        /* --- 削除の取り消し --- */
+        flag.value        = '1';
+        item.style.opacity = '';
+        caption.disabled  = false;
+        btn.textContent   = '✕ この画像を削除';
+    } else {
+        /* --- 削除予定としてマーク --- */
+        flag.value        = '0';
+        item.style.opacity = '0.45';
+        /* disabled にした input は送信されないが、
+           サーバー側は削除予定画像のキャプションを読まないため問題ない */
+        caption.disabled  = true;
+        btn.textContent   = '↩ 削除を取り消す';
+    }
+
+    renumberExistingLabels();
+}
+
+/* 削除予定を除いた「更新後の番号」を [imgN] ラベルに反映する。
+   保存後に画像番号が繰り上がることをその場で確認できるようにする */
+function renumberExistingLabels() {
+    var items = document.querySelectorAll('.existing-img-item');
+    var n = 0;
+    items.forEach(function (item) {
+        var label = item.querySelector('.preview-label');
+        if (item.querySelector('.keep-img-flag').value === '0') {
+            label.textContent = '（削除予定）';
+        } else {
+            n += 1;
+            label.textContent = '[img' + n + ']（更新後）';
+        }
+    });
+}
+
 
 /* =========================================================
    ジャンル入力切替
@@ -7887,6 +7953,9 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
 # 画像ファイル操作ヘルパー
 # ===================================================================
 
+# views/admin.py の既存の _save_images() をこの関数で差し替えてください。
+# （関数の外側・呼び出し側のコードは一切変更不要です）
+
 def _save_images(files: list) -> list[str]:
     """
     アップロードされた画像ファイルを検証・保存し、
@@ -7896,53 +7965,69 @@ def _save_images(files: list) -> list[str]:
     第 1 層: allowed_file() で拡張子チェック
     第 2 層: filetype.guess() で MIME タイプチェック（ファイルの中身を確認）
     第 3 層: UUID でファイル名を完全にランダム化
-             （元のファイル名は一切使わないため、パストラバーサルや
-               既存ファイルの上書き・URL 推測を根本的に防げる）
     （第 4 層: app.py で 30MB の容量制限）
 
-    【バグ修正】拡張子の取得方法を変更
-    従来は secure_filename() でサニタイズした後のファイル名から
-    splitext で拡張子を取得していたが、日本語のみのファイル名
-    （例: 'スクリーンショット.png'）では secure_filename() が
-    非 ASCII 文字を全て除去した後に先頭のドットも落として 'png' を返すため、
-    splitext の結果の拡張子が空文字になり、拡張子なしのファイルが
-    保存されてしまうバグがあった。
-    拡張子は allowed_file() で検証済みの「元のファイル名」の末尾から
-    直接取得するよう修正（保存名自体は UUID なのでサニタイズ不要）。
+    【バグ修正】途中の検証エラーで保存済みファイルが孤立する問題を解消
+    従来は「1 枚ずつ検証 → 保存」をループしていたため、
+    例えば 3 枚中 3 枚目で ValueError が発生すると、
+    1〜2 枚目はすでにディスク保存済みのまま例外で処理が中断し、
+    どの記事からも参照されない孤立ファイルとして残っていた。
+    （呼び出し側の create() / update() は例外を捕捉して
+      リダイレクトするだけなので、掃除する機会がなかった）
+
+    対策: 例外発生時に、この関数内でそれまでに保存した
+    ファイルを _delete_images() で掃除してから例外を再送出する。
+    これにより「この関数は全ファイルの保存に成功したときだけ
+    ファイルを残す」というアトミックな挙動が保証され、
+    呼び出し側は従来どおり ValueError を捕捉するだけでよい。
+
+    ※ ValueError（検証エラー）だけでなく Exception 全般を対象にするのは、
+       file.save() がディスクフル等で OSError を送出した場合にも
+       同様に途中保存分が孤立し得るため。掃除後は元の例外を
+       そのまま re-raise するので、呼び出し側の挙動は変わらない。
 
     @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
     @return: 保存したファイル名のリスト
     @raises ValueError: 検証エラー時（拡張子不正・MIME タイプ不正）
     """
     filename_list = []
-    for file in files:
-        # ファイルが選択されていない場合はスキップ
-        if not file or file.filename == '':
-            continue
 
-        # --- 第 1 層: 拡張子チェック ---
-        if not allowed_file(file.filename):
-            raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
+    try:
+        for file in files:
+            # ファイルが選択されていない場合はスキップ
+            if not file or file.filename == '':
+                continue
 
-        # 拡張子は検証済みの元ファイル名から直接取得する
-        # （allowed_file() 通過済みなので rsplit の結果はホワイトリスト内の文字列）
-        ext = '.' + file.filename.rsplit('.', 1)[1].lower()
+            # --- 第 1 層: 拡張子チェック ---
+            if not allowed_file(file.filename):
+                raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
 
-        # --- 第 2 層: MIME タイプチェック ---
-        # ファイルの先頭 2048 バイトを読み込んでマジックナンバーで実際の形式を判定
-        header = file.stream.read(2048)
-        file.stream.seek(0)  # ストリーム位置をリセット（後で save() が読めるように）
-        kind = filetype.guess(header)
-        if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
-            raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
+            # 拡張子は検証済みの元ファイル名から直接取得する
+            ext = '.' + file.filename.rsplit('.', 1)[1].lower()
 
-        # --- 第 3 層: UUID でファイル名をランダム化 ---
-        # uuid4() は 128 bit のランダムな識別子を生成する
-        # これにより元のファイル名・アップロード順が URL から推測できなくなる
-        filename  = f"{uuid.uuid4()}{ext}"
-        save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-        file.save(save_path)
-        filename_list.append(filename)
+            # --- 第 2 層: MIME タイプチェック ---
+            header = file.stream.read(2048)
+            file.stream.seek(0)  # ストリーム位置をリセット（後で save() が読めるように）
+            kind = filetype.guess(header)
+            if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+                raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
+
+            # --- 第 3 層: UUID でファイル名をランダム化 ---
+            filename  = f"{uuid.uuid4()}{ext}"
+            save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+            file.save(save_path)
+            filename_list.append(filename)
+
+    except Exception:
+        # -----------------------------------------------------------
+        # 【バグ修正】途中まで保存したファイルをここで掃除する
+        # filename_list には「保存に成功したファイル名」だけが
+        # 入っているので、それらを削除すれば孤立ファイルは残らない。
+        # 掃除後に元の例外を再送出し、エラー通知は呼び出し側に委ねる。
+        # -----------------------------------------------------------
+        if filename_list:
+            _delete_images(','.join(filename_list))
+        raise
 
     return filename_list
 
@@ -8072,6 +8157,9 @@ def create():
 # 記事編集
 # ===================================================================
 
+# views/admin.py の既存の update() をこの関数で差し替えてください。
+# 変更点は「--- 画像の更新 ---」ブロックのみで、それ以外は現行コードと同一です。
+
 @admin_bp.route('/<int:id>/update', methods=['GET', 'POST'])
 @login_required
 def update(id):
@@ -8089,10 +8177,9 @@ def update(id):
         genres = _get_genre_list(current_user.id, post.genre)
 
         # 既存ハッシュタグを "#Flask #Python" 形式の文字列に変換
-        # （フォームの value に設定してユーザーが編集しやすいように）
         existing_hashtag_str = ' '.join(f'#{t.name}' for t in post.hashtags)
 
-        # 既存キャプションをタブ区切りから配列に変換（テンプレートでインデックスアクセスするため）
+        # 既存キャプションをタブ区切りから配列に変換
         existing_captions = post.img_captions.split('\t') if post.img_captions else []
 
         return render_template('update.html', post=post, genres=genres,
@@ -8113,7 +8200,7 @@ def update(id):
     selected_default_thumb = request.form.get('default_thumb_select')
     post.default_thumb = None if selected_default_thumb == 'none' else selected_default_thumb
 
-    # 公開設定の更新（フォームで値が送られた場合のみ更新する）
+    # 公開設定の更新
     is_published_form = request.form.get('is_published')
     if is_published_form is not None:
         post.is_published = (is_published_form == 'true')
@@ -8123,37 +8210,37 @@ def update(id):
     selected_genre = request.form.get('genre_select')
     post.genre = new_genre if new_genre else (selected_genre or '未分類')
 
-    # ハッシュタグの同期（フォームの最新入力で上書き）
-    # ※ sync_hashtags() の時点で post.hashtags が上書きされ、
-    #   セッション上では旧タグの中間テーブルレコードが削除予約される。
-    #   この後 delete_orphaned_hashtags() を呼ぶことで、
-    #   他のどの記事にも使われなくなったタグを同一トランザクション内で削除できる。
+    # ハッシュタグの同期
     sync_hashtags(post, parse_hashtag_input(request.form.get('hashtag_input', '')))
 
-    # 孤立ハッシュタグを削除（commit 前に呼ぶことでトランザクションをまとめる）
+    # 孤立ハッシュタグを削除
     delete_orphaned_hashtags()
 
     # -------------------------------------------------------------------
     # --- 画像の更新 ---
     #
-    # 【バグ修正①】新規画像のキャプションは new_img_caption_N から取得
-    # update.html では既存画像のキャプション欄（img_caption_N）と
-    # 新規画像のキャプション欄が同名で衝突していたため、フィールド名を
-    # 分離した（テンプレート側の JS も new_img_caption_N を生成するよう修正済み）。
+    # 3 つのパターンを扱う:
+    #   A) 新しい画像が選択された        → 全画像を新画像で差し替え
+    #   B) 新画像なし + 個別削除フラグあり → 指定された既存画像だけを削除
+    #   C) 新画像なし + 削除フラグなし     → キャプションのみ更新（従来どおり）
     #
-    # 【バグ修正②】旧画像の物理削除を commit 成功後に移動
-    # 従来は commit 前に旧画像を削除していたため、commit 失敗時に
-    # 「DB には旧画像名が残っているのに実ファイルは消えている」状態になった。
-    # 旧画像名を退避しておき、commit 成功後に削除する。
-    # 逆に commit が失敗した場合は、今回新規保存したファイルを掃除する。
+    # 【機能追加】パターン B: 既存画像の個別削除
+    # update.html の各既存画像カードに hidden フィールド
+    # keep_img_N（'1'=残す / '0'=削除予定）を持たせ、
+    # ここで '0' の画像を除外して img_name / img_captions を再構築する。
+    # 削除対象の実ファイルは old_img_name に積んでおき、
+    # 差し替え時（パターン A）と同じ「commit 成功後に物理削除」の
+    # 経路で処理する（DB とファイルの整合性ルールを一本化するため）。
+    #
+    # ※ パターン A（差し替え）が選ばれた場合、旧画像はどのみち
+    #    全削除されるため、個別削除フラグは無視される（差し替えが優先）。
     # -------------------------------------------------------------------
     files = request.files.getlist('img[]')
-    old_img_name  = None   # commit 成功後に物理削除する旧画像（差し替え時のみセット）
+    old_img_name  = None   # commit 成功後に物理削除する画像（差し替え時: 旧全画像 / 個別削除時: 削除対象のみ）
     new_filenames = []     # commit 失敗時に掃除する新規保存ファイル
 
     if files and files[0].filename != '':
-        # 新しい画像が選択された場合 → 新画像を保存し、DB 上の参照を差し替える
-        # （旧画像ファイルの物理削除はまだ行わない）
+        # --- パターン A: 画像の全差し替え ---
         try:
             new_filenames = _save_images(files)
         except ValueError as e:
@@ -8165,15 +8252,34 @@ def update(id):
         captions = parse_img_captions(len(new_filenames), prefix='new_img_caption_')
         post.img_captions = '\t'.join(captions) if captions else None
 
-    else:
-        # 画像変更なし → キャプションのみ更新する
-        # 既存画像の枚数分だけフォームを読んでキャプションを更新
-        if post.img_name:
-            existing_imgs = post.img_name.split(',')
-            captions = []
-            for i in range(1, len(existing_imgs) + 1):
-                captions.append(request.form.get(f'img_caption_{i}', '').strip())
-            post.img_captions = '\t'.join(captions)
+    elif post.img_name:
+        # --- パターン B / C: 既存画像の個別削除 + キャプション更新 ---
+        existing_imgs = post.img_name.split(',')
+        kept_imgs     = []   # 残す画像ファイル名
+        kept_captions = []   # 残す画像のキャプション（順番を kept_imgs と対応させる）
+        removed_imgs  = []   # 削除予定の画像ファイル名
+
+        for i, img in enumerate(existing_imgs, start=1):
+            caption = request.form.get(f'img_caption_{i}', '').strip()
+
+            # keep_img_N が '0' なら削除予定。
+            # フィールド自体が送られてこない場合（JS 無効・旧テンプレート）は
+            # デフォルト '1' として「残す」扱いにする（安全側・後方互換）。
+            if request.form.get(f'keep_img_{i}', '1') == '0':
+                removed_imgs.append(img)
+            else:
+                kept_imgs.append(img)
+                kept_captions.append(caption)
+
+        if removed_imgs:
+            # 削除対象を commit 成功後の物理削除キューに積む
+            old_img_name = ','.join(removed_imgs)
+
+        # 残った画像だけで DB 上の参照を再構築する。
+        # 全画像を削除した場合は None にして「画像なし記事」に戻す
+        # （一覧・詳細ではデフォルトサムネイル表示に自然にフォールバックする）。
+        post.img_name     = ','.join(kept_imgs) if kept_imgs else None
+        post.img_captions = '\t'.join(kept_captions) if kept_imgs else None
 
     # 更新日時を現在時刻（日本時間）に更新
     post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
@@ -8183,12 +8289,15 @@ def update(id):
     except Exception:
         db.session.rollback()
         # commit 失敗 → 今回新規保存したファイルを掃除（DB は旧状態のまま無傷）
+        # 個別削除（パターン B）の場合、物理削除はまだ行っていないため
+        # rollback だけで完全に元の状態に戻る（掃除対象なし）。
         if new_filenames:
             _delete_images(','.join(new_filenames))
         flash('更新の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
         return redirect(f'/{id}/update')
 
-    # commit 成功 → ここで初めて旧画像ファイルを物理削除する
+    # commit 成功 → ここで初めて削除対象のファイルを物理削除する
+    # （差し替え時は旧全画像、個別削除時は削除予定の画像のみ）
     if old_img_name:
         _delete_images(old_img_name)
 
