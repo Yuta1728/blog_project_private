@@ -510,11 +510,17 @@
     color: #7ab8d8;
 }
 
-/* 入力内容をクリアする「✕」ボタン（JSで表示切替） */
+/* 入力内容をクリアする「✕」ボタン
+   ------------------------------------------------------------
+   ※ 従来 search_area.html の <button> にインラインで指定していた
+      display:none; をこのルールへ移設した。
+      初期状態は非表示。入力値の有無に応じて JS（updateClear）が
+      インラインで flex / none を切り替える。ページロード時にも
+      updateClear() が走るため、値がある場合は正しく表示される。 */
 .index-search-clear {
     position: absolute;
     right: 8px;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     width: 22px;

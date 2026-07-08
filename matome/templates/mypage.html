@@ -42,7 +42,7 @@
                 {% endfor %}
             </ul>
         {% else %}
-            <p style="color: #aaa; font-size: 14px;">登録されたジャンルはありません。</p>
+            <p class="genre-empty-note">登録されたジャンルはありません。</p>
         {% endif %}
     </div>
 
@@ -94,7 +94,7 @@
 
                 <div class="post-actions">
                     <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                    <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                    <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn-delete">削除</button>
                     </form>

@@ -236,6 +236,15 @@ a[role="button"]:hover {
     margin-top: 8px;
 }
 
+/* 【index.html / mypage.html 共通】編集・削除ボタンを横並びにするため
+   削除フォームをインライン表示にする（.post-actions 内のフォーム）
+   ※ 従来 index.html / mypage.html の <form> にインラインで
+      指定していた display:inline; をこのルールへ移設した。
+      mypage も index.css を読み込むため、この1ルールで両ページをカバーできる。 */
+.post-actions form {
+    display: inline;
+}
+
 .btn-delete {
     background: transparent;
     border: 1.2px solid #f5b7b1;
@@ -267,6 +276,19 @@ a[role="button"]:hover {
 
 .post-card:hover .post-date {
     color: #b45309;
+}
+
+
+/* ------------------------------------------------------------
+   【index.html】検索・絞り込みで該当記事がないときの空メッセージ
+   ------------------------------------------------------------
+   ※ 従来 index.html の <p> にインラインで指定していた
+      text-align / color / margin-top をこのルールへ移設した。
+   ------------------------------------------------------------ */
+.index-empty-message {
+    text-align: center;
+    color: #aaa;
+    margin-top: 60px;
 }
 
 

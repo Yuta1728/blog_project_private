@@ -105,7 +105,7 @@
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
                     <div class="post-actions">
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-delete">削除</button>
                         </form>
@@ -114,7 +114,7 @@
             </div>
         </article>
     {% else %}
-        <p style="text-align:center; color:#aaa; margin-top:60px;">
+        <p class="index-empty-message">
             該当する記事が見つかりませんでした。
         </p>
     {% endfor %}

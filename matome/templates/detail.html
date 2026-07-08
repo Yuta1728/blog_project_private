@@ -10,7 +10,7 @@
 
         {% set genre_display = post.genre if post.genre else '未分類' %}
 
-        <div class="post-meta" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+        <div class="post-meta">
             <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
                 📂 {{ genre_display }}
             </a>
