@@ -22,7 +22,8 @@
             </select>
         </p>
 
-        <p id="new_genre_wrapper" style="display: none;">
+        {# 初期非表示（create_update.css の #new_genre_wrapper）。JSが表示を切り替える #}
+        <p id="new_genre_wrapper">
             <label for="genre_new">新しいジャンル名</label>
             <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
         </p>
@@ -125,7 +126,7 @@
                        placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                        autocomplete="off"
                        oninput="updateYoutubePreview(this.value)">
-                <div class="map-preview-area" id="youtube-preview-area" style="background:#111;">
+                <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
                     <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
                 </div>
             </div>
@@ -165,16 +166,16 @@
             ※「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
         </p>
 
-        <!-- 既存：複数一括選択 input（hidden にして JS から参照） -->
+        <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
         <input type="file" name="img[]" id="imgUpload" multiple accept="image/*"
-               onchange="onBulkSelect(this)" style="display:none;">
+               onchange="onBulkSelect(this)" class="img-input-hidden">
 
-        <!-- 追加：1枚ずつ選択用 input（hidden） -->
+        <!-- 追加：1枚ずつ選択用 input（img-input-hidden で非表示） -->
         <input type="file" name="" id="imgUploadOne" accept="image/*"
-               onchange="onOneSelect(this)" style="display:none;">
+               onchange="onOneSelect(this)" class="img-input-hidden">
 
         <!-- ボタン群 -->
-        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <div class="img-upload-btn-row">
             <button type="button" class="img-upload-btn img-upload-btn--bulk"
                     onclick="document.getElementById('imgUpload').click()">
                 📂 複数まとめて選択
@@ -185,12 +186,13 @@
             </button>
         </div>
 
-        <!-- ===== 画像プレビュー＆キャプション入力エリア ===== -->
-        <div id="preview-area" style="display: none;">
-            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+        <!-- ===== 画像プレビュー＆キャプション入力エリア =====
+             初期非表示（create_update.css の #preview-area）。JSが表示を切り替える -->
+        <div id="preview-area">
+            <p class="preview-area-title">
                 📸 アップロード画像プレビュー
             </p>
-            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+            <div id="preview-list"></div>
         </div>
 
         <p>
@@ -211,9 +213,10 @@
             </select>
         </p>
 
-        <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
-            <div class="preview-item" style="max-width: 200px;">
-                <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+        {# 初期非表示（create_update.css の #default-thumb-preview-area）。JSが表示を切り替える #}
+        <div id="default-thumb-preview-area">
+            <div class="preview-item preview-item--thumb">
+                <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー">
                 <div class="preview-label">選択中のサムネイル</div>
             </div>
         </div>
@@ -221,64 +224,6 @@
         <input type="submit" value="投稿する">
     </form>
 </div>
-
-
-<style>
-/* ===== 画像アップロードボタン追加スタイル ===== */
-.img-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.18s;
-    font-family: inherit;
-    line-height: 1;
-    min-height: 38px;
-}
-.img-upload-btn--bulk {
-    background: #f5f9fd;
-    color: #1a5f85;
-    border-color: #c5dff0;
-}
-.img-upload-btn--bulk:hover {
-    background: #dff0fb;
-    border-color: #5aaedc;
-}
-.img-upload-btn--one {
-    background: #e7f7ff;
-    color: #1a5f85;
-    border-color: #8cc8e8;
-}
-.img-upload-btn--one:hover {
-    background: #c5dff0;
-    border-color: #1a7aad;
-}
-
-/* ===== 削除ボタン ===== */
-.preview-delete-btn {
-    display: block;
-    width: 100%;
-    padding: 5px 0;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: center;
-    background: #fff0ee;
-    color: #c0392b;
-    border: none;
-    border-top: 1px solid #f5b7b1;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-}
-.preview-delete-btn:hover {
-    background: #fddcda;
-}
-</style>
 
 
 <script>

@@ -23,7 +23,8 @@
             </select>
         </p>
 
-        <p id="new_genre_wrapper" style="display: none;">
+        {# 初期非表示（create_update.css の #new_genre_wrapper）。JSが表示を切り替える #}
+        <p id="new_genre_wrapper">
             <label for="genre_new">新しいジャンル名</label>
             <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
         </p>
@@ -133,7 +134,7 @@
                        placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                        autocomplete="off"
                        oninput="updateYoutubePreview(this.value)">
-                <div class="map-preview-area" id="youtube-preview-area" style="background:#111;">
+                <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
                     <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
                 </div>
             </div>
@@ -175,15 +176,15 @@
         <!-- ===== 現在の画像（既存）キャプション編集・削除エリア ===== -->
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
-            <p style="font-size:13px; color:#555; margin: -8px 0 12px;">
+            <p class="img-edit-note">
                 ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
                 ※「✕ この画像を削除」で個別に削除できます（<strong>「更新」ボタンを押すまで確定しません</strong>）。<br>
                 ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
                 　本文中で [imgN] タグを使っている場合は、必要に応じて本文側も修正してください。
             </p>
-            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;" id="existing-img-list">
+            <div id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
-                    <div class="preview-item existing-img-item" style="width: 200px;">
+                    <div class="preview-item existing-img-item">
                         {# 削除フラグ: '1'=残す（デフォルト） / '0'=削除予定。
                         サーバー側（update() のパターンB）はこの値で残す画像を判定する #}
                         <input type="hidden" name="keep_img_{{ loop.index }}" value="1" class="keep-img-flag">
@@ -211,21 +212,21 @@
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
             <label>画像を変更する</label>
-            <p style="font-size:13px; color:#555; margin: 4px 0 10px;">
+            <p class="img-change-note">
                 ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。<br>
                 　「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
             </p>
 
-            <!-- 既存：複数一括選択 input（hidden にして JS から参照） -->
+            <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*"
-                   onchange="onBulkSelect(this)" style="display:none;">
+                   onchange="onBulkSelect(this)" class="img-input-hidden">
 
-            <!-- 追加：1枚ずつ選択用 input（hidden） -->
+            <!-- 追加：1枚ずつ選択用 input（img-input-hidden で非表示） -->
             <input type="file" name="" id="imgUploadOne" accept="image/*"
-                   onchange="onOneSelect(this)" style="display:none;">
+                   onchange="onOneSelect(this)" class="img-input-hidden">
 
             <!-- ボタン群 -->
-            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+            <div class="img-upload-btn-row">
                 <button type="button" class="img-upload-btn img-upload-btn--bulk"
                         onclick="document.getElementById('imgUpload').click()">
                     📂 複数まとめて選択
@@ -236,12 +237,13 @@
                 </button>
             </div>
 
-            <!-- 新規選択画像プレビュー -->
-            <div id="preview-area" style="display: none; margin-top: 14px;">
-                <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+            <!-- 新規選択画像プレビュー
+                 初期非表示（create_update.css の #preview-area）。JSが表示を切り替える -->
+            <div id="preview-area" class="preview-area--spaced">
+                <p class="preview-area-title">
                     📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
                 </p>
-                <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+                <div id="preview-list"></div>
             </div>
 
             <p>
@@ -262,15 +264,15 @@
                 </select>
             </p>
 
-            {% if post.default_thumb %}
-                <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
-            {% else %}
-                <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
-            {% endif %}
-                <div class="preview-item" style="max-width: 200px;">
+            {# 保存済みのデフォルトサムネイルがある場合のみ .is-visible を付与して初期表示。
+               未設定時は create_update.css の #default-thumb-preview-area により初期非表示
+               （旧: Jinja 分岐で style="display: block/none" を出し分けていた箇所）。
+               表示切替は JS（previewDefaultThumb）が行う #}
+            <div id="default-thumb-preview-area" {% if post.default_thumb %}class="is-visible"{% endif %}>
+                <div class="preview-item preview-item--thumb">
                     <img id="default-thumb-preview-img"
                          src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) if post.default_thumb else '' }}"
-                         alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                         alt="デフォルトサムネイルプレビュー">
                     <div class="preview-label">選択中のサムネイル</div>
                 </div>
             </div>
@@ -280,64 +282,6 @@
 
     </form>
 </div>
-
-
-<style>
-/* ===== 画像アップロードボタン追加スタイル ===== */
-.img-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.18s;
-    font-family: inherit;
-    line-height: 1;
-    min-height: 38px;
-}
-.img-upload-btn--bulk {
-    background: #f5f9fd;
-    color: #1a5f85;
-    border-color: #c5dff0;
-}
-.img-upload-btn--bulk:hover {
-    background: #dff0fb;
-    border-color: #5aaedc;
-}
-.img-upload-btn--one {
-    background: #e7f7ff;
-    color: #1a5f85;
-    border-color: #8cc8e8;
-}
-.img-upload-btn--one:hover {
-    background: #c5dff0;
-    border-color: #1a7aad;
-}
-
-/* ===== 削除ボタン ===== */
-.preview-delete-btn {
-    display: block;
-    width: 100%;
-    padding: 5px 0;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: center;
-    background: #fff0ee;
-    color: #c0392b;
-    border: none;
-    border-top: 1px solid #f5b7b1;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-}
-.preview-delete-btn:hover {
-    background: #fddcda;
-}
-</style>
 
 
 <script>
