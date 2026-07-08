@@ -1510,6 +1510,10 @@ input[type="password"]:focus {
    （ページ背景・ヘッダー・スマホ用ドロワーメニュー・フラッシュメッセージ）
    のスタイルをまとめている。機能・パーツ単位で見出しコメントを付け、
    どのUI要素のデザインかが一目でわかるように整理している。
+
+   ※ ヘッダーのキーワード検索ボックスは廃止済み。
+      キーワード検索は index ページの検索エリア
+      （search_area.html / top_sections.css）に一本化した。
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -1677,7 +1681,9 @@ a:hover {
                 visibility 0s linear 0.2s;
 }
 
-/* ヘッダー内側のレイアウト（ロゴ／検索／ナビを横並びに配置） */
+/* ヘッダー内側のレイアウト（ロゴ／ナビを横並びに配置）
+   検索ボックス廃止後は、justify-content: space-between により
+   ロゴが左端・ナビ（スマホではハンバーガー）が右端に配置される。 */
 .header-container {
     display: flex;
     align-items: center;
@@ -1703,7 +1709,7 @@ a:hover {
 .header-logo a {
     color: #0c1f35 !important;
     text-decoration: none !important;
-    font-size: 32px;
+    font-size: 35px;
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1;
@@ -1713,86 +1719,6 @@ a:hover {
 .header-logo a:hover {
     color: #0369a1 !important;
     text-decoration: none !important;
-}
-
-/* ------------------------------------------------------------
-   【共通ヘッダー】キーワード検索フォーム（ヘッダー上部の検索バー）
-   ------------------------------------------------------------
-   検索バーは白背景に、セルリアン系のボーダーで統一感を出す。
-   プレースホルダーは #7ab8d8 で薄すぎず、邪魔にならないトーンに。
-   ------------------------------------------------------------ */
-.header-search-box {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    padding: 0 20px;
-}
-
-.header-search-box form {
-    display: flex;
-    align-items: center;
-    background-color: #dbeafe;
-    border-radius: 20px;
-    padding: 5px 14px;
-    border: 1px solid #38bdf8;
-    transition: all 0.3s ease;
-    width: 100%;
-    max-width: 350px;
-}
-
-.header-search-box form:focus-within {
-    background-color: #ffffff;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-}
-
-.header-search-box input[type="text"] {
-    border: none;
-    background: transparent;
-    outline: none;
-    padding: 5px 4px;
-    font-size: 14px;
-    color: #0c1f35;
-    width: 100%;
-    font-family: inherit;
-}
-
-.header-search-box input[type="text"]::placeholder {
-    color: #5a8ba8;
-}
-
-/* 検索実行ボタン（虫眼鏡アイコン） */
-.search-submit-btn {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: #0ea5e9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px;
-    border-radius: 50%;
-    transition: color 0.2s, background-color 0.2s;
-}
-
-.search-submit-btn:hover {
-    color: #0369a1;
-    background-color: #e0f2fe;
-}
-
-/* 検索解除ボタン（✕）※検索中・絞り込み中のみ表示 */
-.search-clear-btn {
-    color: #c12c1c;
-    text-decoration: none;
-    margin-left: 8px;
-    font-size: 14px;
-    font-weight: bold;
-    transition: color 0.15s;
-}
-
-.search-clear-btn:hover {
-    color: #c63022;
-    text-decoration: none;
 }
 
 /* ------------------------------------------------------------
@@ -2030,7 +1956,7 @@ a:hover {
     }
 
     .header-logo a {
-        font-size: 24px;
+        font-size: 26px;
     }
 
     .header-nav {
@@ -2053,45 +1979,6 @@ a:hover {
         font-size: 20px;
         margin: 16px 0;
     }
-
-    .header-search-box {
-        padding: 0 5px;
-        flex: 1;
-        display: flex;
-        justify-content: center;
-    }
-
-    .header-search-box form {
-        width: 100%;
-        max-width: 160px;
-        padding: 2px 8px;
-        border-radius: 15px;
-    }
-
-    .header-search-box input[type="text"] {
-        font-size: 12px;
-        padding: 3px 2px;
-    }
-
-    .search-submit-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    .search-clear-btn {
-        margin-left: 4px;
-        font-size: 11px;
-    }
-}
-
-@media (max-width: 480px) {
-    .header-search-box form {
-        max-width: 145px;
-    }
-
-    .header-search-box input[type="text"]::placeholder {
-        font-size: 12px;
-    }
 }
 </file>
 
@@ -2103,6 +1990,11 @@ a:hover {
    このファイルは投稿作成・編集フォーム専用のスタイルをまとめている。
    機能・パーツ単位で見出しコメントを付け、どのUI要素の
    デザインかが一目でわかるように整理している。
+
+   ※ リファクタリングにより、従来 HTML 側の <style> ブロック・
+      style 属性に書かれていたスタイルをこのファイルへ移設した。
+      （JS が style.display 等を直接書き換える要素は、
+        ここでは「初期状態」のみを定義している）
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -2168,6 +2060,17 @@ h1 {
 }
 
 /* ------------------------------------------------------------
+   【create.html / update.html】「+ 新しいジャンルを作成する」入力欄
+   ------------------------------------------------------------
+   初期状態は非表示。セレクトで「__NEW__」が選ばれたときに
+   JS（toggleNewGenreInput）が style.display を書き換えて表示する。
+   （旧: HTML の style="display: none;" から移設）
+   ------------------------------------------------------------ */
+#new_genre_wrapper {
+    display: none;
+}
+
+/* ------------------------------------------------------------
    【create.html / update.html】本文（Markdown）入力用テキストエリア
    ------------------------------------------------------------ */
 .post-form textarea {
@@ -2198,29 +2101,111 @@ h1 {
 /* フォーム内の補足説明テキスト（各項目のヘルプ文） */
 .post-form p { font-size: 15px; color: #2a4a5e; margin: 0 0 8px; line-height: 1.5; font-weight: 500; }
 
-/* 画像アップロード用のネイティブ input[type=file]（JS制御で非表示にする場合あり） */
+/* 画像アップロード用のネイティブ input[type=file] */
 .post-form input[type="file"] { display: block; margin-bottom: 24px; font-size: 13px; color: #0c1f35; width: 100%; }
 
 /* ------------------------------------------------------------
-   【create.html / update.html】「投稿する」「更新」送信ボタン
+   【create.html / update.html】画像選択用の隠し input[type=file]
+   ------------------------------------------------------------
+   「📂 複数まとめて選択」「＋ 1枚追加」ボタンから JS の .click() で
+   間接的に起動するため、input 自体は常に非表示にする。
+   （旧: style="display:none;" から移設。上の
+     .post-form input[type="file"] { display: block } を上書きできるよう、
+     同等以上の詳細度のセレクタにしている）
    ------------------------------------------------------------ */
-.post-form input[type="submit"] {
-    display: block;
-    width: 100%;
-    padding: 14px;
-    background-color: #0ea5e9;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.18s;
-    font-family: inherit;
-    letter-spacing: 0.02em;
+.post-form input[type="file"].img-input-hidden {
+    display: none;
 }
 
-.post-form input[type="submit"]:hover { background-color: #0369a1; }
+/* ------------------------------------------------------------
+   【create.html / update.html】「複数まとめて選択」「＋1枚追加」ボタンの行
+   （旧: div の style 属性から移設）
+   ------------------------------------------------------------ */
+.img-upload-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+/* ------------------------------------------------------------
+   【create.html / update.html】画像アップロードボタン
+   （旧: 各テンプレートの <style> ブロックから移設）
+   ------------------------------------------------------------ */
+.img-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.18s;
+    font-family: inherit;
+    line-height: 1;
+    min-height: 38px;
+}
+
+/* 「📂 複数まとめて選択」ボタン */
+.img-upload-btn--bulk {
+    background: #f5f9fd;
+    color: #1a5f85;
+    border-color: #c5dff0;
+}
+
+.img-upload-btn--bulk:hover {
+    background: #dff0fb;
+    border-color: #5aaedc;
+}
+
+/* 「＋ 1枚追加」ボタン */
+.img-upload-btn--one {
+    background: #e7f7ff;
+    color: #1a5f85;
+    border-color: #8cc8e8;
+}
+
+.img-upload-btn--one:hover {
+    background: #c5dff0;
+    border-color: #1a7aad;
+}
+
+/* ------------------------------------------------------------
+   【create.html / update.html】画像プレビューエリア
+   ------------------------------------------------------------
+   #preview-area は初期非表示。画像が選択されたときに
+   JS（renderPreviews）が style.display を書き換えて表示する。
+   （旧: style="display: none;" から移設）
+   ------------------------------------------------------------ */
+#preview-area {
+    display: none;
+}
+
+/* 【update.html】既存画像エリアとの間隔調整用モディファイア
+   （旧: style="margin-top: 14px;" から移設） */
+.preview-area--spaced {
+    margin-top: 14px;
+}
+
+/* プレビューエリアの見出し（「📸 アップロード画像プレビュー」等） */
+.preview-area-title {
+    font-weight: bold;
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 10px;
+}
+
+/* プレビューカードを並べるリスト
+   （#preview-list: 新規画像 / #existing-img-list: 【update.html】既存画像） */
+#preview-list,
+#existing-img-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
 
 /* ------------------------------------------------------------
    【create.html / update.html】画像アップロードのプレビューカード
@@ -2237,6 +2222,20 @@ h1 {
 }
 
 .preview-item img { width: 150px; height: 112px; object-fit: cover; display: block; }
+
+/* 【update.html】既存画像カード（新規プレビューよりひと回り大きい 200px 幅）
+   ※ .preview-item との複合セレクタにしているのは、スマホ用の
+      .preview-item { width: calc(50% - 6px) } に上書きされないようにするため
+      （旧インライン style="width: 200px;" と同じ優先度関係を維持） */
+.preview-item.existing-img-item {
+    width: 200px;
+}
+
+/* デフォルトサムネイルのプレビューカード（幅の上限のみ設定）
+   （旧: style="max-width: 200px;" から移設） */
+.preview-item--thumb {
+    max-width: 200px;
+}
 
 .preview-label {
     text-align: center;
@@ -2257,6 +2256,72 @@ h1 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------
+   【create.html / update.html】プレビューカード内の削除ボタン
+   （「✕ この画像を削除」。旧: <style> ブロックから移設）
+   ------------------------------------------------------------ */
+.preview-delete-btn {
+    display: block;
+    width: 100%;
+    padding: 5px 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    background: #fff0ee;
+    color: #c0392b;
+    border: none;
+    border-top: 1px solid #f5b7b1;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+.preview-delete-btn:hover {
+    background: #fddcda;
+}
+
+/* ------------------------------------------------------------
+   【update.html】既存画像・画像変更エリアの注意書きテキスト
+   （旧: p の style 属性から移設）
+   ------------------------------------------------------------ */
+/* 「現在の画像・キャプション」直下の注意書き */
+.img-edit-note {
+    font-size: 13px;
+    color: #555;
+    margin: -8px 0 12px;
+}
+
+/* 「画像を変更する」直下の注意書き */
+.img-change-note {
+    font-size: 13px;
+    color: #555;
+    margin: 4px 0 10px;
+}
+
+/* ------------------------------------------------------------
+   【create.html / update.html】デフォルトサムネイルのプレビュー枠
+   ------------------------------------------------------------
+   初期非表示。セレクトで画像が選ばれたときに
+   JS（previewDefaultThumb）が style.display を書き換えて表示する。
+   【update.html】保存済みのサムネイルがある場合は
+   Jinja 側で .is-visible を付与して初期表示にする。
+   （旧: style="display: none/block; margin-bottom: 20px;" から移設）
+   ------------------------------------------------------------ */
+#default-thumb-preview-area {
+    display: none;
+    margin-bottom: 20px;
+}
+
+#default-thumb-preview-area.is-visible {
+    display: block;
+}
+
+/* プレビュー画像本体（旧: style="width:100%; border-radius:6px;" から移設） */
+#default-thumb-preview-img {
+    width: 100%;
+    border-radius: 6px;
 }
 
 /* ------------------------------------------------------------
@@ -2294,6 +2359,27 @@ h1 {
 }
 
 .toggle-status-btn.published:hover { background-color: #bae6fd; border-color: #0ea5e9; }
+
+/* ------------------------------------------------------------
+   【create.html / update.html】「投稿する」「更新」送信ボタン
+   ------------------------------------------------------------ */
+.post-form input[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background-color: #0ea5e9;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.18s;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+}
+
+.post-form input[type="submit"]:hover { background-color: #0369a1; }
 
 /* ============================================================
    【create.html / update.html】Markdown編集ツールバー
@@ -2464,6 +2550,12 @@ h1 {
     justify-content: center;
 }
 
+/* YouTube挿入モーダルのプレビュー枠（サムネイル映えする黒背景）
+   （旧: style="background:#111;" から移設） */
+.map-preview-area--dark {
+    background: #111;
+}
+
 .map-preview-placeholder { color: #4a7a96; font-size: 14px; text-align: center; margin: 0; padding: 0 20px; }
 .map-preview-iframe { width: 100%; height: 100%; border: none; display: block; }
 
@@ -2540,7 +2632,11 @@ h1 {
     .post-form input[type="text"], .post-form select { font-size: 16px !important; padding: 12px !important; border-radius: 6px; margin-bottom: 16px; }
     .post-form textarea { font-size: 16px !important; line-height: 1.75 !important; padding: 14px !important; min-height: 320px !important; border-radius: 6px !important; margin-bottom: 16px !important; }
     .post-form input[type="submit"] { padding: 14px; font-size: 15px; border-radius: 8px; min-height: 48px; }
-    #preview-list, .post-form div[style*="display: flex"] { gap: 12px !important; justify-content: flex-start; }
+    /* プレビューリスト・アップロードボタン行の間隔調整
+       （旧: .post-form div[style*="display: flex"] で「style 属性を持つ div」を
+         対象にしていたが、インラインスタイル廃止に伴い
+         移設後のID・クラスを直接指定する形に変更） */
+    #preview-list, #existing-img-list, .img-upload-btn-row { gap: 12px !important; justify-content: flex-start; }
     .preview-item { width: calc(50% - 6px); box-sizing: border-box; margin-bottom: 12px; }
     .preview-item img { width: 100%; height: 110px; }
     .toggle-status-btn { padding: 12px 20px; font-size: 14px; margin-bottom: 16px; width: 100%; box-sizing: border-box; }
@@ -5097,27 +5193,8 @@ a[role="button"]:hover {
                 <a href="{{ url_for('blog.index') }}">MIT Blog</a>
             </div>
 
-            <div class="header-search-box">
-                <form action="{{ url_for('blog.index') }}" method="GET" class="search-form">
-                    {% if selected_genre %}
-                        <input type="hidden" name="genre" value="{{ selected_genre }}">
-                    {% endif %}
-                    
-                    <input type="text" name="search" value="{{ search_word if search_word else '' }}" placeholder="キーワードで検索...">
-                    
-                    <button type="submit" class="search-submit-btn" aria-label="検索">
-                        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
-                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    
-                    {% if search_word or selected_genre %}
-                        <a href="{{ url_for('blog.index') }}" class="search-clear-btn" aria-label="検索を解除してトップへ戻る">
-                            ✕
-                        </a>
-                    {% endif %}
-                </form>
-            </div>
+            {# ヘッダーのキーワード検索ボックスは廃止した。
+               キーワード検索は index ページの検索エリア（search_area.html）に一本化。 #}
 
             <nav class="header-nav">
                 <ul>
@@ -5292,7 +5369,8 @@ a[role="button"]:hover {
             </select>
         </p>
 
-        <p id="new_genre_wrapper" style="display: none;">
+        {# 初期非表示（create_update.css の #new_genre_wrapper）。JSが表示を切り替える #}
+        <p id="new_genre_wrapper">
             <label for="genre_new">新しいジャンル名</label>
             <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
         </p>
@@ -5395,7 +5473,7 @@ a[role="button"]:hover {
                        placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                        autocomplete="off"
                        oninput="updateYoutubePreview(this.value)">
-                <div class="map-preview-area" id="youtube-preview-area" style="background:#111;">
+                <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
                     <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
                 </div>
             </div>
@@ -5435,16 +5513,16 @@ a[role="button"]:hover {
             ※「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
         </p>
 
-        <!-- 既存：複数一括選択 input（hidden にして JS から参照） -->
+        <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
         <input type="file" name="img[]" id="imgUpload" multiple accept="image/*"
-               onchange="onBulkSelect(this)" style="display:none;">
+               onchange="onBulkSelect(this)" class="img-input-hidden">
 
-        <!-- 追加：1枚ずつ選択用 input（hidden） -->
+        <!-- 追加：1枚ずつ選択用 input（img-input-hidden で非表示） -->
         <input type="file" name="" id="imgUploadOne" accept="image/*"
-               onchange="onOneSelect(this)" style="display:none;">
+               onchange="onOneSelect(this)" class="img-input-hidden">
 
         <!-- ボタン群 -->
-        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <div class="img-upload-btn-row">
             <button type="button" class="img-upload-btn img-upload-btn--bulk"
                     onclick="document.getElementById('imgUpload').click()">
                 📂 複数まとめて選択
@@ -5455,12 +5533,13 @@ a[role="button"]:hover {
             </button>
         </div>
 
-        <!-- ===== 画像プレビュー＆キャプション入力エリア ===== -->
-        <div id="preview-area" style="display: none;">
-            <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+        <!-- ===== 画像プレビュー＆キャプション入力エリア =====
+             初期非表示（create_update.css の #preview-area）。JSが表示を切り替える -->
+        <div id="preview-area">
+            <p class="preview-area-title">
                 📸 アップロード画像プレビュー
             </p>
-            <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+            <div id="preview-list"></div>
         </div>
 
         <p>
@@ -5481,9 +5560,10 @@ a[role="button"]:hover {
             </select>
         </p>
 
-        <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
-            <div class="preview-item" style="max-width: 200px;">
-                <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+        {# 初期非表示（create_update.css の #default-thumb-preview-area）。JSが表示を切り替える #}
+        <div id="default-thumb-preview-area">
+            <div class="preview-item preview-item--thumb">
+                <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー">
                 <div class="preview-label">選択中のサムネイル</div>
             </div>
         </div>
@@ -5491,64 +5571,6 @@ a[role="button"]:hover {
         <input type="submit" value="投稿する">
     </form>
 </div>
-
-
-<style>
-/* ===== 画像アップロードボタン追加スタイル ===== */
-.img-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.18s;
-    font-family: inherit;
-    line-height: 1;
-    min-height: 38px;
-}
-.img-upload-btn--bulk {
-    background: #f5f9fd;
-    color: #1a5f85;
-    border-color: #c5dff0;
-}
-.img-upload-btn--bulk:hover {
-    background: #dff0fb;
-    border-color: #5aaedc;
-}
-.img-upload-btn--one {
-    background: #e7f7ff;
-    color: #1a5f85;
-    border-color: #8cc8e8;
-}
-.img-upload-btn--one:hover {
-    background: #c5dff0;
-    border-color: #1a7aad;
-}
-
-/* ===== 削除ボタン ===== */
-.preview-delete-btn {
-    display: block;
-    width: 100%;
-    padding: 5px 0;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: center;
-    background: #fff0ee;
-    color: #c0392b;
-    border: none;
-    border-top: 1px solid #f5b7b1;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-}
-.preview-delete-btn:hover {
-    background: #fddcda;
-}
-</style>
 
 
 <script>
@@ -7032,7 +7054,8 @@ function ytPlay(facadeEl) {
             </select>
         </p>
 
-        <p id="new_genre_wrapper" style="display: none;">
+        {# 初期非表示（create_update.css の #new_genre_wrapper）。JSが表示を切り替える #}
+        <p id="new_genre_wrapper">
             <label for="genre_new">新しいジャンル名</label>
             <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
         </p>
@@ -7142,7 +7165,7 @@ function ytPlay(facadeEl) {
                        placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                        autocomplete="off"
                        oninput="updateYoutubePreview(this.value)">
-                <div class="map-preview-area" id="youtube-preview-area" style="background:#111;">
+                <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
                     <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
                 </div>
             </div>
@@ -7184,15 +7207,15 @@ function ytPlay(facadeEl) {
         <!-- ===== 現在の画像（既存）キャプション編集・削除エリア ===== -->
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
-            <p style="font-size:13px; color:#555; margin: -8px 0 12px;">
+            <p class="img-edit-note">
                 ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
                 ※「✕ この画像を削除」で個別に削除できます（<strong>「更新」ボタンを押すまで確定しません</strong>）。<br>
                 ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
                 　本文中で [imgN] タグを使っている場合は、必要に応じて本文側も修正してください。
             </p>
-            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;" id="existing-img-list">
+            <div id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
-                    <div class="preview-item existing-img-item" style="width: 200px;">
+                    <div class="preview-item existing-img-item">
                         {# 削除フラグ: '1'=残す（デフォルト） / '0'=削除予定。
                         サーバー側（update() のパターンB）はこの値で残す画像を判定する #}
                         <input type="hidden" name="keep_img_{{ loop.index }}" value="1" class="keep-img-flag">
@@ -7220,21 +7243,21 @@ function ytPlay(facadeEl) {
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
             <label>画像を変更する</label>
-            <p style="font-size:13px; color:#555; margin: 4px 0 10px;">
+            <p class="img-change-note">
                 ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。<br>
                 　「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
             </p>
 
-            <!-- 既存：複数一括選択 input（hidden にして JS から参照） -->
+            <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
             <input type="file" name="img[]" id="imgUpload" multiple accept="image/*"
-                   onchange="onBulkSelect(this)" style="display:none;">
+                   onchange="onBulkSelect(this)" class="img-input-hidden">
 
-            <!-- 追加：1枚ずつ選択用 input（hidden） -->
+            <!-- 追加：1枚ずつ選択用 input（img-input-hidden で非表示） -->
             <input type="file" name="" id="imgUploadOne" accept="image/*"
-                   onchange="onOneSelect(this)" style="display:none;">
+                   onchange="onOneSelect(this)" class="img-input-hidden">
 
             <!-- ボタン群 -->
-            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+            <div class="img-upload-btn-row">
                 <button type="button" class="img-upload-btn img-upload-btn--bulk"
                         onclick="document.getElementById('imgUpload').click()">
                     📂 複数まとめて選択
@@ -7245,12 +7268,13 @@ function ytPlay(facadeEl) {
                 </button>
             </div>
 
-            <!-- 新規選択画像プレビュー -->
-            <div id="preview-area" style="display: none; margin-top: 14px;">
-                <p style="font-weight: bold; font-size: 14px; color: #444; margin-bottom: 10px;">
+            <!-- 新規選択画像プレビュー
+                 初期非表示（create_update.css の #preview-area）。JSが表示を切り替える -->
+            <div id="preview-area" class="preview-area--spaced">
+                <p class="preview-area-title">
                     📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
                 </p>
-                <div id="preview-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;"></div>
+                <div id="preview-list"></div>
             </div>
 
             <p>
@@ -7271,15 +7295,15 @@ function ytPlay(facadeEl) {
                 </select>
             </p>
 
-            {% if post.default_thumb %}
-                <div id="default-thumb-preview-area" style="display: block; margin-bottom: 20px;">
-            {% else %}
-                <div id="default-thumb-preview-area" style="display: none; margin-bottom: 20px;">
-            {% endif %}
-                <div class="preview-item" style="max-width: 200px;">
+            {# 保存済みのデフォルトサムネイルがある場合のみ .is-visible を付与して初期表示。
+               未設定時は create_update.css の #default-thumb-preview-area により初期非表示
+               （旧: Jinja 分岐で style="display: block/none" を出し分けていた箇所）。
+               表示切替は JS（previewDefaultThumb）が行う #}
+            <div id="default-thumb-preview-area" {% if post.default_thumb %}class="is-visible"{% endif %}>
+                <div class="preview-item preview-item--thumb">
                     <img id="default-thumb-preview-img"
                          src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) if post.default_thumb else '' }}"
-                         alt="デフォルトサムネイルプレビュー" style="width:100%; border-radius:6px;">
+                         alt="デフォルトサムネイルプレビュー">
                     <div class="preview-label">選択中のサムネイル</div>
                 </div>
             </div>
@@ -7289,64 +7313,6 @@ function ytPlay(facadeEl) {
 
     </form>
 </div>
-
-
-<style>
-/* ===== 画像アップロードボタン追加スタイル ===== */
-.img-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.18s;
-    font-family: inherit;
-    line-height: 1;
-    min-height: 38px;
-}
-.img-upload-btn--bulk {
-    background: #f5f9fd;
-    color: #1a5f85;
-    border-color: #c5dff0;
-}
-.img-upload-btn--bulk:hover {
-    background: #dff0fb;
-    border-color: #5aaedc;
-}
-.img-upload-btn--one {
-    background: #e7f7ff;
-    color: #1a5f85;
-    border-color: #8cc8e8;
-}
-.img-upload-btn--one:hover {
-    background: #c5dff0;
-    border-color: #1a7aad;
-}
-
-/* ===== 削除ボタン ===== */
-.preview-delete-btn {
-    display: block;
-    width: 100%;
-    padding: 5px 0;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: center;
-    background: #fff0ee;
-    color: #c0392b;
-    border: none;
-    border-top: 1px solid #f5b7b1;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-}
-.preview-delete-btn:hover {
-    background: #fddcda;
-}
-</style>
 
 
 <script>

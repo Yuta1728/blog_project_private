@@ -1,43 +1,45 @@
-# MIT Blog — 個人用ブログアプリ
+# MIT Blog
 
-Flask + PostgreSQL で構築した、単一管理者運用の個人ブログアプリケーションです。
-Markdown ベースの記事執筆に加え、画像・Google マップ・YouTube の埋め込み、ジャンル×ハッシュタグによる絞り込み検索など、個人ブログに必要な機能を一通り備えています。
+Flask 製の個人ブログアプリケーションです。単一の管理者が記事を投稿・編集・管理し、一般の閲覧者が公開記事を読めるシンプルな構成になっています。Markdown での執筆、画像アップロード、ハッシュタグ・ジャンルによる分類、地図や YouTube 動画の埋め込みなどに対応しています。
 
-学習目的も兼ねているため、各ファイルには処理フロー図や設計意図を記したコメントを多く残しています。
+セキュリティ面では、秘密のログイン URL とゲートキー方式による多層防御、ブルートフォース対策、CSRF 保護、アップロードファイルの検証などを実装しています。
 
 ---
 
 ## 主な機能
 
-### 閲覧者向け（一般公開ページ）
-- **記事一覧（トップページ）** — 記事カード表示、ページ番号によるページ送り、サイト統計（総投稿数・タグ数・最終更新日）、自己紹介（hero）セクション
-- **検索・絞り込み** — キーワード検索（タイトル・ハッシュタグの部分一致）、ジャンル絞り込み、ジャンル×ハッシュタグの組み合わせ絞り込み
-- **記事詳細ページ** — Markdown 変換された本文、目次の自動生成（`[toc]`）、画像キャプション、Google マップ埋め込み、YouTube のファサード（クリック時ロード）埋め込み、関連記事の自動表示（最大4件）
-- **静的ページ** — 自己紹介（`/about`）、ブログの使い方（`/howto`）、ジャンル一覧（`/genre`）
-- **レスポンシブ対応** — スマホ用ドロワーメニュー、スクロール連動の固定ヘッダー
+### 閲覧者向け機能
+- **記事一覧・検索**：トップページでキーワード（タイトル・タグ）検索、ジャンル絞り込み、ハッシュタグ絞り込みができます。
+- **記事詳細**：Markdown で書かれた本文を HTML に変換して表示します。目次（`[toc]`）、画像＋キャプション、Google マップ、YouTube 動画（サムネイル→クリックで再生するファサード方式）の埋め込みに対応しています。
+- **関連記事**：記事詳細の末尾に、ジャンルやタグの近さをもとにした関連記事を最大 4 件表示します。
+- **ジャンル一覧**：アコーディオン形式でジャンルをカテゴリ別に閲覧できます。
+- **サイト統計**：トップページに総投稿数・ハッシュタグ数・最終更新日を表示します。
+- **レスポンシブ対応**：スマホではドロワーメニュー、スクロール連動ヘッダーなどのモバイル向け UI を備えています。
 
-### 管理者向け（ログイン必須）
-- **記事の投稿・編集・削除** — Markdown ツールバー（見出し／太字／リスト／目次／地図／YouTube／画像タグ挿入）付きエディタ
-- **画像アップロード** — 複数一括／1枚ずつ追加、プレビュー、キャプション入力、既存画像の個別削除、デフォルトサムネイル選択
-- **公開設定** — 記事ごとの公開／非公開トグル（非公開記事は本人のみ閲覧可）
-- **ハッシュタグ管理** — スペース・カンマ区切りの自由入力、リアルタイムプレビュー、孤立タグの自動削除
-- **マイページ** — 投稿一覧、使用ジャンル一覧、ニックネーム変更
+### 管理者向け機能
+- **記事の投稿・編集・削除**：Markdown ツールバー（見出し・太字・リスト・目次・地図・YouTube・画像挿入）付きのエディタで執筆できます。
+- **画像アップロード**：複数まとめて選択・1 枚ずつ追加・個別削除に対応。各画像にキャプションを付けられます。
+- **公開／非公開の切り替え**：記事ごとに全体公開・非公開を設定できます。非公開記事は管理者本人のみ閲覧可能です。
+- **ジャンル・ハッシュタグ管理**：プリセットジャンルからの選択、独自ジャンルの新規作成、ハッシュタグの自由入力ができます。
+- **マイページ**：自分の投稿一覧の確認、ニックネームの変更ができます。
 
 ---
 
 ## 技術スタック
 
-| 分類 | 使用技術 |
-|---|---|
+| 種別 | 使用技術 |
+| --- | --- |
 | 言語 | Python 3.10.11 |
-| フレームワーク | Flask 3.1 |
-| ORM / マイグレーション | Flask-SQLAlchemy (SQLAlchemy 2.0) / Flask-Migrate (Alembic) |
+| フレームワーク | Flask 3.1.3 |
+| ORM | SQLAlchemy 2.0 / Flask-SQLAlchemy 3.1 |
+| DB マイグレーション | Flask-Migrate（Alembic） |
 | 認証 | Flask-Login |
-| CSRF 保護 | Flask-WTF (CSRFProtect) |
-| DB | PostgreSQL 18（Docker Compose、ドライバは psycopg 3） |
-| Markdown 変換 | Python-Markdown（toc / nl2br 拡張） |
+| CSRF 対策 | Flask-WTF |
+| データベース | PostgreSQL 18 |
+| Markdown 変換 | Markdown（toc / nl2br 拡張） |
 | ファイル検証 | filetype（MIME タイプ判定） |
-| フロントエンド | Jinja2 テンプレート + 素の CSS / JavaScript（フレームワーク不使用） |
+
+設計上のポイントとして、**Application Factory パターン**を採用し、拡張機能インスタンスを `extensions.py` に分離することで循環インポートを回避しています。
 
 ---
 
@@ -45,181 +47,170 @@ Markdown ベースの記事執筆に加え、画像・Google マップ・YouTube
 
 ```
 .
-├── app.py                # エントリーポイント（Application Factory パターン）
-├── config.py             # .env の読み込み・環境変数の提供
-├── constants.py          # デフォルトジャンルなどの定数
-├── extensions.py         # db / login_manager / migrate インスタンスの置き場
-├── models.py             # ORM モデル（Post / Hashtag / User / 中間テーブル）
-├── docker-compose.yml    # ローカル開発用 PostgreSQL
-├── requirements.txt
+├── app.py                # アプリのエントリーポイント（create_app ファクトリ）
+├── config.py             # .env から環境変数を読み込む
+├── constants.py          # デフォルトジャンル一覧などの定数
+├── extensions.py         # db / login_manager / migrate インスタンス
+├── models.py             # ORM モデル（Post / Hashtag / User + 中間テーブル）
+├── requirements.txt      # 依存パッケージ
+├── docker-compose.yml    # ローカル開発用の PostgreSQL
 ├── migrations/           # Alembic マイグレーション
-├── views/
-│   ├── auth.py           # ログイン・ログアウト（秘密URL + ゲートキー方式）
-│   ├── blog.py           # 一般公開ページ（一覧・詳細・ジャンルなど）
-│   └── admin.py          # 管理者専用ページ（投稿・編集・削除・マイページ）
+├── views/                # Blueprint（機能ごとのルート）
+│   ├── auth.py           # ログイン・ログアウト
+│   ├── blog.py           # 一般公開ページ（一覧・詳細・ジャンル）
+│   └── admin.py          # 管理者ページ（投稿・編集・削除・マイページ）
 ├── templates/            # Jinja2 テンプレート
-└── static/
-    ├── css/              # ページ別 CSS（Coastal Dawn テーマ）
-    └── img/
-        ├── posts/        # アップロード画像（UUID ファイル名）
-        └── thbnails/     # デフォルトサムネイル
+└── static/               # CSS・画像・サムネイル
+```
+
+### データモデルの関係
+
+```
+User (管理者) ──1対多──> Post (記事) ──多対多──> Hashtag (タグ)
+                                      (post_hashtags 中間テーブル経由)
 ```
 
 ---
 
-## セットアップ（ローカル開発）
+## セットアップ
 
-### 1. リポジトリの取得と仮想環境の作成
+### 1. 前提
+
+- Python 3.10.11
+- Docker / Docker Compose（ローカル DB 用）
+
+### 2. リポジトリの取得と依存パッケージのインストール
 
 ```bash
-git clone <このリポジトリのURL>
-cd <リポジトリ名>
+git clone <このリポジトリの URL>
+cd <プロジェクトディレクトリ>
 
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS / Linux
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate        # Windows は .venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
-### 2. .env ファイルの作成
+### 3. 環境変数（.env）の作成
 
-プロジェクトルートに `.env` を作成し、以下を設定します（`.env` は `.gitignore` 済み）。
+プロジェクトルートに `.env` ファイルを作成し、以下を設定します（`.env` は `.gitignore` により Git 管理対象外です）。
 
 ```dotenv
-# --- PostgreSQL（docker-compose と共有） ---
-POSTGRES_USER=bloguser
-POSTGRES_PASSWORD=your-db-password
-POSTGRES_DB=blogdb
+# --- PostgreSQL 接続情報（docker-compose と共通） ---
+POSTGRES_USER=your_db_user
+POSTGRES_PASSWORD=your_db_password
+POSTGRES_DB=your_db_name
 
-# --- Flask ---
-SECRET_KEY=your-random-secret-key
-FLASK_DEBUG=1                     # 開発時のみ。本番では無視される
+# --- セッション・CSRF トークンの署名鍵 ---
+SECRET_KEY=long_random_secret_string
 
-# --- 管理者・ログイン画面の隠蔽 ---
-ADMIN_USERNAME=admin
-ADMIN_LOGIN_PATH=secret-login-xxxxxxxx   # ログインページのURLパス（推測困難な文字列に）
-ADMIN_GATE_KEY=xxxxxxxxxxxxxxxxxxxxxxxx # ログインページ表示用の合言葉
+# --- 管理者認証情報 ---
+ADMIN_USERNAME=your_admin_name
+ADMIN_PASSWORD=werkzeug_hashed_password   # ハッシュ化済みパスワード
+
+# --- 秘密のログイン URL（推測されにくいランダム文字列） ---
+ADMIN_LOGIN_PATH=secret-login-xxxxxxxx
+
+# --- ログインページのゲートキー（合言葉） ---
+ADMIN_GATE_KEY=another_long_random_string
+
+# --- 任意（ローカル開発でデバッグを有効にする場合） ---
+# FLASK_DEBUG=1
 ```
 
-ランダム文字列の生成例:
+**補足**
+
+- `ADMIN_PASSWORD` は平文ではなくハッシュ値を保存します。次のように生成できます。
+
+  ```bash
+  python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('あなたのパスワード'))"
+  ```
+
+- `ADMIN_GATE_KEY` / `SECRET_KEY` のようなランダム文字列は次のように生成できます。
+
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(32))"
+  ```
+
+### 4. データベースの起動
 
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-`ADMIN_LOGIN_PATH` と `ADMIN_GATE_KEY` は**未設定だとアプリが起動しない／ログインページが常に 404 になる**フェイルクローズ設計です。必ず設定してください。
-
-### 3. データベースの起動とマイグレーション
-
-```bash
-# PostgreSQL をコンテナで起動（ホスト側ポート 15432）
 docker compose up -d
+```
 
-# スキーマを適用
+ホスト側の `15432` 番ポートで PostgreSQL に接続できます。
+
+### 5. マイグレーションの適用
+
+```bash
 flask db upgrade
 ```
 
-### 4. 管理者ユーザーの作成
+### 6. 管理者ユーザーの作成
 
-初回のみ、`flask shell` などから管理者ユーザーを登録します（パスワードはハッシュ化して保存します）。
+このアプリは単一管理者を想定しており、`User` テーブルに `ADMIN_USERNAME` と一致するユーザーが 1 件必要です。ハッシュ化済みパスワードを含めて DB に登録してください（Flask シェルや DB クライアント経由）。
 
-```bash
-flask shell
-```
-
-```python
-from extensions import db
-from models import User
-from werkzeug.security import generate_password_hash
-
-user = User(
-    username='admin',   # .env の ADMIN_USERNAME と一致させる
-    password=generate_password_hash('your-login-password'),
-    nickname='管理者',
-)
-db.session.add(user)
-db.session.commit()
-```
-
-### 5. 起動
+### 7. アプリの起動
 
 ```bash
 python app.py
 ```
 
-`http://localhost:5000` でトップページが表示されます。
-
-### 6. 管理画面へのログイン
-
-初回は合言葉付き URL にアクセスします（ブックマーク推奨）:
-
-```
-http://localhost:5000/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>
-```
-
-合言葉が正しいとゲート Cookie（90日有効）が発行され、以降は `?key=` なしの秘密 URL だけでログインページに到達できます。Cookie を持たない訪問者には 404 を返し、ログインページの存在自体を隠します。
+デバッグモードは `FLASK_DEBUG=1` を明示した場合のみ有効になります（本番環境では強制的に無効化されます）。
 
 ---
 
-## 記事本文で使える独自タグ
+## 管理者としてログインする
 
-本文は Markdown（見出し `##` / `###`、太字、`[toc]` 目次など）に加えて、以下の独自タグに対応しています。いずれもエディタのツールバーから挿入できます。
+このアプリはログインページの存在自体を隠す設計になっています。ログインには次の 2 段階が必要です。
+
+1. **初回アクセス**：`https://<ホスト>/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>` にアクセスします。合言葉が正しければゲート用 Cookie が発行され、`key` なしの URL にリダイレクトされます（この URL をブックマークしておくと便利です）。
+2. **以降のアクセス**：Cookie が有効な間（90 日）は `https://<ホスト>/<ADMIN_LOGIN_PATH>` だけでログインフォームに到達できます。
+
+正しいゲート Cookie を持たない訪問者には、ログインページが `404 Not Found` として表示されます。
+
+---
+
+## セキュリティ機能
+
+多層防御を意識した以下の対策を実装しています。
+
+- **秘密のログイン URL**：`ADMIN_LOGIN_PATH` を環境変数で隠蔽（Security through obscurity）。
+- **ゲートキー方式**：合言葉 Cookie を持たない訪問者にはログインページの存在を隠して 404 を返す（設定漏れ時は安全側に倒して 404＝フェイルクローズ）。
+- **ブルートフォース対策**：ログイン失敗 5 回で 5 分間ロックアウト。
+- **未認証アクセスの隠蔽**：管理者専用ページに未ログインでアクセスした場合、ログイン画面に誘導せず 404 を返す。
+- **CSRF 保護**：全ての変更系リクエストに CSRF トークン検証を強制。
+- **アップロードファイルの検証**：拡張子チェック（第 1 層）＋ MIME タイプ判定（第 2 層、拡張子偽装の検出）＋ UUID によるファイル名ランダム化（第 3 層）＋ 30MB の容量制限（第 4 層）。
+- **セキュリティヘッダー**：`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy` を全レスポンスに付与。
+- **Cookie 属性**：`HttpOnly` / `SameSite=Lax` / 本番では `Secure` を設定。
+- **XSS 対策**：地図・YouTube・画像キャプションなどユーザー入力を HTML に埋め込む箇所で `escape()` / `quote()` を適用。
+- **Open Redirect 対策**：リダイレクト先を同一オリジンかどうか検証。
+- **本番環境の起動保護**：`SECRET_KEY` 未設定時は起動を拒否し、デバッガの露出を防ぐため本番ではデバッグモードを強制無効化。
+- **リバースプロキシ対応**：`ProxyFix` により PaaS 配下でも HTTPS を正しく判定。
+
+---
+
+## Markdown 記法の補足
+
+本文では標準の Markdown に加えて、以下の独自タグが使えます。
 
 | タグ | 機能 |
-|---|---|
-| `[toc]` | その位置に目次を展開（未使用時は記事冒頭に自動表示） |
-| `[img1]` `[img2]` … | アップロードした N 枚目の画像を挿入（キャプション付き `<figure>` 対応） |
-| `[map:東京スカイツリー]` | Google マップの iframe を埋め込み |
-| `[youtube:URLまたは動画ID]` | YouTube をファサード形式で埋め込み（サムネイルをタップすると再生開始） |
+| --- | --- |
+| `[toc]` | 目次を挿入 |
+| `[imgN]` | N 番目にアップロードした画像を挿入（キャプション対応） |
+| `[map:場所名]` | Google マップを埋め込み |
+| `[youtube:URL]` | YouTube 動画を埋め込み（サムネイル→クリックで再生） |
+
+また、2 行以上の連続する空行は行間として保持されます（`<br>` に展開）。
 
 ---
 
-## セキュリティ設計
+## デプロイについて
 
-多層防御を意識した実装になっています。
-
-- **ログインページの隠蔽（4層）** — ① 秘密の URL（`ADMIN_LOGIN_PATH`）② ゲートキー Cookie（`ADMIN_GATE_KEY`）③ ユーザー名 ④ パスワード。未ログインで管理者ページへアクセスしても 404 を返し、ページの存在を偽装
-- **ブルートフォース対策** — ログイン 5 回連続失敗で 5 分間のセッションロックアウト
-- **CSRF 保護** — 全変更系リクエストに CSRF トークンを強制（Flask-WTF）
-- **画像アップロードの多層検証** — 拡張子ホワイトリスト → MIME タイプ判定（filetype）→ UUID によるファイル名ランダム化 → 30MB のサイズ上限
-- **XSS 対策** — キャプション・地図ラベル・YouTube エラーメッセージなど、HTML に連結するユーザー入力を `markupsafe.escape()` で無害化。フロント側のタグプレビューも `textContent` ベースで構築
-- **Open Redirect 対策** — Referer リダイレクト時に同一オリジンを検証
-- **セキュリティヘッダー** — `X-Content-Type-Options: nosniff` / `X-Frame-Options: SAMEORIGIN` / `Referrer-Policy: strict-origin-when-cross-origin`
-- **Cookie 属性** — `HttpOnly` / `SameSite=Lax` / 本番では `Secure` を付与（ProxyFix によりリバースプロキシ配下でも正しく判定）
-- **フェイルクローズ** — `SECRET_KEY`（本番）・`ADMIN_LOGIN_PATH`・`ADMIN_GATE_KEY` の設定漏れは起動拒否または常時 404 で安全側に倒す
-
-### DB とファイルの整合性ルール
-
-画像ファイルと DB レコードの不整合を防ぐため、以下の順序を全ビューで厳守しています。
-
-1. 新規画像の保存（`_save_images()` は全成功 or 全掃除のアトミック動作）
-2. DB 変更をセッションに積んで `commit`
-3. commit **失敗** → rollback + 今回保存した新ファイルを掃除（DB は無傷）
-4. commit **成功** → ここで初めて旧ファイルを物理削除（失敗しても孤立ファイルが残るだけでデータは壊れない）
+本番環境（Heroku / Render などの PaaS）では、`DATABASE_URL` 環境変数が設定されていれば自動的にそれを DB 接続先として使用します。`DATABASE_URL` または `FLASK_ENV=production` が設定されている場合は本番環境と判定され、`SECRET_KEY` の必須化や Cookie の `Secure` 属性有効化などが自動で行われます。
 
 ---
 
-## 本番デプロイの注意点
-
-- 本番判定は「`DATABASE_URL` が設定されている」または「`FLASK_ENV=production`」で行われます
-- 本番では PaaS（Render / Heroku 等）が設定する `DATABASE_URL` を接続先として使用します
-- リバースプロキシ配下での HTTPS 判定のため、`ProxyFix(x_proto=1, x_host=1)` を適用済みです（多段プロキシ構成の場合は段数を調整してください）
-- 本番では `FLASK_DEBUG` を設定していてもデバッグモードは強制無効化されますが、`python app.py` での直接起動ではなく Gunicorn 等の WSGI サーバーでの運用を推奨します
-
-```bash
-pip install gunicorn
-gunicorn "app:create_app()"
-```
-
-- ロックアウトはセッション（ブラウザ）単位のため、より強固にするには Flask-Limiter + Redis 等による IP ベースの制限を検討してください
-
----
-
-## ライセンス / 作者
+## ライセンス 
 
 個人学習・個人運用を目的としたプロジェクトです。
-
-作者: MIT（「MIT Blog」管理者）
