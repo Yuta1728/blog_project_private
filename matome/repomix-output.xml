@@ -1506,11 +1506,6 @@ input[type="password"]:focus {
    static/css/base.css - Coastal Dawn v2（白ヘッダー・視認性改善版 / ヘッダー固定化対応）
    【対象ページ】 base.html（全ページ共通のレイアウト・ヘッダー・ドロワー）
    ============================================================
-   このファイルは全ページで読み込まれる共通パーツ
-   （ページ背景・ヘッダー・スマホ用ドロワーメニュー・フラッシュメッセージ）
-   のスタイルをまとめている。機能・パーツ単位で見出しコメントを付け、
-   どのUI要素のデザインかが一目でわかるように整理している。
-
    ※ ヘッダーのキーワード検索ボックスは廃止済み。
       キーワード検索は index ページの検索エリア
       （search_area.html / top_sections.css）に一本化した。
@@ -1526,26 +1521,6 @@ input[type="password"]:focus {
 
 /* ------------------------------------------------------------
    【共通レイアウト】ページ背景（html要素）
-   ------------------------------------------------------------
-   ヘッダーを position: fixed 化したことに伴う変更点:
-   従来は .main-header を position: sticky で実装しており、
-   スマホ／macOSトラックパッド等で発生する
-   「ページ端を超えて引っ張るとバウンドする」オーバースクロール時に、
-   sticky 要素はドキュメントの流れの中に存在するため、
-   その要素の“外側”（＝ページ最上部より上の領域）に
-   html 要素の背景色がそのまま露出してしまう問題があった。
-
-   これを解消するため、ヘッダーを画面（ビューポート）基準で
-   常に固定される position: fixed に変更した（note等の大手ブログサービスと同様の実装）。
-   fixed 要素はスクロール量やバウンドの影響を一切受けず、
-   常に画面最上部を覆い続けるため、
-   「限界までスクロールしても背景が見えてしまう」現象が根本的に解消される。
-
-   これに伴い、以前 html 要素に施していた
-   「オーバースクロール時だけヘッダー分の高さを白くする」
-   グラデーションによる応急処置は不要になったため削除し、
-   代わりに body 要素に固定ヘッダーの高さ分の padding-top を設定して
-   本文がヘッダーの下に隠れないよう調整している。
    ------------------------------------------------------------ */
 html {
     background-color: #f0f9ff;
@@ -1554,15 +1529,6 @@ html {
 
 /* ------------------------------------------------------------
    【共通レイアウト】ページ背景（body要素）
-   ------------------------------------------------------------
-   min-height を指定し、コンテンツが短いページ
-   （ログイン画面など）でも body の背景色が
-   ビューポート全体を必ず覆うようにする。
-
-   padding-top: 85px（PC）／63px（スマホ、@mediaで上書き）
-   ヘッダーを position: fixed にしてドキュメントの流れから
-   外した分、本文の開始位置がヘッダーの高さ（.header-container の
-   height と一致）だけ下にずれるよう補正する。
    ------------------------------------------------------------ */
 body {
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -1572,9 +1538,9 @@ body {
     font-weight: 500;
     margin: 0;
     padding: 0;
-    padding-top: 85px;   /* 固定ヘッダー（PC: 85px）の高さ分だけ本文を押し下げる */
-    min-height: 100vh;   /* フォールバック（dvh未対応ブラウザ向け） */
-    min-height: 100dvh;  /* モバイルのアドレスバー分の高さ変動を考慮 */
+    padding-top: 85px;   
+    min-height: 100vh;   
+    min-height: 100dvh;  
     -webkit-font-smoothing: antialiased;
 }
 
@@ -1634,29 +1600,6 @@ a:hover {
 
 /* ============================================================
    【共通ヘッダー】ヘッダー本体（固定ヘッダー）
-   ============================================================
-   黒ヘッダーを廃止し、白ヘッダーに変更。
-   下部に 3px のセルリアンラインを引くことで
-   「爽やかな水色」らしさを保ちながら
-   清潔感のある仕上がりにする。
-
-   position: sticky → position: fixed に変更した理由:
-   sticky はドキュメントの流れの中に留まりながら
-   スクロール位置に応じて画面上に張り付く実装だが、
-   オーバースクロール（バウンド）時には
-   要素の外側の背景が露出してしまう弱点があった。
-
-   fixed はビューポート基準で常に同じ位置に描画されるため、
-   スクロール量やバウンドの影響を受けず、
-   限界までスクロールしてもヘッダーが画面最上部を
-   覆い続ける（＝背景が見えることがない）。
-
-   left: 0; right: 0; を明示することで
-   width: 100% と合わせて画面幅いっぱいに固定表示する。
-
-   スクロール方向に応じて transform: translateY(-100%) で
-   ヘッダーをスライドイン／スライドアウトさせる挙動（base.html側のJS）は
-   fixed 化後もそのまま機能する。
    ============================================================ */
 .main-header {
     background-color: #ffffff;
@@ -1681,9 +1624,7 @@ a:hover {
                 visibility 0s linear 0.2s;
 }
 
-/* ヘッダー内側のレイアウト（ロゴ／ナビを横並びに配置）
-   検索ボックス廃止後は、justify-content: space-between により
-   ロゴが左端・ナビ（スマホではハンバーガー）が右端に配置される。 */
+/* ヘッダー内側のレイアウト（ロゴ／ナビを横並びに配置） */
 .header-container {
     display: flex;
     align-items: center;
@@ -1990,11 +1931,6 @@ a:hover {
    このファイルは投稿作成・編集フォーム専用のスタイルをまとめている。
    機能・パーツ単位で見出しコメントを付け、どのUI要素の
    デザインかが一目でわかるように整理している。
-
-   ※ リファクタリングにより、従来 HTML 側の <style> ブロック・
-      style 属性に書かれていたスタイルをこのファイルへ移設した。
-      （JS が style.display 等を直接書き換える要素は、
-        ここでは「初期状態」のみを定義している）
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -2064,7 +2000,6 @@ h1 {
    ------------------------------------------------------------
    初期状態は非表示。セレクトで「__NEW__」が選ばれたときに
    JS（toggleNewGenreInput）が style.display を書き換えて表示する。
-   （旧: HTML の style="display: none;" から移設）
    ------------------------------------------------------------ */
 #new_genre_wrapper {
     display: none;
@@ -2109,9 +2044,6 @@ h1 {
    ------------------------------------------------------------
    「📂 複数まとめて選択」「＋ 1枚追加」ボタンから JS の .click() で
    間接的に起動するため、input 自体は常に非表示にする。
-   （旧: style="display:none;" から移設。上の
-     .post-form input[type="file"] { display: block } を上書きできるよう、
-     同等以上の詳細度のセレクタにしている）
    ------------------------------------------------------------ */
 .post-form input[type="file"].img-input-hidden {
     display: none;
@@ -2119,7 +2051,6 @@ h1 {
 
 /* ------------------------------------------------------------
    【create.html / update.html】「複数まとめて選択」「＋1枚追加」ボタンの行
-   （旧: div の style 属性から移設）
    ------------------------------------------------------------ */
 .img-upload-btn-row {
     display: flex;
@@ -2130,7 +2061,6 @@ h1 {
 
 /* ------------------------------------------------------------
    【create.html / update.html】画像アップロードボタン
-   （旧: 各テンプレートの <style> ブロックから移設）
    ------------------------------------------------------------ */
 .img-upload-btn {
     display: inline-flex;
@@ -2177,14 +2107,12 @@ h1 {
    ------------------------------------------------------------
    #preview-area は初期非表示。画像が選択されたときに
    JS（renderPreviews）が style.display を書き換えて表示する。
-   （旧: style="display: none;" から移設）
    ------------------------------------------------------------ */
 #preview-area {
     display: none;
 }
 
-/* 【update.html】既存画像エリアとの間隔調整用モディファイア
-   （旧: style="margin-top: 14px;" から移設） */
+/* 【update.html】既存画像エリアとの間隔調整用モディファイア */
 .preview-area--spaced {
     margin-top: 14px;
 }
@@ -2224,15 +2152,12 @@ h1 {
 .preview-item img { width: 150px; height: 112px; object-fit: cover; display: block; }
 
 /* 【update.html】既存画像カード（新規プレビューよりひと回り大きい 200px 幅）
-   ※ .preview-item との複合セレクタにしているのは、スマホ用の
-      .preview-item { width: calc(50% - 6px) } に上書きされないようにするため
-      （旧インライン style="width: 200px;" と同じ優先度関係を維持） */
+   ※ （旧インライン style="width: 200px;" と同じ優先度関係を維持） */
 .preview-item.existing-img-item {
     width: 200px;
 }
 
-/* デフォルトサムネイルのプレビューカード（幅の上限のみ設定）
-   （旧: style="max-width: 200px;" から移設） */
+/* デフォルトサムネイルのプレビューカード（幅の上限のみ設定） */
 .preview-item--thumb {
     max-width: 200px;
 }
@@ -2260,7 +2185,6 @@ h1 {
 
 /* ------------------------------------------------------------
    【create.html / update.html】プレビューカード内の削除ボタン
-   （「✕ この画像を削除」。旧: <style> ブロックから移設）
    ------------------------------------------------------------ */
 .preview-delete-btn {
     display: block;
@@ -2284,7 +2208,6 @@ h1 {
 
 /* ------------------------------------------------------------
    【update.html】既存画像・画像変更エリアの注意書きテキスト
-   （旧: p の style 属性から移設）
    ------------------------------------------------------------ */
 /* 「現在の画像・キャプション」直下の注意書き */
 .img-edit-note {
@@ -2307,7 +2230,6 @@ h1 {
    JS（previewDefaultThumb）が style.display を書き換えて表示する。
    【update.html】保存済みのサムネイルがある場合は
    Jinja 側で .is-visible を付与して初期表示にする。
-   （旧: style="display: none/block; margin-bottom: 20px;" から移設）
    ------------------------------------------------------------ */
 #default-thumb-preview-area {
     display: none;
@@ -2699,12 +2621,6 @@ h1 {
 
 /* ------------------------------------------------------------
    【detail.html】ジャンルバッジ（クリックでジャンル絞り込みへ遷移するリンク）
-   ------------------------------------------------------------
-   .genre-badge を <span> から <a> へ変更したことに伴い、
-   ハッシュタグバッジ（.hashtag-badge）と統一感のある
-   インタラクティブなスタイルを追加。
-   display: inline-block / text-decoration: none / transition / hover
-   を付与し、「タップできるタグ」であることが視覚的に伝わるようにする。
    ------------------------------------------------------------ */
 .genre-badge {
     display: inline-block;
@@ -2733,7 +2649,8 @@ h1 {
 .post-meta {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 5px;
     font-size: 13px;
     color: #4a7a96;
     margin-bottom: 36px;
@@ -3130,7 +3047,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
     article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }
     h1 { font-size: 20px; letter-spacing: -0.01em; line-height: 1.45; }
-    .post-meta { font-size: 12px; gap: 6px; margin-bottom: 24px; padding-bottom: 16px; }
+    .post-meta { font-size: 12px; margin-bottom: 24px; padding-bottom: 16px; }
     .post-user-info { font-size: 13px; }
     .detail-article-body {
     font-weight: 500; font-size: 15px !important; line-height: 1.75 !important; word-break: break-all; }
@@ -3319,6 +3236,15 @@ details[open] .group-title {
 }
 
 /* ------------------------------------------------------------
+   【genre.html】ジャンルが1件もないときの空メッセージ
+   ------------------------------------------------------------ */
+.genre-empty-message {
+    padding: 24px;
+    color: #aaa;
+    text-align: center;
+}
+
+/* ------------------------------------------------------------
    【genre.html】カード下部の「一覧画面に戻る」フッターリンク
    ------------------------------------------------------------ */
 .genre-footer {
@@ -3367,8 +3293,6 @@ details[open] .group-title {
    - index.html / mypage.html   : 記事カードのハッシュタグバッジ、絞り込みバー
    - detail.html                : 記事詳細のハッシュタグバッジ
    - create.html / update.html  : ハッシュタグ入力欄・プレビュー
-   機能・パーツ単位で見出しコメントを付け、どのUI要素の
-   デザインかが一目でわかるように整理している。
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -3721,10 +3645,6 @@ a[role="button"]:hover {
 
 /* ============================================================
    【index.html / mypage.html 共通】記事カード本体
-   ============================================================
-   左端に 4px のセルリアンアクセントライン。ホバー時にゴールド
-   (#f59e0b) へ変化する。カードは角丸なし（左）＋角丸あり（右）で
-   「ページから飛び出す」ような奥行きを演出するシグネチャー要素。
    ============================================================ */
 .post-card {
     display: flex;
@@ -3832,6 +3752,12 @@ a[role="button"]:hover {
     margin-top: 8px;
 }
 
+/* 【index.html / mypage.html 共通】編集・削除ボタンを横並びにするため
+   削除フォームをインライン表示にする（.post-actions 内のフォーム）*/
+.post-actions form {
+    display: inline;
+}
+
 .btn-delete {
     background: transparent;
     border: 1.2px solid #f5b7b1;
@@ -3866,13 +3792,18 @@ a[role="button"]:hover {
 }
 
 
+/* ------------------------------------------------------------
+   【index.html】検索・絞り込みで該当記事がないときの空メッセージ
+   ------------------------------------------------------------ */
+.index-empty-message {
+    text-align: center;
+    color: #aaa;
+    margin-top: 60px;
+}
+
+
 /* ============================================================
    【index.html】ページ番号によるページ送り（1ページ5件表示）
-   ============================================================
-   「もっと見る／表示を減らす」ボタンを廃止し、
-   ページ番号によるページ送り UI に置き換えたもの。
-   ボタン群は load_more.css の配色トーンを踏襲しつつ、
-   現在のページを塗りつぶし（.active）で強調する。
    ============================================================ */
 
 /* ページ送りナビ全体（JS側で totalPages > 1 のときだけ flex 表示） */
@@ -4334,6 +4265,14 @@ a[role="button"]:hover {
 }
 
 /* ------------------------------------------------------------
+   【mypage.html】ジャンル管理欄にジャンルが1件もないときの注記
+   ------------------------------------------------------------ */
+.genre-empty-note {
+    color: #aaa;
+    font-size: 14px;
+}
+
+/* ------------------------------------------------------------
    【mypage.html】投稿が1件もない場合の案内メッセージ
    ------------------------------------------------------------ */
 .empty-message {
@@ -4403,9 +4342,6 @@ a[role="button"]:hover {
 
 /* ============================================================
    【index.html】hero（自己紹介）セクション本体（hero.htmlをinclude）
-   ============================================================
-   hero カードは記事カードと同じ左アクセントラインデザインに統一。
-   背景は白、外枠は #bae6fd で視認性◎。
    ============================================================ */
 .hero-section {
     display: flex;
@@ -4545,10 +4481,6 @@ a[role="button"]:hover {
 /* ============================================================
    【index.html】サイト統計セクション（stats.htmlをinclude、
    絞り込みなしのトップ表示時のみ表示）
-   ============================================================
-   stats カードの上部に 3px のセルリアンラインを追加（ヘッダーと連動）。
-   数値は明朝体×#0369a1 で品格を出す。
-   白背景カードを #f0f9ff の page 上に置くことで浮き上がり感が生まれる。
    ============================================================ */
 .stats-section {
     display: flex;
@@ -4716,8 +4648,6 @@ a[role="button"]:hover {
 /* ============================================================
    【index.html】インページ検索エリア（search_area.htmlをinclude、常に表示）
    ジャンル選択＋キーワード入力を同時に指定できる検索フォーム
-   ============================================================
-   検索エリアは白カード。#f0f9ff の page 背景上でしっかり浮き上がる。
    ============================================================ */
 .index-search-area {
     background: #ffffff;
@@ -4877,11 +4807,15 @@ a[role="button"]:hover {
     color: #7ab8d8;
 }
 
-/* 入力内容をクリアする「✕」ボタン（JSで表示切替） */
+/* 入力内容をクリアする「✕」ボタン
+   ------------------------------------------------------------
+      初期状態は非表示。入力値の有無に応じて JS（updateClear）が
+      インラインで flex / none を切り替える。ページロード時にも
+      updateClear() が走るため、値がある場合は正しく表示される。 */
 .index-search-clear {
     position: absolute;
     right: 8px;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     width: 22px;
@@ -6081,7 +6015,7 @@ document.addEventListener('keydown', function(e) {
 
         {% set genre_display = post.genre if post.genre else '未分類' %}
 
-        <div class="post-meta" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+        <div class="post-meta">
             <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
                 📂 {{ genre_display }}
             </a>
@@ -6330,7 +6264,7 @@ function ytPlay(facadeEl) {
             </li>
         </ul>
     {% else %}
-        <p style="padding: 24px; color: #aaa; text-align: center;">まだジャンルが登録されていません。</p>
+        <p class="genre-empty-message">まだジャンルが登録されていません。</p>
     {% endif %}
 </div>
 
@@ -6541,7 +6475,7 @@ function ytPlay(facadeEl) {
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
                     <div class="post-actions">
                         <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-delete">削除</button>
                         </form>
@@ -6550,7 +6484,7 @@ function ytPlay(facadeEl) {
             </div>
         </article>
     {% else %}
-        <p style="text-align:center; color:#aaa; margin-top:60px;">
+        <p class="index-empty-message">
             該当する記事が見つかりませんでした。
         </p>
     {% endfor %}
@@ -6748,7 +6682,7 @@ function ytPlay(facadeEl) {
                 {% endfor %}
             </ul>
         {% else %}
-            <p style="color: #aaa; font-size: 14px;">登録されたジャンルはありません。</p>
+            <p class="genre-empty-note">登録されたジャンルはありません。</p>
         {% endif %}
     </div>
 
@@ -6800,7 +6734,7 @@ function ytPlay(facadeEl) {
 
                 <div class="post-actions">
                     <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                    <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');" style="display:inline;">
+                    <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn-delete">削除</button>
                     </form>
@@ -6952,8 +6886,7 @@ function ytPlay(facadeEl) {
                 <button type="button"
                         class="index-search-clear"
                         id="indexSearchClear"
-                        aria-label="キーワードをクリア"
-                        style="display:none;">✕</button>
+                        aria-label="キーワードをクリア">✕</button>
             </div>
         </div>
 
