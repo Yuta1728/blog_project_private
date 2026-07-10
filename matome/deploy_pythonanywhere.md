@@ -1,75 +1,84 @@
-# PythonAnywhere デプロイ手順書（GitHub から公開）
+# MIT Blog — PythonAnywhere デプロイ・運用仕様書
 
-このブログアプリを **PythonAnywhere の無料枠**に、**GitHub 経由**で一時公開するための手順書です。データベースは無料枠でも使える **SQLite** に切り替えて運用します。
-
----
-
-## 0. この手順で行うことの全体像
-
-```
-[自分のPC]                         [GitHub]                 [PythonAnywhere]
- 修正ファイルを反映  ──push──▶   リポジトリ  ──git clone──▶   サーバー上に配置
-                                                              ├ 仮想環境を作成
-                                                              ├ pip install
-                                                              ├ .env を作成
-                                                              ├ init_db.py で初期化
-                                                              └ Web タブで公開設定 → Reload
-                                                                      │
-                                                              https://<ユーザー名>.pythonanywhere.com
-```
-
-ポイントは3つです。
-
-1. DB は PostgreSQL ではなく **SQLite**（`USE_SQLITE=1` を設定するだけ）
-2. テーブルと管理者ユーザーは **`init_db.py`** で作成（マイグレーション不要）
-3. `.env` は **GitHub に含めず**、PythonAnywhere 上で手動作成する
+Flask 製ブログアプリを **PythonAnywhere 無料枠**に **GitHub 経由**で公開し、公開後にコードを更新・反映していくための仕様書です。実際のデプロイで使用した設定値・遭遇したつまずきポイントも反映しています。
 
 ---
 
-## 1. 変更したファイル（何が変わったか）
+## 1. この仕様書の概要
 
-| ファイル | 変更内容 |
-|----------|----------|
-| `app.py` | DB 接続に SQLite 対応を追加。`USE_SQLITE=1` でプロジェクト内 `instance/blog.db` を使う |
-| `config.py` | `.env` を config.py と同じ場所から確実に読み込むように修正（WSGI 起動対策） |
-| `init_db.py`（新規） | `db.create_all()` でテーブル作成＋管理者ユーザー作成を一括実行 |
-| `requirements-pythonanywhere.txt`（新規） | PostgreSQL ドライバ（psycopg 系）を除いた依存一覧 |
-| `wsgi_pythonanywhere_sample.py`（新規） | PythonAnywhere の WSGI 設定に貼り付ける内容のサンプル |
+| 項目 | 内容 |
+|------|------|
+| 対象アプリ | Flask 製個人ブログ（Application Factory パターン / `create_app()` 方式） |
+| 公開の目的 | 学習目的の一時公開・動作確認 |
+| ホスティング | PythonAnywhere 無料枠（Beginner、クレジットカード不要） |
+| データベース | SQLite（無料枠でも使える。永続ディスクに DB ファイルを保存） |
+| コード配布 | GitHub リポジトリからの `git clone` / `git pull` |
+| 公開URL | `https://<PythonAnywhereユーザー名>.pythonanywhere.com` |
 
-これらのファイルを既存プロジェクトに上書き・追加してください。配置場所は以下のとおりプロジェクト直下です。
+### なぜ PostgreSQL ではなく SQLite なのか
 
-```
-<プロジェクト>/
-├── app.py                          ← 上書き
-├── config.py                       ← 上書き
-├── init_db.py                      ← 新規追加
-├── requirements.txt                （そのまま。ローカルPostgres用に残す）
-├── requirements-pythonanywhere.txt ← 新規追加
-├── wsgi_pythonanywhere_sample.py   ← 新規追加（参考用）
-├── constants.py
-├── extensions.py
-├── models.py
-├── views/
-├── templates/
-├── static/
-│   └── img/
-│       └── posts/                  ← アップロード画像の保存先（永続）
-├── instance/                       ← 自動生成。SQLite の blog.db がここに作られる
-│   └── blog.db
-└── .env                            ← GitHubには含めない。サーバー上で作成する
-```
-
-> `instance/blog.db` はアプリ起動時に自動作成されるディレクトリ・ファイルです。`.gitignore` に `*.db` があるため Git には含まれません。
+PythonAnywhere 無料枠は 2026年1月以降、新規アカウントでは MySQL も使えず、PostgreSQL は有料アドオンのみです。そのため DB サービスを使わず、ファイル1つで完結する **SQLite** に切り替えて運用します。このアプリは SQLAlchemy を使っているため、接続先を切り替えるだけで大きな改修なく動作します。
 
 ---
 
-## 2. 事前準備（自分のPC側）
+## 2. 構成情報（本番デプロイで使用した値）
 
-### 2-1. 変更ファイルを反映して GitHub に push
+以降の手順で使うパス・名称の一覧です。自分の環境に合わせて読み替えてください。
 
-修正した `app.py` / `config.py` と、新規の `init_db.py` / `requirements-pythonanywhere.txt` / `wsgi_pythonanywhere_sample.py` をプロジェクトに配置します。
+| 種別 | 値 |
+|------|-----|
+| PythonAnywhere ユーザー名 | `yuta1728` |
+| GitHub リポジトリ | `https://github.com/Yuta1728/blog_project_private.git`（private） |
+| clone 先フォルダ | `myblog` |
+| **プロジェクト本体の場所** | **`/home/yuta1728/myblog/matome`** |
+| 仮想環境名 | `blog-venv`（Python 3.10） |
+| 仮想環境のパス | `/home/yuta1728/.virtualenvs/blog-venv` |
+| WSGI 設定ファイル | `/var/www/yuta1728_pythonanywhere_com_wsgi.py` |
+| SQLite DB ファイル | `/home/yuta1728/myblog/matome/instance/blog.db` |
+| 静的ファイル | `/home/yuta1728/myblog/matome/static` |
+| 公開URL | `https://yuta1728.pythonanywhere.com` |
 
-`.gitignore` に以下が含まれていることを確認してください（元から入っています）。含まれていないと `.env` や DB ファイルが公開されてしまいます。
+> ⚠️ **重要な前提**: このリポジトリは、アプリ本体が clone 直下ではなく **`matome/` サブフォルダ**の中にあります。そのため、以降のコマンド・パス指定はすべて `matome` を含めた `/home/yuta1728/myblog/matome` を「プロジェクトのルート」として扱います。
+
+---
+
+## 3. コードの変更点（デプロイ前に反映済み）
+
+SQLite で動かすために、以下のファイルを修正・追加しています。
+
+| ファイル | 種別 | 内容 |
+|----------|------|------|
+| `app.py` | 修正 | DB 接続に SQLite 対応を追加。`USE_SQLITE=1` で `instance/blog.db` を使用 |
+| `config.py` | 修正 | `.env` を config.py と同じ場所から確実に読み込む（WSGI 起動対策） |
+| `init_db.py` | 新規 | `db.create_all()` でテーブル作成＋管理者ユーザー作成を一括実行 |
+| `requirements-pythonanywhere.txt` | 新規 | PostgreSQL ドライバ（psycopg 系）を除いた依存一覧 |
+| `wsgi_pythonanywhere_sample.py` | 新規 | WSGI 設定に貼り付ける内容のサンプル（参考用） |
+
+### 変更のポイント
+
+- **`app.py`**: DB 接続の優先順位は `(1) DATABASE_URL` → `(2) USE_SQLITE=1` → `(3) ローカル PostgreSQL`。`USE_SQLITE=1` を指定すると、`app.py` の位置から DB ファイルの絶対パスを自動計算するため、環境変数に長いパスを書く必要がない。
+- **`config.py`**: PythonAnywhere の WSGI から起動されるとカレントディレクトリがずれて `.env` を読めないことがあるため、`config.py` 自身の絶対パスを基準に `.env` を読み込むよう変更。
+- **`init_db.py`**: このアプリはログイン時に管理者ユーザーが DB に存在する前提のため、テーブル作成と同時に管理者ユーザーも作成する。`ADMIN_PASSWORD` は平文・ハッシュ済みどちらでも受け付ける。
+
+---
+
+## 4. 初回デプロイ手順
+
+### フェーズ 0：全体像
+
+```
+[自分のPC]                    [GitHub]                [PythonAnywhere]
+修正を反映  ──push──▶  リポジトリ  ──git clone──▶  サーバーに配置
+                                                     ├ 仮想環境作成
+                                                     ├ pip install
+                                                     ├ .env 作成（手動）
+                                                     ├ init_db.py で初期化
+                                                     └ Web タブで公開設定 → Reload
+```
+
+### フェーズ 1：自分のPCでの準備
+
+**1-1.** 修正・新規ファイルをプロジェクトに反映し、`.gitignore` に以下が含まれることを確認する（`.env` や DB ファイルの流出防止）。
 
 ```
 .env
@@ -78,7 +87,7 @@
 *.sqlite3
 ```
 
-確認できたら push します。
+**1-2.** GitHub へ push する。
 
 ```bash
 git add .
@@ -86,108 +95,94 @@ git commit -m "PythonAnywhere向けにSQLite対応を追加"
 git push origin main
 ```
 
-### 2-2. リポジトリを private にするか確認
+> リポジトリは private を推奨（管理画面を持つアプリのため）。
 
-一時公開とはいえ、管理画面を持つアプリです。リポジトリは **private** を推奨します（public でも `.env` を含めていなければ致命的ではありませんが、念のため）。
+### フェーズ 2：PythonAnywhere でのセットアップ
 
----
+#### 2-1. アカウント作成
+1. https://www.pythonanywhere.com/ で無料の **Beginner** アカウントを作成（カード不要）
+2. ログインするとダッシュボードが表示される
 
-## 3. PythonAnywhere でのデプロイ手順
-
-### 3-1. アカウント作成
-
-1. https://www.pythonanywhere.com/ にアクセス
-2. 「Pricing & signup」→ 無料の **Beginner** アカウントを作成（クレジットカード不要）
-3. ログインするとダッシュボードが表示される
-
-> 無料枠では公開先が `https://<ユーザー名>.pythonanywhere.com` になります。
-
-### 3-2. Bash コンソールでリポジトリを clone
-
-1. ダッシュボード上部の **「Consoles」** タブ →「**Bash**」をクリックして新しいコンソールを開く
-2. ホームディレクトリ（`/home/<ユーザー名>`）にいることを確認し、リポジトリを clone する
+#### 2-2. リポジトリを clone
+「**Consoles**」タブ →「**Bash**」で新しいコンソールを開き、以下を実行。
 
 ```bash
 cd ~
-git clone https://github.com/<あなた>/<リポジトリ名>.git mysite
-cd mysite
+git clone https://github.com/Yuta1728/blog_project_private.git myblog
+cd myblog
+ls -la
 ```
 
-- 上記では clone 先フォルダ名を **`mysite`** にしています（以降この名前で説明します）。
-- private リポジトリの場合は、GitHub の Personal Access Token を使うか、SSH 鍵を設定してください。
+> ✅ **確認**: `ls -la` で `matome` フォルダが見えること。アプリ本体はこの中にある。
 
-> clone 後のプロジェクトの場所は **`/home/<ユーザー名>/mysite`** になります。この絶対パスを後で WSGI ファイルに書きます。
-
-### 3-3. 仮想環境の作成と依存インストール
-
-PythonAnywhere には `virtualenvwrapper` が入っているので `mkvirtualenv` が使えます。Python は元プロジェクトに合わせて **3.10** を指定します。
+#### 2-3. 仮想環境の作成と依存インストール
+アプリ本体のある `matome` に移動してから作業する。
 
 ```bash
+cd ~/myblog/matome
 mkvirtualenv --python=/usr/bin/python3.10 blog-venv
-```
-
-プロンプトが `(blog-venv) $` に変わればその仮想環境が有効化されています。この状態で依存をインストールします。
-
-```bash
 pip install -r requirements-pythonanywhere.txt
 ```
 
-> 仮想環境の場所は **`/home/<ユーザー名>/.virtualenvs/blog-venv`** になります。この絶対パスも後で Web タブに入力します。
->
-> あとでコンソールを開き直したときは `workon blog-venv` で再有効化できます。
+- プロンプトが `(blog-venv) $` になれば仮想環境が有効。
+- あとで再度有効化するには `workon blog-venv`。
 
-### 3-4. `.env` を作成する
+> ⚠️ **つまずき例**: clone 直下（`~/myblog`）で `pip install` すると `requirements-pythonanywhere.txt が無い` エラーになる。プロジェクト本体は `matome/` の中なので、必ず `cd ~/myblog/matome` してから実行する。
 
-`.env` は GitHub に含めていないので、サーバー上で作成します。プロジェクト直下で `nano` エディタを開きます。
+#### 2-4. `.env` をサーバー上に作成
+`.env` は `.gitignore` により **GitHub に含まれず、clone にも入っていない**。サーバー上で手動作成する。
+
+`nano` が難しい場合は、以下を **丸ごとコピーしてコンソールに貼り付け**れば一発で作成できる（値は自分のものに変更してから貼り付ける）。
 
 ```bash
-cd ~/mysite
-nano .env
-```
-
-以下を貼り付けます（値は自分のものに変更）。
-
-```env
-# --- 本番動作フラグ（Secure Cookie / SECRET_KEY必須化を有効にする） ---
+cd ~/myblog/matome
+cat > .env << 'EOF'
 FLASK_ENV=production
-
-# --- SQLite を使う（PythonAnywhere無料枠） ---
 USE_SQLITE=1
-
-# --- セッション・CSRF署名用の秘密鍵 ---
 SECRET_KEY=ここにランダムな長い文字列
-
-# --- 管理者ログイン情報 ---
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=ここにログインパスワード（平文でOK。init_db.pyがハッシュ化します）
+ADMIN_PASSWORD=ここにログインパスワード（平文でOK）
 ADMIN_LOGIN_PATH=secret-login-xxxxxxxx
-ADMIN_GATE_KEY=ここにランダムな長い文字列
+ADMIN_GATE_KEY=ここに別のランダムな長い文字列
+EOF
 ```
 
-- 保存: `Ctrl + O` → `Enter`、終了: `Ctrl + X`
-- `SECRET_KEY` と `ADMIN_GATE_KEY` はそれぞれ別の長いランダム文字列にします。コンソールで以下を実行すると生成できます。
+作成後、内容を確認する。
+
+```bash
+cat .env
+```
+
+**各項目の意味:**
+
+| キー | 説明 |
+|------|------|
+| `FLASK_ENV=production` | 本番モード。Secure Cookie 有効化・SECRET_KEY 必須化（**SQLite運用でも必須**） |
+| `USE_SQLITE=1` | DB を SQLite にする |
+| `SECRET_KEY` | セッション・CSRF 署名用の秘密鍵（長いランダム文字列） |
+| `ADMIN_USERNAME` | 管理者ログインのユーザー名 |
+| `ADMIN_PASSWORD` | ログインパスワード（平文可。`init_db.py` がハッシュ化） |
+| `ADMIN_LOGIN_PATH` | ログイン画面の URL パス（推測されにくい文字列） |
+| `ADMIN_GATE_KEY` | ログイン画面を表示するための合言葉 |
+
+ランダム文字列の生成（`SECRET_KEY` と `ADMIN_GATE_KEY` に別々の値を使う）:
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-- `ADMIN_PASSWORD` は平文で構いません（`init_db.py` がハッシュ化して DB に保存します）。ハッシュ済み文字列を入れてもそのまま使われます。
-- `ADMIN_LOGIN_PATH` は推測されにくい文字列にします（例: `secret-login-a1b2c3`）。ログイン画面の URL になります。
+> **nano で編集する場合の操作**: 保存 = `Ctrl + O` → `Enter`、終了 = `Ctrl + X`。（`^` は Ctrl キーの意味）
 
-> なぜ `USE_SQLITE=1` と `FLASK_ENV=production` の両方が必要か:
-> `USE_SQLITE=1` は DB を SQLite にする指示、`FLASK_ENV=production` は「本番モード」として Secure Cookie の有効化と SECRET_KEY の必須チェックを働かせるためです。
-
-### 3-5. データベースを初期化する（テーブル＋管理者ユーザー作成）
-
-仮想環境が有効（`workon blog-venv`）な状態で、プロジェクト直下から実行します。
+#### 2-5. データベースの初期化
+テーブルと管理者ユーザーを作成する。
 
 ```bash
-cd ~/mysite
-workon blog-venv          # 念のため再有効化
+cd ~/myblog/matome
+workon blog-venv
 python init_db.py
 ```
 
-以下のような表示が出れば成功です。
+成功時の表示:
 
 ```
 [OK] テーブルを作成しました。
@@ -196,38 +191,34 @@ python init_db.py
 初期化が完了しました。Web タブから Reload してください。
 ```
 
-これで `/home/<ユーザー名>/mysite/instance/blog.db` に SQLite データベースが作成され、管理者ユーザーも登録されました。
+これで `instance/blog.db` に SQLite DB が作成され、管理者ユーザーも登録される。
 
-### 3-6. Web アプリを作成する（Manual configuration）
+### フェーズ 3：Web タブでの公開設定
 
-1. ダッシュボード上部の **「Web」** タブを開く
-2. 「**Add a new web app**」をクリック
-3. ドメイン確認画面が出たら「Next」（無料枠は `<ユーザー名>.pythonanywhere.com` 固定）
-4. フレームワーク選択で **「Manual configuration」** を選ぶ
-   （「Flask」ではなく **Manual configuration**。create_app() 方式のため手動設定が必要）
-5. Python バージョンは仮想環境と同じ **Python 3.10** を選ぶ
-6. 確認画面で「Next」→ Web アプリの設定ページが表示される
+以降はブラウザ画面での操作。画面上部のメニューから「**Web**」タブを開く（見当たらない場合は右上のハンバーガーメニュー ≡ 内）。
 
-### 3-7. 仮想環境のパスを設定する
+#### 3-1. Web アプリを作成（Manual configuration）
+1. 「**Add a new web app**」をクリック
+2. ドメイン確認 → 「**Next**」（無料枠は `yuta1728.pythonanywhere.com` 固定）
+3. フレームワーク選択で「**Manual configuration**」を選ぶ
+   - ⚠️ **「Flask」ではなく Manual configuration**。`create_app()` 方式のため手動設定が必要
+4. Python バージョンで「**Python 3.10**」を選ぶ（仮想環境と合わせる）
+5. 「**Next**」→ 設定ページが開く
 
-Web タブの設定ページを下にスクロールし、**「Virtualenv」** セクションで以下を入力します。
+#### 3-2. Virtualenv パスを設定
+「**Virtualenv**」セクションに以下を入力してチェックマークで保存。
 
 ```
-/home/<ユーザー名>/.virtualenvs/blog-venv
+/home/yuta1728/.virtualenvs/blog-venv
 ```
 
-入力後、チェックマークで保存します。
-
-### 3-8. WSGI 設定ファイルを編集する
-
-1. Web タブの **「Code」** セクションにある **WSGI configuration file** のリンクをクリック
-   （ファイル名は `/var/www/<ユーザー名>_pythonanywhere_com_wsgi.py`）
-2. **中身をすべて削除**し、以下に置き換える（`<ユーザー名>` を自分のものに変更）
+#### 3-3. WSGI 設定ファイルを編集
+「**Code**」セクションの **WSGI configuration file** のリンクを開き、**中身をすべて削除**して以下に置き換え、「Save」で保存。
 
 ```python
 import sys
 
-project_home = '/home/<ユーザー名>/mysite'
+project_home = '/home/yuta1728/myblog/matome'
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
@@ -235,104 +226,155 @@ from app import create_app
 application = create_app()
 ```
 
-3. 右上の「Save」で保存
+> ⚠️ `project_home` が `matome` まで含んでいることを必ず確認する。
 
-> リポジトリ内の `wsgi_pythonanywhere_sample.py` と同じ内容です。コピー元として使えます。
-
-### 3-9. 静的ファイル（CSS・画像）の配信設定
-
-Web タブの **「Static files」** セクションで「Enter URL」「Enter path」に以下を入力し、チェックマークで保存します。
+#### 3-4. 静的ファイルの配信設定
+「**Static files**」セクションに以下を入力してチェックマークで保存。
 
 | URL | Directory |
 |-----|-----------|
-| `/static/` | `/home/<ユーザー名>/mysite/static` |
+| `/static/` | `/home/yuta1728/myblog/matome/static` |
 
-これで CSS・サムネイル・アップロード画像（`static/img/posts/`）が正しく配信されます。
+#### 3-5. Reload して公開
+Web タブ上部の緑色の「**Reload yuta1728.pythonanywhere.com**」ボタンを押す。
 
-### 3-10. Reload して公開
-
-Web タブ上部の緑色の **「Reload <ユーザー名>.pythonanywhere.com」** ボタンを押します。
-
-ブラウザで以下にアクセスして、トップページが表示されれば公開成功です。
-
-```
-https://<ユーザー名>.pythonanywhere.com
-```
+ブラウザで `https://yuta1728.pythonanywhere.com` にアクセスし、トップページが表示されれば公開成功。
 
 ---
 
-## 4. 動作確認
+## 5. 動作確認
 
-### 4-1. 管理者ログイン
+### 5-1. トップページ
+`https://yuta1728.pythonanywhere.com` が表示されること。
 
-ログイン URL は隠蔽されています。以下の手順でアクセスします。
+### 5-2. 管理者ログイン
+ログイン URL は隠蔽されている。以下の手順でアクセスする。
 
-1. ブラウザで次を開く（合言葉付き）:
+1. ブラウザで合言葉付き URL を開く（`.env` の値を使用）:
    ```
-   https://<ユーザー名>.pythonanywhere.com/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>
+   https://yuta1728.pythonanywhere.com/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>
    ```
-   （`.env` に設定した `ADMIN_LOGIN_PATH` と `ADMIN_GATE_KEY` の値を使う）
 2. 合言葉が正しければ Cookie が発行され、`?key=` なしの URL にリダイレクトされる
-3. ユーザー名（`ADMIN_USERNAME`）とパスワード（`ADMIN_PASSWORD` に設定した値）でログイン
+3. `ADMIN_USERNAME` と `ADMIN_PASSWORD` でログイン
 
-ログイン後、記事投稿・画像アップロード・地図/YouTube 埋め込みなどが動作するか確認してください。**画像はアップロード後も再起動で消えません**（永続ディスク）。
+ログイン後、記事投稿・画像アップロード（再起動しても消えない）・地図/YouTube 埋め込みが動作するか確認する。
 
-### 4-2. うまく動かないときの確認場所
+---
 
-Web タブの **「Log files」** に3種類のログがあります。エラー時はここを確認します（末尾が最新）。
+## 6. 公開後の更新・反映の運用方法
 
+### 基本原則
+
+**「PCで修正 → GitHubにpush → サーバーでpull → Reload」** が全ケース共通の流れ。
+
+```
+[自分のPC]              [GitHub]           [PythonAnywhere]
+コード修正 ──push──▶ リポジトリ ──git pull──▶ サーバーに反映 → Reload
+```
+
+> ⚠️ **コードを変えただけでは反映されない。最後に必ず Web タブの「Reload」を押す**こと。Reload でアプリが再読み込みされて初めて変更が有効になる。
+
+### ケース①：コードを修正しただけ（最も多い）
+
+`templates/`（HTML）、`views/`（Python）、`static/`（CSS）などの変更のみ。
+
+**PC側:**
+```bash
+git add .
+git commit -m "修正内容"
+git push origin main
+```
+
+**PythonAnywhere（Bash コンソール）:**
+```bash
+cd ~/myblog/matome
+git pull origin main
+```
+
+**最後に** Web タブで「**Reload**」。
+
+### ケース②：ライブラリを追加した
+
+`requirements-pythonanywhere.txt` にパッケージを追加した場合は、pull 後にインストールが必要。
+
+```bash
+cd ~/myblog/matome
+git pull origin main
+workon blog-venv
+pip install -r requirements-pythonanywhere.txt
+```
+
+**最後に** Web タブで「**Reload**」。
+
+> `pip install` は既存分は飛ばして新規分だけ入れるため、毎回実行しても問題ない。
+
+### ケース③：データベースの構造を変えた（models.py 変更）
+
+`init_db.py`（`db.create_all()`）は「無いテーブルを作る」だけで、**既存テーブルへのカラム追加は行わない**。カラム追加などをした場合、動作確認用途であれば古い DB を作り直すのが手軽（**投稿データは消える**）。
+
+```bash
+cd ~/myblog/matome
+git pull origin main
+rm instance/blog.db          # 古いDBを削除（データ消去）
+workon blog-venv
+python init_db.py            # テーブルと管理者ユーザーを作り直す
+```
+
+**最後に** Web タブで「**Reload**」。
+
+> データを残したままカラムを追加したい場合は Alembic（`flask db migrate` / `flask db upgrade`）を使うが、設定が複雑なため、今回の目的では作り直しで十分。
+
+### 更新方法 早見表
+
+| 変更内容 | pull 後に必要な作業 | 最後 |
+|----------|---------------------|------|
+| HTML / CSS / Python コードのみ | なし | Reload |
+| ライブラリ追加 | `pip install -r requirements-pythonanywhere.txt` | Reload |
+| models.py（DB 構造） | `rm instance/blog.db` → `python init_db.py` | Reload |
+
+---
+
+## 7. トラブルシューティング
+
+| 症状 | 確認・対処 |
+|------|-----------|
+| 更新が反映されない | Web タブの **Reload を押し忘れていないか**（最頻出）。CSS はブラウザキャッシュ対策で `Ctrl + Shift + R` |
+| `requirements...txt が無い` | `cd ~/myblog/matome` に居るか確認（プロジェクト本体は `matome/` の中） |
+| `.env` が無い / 設定が効かない | `cat .env` で存在と内容を確認。`.env` は clone に含まれないためサーバー上で手動作成する |
+| ページを開くとエラー画面 | Web タブの「**Error log**」を開き、**末尾（最新）**のトレースバックを確認 |
+| ログインできない | `.env` の `ADMIN_USERNAME` / `ADMIN_PASSWORD` と、`init_db.py` を実行済みか確認 |
+| push したのに pull で変わらない | PC 側で `git status` が clean（コミット漏れなし）か、`git push` 済みか確認 |
+
+**ログの場所（Web タブ「Log files」）:**
 - **Error log**: アプリの例外・トレースバック（最重要）
-- **Server log**: 起動時のメッセージ
+- **Server log**: 起動時メッセージ
 - **Access log**: アクセス記録
 
 ---
 
-## 5. コードを更新したときの反映方法
+## 8. 無料枠の注意点・公開の終了
 
-GitHub に push した変更をサーバーに反映する手順です。
-
-```bash
-# Bash コンソールで
-cd ~/mysite
-git pull origin main
-
-# 依存が増えた場合のみ
-workon blog-venv
-pip install -r requirements-pythonanywhere.txt
-
-# モデル（models.py）を変更してテーブル構造が変わった場合のみ
-python init_db.py
-```
-
-最後に **Web タブで「Reload」** を押すと反映されます。
-
-> 注意: `init_db.py`（`db.create_all()`）は「無いテーブルを作る」だけで、既存テーブルの**カラム追加などの変更は行いません**。列を増やすなど構造を変えた場合は、動作確認用途であれば `instance/blog.db` を削除してから `python init_db.py` で作り直すのが手軽です（既存データは消えます）。
+- **アプリの延長**: 無料枠の Web アプリは Web タブの「Run until 3 months from today」（現在は約1か月）のボタンを定期的に押さないと失効する。期限が近づくとメール通知が届く。
+- **CPU時間**: 1日あたりの CPU 秒数に上限あり。動作確認レベルなら問題なし。
+- **外部ネット接続**: 無料枠はサーバーからの外部通信が制限される。ただし本アプリのアバター（DiceBear）・地図・YouTube 埋め込みはすべて**閲覧者のブラウザ側で読み込まれる**ため、この制限の影響を受けない。
+- **公開の終了**: 一時公開が目的のため、確認が済んだら Web タブで **Disable**（無効化）または Web アプリ自体を削除して公開を終える。
 
 ---
 
-## 6. 無料枠での注意点
-
-- **アプリの延長**: 無料枠のWebアプリはWeb タブに表示される「Run until 3 months from today」（現在は約1か月）のボタンを定期的に押さないと失効します。期限が近づくとメールで通知が来ます。
-- **CPU時間**: 1日あたりのCPU秒数に上限があります。動作確認レベルなら問題ありません。
-- **外部ネット接続**: 無料枠はサーバーからの外部通信が制限されます。ただし本アプリのアバター（DiceBear）・地図・YouTube 埋め込みは**すべて閲覧者のブラウザ側で読み込まれる**ため、この制限には影響されません。
-- **公開の終了**: 一時公開が目的なので、確認が済んだら Web タブで **Disable**（無効化）または Web アプリ自体を削除し、公開を終了してください。
-
----
-
-## 7. チェックリスト
+## 9. 初回デプロイ チェックリスト
 
 - [ ] `app.py` / `config.py` を修正版に置き換えた
 - [ ] `init_db.py` / `requirements-pythonanywhere.txt` を追加した
 - [ ] `.gitignore` に `.env` と `*.db` が含まれている
 - [ ] GitHub に push した
-- [ ] PythonAnywhere で `git clone` した（`/home/<ユーザー名>/mysite`）
-- [ ] `mkvirtualenv --python=/usr/bin/python3.10 blog-venv` を作成した
+- [ ] PythonAnywhere で `git clone`（`~/myblog`、本体は `matome/`）
+- [ ] `cd ~/myblog/matome` で仮想環境 `blog-venv`（Python 3.10）を作成した
 - [ ] `pip install -r requirements-pythonanywhere.txt` を実行した
 - [ ] `.env` をサーバー上に作成した（`USE_SQLITE=1` / `FLASK_ENV=production` 含む）
 - [ ] `python init_db.py` でテーブルと管理者ユーザーを作成した
 - [ ] Web タブで Manual configuration（Python 3.10）を作成した
-- [ ] Virtualenv パスを設定した
-- [ ] WSGI ファイルを編集した
-- [ ] Static files（`/static/`）を設定した
+- [ ] Virtualenv パスを設定した（`/home/yuta1728/.virtualenvs/blog-venv`）
+- [ ] WSGI ファイルを編集した（`project_home` に `matome` を含む）
+- [ ] Static files（`/static/` → `.../matome/static`）を設定した
 - [ ] Reload した
 - [ ] トップページとログインが動作した
