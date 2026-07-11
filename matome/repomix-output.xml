@@ -66,6 +66,7 @@ save_path
 static/css/auth.css
 static/css/base.css
 static/css/create_update.css
+static/css/dark-mode.css
 static/css/detail.css
 static/css/genre.css
 static/css/hashtag.css
@@ -1986,6 +1987,8 @@ body {
     min-height: 100vh;   
     min-height: 100dvh;  
     -webkit-font-smoothing: antialiased;
+    /* ダークモード切り替え時に背景・文字色をなめらかに変化させる */
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* ------------------------------------------------------------
@@ -2057,7 +2060,9 @@ a:hover {
     transform: translateY(0);
     visibility: visible;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                visibility 0s linear 0s;
+                visibility 0s linear 0s,
+                background-color 0.25s ease,
+                border-color 0.25s ease;
 }
 
 /* 下スクロール時にヘッダーを画面外へスライドアウトさせる状態（JSが付与） */
@@ -2079,6 +2084,19 @@ a:hover {
     padding: 0 20px;
     height: 85px;
     gap: 24px;
+}
+
+/* ------------------------------------------------------------
+   【共通ヘッダー】ヘッダー右側の操作群
+   ------------------------------------------------------------
+   ナビ・テーマ切り替えボタン・ハンバーガーを1つの塊にまとめ、
+   ロゴ（左）と右側操作群（右）を space-between で両端に配置する。
+   ------------------------------------------------------------ */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 0 0 auto;
 }
 
 /* ------------------------------------------------------------
@@ -2107,7 +2125,7 @@ a:hover {
 }
 
 /* ------------------------------------------------------------
-   【共通ヘッダー】PC用ナビゲーション（新規投稿／ジャンル検索／マイページ／ログアウト）
+   【共通ヘッダー】PC用ナビゲーション（新規投稿／ジャンル検索／自己紹介／マイページ／ログアウト）
    ------------------------------------------------------------
    白背景上のナビリンク。テキストを #0369a1（濃いセルリアン）に設定し
    白背景でも確実に視認できるコントラストを確保。
@@ -2166,6 +2184,46 @@ a:hover {
     background-color: #0369a1;
     border-color: #0369a1;
     color: #ffffff;
+}
+
+
+/* ------------------------------------------------------------
+   【共通ヘッダー】ダークモード切り替えボタン（🌙 / ☀️）
+   ------------------------------------------------------------
+   PC・スマホ共通で常時表示。クリックで data-theme を切り替え、
+   選択内容は localStorage に保存される（JS は base.html 側）。
+   ------------------------------------------------------------ */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1.5px solid #38bdf8;
+    background-color: #e0f2fe;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.13s ease;
+}
+
+.theme-toggle-btn:hover {
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+    transform: translateY(0);
+    background-color: #7dd3fa;
+}
+
+.theme-toggle-icon {
+    display: block;
+    pointer-events: none;
 }
 
 
@@ -2328,6 +2386,32 @@ a:hover {
    ========================================================================== */
 
 @media (max-width: 767px) {
+
+    /* ========================================================================
+       【スマホのフォントが細く見える問題への対応】
+       ------------------------------------------------------------------------
+       body に指定している -webkit-font-smoothing: antialiased は、
+       WebKit 系ブラウザ（iPhone の Safari / Chrome など）で文字の線を
+       グレースケール・アンチエイリアスで「細く」描画する。
+       一方 Windows の Chrome / Edge はこの指定を無視し、ClearType で
+       しっかりした太さで描画するため、
+       「Windows では普通なのにスマホだけ痩せて見える」差が生まれていた。
+
+       文字の太さ（font-weight）は Windows もスマホも同じ値なので、
+       スマホ側でこの痩せる描画（antialiased）を解除するだけで、
+       Windows とほぼ同じ見た目の太さになる。
+
+       - -webkit-font-smoothing: auto  … WebKit 系の痩せ描画を解除
+       - -moz-osx-font-smoothing: auto … macOS 版 Firefox 用の同等指定
+       ※ これらのプロパティは継承されるため html, body に指定すれば
+         ページ内すべての文字（他CSSファイルで装飾された要素も含む）に効く。
+       ======================================================================== */
+    html,
+    body {
+        -webkit-font-smoothing: auto;
+        -moz-osx-font-smoothing: auto;
+    }
+
     .header-container {
         padding: 0 15px;
         height: 63px;
@@ -2346,6 +2430,18 @@ a:hover {
 
     .header-nav {
         display: none;
+    }
+
+    /* スマホではナビが消える分、右側の間隔を詰める */
+    .header-right {
+        gap: 10px;
+    }
+
+    /* スマホでもテーマ切り替えボタンは常時表示（少しだけ小さく） */
+    .theme-toggle-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 17px;
     }
 
     .hamburger-btn {
@@ -3016,6 +3112,802 @@ h1 {
 }
 </file>
 
+<file path="static/css/dark-mode.css">
+/* ============================================================
+   static/css/dark-mode.css — ダークモード「Coastal Dawn Night」
+   ============================================================
+   【役割】
+   既存のライトテーマ（各CSSに直書きされた Coastal Dawn の配色）を
+   一切変更せず、暗色版の配色だけを「上書き」で提供するファイル。
+
+   【有効化の仕組み】
+   <html> に data-theme="dark" が付くと、このファイルの各ルールが有効になる。
+   全セレクタを html[data-theme="dark"] で前置しているため詳細度が高く、
+   ページ個別CSS（index.css / detail.css 等）より後に読み込まれなくても、
+   また既存の !important 付きルールに対しても、確実に上書きが効く。
+
+   【見やすさ調整（このリビジョンの主な変更点）】
+   - カード色(surface)と背景色(bg)の明度差を広げ、ブロックが背景に
+     溶けないようにした。
+   - 枠線(border)を明るく・視認しやすい色に強化。検索エリア／ジャンル一覧
+     などの「囲み」は 2px でさらに強調。
+   - カードに暗い影を付けて縁を立たせた。
+   - detail ページの階層を明確化：タイトルを最も明るく、タイトル/メタと
+     本文の区切り線を強調、見出し(H2)下線をアクセント色に、目次を一段
+     明るいパネル＋強い枠で「箱」として際立たせた。
+   ============================================================ */
+
+
+/* ============================================================
+   [0] 暗色パレット（CSS変数）
+   ------------------------------------------------------------
+   html[data-theme="dark"] 直下に定義することで、配下の全要素へ継承される。
+   色を微調整したいときはここの値だけ変えればサイト全体に反映される。
+
+   ★見やすさのキモ：
+     --dk-bg（背景）と --dk-surface（カード）の明度差をしっかり取ること。
+     この 2 色が近いとカードが背景に溶ける。
+   ============================================================ */
+html[data-theme="dark"] {
+    --dk-bg:             #0a1420;  /* ページ背景（最も暗い） */
+    --dk-surface:        #1e344a;  /* カード・ヘッダー等の面（背景よりはっきり明るく） */
+    --dk-surface-2:      #26405b;  /* 入力欄・淡色背景だった箇所・目次パネル */
+    --dk-surface-3:      #33557a;  /* ホバー・バッジ背景 */
+    --dk-text:           #eef6fc;  /* 見出し・主要テキスト（最も明るい） */
+    --dk-text-body:      #c8d8e4;  /* 本文テキスト */
+    --dk-text-muted:     #92aabd;  /* 日付・補足など控えめテキスト */
+    --dk-link:           #74c8f8;  /* リンク・ラベル */
+    --dk-accent:         #38bdf8;  /* アクセント（セルリアン） */
+    --dk-accent-strong:  #0ea5e9;  /* 塗りボタン・左アクセント線 */
+    --dk-border:         #406687;  /* 枠線（明るめの鋼色。従来より視認性を強化） */
+    --dk-border-strong:  #5286b0;  /* 強調用の枠線（検索エリア・目次など囲みに使用） */
+    --dk-danger:         #ff9086;  /* 危険色テキスト（削除等） */
+    --dk-danger-bg:      #3a1b1b;  /* 危険色背景 */
+    --dk-danger-border:  #8a4440;  /* 危険色枠線 */
+    --dk-gold:           #fbbf24;  /* ホバーのゴールド */
+    --dk-gold-bg:        #2a2210;  /* ゴールドホバー背景 */
+    --dk-gold-border:    #7a611c;  /* ゴールドホバー枠線 */
+    --dk-green-bg:       #133423;  /* 地図ボタン等の緑背景 */
+    --dk-green-text:     #85e2a8;  /* 地図ボタン等の緑テキスト */
+    --dk-green-border:   #35734c;  /* 地図ボタン等の緑枠線 */
+
+    /* カードを縁取って浮かせるための共通シャドウ */
+    --dk-shadow:         0 2px 14px rgba(0, 0, 0, 0.55);
+    --dk-shadow-strong:  0 6px 26px rgba(0, 0, 0, 0.6);
+
+    color-scheme: dark;  /* スクロールバー等ブラウザUIも暗色に */
+}
+
+
+/* ============================================================
+   [1] グローバル（背景・見出し・リンク）
+   ============================================================ */
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+    background-color: var(--dk-bg);
+    color: var(--dk-text-body);
+}
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2 {
+    color: var(--dk-text);
+}
+
+html[data-theme="dark"] a {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] a:hover {
+    color: var(--dk-accent);
+}
+
+
+/* ============================================================
+   [2] 共通ヘッダー・ドロワー・トグルボタン
+   ============================================================ */
+html[data-theme="dark"] .main-header {
+    background-color: var(--dk-surface);
+    border-bottom-color: var(--dk-accent-strong);
+}
+
+html[data-theme="dark"] .header-logo a,
+html[data-theme="dark"] .header-logo a:hover {
+    color: var(--dk-text) !important;
+}
+html[data-theme="dark"] .header-logo a:hover {
+    color: var(--dk-accent) !important;
+}
+
+/* PCナビの各ボタン（アウトライン） */
+html[data-theme="dark"] .header-nav ul li a {
+    color: var(--dk-link);
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .header-nav ul li a:hover {
+    color: var(--dk-text);
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+}
+/* 先頭「新規投稿」だけは塗りつぶしCTAを維持（詳細度を上げて確実に適用） */
+html[data-theme="dark"] .header-nav ul li:first-child a {
+    background-color: var(--dk-accent-strong);
+    color: #06131e;
+    border-color: var(--dk-accent-strong);
+}
+html[data-theme="dark"] .header-nav ul li:first-child a:hover {
+    background-color: #38bdf8;
+    border-color: #38bdf8;
+    color: #06131e;
+}
+
+/* ハンバーガー */
+html[data-theme="dark"] .hamburger-btn {
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .hamburger-btn span {
+    background-color: var(--dk-accent);
+}
+
+/* テーマ切り替えボタン */
+html[data-theme="dark"] .theme-toggle-btn {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .theme-toggle-btn:hover {
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .theme-toggle-btn:active {
+    background-color: var(--dk-surface);
+}
+
+/* スマホ用ドロワー */
+html[data-theme="dark"] .mobile-nav-drawer {
+    background: var(--dk-surface);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.6);
+}
+html[data-theme="dark"] .mobile-nav-header {
+    background: var(--dk-surface);
+    border-bottom-color: var(--dk-accent-strong);
+}
+html[data-theme="dark"] .mobile-nav-header-logo {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .mobile-nav-close {
+    color: var(--dk-text-muted);
+}
+html[data-theme="dark"] .mobile-nav-close:hover,
+html[data-theme="dark"] .mobile-nav-close:active {
+    background: var(--dk-surface-3);
+}
+html[data-theme="dark"] .mobile-nav-drawer ul li a {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .mobile-nav-drawer ul li a:hover,
+html[data-theme="dark"] .mobile-nav-drawer ul li a:active {
+    background: var(--dk-surface-2);
+    border-left-color: var(--dk-accent);
+}
+html[data-theme="dark"] .mobile-nav-drawer ul li:first-child a {
+    background-color: var(--dk-accent-strong);
+    color: #06131e;
+}
+
+
+/* ============================================================
+   [3] フラッシュメッセージ
+   ============================================================ */
+html[data-theme="dark"] .flash-messages li {
+    color: var(--dk-text-body);
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .flash-messages li.danger {
+    color: var(--dk-danger);
+    background-color: var(--dk-danger-bg);
+    border-color: var(--dk-danger-border);
+}
+
+
+/* ============================================================
+   [4] カード・面（共通）
+   ------------------------------------------------------------
+   背景との明度差＋明るい枠線＋影の3点で、ブロックの範囲をはっきり示す。
+   ============================================================ */
+/* 左アクセント線を持つカード群 */
+html[data-theme="dark"] .post-card,
+html[data-theme="dark"] article,
+html[data-theme="dark"] .hero-section,
+html[data-theme="dark"] .howto-section,
+html[data-theme="dark"] .info-page-body,
+html[data-theme="dark"] .profile-header,
+html[data-theme="dark"] .auth-container,
+html[data-theme="dark"] .post-form,
+html[data-theme="dark"] .hashtag-filter-bar,
+html[data-theme="dark"] .related-card {
+    background-color: var(--dk-surface);
+    border-color: var(--dk-border);
+    border-left-color: var(--dk-accent-strong);
+    box-shadow: var(--dk-shadow);
+}
+
+/* 全周枠のカード（左アクセントなし）は枠を 2px に強めて囲みを明確化 */
+html[data-theme="dark"] .genre-container,
+html[data-theme="dark"] .index-search-area {
+    background-color: var(--dk-surface);
+    border-color: var(--dk-border-strong);
+    border-width: 2px;
+    box-shadow: var(--dk-shadow);
+}
+
+/* 上アクセント線のカード（統計） */
+html[data-theme="dark"] .stats-card {
+    background-color: var(--dk-surface);
+    border-color: var(--dk-border);
+    border-top-color: var(--dk-accent-strong);
+    box-shadow: var(--dk-shadow);
+}
+
+/* 記事一覧カード：枠をやや強めて一覧の1件ずつを見分けやすく */
+html[data-theme="dark"] .post-card {
+    border-color: var(--dk-border-strong);
+}
+
+/* カードのホバー（ゴールド） */
+html[data-theme="dark"] .post-card:hover {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+    border-left-color: var(--dk-gold);
+    box-shadow: var(--dk-shadow-strong);
+}
+html[data-theme="dark"] .related-card:hover {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+    border-left-color: var(--dk-gold);
+    box-shadow: var(--dk-shadow-strong);
+}
+
+/* サムネイル枠 */
+html[data-theme="dark"] .post-thumbnail,
+html[data-theme="dark"] .related-thumb {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .post-card:hover .post-thumbnail {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+}
+html[data-theme="dark"] .related-card:hover .related-thumb {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+}
+
+
+/* ============================================================
+   [5] カード内テキストの色
+   ============================================================ */
+/* 見出し・主要テキスト */
+html[data-theme="dark"] .hero-name,
+html[data-theme="dark"] .hero-section-title,
+html[data-theme="dark"] .info-page-title,
+html[data-theme="dark"] .info-section-title,
+html[data-theme="dark"] .profile-title,
+html[data-theme="dark"] .posts-section-title,
+html[data-theme="dark"] .section-title-genre,
+html[data-theme="dark"] .section-title-posts,
+html[data-theme="dark"] .related-heading,
+html[data-theme="dark"] .filter-label,
+html[data-theme="dark"] .related-title,
+html[data-theme="dark"] .group-title,
+html[data-theme="dark"] .preview-area-title,
+html[data-theme="dark"] .map-modal-title,
+html[data-theme="dark"] .post-form label,
+html[data-theme="dark"] .post-title a {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .stats-number,
+html[data-theme="dark"] .profile-post-count strong {
+    color: var(--dk-link);
+}
+
+/* 本文テキスト */
+html[data-theme="dark"] .hero-bio,
+html[data-theme="dark"] .info-section p,
+html[data-theme="dark"] .howto-item,
+html[data-theme="dark"] .profile-post-count,
+html[data-theme="dark"] .post-form p,
+html[data-theme="dark"] .empty-message {
+    color: var(--dk-text-body);
+}
+html[data-theme="dark"] .howto-item strong {
+    color: var(--dk-text);
+}
+
+/* 控えめテキスト */
+html[data-theme="dark"] .post-date,
+html[data-theme="dark"] .post-meta,
+html[data-theme="dark"] .post-time,
+html[data-theme="dark"] .profile-username,
+html[data-theme="dark"] .stats-label,
+html[data-theme="dark"] .related-date,
+html[data-theme="dark"] .preview-filename,
+html[data-theme="dark"] .genre-empty-note,
+html[data-theme="dark"] .genre-empty-message,
+html[data-theme="dark"] .index-empty-message,
+html[data-theme="dark"] .index-search-label,
+html[data-theme="dark"] .img-edit-note,
+html[data-theme="dark"] .img-change-note,
+html[data-theme="dark"] .map-preview-placeholder {
+    color: var(--dk-text-muted);
+}
+
+/* リンク色のテキスト */
+html[data-theme="dark"] .post-user-info,
+html[data-theme="dark"] .genre-tag-link,
+html[data-theme="dark"] .index-search-title,
+html[data-theme="dark"] .empty-message a {
+    color: var(--dk-link);
+}
+
+/* カードホバー時のタイトル・日付 */
+html[data-theme="dark"] .post-card:hover .post-title a,
+html[data-theme="dark"] .related-card:hover .related-title {
+    color: var(--dk-gold);
+}
+html[data-theme="dark"] .post-card:hover .post-date {
+    color: var(--dk-gold);
+}
+
+
+/* ============================================================
+   [6] バッジ・タグ
+   ============================================================ */
+html[data-theme="dark"] .badge-genre,
+html[data-theme="dark"] .genre-badge,
+html[data-theme="dark"] .hashtag-badge,
+html[data-theme="dark"] .hashtag-badge-preview,
+html[data-theme="dark"] .hashtag-filter-badge,
+html[data-theme="dark"] .genre-tag-item,
+html[data-theme="dark"] .related-heading-sub {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .genre-tag-link {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .genre-badge:hover,
+html[data-theme="dark"] .hashtag-badge:hover,
+html[data-theme="dark"] .hashtag-filter-badge:hover,
+html[data-theme="dark"] .genre-tag-item:hover {
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+    color: var(--dk-text);
+}
+/* 非公開バッジ（危険色） */
+html[data-theme="dark"] .badge-private {
+    background-color: var(--dk-danger-bg);
+    border-color: var(--dk-danger-border);
+    color: var(--dk-danger);
+}
+/* 選択中タグ（塗り）は視認性維持のためアクセント塗りに */
+html[data-theme="dark"] .hashtag-filter-badge.active {
+    background-color: var(--dk-accent-strong);
+    border-color: var(--dk-accent-strong);
+    color: #06131e;
+}
+
+
+/* ============================================================
+   [7] 入力欄・セレクト・テキストエリア
+   ============================================================ */
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="password"],
+html[data-theme="dark"] .post-form input[type="text"],
+html[data-theme="dark"] .post-form select,
+html[data-theme="dark"] .post-form textarea,
+html[data-theme="dark"] .index-search-select,
+html[data-theme="dark"] .index-search-input,
+html[data-theme="dark"] .nickname-input,
+html[data-theme="dark"] .map-modal-input,
+html[data-theme="dark"] .preview-caption-input,
+html[data-theme="dark"] .hashtag-input-wrapper {
+    background-color: var(--dk-surface-2) !important;
+    color: var(--dk-text) !important;
+    border-color: var(--dk-border) !important;
+}
+html[data-theme="dark"] .hashtag-text-input {
+    color: var(--dk-text) !important;
+    background: transparent !important;
+}
+html[data-theme="dark"] .hashtag-prefix {
+    color: var(--dk-accent);
+}
+
+/* フォーカス時（詳細度を上げて上書き） */
+html[data-theme="dark"] input[type="text"]:focus,
+html[data-theme="dark"] input[type="password"]:focus,
+html[data-theme="dark"] .post-form input[type="text"]:focus,
+html[data-theme="dark"] .post-form select:focus,
+html[data-theme="dark"] .post-form textarea:focus,
+html[data-theme="dark"] .index-search-select:focus,
+html[data-theme="dark"] .index-search-input:focus,
+html[data-theme="dark"] .nickname-input:focus,
+html[data-theme="dark"] .map-modal-input:focus {
+    background-color: var(--dk-surface) !important;
+    border-color: var(--dk-accent) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22) !important;
+}
+html[data-theme="dark"] .hashtag-input-wrapper:focus-within {
+    background-color: var(--dk-surface) !important;
+    border-color: var(--dk-accent) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22);
+}
+
+/* プレースホルダー */
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+html[data-theme="dark"] .index-search-input::placeholder,
+html[data-theme="dark"] .preview-caption-input::placeholder {
+    color: var(--dk-text-muted);
+    opacity: 1;
+}
+
+/* 検索エリアのアイコン・矢印（currentColor 依存） */
+html[data-theme="dark"] .index-search-input-icon,
+html[data-theme="dark"] .index-search-select-arrow {
+    color: var(--dk-text-muted);
+}
+html[data-theme="dark"] .index-search-input-wrap:focus-within .index-search-input-icon,
+html[data-theme="dark"] .index-search-select-wrap:focus-within .index-search-select-arrow {
+    color: var(--dk-accent);
+}
+
+
+/* ============================================================
+   [8] ボタン類
+   ============================================================ */
+/* アウトライン系ボタン */
+html[data-theme="dark"] .detail-btn-back,
+html[data-theme="dark"] .page-btn,
+html[data-theme="dark"] .load-more-btn,
+html[data-theme="dark"] .load-less-btn,
+html[data-theme="dark"] .hero-link-btn,
+html[data-theme="dark"] .info-back-btn,
+html[data-theme="dark"] .genre-footer a,
+html[data-theme="dark"] .btn-edit,
+html[data-theme="dark"] .md-btn,
+html[data-theme="dark"] .img-upload-btn--bulk,
+html[data-theme="dark"] .img-upload-btn--one,
+html[data-theme="dark"] .map-modal-cancel,
+html[data-theme="dark"] .toggle-status-btn.private {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border);
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .detail-btn-back:hover,
+html[data-theme="dark"] .page-btn:hover:not(:disabled),
+html[data-theme="dark"] .load-more-btn:hover,
+html[data-theme="dark"] .load-less-btn:hover,
+html[data-theme="dark"] .hero-link-btn:hover,
+html[data-theme="dark"] .info-back-btn:hover,
+html[data-theme="dark"] .genre-footer a:hover,
+html[data-theme="dark"] .md-btn:hover,
+html[data-theme="dark"] .img-upload-btn--bulk:hover,
+html[data-theme="dark"] .img-upload-btn--one:hover,
+html[data-theme="dark"] .map-modal-cancel:hover,
+html[data-theme="dark"] .toggle-status-btn.private:hover {
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+    color: var(--dk-text);
+}
+
+/* 現在ページ / 全体公開トグルなど（アクセント塗り） */
+html[data-theme="dark"] .page-btn.active,
+html[data-theme="dark"] .toggle-status-btn.published {
+    background-color: var(--dk-accent-strong);
+    border-color: var(--dk-accent-strong);
+    color: #06131e;
+}
+
+/* 危険（削除）系ボタン */
+html[data-theme="dark"] .btn-delete,
+html[data-theme="dark"] .hashtag-filter-clear,
+html[data-theme="dark"] .index-search-reset,
+html[data-theme="dark"] .preview-delete-btn {
+    background-color: var(--dk-danger-bg);
+    border-color: var(--dk-danger-border);
+    color: var(--dk-danger);
+}
+html[data-theme="dark"] .btn-delete:hover,
+html[data-theme="dark"] .hashtag-filter-clear:hover,
+html[data-theme="dark"] .index-search-reset:hover,
+html[data-theme="dark"] .preview-delete-btn:hover {
+    background-color: #4a2020;
+    border-color: var(--dk-danger);
+    color: var(--dk-danger);
+}
+
+/* 地図ボタン（緑） */
+html[data-theme="dark"] .md-btn-map {
+    background-color: var(--dk-green-bg);
+    border-color: var(--dk-green-border);
+    color: var(--dk-green-text);
+}
+/* 画像挿入ボタン */
+html[data-theme="dark"] .md-btn-img {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+    color: var(--dk-link);
+}
+
+
+/* ============================================================
+   [9] 記事詳細ページ（階層をはっきりさせる）
+   ============================================================ */
+/* 記事カード本体：枠と影を強めて記事範囲を明確に */
+html[data-theme="dark"] article {
+    border-color: var(--dk-border-strong);
+    box-shadow: var(--dk-shadow-strong);
+}
+
+/* 記事タイトル（最も明るく＝視線が最初に行くように） */
+html[data-theme="dark"] .detail-container h1 {
+    color: var(--dk-text);
+}
+
+/* タイトル＋メタ情報と本文を仕切る線を強調（1px→2px・明色） */
+html[data-theme="dark"] .post-meta {
+    border-bottom: 2px solid var(--dk-border);
+}
+
+/* 本文 */
+html[data-theme="dark"] .detail-article-body {
+    color: var(--dk-text-body);
+}
+html[data-theme="dark"] .detail-article-body p {
+    color: var(--dk-text-body);
+}
+html[data-theme="dark"] .detail-article-body strong {
+    color: var(--dk-text);
+}
+/* H2：セクション区切りが分かるよう下線をアクセント色に強調 */
+html[data-theme="dark"] .detail-article-body h2 {
+    color: var(--dk-text);
+    border-bottom: 2px solid var(--dk-accent);
+}
+/* H3：左のアクセント線をはっきり */
+html[data-theme="dark"] .detail-article-body h3 {
+    color: var(--dk-text);
+    border-left-color: var(--dk-accent-strong);
+}
+
+/* ------------------------------------------------------------
+   目次（TOC）を「箱」として際立たせる
+   ------------------------------------------------------------
+   - 背景を記事カード(surface)より一段明るい surface-2 にして浮かせる
+   - 枠を強調色 border-strong にし、左アクセントを 5px に
+   - 影を付けてパネルとして独立させる
+   （detail.css は !important 指定が多いので、こちらも !important で上書き）
+   ------------------------------------------------------------ */
+html[data-theme="dark"] .post-toc,
+html[data-theme="dark"] .detail-article-body .toc {
+    background-color: var(--dk-surface-2) !important;
+    border: 1px solid var(--dk-border-strong) !important;
+    border-left: 5px solid var(--dk-accent-strong) !important;
+    box-shadow: var(--dk-shadow) !important;
+}
+/* 目次の見出し */
+html[data-theme="dark"] .post-toc .toc-title,
+html[data-theme="dark"] .detail-article-body .toc::before {
+    color: var(--dk-text) !important;
+}
+/* 目次のトップレベル項目：項目間の区切り線を見えるように */
+html[data-theme="dark"] .post-toc > ul > li,
+html[data-theme="dark"] .post-toc .toc > ul > li,
+html[data-theme="dark"] .detail-article-body .toc > ul > li {
+    color: var(--dk-text) !important;
+    border-bottom-color: var(--dk-border) !important;
+}
+/* 目次のサブ項目 */
+html[data-theme="dark"] .post-toc ul ul li,
+html[data-theme="dark"] .detail-article-body .toc ul ul li {
+    color: var(--dk-text-body) !important;
+}
+html[data-theme="dark"] .post-toc a,
+html[data-theme="dark"] .detail-article-body .toc a {
+    color: var(--dk-link) !important;
+}
+html[data-theme="dark"] .post-toc a:hover,
+html[data-theme="dark"] .detail-article-body .toc a:hover {
+    color: var(--dk-accent) !important;
+}
+
+/* 画像キャプション */
+html[data-theme="dark"] .post-figcaption {
+    color: var(--dk-link);
+}
+
+/* 地図埋め込み */
+html[data-theme="dark"] .post-map-wrapper {
+    border-color: var(--dk-border);
+    border-left-color: var(--dk-accent-strong);
+    box-shadow: var(--dk-shadow);
+}
+html[data-theme="dark"] .post-map-label {
+    background: var(--dk-surface-2);
+    border-bottom-color: var(--dk-border);
+    color: var(--dk-link);
+}
+/* YouTube 埋め込み枠 */
+html[data-theme="dark"] .post-youtube-wrapper {
+    border-color: var(--dk-border);
+    box-shadow: var(--dk-shadow);
+}
+
+/* 区切り線 */
+html[data-theme="dark"] hr {
+    border-top-color: var(--dk-border);
+}
+
+/* 関連記事見出し・区切り */
+html[data-theme="dark"] .related-heading {
+    color: var(--dk-text);
+    border-bottom-color: var(--dk-accent-strong);
+}
+
+/* インラインコード・コードブロック（ライトでは無指定なので暗色で読みやすく） */
+html[data-theme="dark"] .detail-article-body code,
+html[data-theme="dark"] .detail-article-body pre,
+html[data-theme="dark"] code {
+    background-color: var(--dk-surface-2);
+    color: var(--dk-text);
+    border-radius: 4px;
+}
+
+
+/* ============================================================
+   [10] 投稿・編集フォーム（ツールバー・プレビュー・モーダル）
+   ============================================================ */
+/* ツールバー */
+html[data-theme="dark"] .md-toolbar {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="dark"] .md-btn-separator {
+    background: var(--dk-border);
+}
+html[data-theme="dark"] #bodyTextarea {
+    border-top: none !important;
+}
+
+/* 画像プレビュー */
+html[data-theme="dark"] .preview-item {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .preview-label {
+    background: var(--dk-surface-3);
+    border-top-color: var(--dk-border);
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .preview-caption-wrapper {
+    background: var(--dk-surface-3);
+    border-top-color: var(--dk-border);
+}
+
+/* モーダル（地図・YouTube） */
+html[data-theme="dark"] .map-modal {
+    background: var(--dk-surface);
+    border: 1px solid var(--dk-border-strong);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+}
+html[data-theme="dark"] .map-modal-header {
+    background: var(--dk-surface-2);
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .map-modal-title {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .map-modal-close {
+    color: var(--dk-text-muted);
+}
+html[data-theme="dark"] .map-modal-close:hover {
+    background: var(--dk-surface-3);
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .map-modal-label {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .map-preview-area {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .map-modal-footer {
+    border-top-color: var(--dk-border);
+}
+
+
+/* ============================================================
+   [11] ジャンル一覧ページ
+   ============================================================ */
+html[data-theme="dark"] .genre-item-all a {
+    color: var(--dk-link);
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .genre-item-all a:hover {
+    background: var(--dk-surface-3);
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .genre-group {
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .group-title:hover,
+html[data-theme="dark"] details[open] .group-title {
+    background: var(--dk-surface-2);
+    color: var(--dk-text);
+}
+html[data-theme="dark"] details[open] .group-title {
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .sub-genre-list {
+    background: var(--dk-surface-2);
+}
+html[data-theme="dark"] .sub-genre-list li a {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .sub-genre-list li a:hover {
+    background: var(--dk-surface-3);
+    color: var(--dk-text);
+}
+
+
+/* ============================================================
+   [12] マイページ
+   ============================================================ */
+html[data-theme="dark"] .nickname-form-wrapper {
+    border-top-color: var(--dk-border);
+}
+html[data-theme="dark"] .nickname-form-wrapper > p,
+html[data-theme="dark"] .nickname-form label {
+    color: var(--dk-text-muted);
+}
+
+
+/* ============================================================
+   [13] ハッシュタグ絞り込みバー
+   ============================================================ */
+html[data-theme="dark"] .hashtag-filter-label {
+    color: var(--dk-link);
+}
+
+
+/* ============================================================
+   [14] アバター画像の縁・背景
+   ============================================================ */
+html[data-theme="dark"] .hero-avatar img,
+html[data-theme="dark"] .info-page-avatar {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .post-user-info img {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+
+
+/* ============================================================
+   [15] 認証（ログイン）ページ
+   ============================================================ */
+html[data-theme="dark"] .auth-container label {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .auth-container h2 {
+    color: var(--dk-text);
+}
+</file>
+
 <file path="static/css/detail.css">
 /* ============================================================
    static/css/detail.css - Coastal Dawn v2
@@ -3070,7 +3962,7 @@ h1 {
     display: inline-block;
     background-color: #dbeafe;
     color: #0369a1;
-    padding: 4px 10px;
+    padding: 2px 7px;
     border-radius: 8px;
     font-size: 13px;
     margin-bottom: 8px;
@@ -3085,6 +3977,26 @@ h1 {
     border-color: #0ea5e9;
     color: #0c1f35;
     text-decoration: none;
+}
+
+/* ------------------------------------------------------------
+   【detail.html】ジャンルバッジ＋ハッシュタグを1行に並べる行
+   ------------------------------------------------------------
+   ジャンルバッジを左端に、その右にハッシュタグが並ぶ形にする。
+   （旧: ジャンルとハッシュタグが別々の行に分かれていたのを一体化）
+   ------------------------------------------------------------ */
+.detail-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+/* 行内に並べるジャンルバッジは、単体表示用の下マージン（margin-bottom: 8px）を
+   打ち消して、ハッシュタグと高さ・縦位置をそろえる */
+.detail-tag-row .genre-badge {
+    margin-bottom: 0;
 }
 
 /* ------------------------------------------------------------
@@ -4040,7 +4952,7 @@ a[role="button"]:hover {
    【index.html】「📋 最新の記事」セクション見出し
    ------------------------------------------------------------ */
 .posts-section-title {
-    font-size: 1.4rem !important;
+    font-size: 1.3rem !important;
     font-weight: 700;
     color: #0c1f35;
     line-height: 1.4;
@@ -4053,7 +4965,7 @@ a[role="button"]:hover {
    （実際の詳細レイアウトは top_sections.css で定義）
    ------------------------------------------------------------ */
 .hero-section-title {
-    font-size: 1.4rem !important;
+    font-size: 1.3rem !important;
     font-weight: 700;
     color: #0c1f35;
     line-height: 1.4;
@@ -4065,12 +4977,12 @@ a[role="button"]:hover {
    【index.html / mypage.html 共通】記事カードのジャンル・非公開バッジ
    ------------------------------------------------------------ */
 .badge-genre {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #0369a1;
     background: #dbeafe;
     border: 1px solid #38bdf8;
-    border-radius: 12px;
+    border-radius: 7px;
     padding: 2px 10px;
     white-space: nowrap;
 }
@@ -5559,9 +6471,35 @@ a[role="button"]:hover {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>create1.blog.jp</title>
+    <title>mycreate1.mitblog.jp</title>
+
+    {# ============================================================
+       ダークモード初期化スクリプト
+       ------------------------------------------------------------
+       描画（ペイント）される前に <html> へ data-theme を付与することで、
+       「一瞬ライトで表示されてから暗くなる」チラつき（FOUC）を防ぐ。
+       - localStorage に保存済みの選択があればそれを最優先
+       - なければ OS の設定（prefers-color-scheme）に追従
+       ============================================================ #}
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var theme = saved
+                    ? saved
+                    : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
+    {# ダークモード用の上書きCSS。全セレクタが html[data-theme="dark"] 前置で
+       詳細度が高いため、ページ個別CSSより後に読み込まれなくても上書きが効く。 #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
 </head>
 <body>
 
@@ -5574,24 +6512,37 @@ a[role="button"]:hover {
             {# ヘッダーのキーワード検索ボックスは廃止した。
                キーワード検索は index ページの検索エリア（search_area.html）に一本化。 #}
 
-            <nav class="header-nav">
-                <ul>
-                    {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
-                        <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                        <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
-                        <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
-                    {% else %}
-                        <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
+            {# ナビ・テーマ切り替え・ハンバーガーを右側の塊としてまとめる #}
+            <div class="header-right">
+                <nav class="header-nav">
+                    <ul>
+                        {% if current_user.is_authenticated %}
+                            <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
+                            <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            {# 「ジャンル検索」と同じ構造・同じCSSクラスの自己紹介ボタン。
+                               blog.about（/about）へ遷移する。 #}
+                            <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                            <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
+                            <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+                            <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
 
-            <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+                {# ダークモード切り替えボタン（PC・スマホ共通で常時表示） #}
+                <button class="theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="ダークモードに切り替え">
+                    <span class="theme-toggle-icon">🌙</span>
+                </button>
+
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -5608,10 +6559,14 @@ a[role="button"]:hover {
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                {# 「ジャンル検索」と同じ構造の自己紹介ボタン（スマホ用ドロワー） #}
+                <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
                 <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
             {% else %}
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+                <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
             {% endif %}
         </ul>
     </div>
@@ -5629,6 +6584,42 @@ a[role="button"]:hover {
     {% block content %}{% endblock %}
 
     <script>
+        /* ============================================================
+           ダークモード切り替え
+           ============================================================
+           - クリックで <html> の data-theme を light / dark で切り替える
+           - 選択内容は localStorage に保存し、次回訪問時も維持する
+           - ボタンのアイコン（🌙 / ☀️）と aria-label を状態に合わせて更新
+           ※ 初期テーマ自体は <head> のインラインスクリプトで
+             描画前に設定済み（チラつき防止）。ここではその後の
+             切り替え操作とアイコン同期のみを担当する。
+           ============================================================ */
+        (function () {
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (!toggleBtn) return;
+            const icon = toggleBtn.querySelector('.theme-toggle-icon');
+
+            function syncButton() {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                // ライト時は「これから暗くする」意味で🌙、ダーク時は☀️を表示
+                if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+                toggleBtn.setAttribute('aria-label', isDark ? 'ライトモードに切り替え' : 'ダークモードに切り替え');
+                toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+            }
+
+            // ページ表示時点の状態にアイコンを合わせる
+            syncButton();
+
+            toggleBtn.addEventListener('click', function () {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const next = isDark ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                try { localStorage.setItem('theme', next); } catch (e) {}
+                syncButton();
+            });
+        })();
+
+
         /* ============================================================
            ドロワーナビ（スマホ）の開閉
            ============================================================ */
@@ -6460,9 +7451,21 @@ document.addEventListener('keydown', function(e) {
         {% set genre_display = post.genre if post.genre else '未分類' %}
 
         <div class="post-meta">
-            <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
-                📂 {{ genre_display }}
-            </a>
+            {# ジャンルバッジ＋ハッシュタグを1行に並べる（ジャンルが左、ハッシュタグが右） #}
+            <div class="detail-tag-row">
+                <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
+                    📂 {{ genre_display }}
+                </a>
+
+                {% if post.hashtags %}
+                    {% for tag in post.hashtags %}
+                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                           class="hashtag-badge">
+                            #{{ tag.name }}
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
 
             <div class="post-user-info">
                 <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
@@ -6477,17 +7480,6 @@ document.addEventListener('keydown', function(e) {
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
             </div>
-
-            {% if post.hashtags %}
-                <div class="detail-hashtags">
-                    {% for tag in post.hashtags %}
-                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
-                           class="hashtag-badge">
-                            #{{ tag.name }}
-                        </a>
-                    {% endfor %}
-                </div>
-            {% endif %}
         </div>
 
         {% if toc_html and '<li>' in toc_html %}
