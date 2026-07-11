@@ -152,7 +152,7 @@
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
             <label for="hashtag_input">ハッシュタグ</label>
-            ※スペース・カンマ区切りで複数入力できます。「#」は付けても省略しても OK<br>
+            ※スペース・カンマ区切りで複数入力できます。「#」は省略しても OK<br>
             　例：<code>#Flask Python ブログ開発</code>
         </p>
         <div class="hashtag-input-wrapper">
@@ -178,9 +178,8 @@
             <label>現在の画像・キャプション</label>
             <p class="img-edit-note">
                 ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
-                ※「✕ この画像を削除」で個別に削除できます（<strong>「更新」ボタンを押すまで確定しません</strong>）。<br>
+                ※<strong>「更新」ボタンを押すまで確定しません</strong>。<br>
                 ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
-                　本文中で [imgN] タグを使っている場合は、必要に応じて本文側も修正してください。
             </p>
             <div id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
@@ -247,7 +246,7 @@
             </div>
 
             <p>
-                <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
+                <label for="default_thumb_select">デフォルトサムネイル画像を選択</label>
                 <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                     <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
                     <option value="thumb_option1.jpg"  {% if post.default_thumb == 'thumb_option1.jpg'  %}selected{% endif %}>選択肢1：趣味</option>
@@ -265,9 +264,7 @@
             </p>
 
             {# 保存済みのデフォルトサムネイルがある場合のみ .is-visible を付与して初期表示。
-               未設定時は create_update.css の #default-thumb-preview-area により初期非表示
-               （旧: Jinja 分岐で style="display: block/none" を出し分けていた箇所）。
-               表示切替は JS（previewDefaultThumb）が行う #}
+               未設定時は create_update.css の #default-thumb-preview-area により初期非表示 #}
             <div id="default-thumb-preview-area" {% if post.default_thumb %}class="is-visible"{% endif %}>
                 <div class="preview-item preview-item--thumb">
                     <img id="default-thumb-preview-img"
@@ -655,7 +652,7 @@ function renderHashtagPreview(value) {
         if (!name) return;
         var span = document.createElement('span');
         span.className   = 'hashtag-badge-preview';
-        span.textContent = '#' + name;   // textContent なので HTML として解釈されない
+        span.textContent = '#' + name;   
         area.appendChild(span);
     });
 }

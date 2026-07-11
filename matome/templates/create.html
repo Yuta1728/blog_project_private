@@ -22,7 +22,6 @@
             </select>
         </p>
 
-        {# 初期非表示（create_update.css の #new_genre_wrapper）。JSが表示を切り替える #}
         <p id="new_genre_wrapper">
             <label for="genre_new">新しいジャンル名</label>
             <input type="text" name="genre_new" id="genre_new" placeholder="新しいジャンル名を入力">
@@ -145,7 +144,7 @@
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
             <label for="hashtag_input">ハッシュタグ</label>
-            ※スペース・カンマ区切りで複数入力できます。「#」は付けても省略しても OK<br>
+            ※スペース・カンマ区切りで複数入力できます。「#」は省略しても OK<br>
             　例：<code>#Flask Python ブログ開発</code>
         </p>
         <div class="hashtag-input-wrapper">
@@ -163,7 +162,6 @@
         <!-- ===== 画像アップロード ===== -->
         <p>
             <label>画像</label>
-            ※「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
         </p>
 
         <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
@@ -213,7 +211,6 @@
             </select>
         </p>
 
-        {# 初期非表示（create_update.css の #default-thumb-preview-area）。JSが表示を切り替える #}
         <div id="default-thumb-preview-area">
             <div class="preview-item preview-item--thumb">
                 <img id="default-thumb-preview-img" src="" alt="デフォルトサムネイルプレビュー">
@@ -559,7 +556,7 @@ function renderHashtagPreview(value) {
         if (!name) return;
         var span = document.createElement('span');
         span.className   = 'hashtag-badge-preview';
-        span.textContent = '#' + name;   // textContent なので HTML として解釈されない
+        span.textContent = '#' + name;   
         area.appendChild(span);
     });
 }

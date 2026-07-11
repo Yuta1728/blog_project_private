@@ -11,7 +11,6 @@
         {% set genre_display = post.genre if post.genre else '未分類' %}
 
         <div class="post-meta">
-            {# ジャンルバッジ＋ハッシュタグを1行に並べる（ジャンルが左、ハッシュタグが右） #}
             <div class="detail-tag-row">
                 <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
                     📂 {{ genre_display }}

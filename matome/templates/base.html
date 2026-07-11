@@ -149,33 +149,13 @@
         /* ============================================================
            スマホの記事編集ツールバー改善（create / update ページ用）
            ------------------------------------------------------------
-           【Notion 風 UI への改良版】
-
-           問題1: 本文欄をタップした最初のタイミングで、ツールバーが
-                  キーボードの下に隠れてしまう
-             → フォーカス直後に一度だけ位置計算していたのをやめ、
-               キーボードのアニメーション完了を待つために
-               複数回リトライ（60〜650ms）＋ visualViewport の
-               resize / scroll に連動して位置を再計算する。
-               これにより最初のタップから確実にキーボード直上へ固定される。
-
-           問題2: text 枠の一番下付近の末尾をタップ／入力すると、
-                  文章の末尾がキーボードやツールバーの下に隠れて
-                  入力状況が見えない
-             → タップ・カーソル移動・入力のたびに「カーソルの画面上の
-               Y 座標」をミラー要素で計測し、ツールバーの上端より
-               下にある場合はページを自動スクロールして、カーソル
-               （＝文章の末尾）が常にツールバーの上に見えるようにする。
-               ページを持ち上げるためのスクロール余地は、body 末尾に
-               動的なスペーサーを差し込んで確保する。
-           ------------------------------------------------------------
            ※ #bodyTextarea と #md-toolbar があるページ（create/update）でのみ動作する。
-              それ以外のページ・PC 表示では何もしない（挙動は従来どおり）。
+              それ以外のページ・PC 表示では何もしない。
            ============================================================ */
         (function () {
             var textarea = document.getElementById('bodyTextarea');
             var toolbar  = document.getElementById('md-toolbar');
-            if (!textarea || !toolbar) return;   // 編集ページ以外では何もしない
+            if (!textarea || !toolbar) return;   
 
             var wrapper = toolbar.closest('.md-toolbar-wrapper');
             var mq = window.matchMedia('(max-width: 767px)');
@@ -184,7 +164,7 @@
             var spacer = null;
             var mirror = null;
 
-            var CARET_GAP = 16;   // カーソルとツールバーの間に空ける余白(px)
+            var CARET_GAP = 16;   
 
             /* --------------------------------------------------------
                キーボード関連の寸法計算
@@ -286,7 +266,7 @@
 
                 mirror.textContent = textarea.value.substring(0, textarea.selectionEnd);
                 var marker = document.createElement('span');
-                marker.textContent = '\u200b';  // ゼロ幅スペース
+                marker.textContent = '\u200b';  
                 mirror.appendChild(marker);
                 return marker.offsetTop;
             }
@@ -306,7 +286,7 @@
                 var caretViewTop    = taRect.top - textarea.scrollTop + caretTop;
                 var caretViewBottom = caretViewTop + lineHeight;
 
-                var lowerLimit = toolbarTopY() - CARET_GAP;   // これより下は隠れる
+                var lowerLimit = toolbarTopY() - CARET_GAP;   
                 if (caretViewBottom > lowerLimit) {
                     // 下に隠れている → ページを下方向へスクロールして持ち上げる
                     window.scrollBy(0, Math.ceil(caretViewBottom - lowerLimit));
@@ -372,7 +352,6 @@
                端末やアニメーション速度によってキーボードが開く
                タイミングがまちまちなため、フォーカス直後に複数回
                update() を走らせて確実にキーボード直上へ固定する。
-               （問題1の対策の要）
                -------------------------------------------------------- */
             var retryTimers = [];
             function clearRetries() {
@@ -396,7 +375,7 @@
                -------------------------------------------------------- */
             textarea.addEventListener('focus', function () {
                 textarea.classList.add('is-md-editing');
-                scheduleUpdates();   // キーボードが開くのを待ちながら数回配置
+                scheduleUpdates();   
             });
 
             textarea.addEventListener('blur', function () {
@@ -410,7 +389,7 @@
                 }, 100);
             });
 
-            // タップ位置・カーソル移動・入力に追従してカーソルを可視化（問題2の対策）
+            // タップ位置・カーソル移動・入力に追従してカーソルを可視化
             textarea.addEventListener('click',  scheduleCaret);
             textarea.addEventListener('keyup',  scheduleCaret);
             textarea.addEventListener('input', function () {
@@ -528,7 +507,7 @@
                     requestAnimationFrame(updateHeader);
                     ticking = true;
                 }
-            }, { passive: true });  // passive:true でスクロールのブロッキングを防ぐ
+            }, { passive: true });  
         })();
     </script>
 </body>
