@@ -40,6 +40,72 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
+migrations/
+  versions/
+    42dc0996903d_add_default_thumb_to_post.py
+    Add_hashtag_tables.py
+    add_img_captions_to_post.py
+    change_img_name_to_text.py
+    f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
+    make_update_at_nullable.py
+  alembic.ini
+  env.py
+  README
+  script.py.mako
+static/
+  css/
+    auth.css
+    base.css
+    create_update.css
+    dark-mode.css
+    detail.css
+    genre.css
+    hashtag.css
+    index.css
+    load_more.css
+    mobile_editor.css
+    mypage.css
+    top_sections.css
+  img/
+    posts/
+      0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
+      39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
+      5df45f99-d421-4cc4-999f-bd75c4a8a30d.JPG
+      ca30a9a7-300c-4e5f-b335-5a25aace981c.png
+      f1fc9388-4995-4bfc-bf17-6568fb7037ed.jpg
+      スクリーンショット 2025-02-01 222147.png
+      スクリーンショット 2025-02-01 222455.png
+    thbnails/
+      system-default.jpg
+      thumb_option1.jpg
+      thumb_option10.jpg
+      thumb_option11.jpg
+      thumb_option2.jpg
+      thumb_option3.jpg
+      thumb_option4.jpg
+      thumb_option5.jpg
+      thumb_option6.jpg
+      thumb_option7.jpg
+      thumb_option8.jpg
+      thumb_option9.jpg
+templates/
+  about.html
+  base.html
+  create.html
+  detail.html
+  genre.html
+  hero.html
+  howto.html
+  index.html
+  login.html
+  mypage.html
+  search_area.html
+  stats.html
+  update.html
+views/
+  admin.py
+  auth.py
+  blog.py
 .gitignore
 .python-version
 app.py
@@ -49,1268 +115,15 @@ deploy_pythonanywhere.md
 docker-compose.yml
 extensions.py
 init_db.py
-migrations/alembic.ini
-migrations/env.py
-migrations/README
-migrations/script.py.mako
-migrations/versions/42dc0996903d_add_default_thumb_to_post.py
-migrations/versions/Add_hashtag_tables.py
-migrations/versions/add_img_captions_to_post.py
-migrations/versions/change_img_name_to_text.py
-migrations/versions/f8bd789a6d74_initial_revision_after_manual_dbeaver_.py
-migrations/versions/make_update_at_nullable.py
 models.py
 requirements-pythonanywhere.txt
 requirements.txt
 save_path
-static/css/auth.css
-static/css/base.css
-static/css/create_update.css
-static/css/dark-mode.css
-static/css/detail.css
-static/css/genre.css
-static/css/hashtag.css
-static/css/index.css
-static/css/load_more.css
-static/css/mypage.css
-static/css/top_sections.css
-static/img/posts/0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
-static/img/posts/39d7d7f7-a2ca-4983-af49-6ae5f07c2291.png
-static/img/posts/5df45f99-d421-4cc4-999f-bd75c4a8a30d.JPG
-static/img/posts/ca30a9a7-300c-4e5f-b335-5a25aace981c.png
-static/img/posts/f1fc9388-4995-4bfc-bf17-6568fb7037ed.jpg
-static/img/posts/スクリーンショット 2025-02-01 222147.png
-static/img/posts/スクリーンショット 2025-02-01 222455.png
-static/img/thbnails/system-default.jpg
-static/img/thbnails/thumb_option1.jpg
-static/img/thbnails/thumb_option10.jpg
-static/img/thbnails/thumb_option11.jpg
-static/img/thbnails/thumb_option2.jpg
-static/img/thbnails/thumb_option3.jpg
-static/img/thbnails/thumb_option4.jpg
-static/img/thbnails/thumb_option5.jpg
-static/img/thbnails/thumb_option6.jpg
-static/img/thbnails/thumb_option7.jpg
-static/img/thbnails/thumb_option8.jpg
-static/img/thbnails/thumb_option9.jpg
-templates/about.html
-templates/base.html
-templates/create.html
-templates/detail.html
-templates/genre.html
-templates/hero.html
-templates/howto.html
-templates/index.html
-templates/login.html
-templates/mypage.html
-templates/search_area.html
-templates/stats.html
-templates/update.html
-views/admin.py
-views/auth.py
-views/blog.py
 wsgi_pythonanywhere.py
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
-
-<file path=".gitignore">
-# Python関連
-__pycache__/
-*.py[cod]
-*$py.class
-
-# 仮想環境（venvを使用している場合）
-venv/
-.venv/
-env/
-
-# 環境変数・シークレット情報
-# config.pyでOS環境変数を読み込む運用が基本ですが、
-# もし .env ファイルを作成して管理している場合は必須です
-.env
-.env.*
-
-# データベース関連
-# SQLiteを使用している場合は、そのファイルを除外（PostgreSQLなら不要）
-*.db
-*.sqlite3
-
-# OS生成ファイル
-.DS_Store
-Thumbs.db
-
-# ログファイル
-*.log
-
-# アップロードされた画像（static/img/ 以下を丸ごと除外したい場合）
-# もし初期設定画像以外をgit管理したくない場合は以下を追加
-# static/img/uploads/
-</file>
-
-<file path=".python-version">
-3.10.11
-</file>
-
-<file path="app.py">
-# ======================================================================
-# app.py — Flask アプリケーションのエントリーポイント
-# ======================================================================
-#
-# 【役割】
-#   Flask アプリを生成・設定する起点となるファイル。
-#   create_app() 関数でアプリを組み立てる「Application Factory パターン」を採用。
-#
-#   Application Factory パターンのメリット:
-#     - テスト時に設定を変えた別アプリを簡単に作れる
-#     - extensions.py と組み合わせることで循環インポートを避けられる
-#
-# 【このファイルの構成（目次）】
-#   [1] import / Blueprint の読み込み
-#   [2] create_app() : アプリ生成ファクトリ関数
-#        (2-1) ProxyFix の適用（リバースプロキシ対応）
-#        (2-2) SECRET_KEY の設定
-#        (2-3) セッション Cookie の属性設定
-#        (2-4) アップロードサイズ制限
-#        (2-5) データベース接続 URL の設定
-#        (2-6) 拡張機能の初期化（db / migrate / login_manager）
-#        (2-7) CSRF 保護の適用
-#        (2-8) Flask-Login の詳細設定（unauthorized_handler / user_loader）
-#        (2-9) セキュリティヘッダーの付与
-#        (2-10) カスタムエラーハンドラー（413）
-#        (2-11) Blueprint の登録
-#   [3] 直接実行時のエントリポイント（python app.py）
-#
-# 【処理フロー図】
-#
-#   python app.py 実行
-#        │
-#        ▼
-#   create_app() ──► Flask インスタンス生成
-#        │              │
-#        │              ├─ (2-1)〜(2-5) 各種設定（プロキシ・鍵・Cookie・DB）
-#        │              ├─ (2-6)〜(2-7) 拡張機能を app に紐付け
-#        │              ├─ (2-8)〜(2-10) 認証まわり・ヘッダー・エラー処理
-#        │              └─ (2-11) Blueprint 登録（auth / blog / admin）
-#        ▼
-#   app.run() ──► リクエスト待ち受け開始
-#
-# ======================================================================
-
-
-# ======================================================================
-# app.py — Flask アプリケーションのエントリーポイント
-# ======================================================================
-#
-# 【役割】
-#   Flask アプリを生成・設定する起点となるファイル。
-#   create_app() 関数でアプリを組み立てる「Application Factory パターン」を採用。
-#
-#   Application Factory パターンのメリット:
-#     - テスト時に設定を変えた別アプリを簡単に作れる
-#     - extensions.py と組み合わせることで循環インポートを避けられる
-#
-# 【このファイルの構成（目次）】
-#   [1] import / Blueprint の読み込み
-#   [2] create_app() : アプリ生成ファクトリ関数
-#        (2-1) ProxyFix の適用（リバースプロキシ対応）
-#        (2-2) SECRET_KEY の設定
-#        (2-3) セッション Cookie の属性設定
-#        (2-4) アップロードサイズ制限
-#        (2-5) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
-#        (2-6) 拡張機能の初期化（db / migrate / login_manager）
-#        (2-7) CSRF 保護の適用
-#        (2-8) Flask-Login の詳細設定（unauthorized_handler / user_loader）
-#        (2-9) セキュリティヘッダーの付与
-#        (2-10) カスタムエラーハンドラー（413）
-#        (2-11) Blueprint の登録
-#   [3] 直接実行時のエントリポイント（python app.py）
-#
-# ======================================================================
-
-
-# ======================================================================
-# [1] import / Blueprint の読み込み
-# ======================================================================
-
-import os
-from flask import Flask, flash, redirect, url_for, abort
-from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
-from werkzeug.middleware.proxy_fix import ProxyFix  # リバースプロキシ配下での HTTPS 判定補正
-from extensions import db, login_manager, migrate
-from models import User
-import config
-
-# Blueprint: 機能ごとにルートをまとめたモジュール（views/ 配下で定義）
-from views.auth  import auth_bp   # ログイン・ログアウト関連
-from views.blog  import blog_bp   # 一般公開ページ（一覧・詳細・ジャンル）
-from views.admin import admin_bp  # 管理者専用ページ（投稿・編集・削除・マイページ）
-
-
-# ======================================================================
-# [2] create_app() : アプリ生成ファクトリ関数
-# ======================================================================
-
-def create_app():
-    """
-    Flask アプリインスタンスを生成して返すファクトリ関数。
-    """
-
-    # ------------------------------------------------------------------
-    # STEP 1. Flask インスタンスを生成
-    # ------------------------------------------------------------------
-    app = Flask(__name__)
-
-    # ------------------------------------------------------------------
-    # STEP 2. 【セキュリティ改善①】ProxyFix の適用（リバースプロキシ対応）
-    # ------------------------------------------------------------------
-    # Render / Heroku / PythonAnywhere などでは、HTTPS はリバースプロキシで
-    # 終端され、Flask アプリ自体には HTTP で届く。そのままだと
-    # request.is_secure が本番でも False と判定されてしまうため、
-    # ProxyFix で X-Forwarded-Proto / X-Forwarded-Host を信頼して補正する。
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
-    # ------------------------------------------------------------------
-    # STEP 3. SECRET_KEY の設定（セッション・CSRF トークンの署名に使用）
-    # ------------------------------------------------------------------
-    # 本番環境判定:
-    #   - DATABASE_URL が設定されている（PaaS の PostgreSQL 等）か
-    #   - FLASK_ENV=production が設定されている
-    # のいずれかであれば本番とみなす。
-    #
-    # 【PythonAnywhere での注意】
-    #   SQLite 運用（USE_SQLITE=1）では DATABASE_URL を設定しないため、
-    #   必ず環境変数に FLASK_ENV=production を設定して本番扱いにすること。
-    #   これにより SECRET_KEY の必須化・Secure Cookie が有効になる。
-    is_production = os.getenv("DATABASE_URL") is not None or os.getenv("FLASK_ENV") == "production"
-    secret_key    = os.getenv("SECRET_KEY")
-
-    if not secret_key:
-        if is_production:
-            raise ValueError("【重大なエラー】本番環境の環境変数 'SECRET_KEY' が設定されていません。")
-        else:
-            secret_key = "dev-secret-key-for-local-use"
-
-    app.config['SECRET_KEY'] = secret_key
-
-    # ------------------------------------------------------------------
-    # STEP 4. 【セキュリティ修正】セッション Cookie の属性を明示的に設定
-    # ------------------------------------------------------------------
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['SESSION_COOKIE_SECURE']   = is_production
-
-    # ------------------------------------------------------------------
-    # STEP 5. ファイルアップロードサイズ制限（30MB）
-    # ------------------------------------------------------------------
-    app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 30MB
-
-    # ------------------------------------------------------------------
-    # STEP 6. データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
-    # ------------------------------------------------------------------
-    # 優先順位:
-    #   (1) DATABASE_URL が設定されていれば最優先（Postgres でも SQLite でも可）
-    #   (2) USE_SQLITE=1 なら、プロジェクト内 instance/blog.db を SQLite として使う
-    #       （PythonAnywhere 無料枠向け。永続ディスクに DB ファイルが残る）
-    #   (3) どちらもなければローカル開発（docker-compose の PostgreSQL）に接続
-    #
-    # 【PythonAnywhere 無料枠での使い方】
-    #   環境変数に USE_SQLITE=1 を設定するだけでよい。
-    #   DB ファイルの絶対パスは app.py の位置から自動計算するので、
-    #   長い sqlite:////home/... のようなパスを手で書く必要はない。
-    database_url = os.getenv("DATABASE_URL")
-    use_sqlite   = os.getenv("USE_SQLITE", "").lower() in ("1", "true", "yes")
-
-    if database_url:
-        # (1) 明示指定を最優先
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-
-    elif use_sqlite:
-        # (2) SQLite（PythonAnywhere など）
-        basedir      = os.path.abspath(os.path.dirname(__file__))
-        instance_dir = os.path.join(basedir, 'instance')
-        os.makedirs(instance_dir, exist_ok=True)   # instance/ がなければ作成
-        sqlite_path  = os.path.join(instance_dir, 'blog.db')
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
-
-    else:
-        # (3) ローカル開発用フォールバック（docker-compose の PostgreSQL）
-        local_db_url = (
-            f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
-            f"@localhost:15432/{config.postgre_DB}"
-        )
-        app.config['SQLALCHEMY_DATABASE_URI'] = local_db_url
-
-    # モデル変更のたびにイベントを発行する機能（使わないのでオフにしてメモリ節約）
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # ------------------------------------------------------------------
-    # STEP 7. 拡張機能の初期化（extensions.py で作ったインスタンスを app に紐付け）
-    # ------------------------------------------------------------------
-    db.init_app(app)             # SQLAlchemy を app に接続
-    migrate.init_app(app, db)    # Alembic マイグレーションを app + db に接続
-    login_manager.init_app(app)  # Flask-Login を app に接続
-
-    # ------------------------------------------------------------------
-    # STEP 8. CSRF 保護の適用
-    # ------------------------------------------------------------------
-    csrf = CSRFProtect()
-    csrf.init_app(app)
-
-    # ------------------------------------------------------------------
-    # STEP 9. Flask-Login の詳細設定
-    # ------------------------------------------------------------------
-    login_manager.login_view = None
-
-    @login_manager.unauthorized_handler
-    def unauthorized():
-        # 未ログイン状態で @login_required なページへアクセスされた場合、
-        # ログインページへ誘導せず 404 Not Found を返して存在を偽装する。
-        abort(404)
-
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
-
-    # ------------------------------------------------------------------
-    # STEP 10. 【セキュリティ修正】セキュリティヘッダーの付与
-    # ------------------------------------------------------------------
-    @app.after_request
-    def set_security_headers(response):
-        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
-        response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
-        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
-        return response
-
-    # ------------------------------------------------------------------
-    # STEP 11. カスタムエラーハンドラー: 413 Request Entity Too Large
-    # ------------------------------------------------------------------
-    @app.errorhandler(413)
-    def request_entity_too_large(error):
-        flash("アップロードされたファイルの合計サイズが30MBを超えています。", "danger")
-        return redirect(url_for('admin.mypage'))
-
-    # ------------------------------------------------------------------
-    # STEP 12. Blueprint の登録
-    # ------------------------------------------------------------------
-    app.register_blueprint(auth_bp)   # /login, /logout 系
-    app.register_blueprint(blog_bp)   # /, /about, /howto, /genre, /<id>/detail 系
-    app.register_blueprint(admin_bp)  # /create, /<id>/update, /<id>/delete, /mypage 系
-
-    return app
-
-
-# ======================================================================
-# [3] 直接実行時のエントリポイント（python app.py で起動）
-# ======================================================================
-#
-# 【重要】PythonAnywhere では app.run() は使われない。
-#   PythonAnywhere は WSGI ファイルから create_app() を呼び出して
-#   application 変数として公開する方式のため、この __main__ ブロックは
-#   ローカル開発でのみ実行される（サーバー上では import されるだけ）。
-
-if __name__ == '__main__':
-    app = create_app()
-
-    is_production = (
-        os.getenv("DATABASE_URL") is not None
-        or os.getenv("FLASK_ENV") == "production"
-    )
-
-    debug_mode = (
-        not is_production
-        and os.getenv("FLASK_DEBUG", "").lower() in ("1", "true")
-    )
-
-    app.run(debug=debug_mode)
-</file>
-
-<file path="config.py">
-# ======================================================================
-# config.py — 環境変数の読み込み・提供
-# ======================================================================
-#
-# 【役割】
-#   .env ファイルから環境変数を読み込み、
-#   アプリ全体で使いやすい変数名で提供するモジュール。
-#
-# 【このファイルの構成（目次）】
-#   [1] .env ファイルの読み込み（load_dotenv / 絶対パス指定）
-#   [2] PostgreSQL 接続情報（ローカル開発用・任意）
-#   [3] 管理者認証情報
-#   [4] ADMIN_LOGIN_PATH 未設定チェック（フェイルクローズ）
-#
-# ======================================================================
-
-import os
-from dotenv import load_dotenv  # python-dotenv: .env ファイルを読み込むライブラリ
-
-
-# ======================================================================
-# [1] .env ファイルの読み込み
-# ======================================================================
-# 【修正】.env をこのファイル（config.py）と同じディレクトリから明示的に読み込む。
-#
-# 従来は load_dotenv()（引数なし）だったが、これはカレントディレクトリを
-# 基準に .env を探すため、PythonAnywhere の WSGI からアプリが import された際に
-# 「カレントディレクトリがプロジェクト外」になり .env が読み込まれないことがあった。
-# config.py の絶対パスから .env の場所を特定することで、
-# どこから起動されても確実にプロジェクト直下の .env を読み込めるようにする。
-_BASEDIR = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(_BASEDIR, '.env'))
-
-
-# ======================================================================
-# [2] PostgreSQL 接続情報（ローカル開発用・任意）
-# ======================================================================
-# SQLite 運用（PythonAnywhere など）では使われないため未設定でも問題ない。
-# ローカルで docker-compose の PostgreSQL に接続する場合のみ必要。
-postgre_user     = os.getenv("POSTGRES_USER")      # DB ユーザー名
-postgre_password = os.getenv("POSTGRES_PASSWORD")  # DB パスワード
-postgre_DB       = os.getenv("POSTGRES_DB")        # DB 名
-
-
-# ======================================================================
-# [3] 管理者認証情報
-# ======================================================================
-# ADMIN_USERNAME   : ログインフォームで入力するユーザー名
-# ADMIN_PASSWORD   : 管理者パスワード
-#                    （ハッシュ済み文字列でも平文でも可。init_db.py が適切に処理する）
-# ADMIN_LOGIN_PATH : ログインページの URL パス（推測されにくいランダム文字列）
-ADMIN_USERNAME   = os.getenv("ADMIN_USERNAME")
-ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD")
-ADMIN_LOGIN_PATH = os.getenv("ADMIN_LOGIN_PATH")
-
-
-# ======================================================================
-# [4] ADMIN_LOGIN_PATH 未設定チェック（フェイルクローズ）
-# ======================================================================
-# 設定漏れをアプリ起動前の最も早い段階で検出する。
-if not ADMIN_LOGIN_PATH:
-    raise ValueError("【重大なエラー】環境変数 'ADMIN_LOGIN_PATH' が設定されていません。")
-</file>
-
-<file path="constants.py">
-# ======================================================================
-# constants.py — アプリ全体で共有する定数の一元管理
-# ======================================================================
-#
-# 【役割】
-#   アプリ全体で共有する「定数」を一元管理するファイル。
-#
-#   【なぜ定数ファイルを分けるのか】
-#   もし admin.py と blog.py にそれぞれ同じリストを書くと、
-#   ジャンルを追加・削除したいときに 2 か所を修正しなければならず
-#   片方だけ更新するバグが起きやすい。
-#   ここに一か所まとめることで「変更は 1 か所だけ」になる（DRY 原則）。
-#
-# 【このファイルの構成（目次）】
-#   [1] DEFAULT_GENRES : デフォルトジャンル一覧
-#
-# 【処理フロー図（利用のされ方）】
-#
-#   constants.DEFAULT_GENRES
-#        │
-#        ├──► views/admin.py : _get_genre_list()
-#        │      投稿フォームのジャンル選択肢の「母集合」として使用
-#        │
-#        └──► views/blog.py : genre_list() / index()
-#               ジャンル一覧ページ・検索エリアの表示に使用
-#
-# ======================================================================
-
-
-# ======================================================================
-# [1] DEFAULT_GENRES : アプリがデフォルトで用意するジャンルの一覧
-# ======================================================================
-# - 順番がそのままジャンル選択 UI の表示順になる
-# - ユーザーが記事に使ったジャンルはこのリストに追加されることはなく、
-#   あくまで「選択肢のひな形」として機能する
-# - ユーザーが「+ 新しいジャンルを作成する」を選んで独自のジャンルを
-#   追加することも可能（その場合 DB の Post.genre に直接保存される）
-DEFAULT_GENRES = [
-    # ライフスタイル系
-    '日常', '健康', '旅行', '趣味', 'イラスト',
-    # 社会・経済系
-    'ニュース', '経済', '投資',
-    # 技術・勉強系
-    'プログラミング学習', '開発記録', '資格勉強', '勉強',
-    # スポーツ系
-    'サッカー', '野球', '競馬',
-    # 娯楽系
-    'アニメ', '漫画', '本', 'ゲーム', '音楽',
-    '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
-    # 仕事系
-    'バイト', '就活', '仕事',
-]
-</file>
-
-<file path="deploy_pythonanywhere.md">
-# MIT Blog — PythonAnywhere デプロイ・運用仕様書
-
-Flask 製ブログアプリを **PythonAnywhere 無料枠**に **GitHub 経由**で公開し、公開後にコードを更新・反映していくための仕様書です。実際のデプロイで使用した設定値・遭遇したつまずきポイントも反映しています。
-
----
-
-## 1. この仕様書の概要
-
-| 項目 | 内容 |
-|------|------|
-| 対象アプリ | Flask 製個人ブログ（Application Factory パターン / `create_app()` 方式） |
-| 公開の目的 | 学習目的の一時公開・動作確認 |
-| ホスティング | PythonAnywhere 無料枠（Beginner、クレジットカード不要） |
-| データベース | SQLite（無料枠でも使える。永続ディスクに DB ファイルを保存） |
-| コード配布 | GitHub リポジトリからの `git clone` / `git pull` |
-| 公開URL | `https://<PythonAnywhereユーザー名>.pythonanywhere.com` |
-
-### なぜ PostgreSQL ではなく SQLite なのか
-
-PythonAnywhere 無料枠は 2026年1月以降、新規アカウントでは MySQL も使えず、PostgreSQL は有料アドオンのみです。そのため DB サービスを使わず、ファイル1つで完結する **SQLite** に切り替えて運用します。このアプリは SQLAlchemy を使っているため、接続先を切り替えるだけで大きな改修なく動作します。
-
----
-
-## 2. 構成情報（本番デプロイで使用した値）
-
-以降の手順で使うパス・名称の一覧です。自分の環境に合わせて読み替えてください。
-
-| 種別 | 値 |
-|------|-----|
-| PythonAnywhere ユーザー名 | `yuta1728` |
-| GitHub リポジトリ | `https://github.com/Yuta1728/blog_project_private.git`（private） |
-| clone 先フォルダ | `myblog` |
-| **プロジェクト本体の場所** | **`/home/yuta1728/myblog/matome`** |
-| 仮想環境名 | `blog-venv`（Python 3.10） |
-| 仮想環境のパス | `/home/yuta1728/.virtualenvs/blog-venv` |
-| WSGI 設定ファイル | `/var/www/yuta1728_pythonanywhere_com_wsgi.py` |
-| SQLite DB ファイル | `/home/yuta1728/myblog/matome/instance/blog.db` |
-| 静的ファイル | `/home/yuta1728/myblog/matome/static` |
-| 公開URL | `https://yuta1728.pythonanywhere.com` |
-
-> ⚠️ **重要な前提**: このリポジトリは、アプリ本体が clone 直下ではなく **`matome/` サブフォルダ**の中にあります。そのため、以降のコマンド・パス指定はすべて `matome` を含めた `/home/yuta1728/myblog/matome` を「プロジェクトのルート」として扱います。
-
----
-
-## 3. コードの変更点（デプロイ前に反映済み）
-
-SQLite で動かすために、以下のファイルを修正・追加しています。
-
-| ファイル | 種別 | 内容 |
-|----------|------|------|
-| `app.py` | 修正 | DB 接続に SQLite 対応を追加。`USE_SQLITE=1` で `instance/blog.db` を使用 |
-| `config.py` | 修正 | `.env` を config.py と同じ場所から確実に読み込む（WSGI 起動対策） |
-| `init_db.py` | 新規 | `db.create_all()` でテーブル作成＋管理者ユーザー作成を一括実行 |
-| `requirements-pythonanywhere.txt` | 新規 | PostgreSQL ドライバ（psycopg 系）を除いた依存一覧 |
-| `wsgi_pythonanywhere_sample.py` | 新規 | WSGI 設定に貼り付ける内容のサンプル（参考用） |
-
-### 変更のポイント
-
-- **`app.py`**: DB 接続の優先順位は `(1) DATABASE_URL` → `(2) USE_SQLITE=1` → `(3) ローカル PostgreSQL`。`USE_SQLITE=1` を指定すると、`app.py` の位置から DB ファイルの絶対パスを自動計算するため、環境変数に長いパスを書く必要がない。
-- **`config.py`**: PythonAnywhere の WSGI から起動されるとカレントディレクトリがずれて `.env` を読めないことがあるため、`config.py` 自身の絶対パスを基準に `.env` を読み込むよう変更。
-- **`init_db.py`**: このアプリはログイン時に管理者ユーザーが DB に存在する前提のため、テーブル作成と同時に管理者ユーザーも作成する。`ADMIN_PASSWORD` は平文・ハッシュ済みどちらでも受け付ける。
-
----
-
-## 4. 初回デプロイ手順
-
-### フェーズ 0：全体像
-
-```
-[自分のPC]                    [GitHub]                [PythonAnywhere]
-修正を反映  ──push──▶  リポジトリ  ──git clone──▶  サーバーに配置
-                                                     ├ 仮想環境作成
-                                                     ├ pip install
-                                                     ├ .env 作成（手動）
-                                                     ├ init_db.py で初期化
-                                                     └ Web タブで公開設定 → Reload
-```
-
-### フェーズ 1：自分のPCでの準備
-
-**1-1.** 修正・新規ファイルをプロジェクトに反映し、`.gitignore` に以下が含まれることを確認する（`.env` や DB ファイルの流出防止）。
-
-```
-.env
-.env.*
-*.db
-*.sqlite3
-```
-
-**1-2.** GitHub へ push する。
-
-```bash
-git add .
-git commit -m "PythonAnywhere向けにSQLite対応を追加"
-git push origin main
-```
-
-> リポジトリは private を推奨（管理画面を持つアプリのため）。
-
-### フェーズ 2：PythonAnywhere でのセットアップ
-
-#### 2-1. アカウント作成
-1. https://www.pythonanywhere.com/ で無料の **Beginner** アカウントを作成（カード不要）
-2. ログインするとダッシュボードが表示される
-
-#### 2-2. リポジトリを clone
-「**Consoles**」タブ →「**Bash**」で新しいコンソールを開き、以下を実行。
-
-```bash
-cd ~
-git clone https://github.com/Yuta1728/blog_project_private.git myblog
-cd myblog
-ls -la
-```
-
-> ✅ **確認**: `ls -la` で `matome` フォルダが見えること。アプリ本体はこの中にある。
-
-#### 2-3. 仮想環境の作成と依存インストール
-アプリ本体のある `matome` に移動してから作業する。
-
-```bash
-cd ~/myblog/matome
-mkvirtualenv --python=/usr/bin/python3.10 blog-venv
-pip install -r requirements-pythonanywhere.txt
-```
-
-- プロンプトが `(blog-venv) $` になれば仮想環境が有効。
-- あとで再度有効化するには `workon blog-venv`。
-
-> ⚠️ **つまずき例**: clone 直下（`~/myblog`）で `pip install` すると `requirements-pythonanywhere.txt が無い` エラーになる。プロジェクト本体は `matome/` の中なので、必ず `cd ~/myblog/matome` してから実行する。
-
-#### 2-4. `.env` をサーバー上に作成
-`.env` は `.gitignore` により **GitHub に含まれず、clone にも入っていない**。サーバー上で手動作成する。
-
-`nano` が難しい場合は、以下を **丸ごとコピーしてコンソールに貼り付け**れば一発で作成できる（値は自分のものに変更してから貼り付ける）。
-
-```bash
-cd ~/myblog/matome
-cat > .env << 'EOF'
-FLASK_ENV=production
-USE_SQLITE=1
-SECRET_KEY=ここにランダムな長い文字列
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=ここにログインパスワード（平文でOK）
-ADMIN_LOGIN_PATH=secret-login-xxxxxxxx
-ADMIN_GATE_KEY=ここに別のランダムな長い文字列
-EOF
-```
-
-作成後、内容を確認する。
-
-```bash
-cat .env
-```
-
-**各項目の意味:**
-
-| キー | 説明 |
-|------|------|
-| `FLASK_ENV=production` | 本番モード。Secure Cookie 有効化・SECRET_KEY 必須化（**SQLite運用でも必須**） |
-| `USE_SQLITE=1` | DB を SQLite にする |
-| `SECRET_KEY` | セッション・CSRF 署名用の秘密鍵（長いランダム文字列） |
-| `ADMIN_USERNAME` | 管理者ログインのユーザー名 |
-| `ADMIN_PASSWORD` | ログインパスワード（平文可。`init_db.py` がハッシュ化） |
-| `ADMIN_LOGIN_PATH` | ログイン画面の URL パス（推測されにくい文字列） |
-| `ADMIN_GATE_KEY` | ログイン画面を表示するための合言葉 |
-
-ランダム文字列の生成（`SECRET_KEY` と `ADMIN_GATE_KEY` に別々の値を使う）:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-> **nano で編集する場合の操作**: 保存 = `Ctrl + O` → `Enter`、終了 = `Ctrl + X`。（`^` は Ctrl キーの意味）
-
-#### 2-5. データベースの初期化
-テーブルと管理者ユーザーを作成する。
-
-```bash
-cd ~/myblog/matome
-workon blog-venv
-python init_db.py
-```
-
-成功時の表示:
-
-```
-[OK] テーブルを作成しました。
-[OK] 管理者ユーザー "admin" を作成しました。
-
-初期化が完了しました。Web タブから Reload してください。
-```
-
-これで `instance/blog.db` に SQLite DB が作成され、管理者ユーザーも登録される。
-
-### フェーズ 3：Web タブでの公開設定
-
-以降はブラウザ画面での操作。画面上部のメニューから「**Web**」タブを開く（見当たらない場合は右上のハンバーガーメニュー ≡ 内）。
-
-#### 3-1. Web アプリを作成（Manual configuration）
-1. 「**Add a new web app**」をクリック
-2. ドメイン確認 → 「**Next**」（無料枠は `yuta1728.pythonanywhere.com` 固定）
-3. フレームワーク選択で「**Manual configuration**」を選ぶ
-   - ⚠️ **「Flask」ではなく Manual configuration**。`create_app()` 方式のため手動設定が必要
-4. Python バージョンで「**Python 3.10**」を選ぶ（仮想環境と合わせる）
-5. 「**Next**」→ 設定ページが開く
-
-#### 3-2. Virtualenv パスを設定
-「**Virtualenv**」セクションに以下を入力してチェックマークで保存。
-
-```
-/home/yuta1728/.virtualenvs/blog-venv
-```
-
-#### 3-3. WSGI 設定ファイルを編集
-「**Code**」セクションの **WSGI configuration file** のリンクを開き、**中身をすべて削除**して以下に置き換え、「Save」で保存。
-
-```python
-import sys
-
-project_home = '/home/yuta1728/myblog/matome'
-if project_home not in sys.path:
-    sys.path.insert(0, project_home)
-
-from app import create_app
-application = create_app()
-```
-
-> ⚠️ `project_home` が `matome` まで含んでいることを必ず確認する。
-
-#### 3-4. 静的ファイルの配信設定
-「**Static files**」セクションに以下を入力してチェックマークで保存。
-
-| URL | Directory |
-|-----|-----------|
-| `/static/` | `/home/yuta1728/myblog/matome/static` |
-
-#### 3-5. Reload して公開
-Web タブ上部の緑色の「**Reload yuta1728.pythonanywhere.com**」ボタンを押す。
-
-ブラウザで `https://yuta1728.pythonanywhere.com` にアクセスし、トップページが表示されれば公開成功。
-
----
-
-## 5. 動作確認
-
-### 5-1. トップページ
-`https://yuta1728.pythonanywhere.com` が表示されること。
-
-### 5-2. 管理者ログイン
-ログイン URL は隠蔽されている。以下の手順でアクセスする。
-
-1. ブラウザで合言葉付き URL を開く（`.env` の値を使用）:
-   ```
-   https://yuta1728.pythonanywhere.com/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>
-   ```
-2. 合言葉が正しければ Cookie が発行され、`?key=` なしの URL にリダイレクトされる
-3. `ADMIN_USERNAME` と `ADMIN_PASSWORD` でログイン
-
-ログイン後、記事投稿・画像アップロード（再起動しても消えない）・地図/YouTube 埋め込みが動作するか確認する。
-
----
-
-## 6. 公開後の更新・反映の運用方法
-
-### 基本原則
-
-**「PCで修正 → GitHubにpush → サーバーでpull → Reload」** が全ケース共通の流れ。
-
-```
-[自分のPC]              [GitHub]           [PythonAnywhere]
-コード修正 ──push──▶ リポジトリ ──git pull──▶ サーバーに反映 → Reload
-```
-
-> ⚠️ **コードを変えただけでは反映されない。最後に必ず Web タブの「Reload」を押す**こと。Reload でアプリが再読み込みされて初めて変更が有効になる。
-
-### ケース①：コードを修正しただけ（最も多い）
-
-`templates/`（HTML）、`views/`（Python）、`static/`（CSS）などの変更のみ。
-
-**PC側:**
-```bash
-git add .
-git commit -m "修正内容"
-git push origin main
-```
-
-**PythonAnywhere（Bash コンソール）:**
-```bash
-cd ~/myblog/matome
-git pull origin main
-```
-
-**最後に** Web タブで「**Reload**」。
-
-### ケース②：ライブラリを追加した
-
-`requirements-pythonanywhere.txt` にパッケージを追加した場合は、pull 後にインストールが必要。
-
-```bash
-cd ~/myblog/matome
-git pull origin main
-workon blog-venv
-pip install -r requirements-pythonanywhere.txt
-```
-
-**最後に** Web タブで「**Reload**」。
-
-> `pip install` は既存分は飛ばして新規分だけ入れるため、毎回実行しても問題ない。
-
-### ケース③：データベースの構造を変えた（models.py 変更）
-
-`init_db.py`（`db.create_all()`）は「無いテーブルを作る」だけで、**既存テーブルへのカラム追加は行わない**。カラム追加などをした場合、動作確認用途であれば古い DB を作り直すのが手軽（**投稿データは消える**）。
-
-```bash
-cd ~/myblog/matome
-git pull origin main
-rm instance/blog.db          # 古いDBを削除（データ消去）
-workon blog-venv
-python init_db.py            # テーブルと管理者ユーザーを作り直す
-```
-
-**最後に** Web タブで「**Reload**」。
-
-> データを残したままカラムを追加したい場合は Alembic（`flask db migrate` / `flask db upgrade`）を使うが、設定が複雑なため、今回の目的では作り直しで十分。
-
-### 更新方法 早見表
-
-| 変更内容 | pull 後に必要な作業 | 最後 |
-|----------|---------------------|------|
-| HTML / CSS / Python コードのみ | なし | Reload |
-| ライブラリ追加 | `pip install -r requirements-pythonanywhere.txt` | Reload |
-| models.py（DB 構造） | `rm instance/blog.db` → `python init_db.py` | Reload |
-
----
-
-## 7. トラブルシューティング
-
-| 症状 | 確認・対処 |
-|------|-----------|
-| 更新が反映されない | Web タブの **Reload を押し忘れていないか**（最頻出）。CSS はブラウザキャッシュ対策で `Ctrl + Shift + R` |
-| `requirements...txt が無い` | `cd ~/myblog/matome` に居るか確認（プロジェクト本体は `matome/` の中） |
-| `.env` が無い / 設定が効かない | `cat .env` で存在と内容を確認。`.env` は clone に含まれないためサーバー上で手動作成する |
-| ページを開くとエラー画面 | Web タブの「**Error log**」を開き、**末尾（最新）**のトレースバックを確認 |
-| ログインできない | `.env` の `ADMIN_USERNAME` / `ADMIN_PASSWORD` と、`init_db.py` を実行済みか確認 |
-| push したのに pull で変わらない | PC 側で `git status` が clean（コミット漏れなし）か、`git push` 済みか確認 |
-
-**ログの場所（Web タブ「Log files」）:**
-- **Error log**: アプリの例外・トレースバック（最重要）
-- **Server log**: 起動時メッセージ
-- **Access log**: アクセス記録
-
----
-
-## 8. 無料枠の注意点・公開の終了
-
-- **アプリの延長**: 無料枠の Web アプリは Web タブの「Run until 3 months from today」（現在は約1か月）のボタンを定期的に押さないと失効する。期限が近づくとメール通知が届く。
-- **CPU時間**: 1日あたりの CPU 秒数に上限あり。動作確認レベルなら問題なし。
-- **外部ネット接続**: 無料枠はサーバーからの外部通信が制限される。ただし本アプリのアバター（DiceBear）・地図・YouTube 埋め込みはすべて**閲覧者のブラウザ側で読み込まれる**ため、この制限の影響を受けない。
-- **公開の終了**: 一時公開が目的のため、確認が済んだら Web タブで **Disable**（無効化）または Web アプリ自体を削除して公開を終える。
-
----
-
-## 9. 初回デプロイ チェックリスト
-
-- [ ] `app.py` / `config.py` を修正版に置き換えた
-- [ ] `init_db.py` / `requirements-pythonanywhere.txt` を追加した
-- [ ] `.gitignore` に `.env` と `*.db` が含まれている
-- [ ] GitHub に push した
-- [ ] PythonAnywhere で `git clone`（`~/myblog`、本体は `matome/`）
-- [ ] `cd ~/myblog/matome` で仮想環境 `blog-venv`（Python 3.10）を作成した
-- [ ] `pip install -r requirements-pythonanywhere.txt` を実行した
-- [ ] `.env` をサーバー上に作成した（`USE_SQLITE=1` / `FLASK_ENV=production` 含む）
-- [ ] `python init_db.py` でテーブルと管理者ユーザーを作成した
-- [ ] Web タブで Manual configuration（Python 3.10）を作成した
-- [ ] Virtualenv パスを設定した（`/home/yuta1728/.virtualenvs/blog-venv`）
-- [ ] WSGI ファイルを編集した（`project_home` に `matome` を含む）
-- [ ] Static files（`/static/` → `.../matome/static`）を設定した
-- [ ] Reload した
-- [ ] トップページとログインが動作した
-</file>
-
-<file path="docker-compose.yml">
-services:
-    db:
-        image: postgres:18-alpine
-        container_name: dbtest
-        environment:
-            POSTGRES_USER: ${POSTGRES_USER}
-            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-            POSTGRES_DB: ${POSTGRES_DB}
-            TZ: Asia/Tokyo
-        ports:
-            # ホスト : コンテナ(PostgreSQL)
-            - "15432:5432"
-        volumes:
-            # データを永続化するための名前付きボリューム
-            - personal_blog_data:/var/lib/postgresql
-            # 初期化用(自動実行)
-            - ./init:/docker-entrypoint-initdb.d
-        restart: unless-stopped
-
-volumes:
-    personal_blog_data:
-</file>
-
-<file path="extensions.py">
-# ======================================================================
-# extensions.py — Flask 拡張機能インスタンスの「置き場」
-# ======================================================================
-#
-# 【役割】
-#   Flask の拡張機能（プラグイン）を「インスタンスだけ先に作っておく」ファイル。
-#
-#   【なぜ app.py に直接書かないのか】
-#   app.py で from extensions import db と書けば
-#   app.py と models.py の双方から同じ db オブジェクトを参照できる。
-#   app.py 内で db = SQLAlchemy(app) と書いてしまうと
-#   models.py が app.py を import して循環インポートが発生するため、
-#   このファイルで「中立な場所」に置いている。（Application Factory パターン）
-#
-# 【このファイルの構成（目次）】
-#   [1] db            : SQLAlchemy（ORM）インスタンス
-#   [2] login_manager : Flask-Login（ログイン状態管理）インスタンス
-#   [3] migrate       : Flask-Migrate（DB マイグレーション）インスタンス
-#
-# 【処理フロー図（初期化の流れ）】
-#
-#   extensions.py                    app.py の create_app()
-#   ┌───────────────────┐            ┌─────────────────────────────┐
-#   │ db            生成 │──import──►│ db.init_app(app)            │
-#   │ login_manager 生成 │──import──►│ login_manager.init_app(app) │
-#   │ migrate       生成 │──import──►│ migrate.init_app(app, db)   │
-#   └───────────────────┘            └─────────────────────────────┘
-#          ▲
-#          │ import（app.py を経由しないので循環しない）
-#   models.py / views/*.py が db を利用
-#
-# ======================================================================
-
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_migrate import Migrate
-
-
-# ======================================================================
-# [1] db : データベース操作の中心オブジェクト
-# ======================================================================
-# SQLAlchemy の ORM（Object-Relational Mapping）インスタンス。
-# models.py で db.Column / db.relationship などを使ってテーブル定義し、
-# views/ 内で db.session.add() / db.session.commit() などを使って
-# データの読み書きを行う。
-# 実際の DB への接続は app.py の db.init_app(app) 時に行われる。
-db = SQLAlchemy()
-
-
-# ======================================================================
-# [2] login_manager : ログイン状態の管理オブジェクト
-# ======================================================================
-# Flask-Login が提供するセッション管理の中心。
-# - @login_required デコレータで未ログイン時のアクセスを制御
-# - current_user でテンプレート・ビューから現在のユーザー情報を取得
-# - login_manager.login_view でログインページの URL を指定（app.py で設定）
-# - login_manager.user_loader でセッションから User を復元するコールバックを登録
-login_manager = LoginManager()
-
-
-# ======================================================================
-# [3] migrate : データベーススキーマのバージョン管理オブジェクト
-# ======================================================================
-# Alembic（マイグレーションツール）を Flask と連携させるラッパー。
-# models.py でテーブル定義を変更した後に
-#   flask db migrate -m "変更内容"  → 差分を検出して migrations/versions/ にファイル生成
-#   flask db upgrade                → 実際の DB に変更を適用
-# というワークフローで使用する。
-migrate = Migrate()
-</file>
-
-<file path="init_db.py">
-# ======================================================================
-# init_db.py — データベース初期化スクリプト（SQLite / マイグレーション不要）
-# ======================================================================
-#
-# 【役割】
-#   マイグレーション（flask db upgrade）を使わない環境向けに、
-#   テーブル作成と管理者ユーザーの登録を一括で行うスクリプト。
-#   PythonAnywhere 無料枠のように SQLite を使う場合に利用する。
-#
-# 【重要】
-#   このアプリはログイン時に「管理者ユーザー（ADMIN_USERNAME）」が
-#   DB に存在していることを前提にしている。
-#   空の DB のままだとログインできないため、テーブル作成と同時に
-#   管理者ユーザーも作成する。
-#
-# 【実行方法】
-#   1. 仮想環境を有効化する（PythonAnywhere では workon <venv名>）
-#   2. .env に ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_LOGIN_PATH /
-#      ADMIN_GATE_KEY / SECRET_KEY / USE_SQLITE / FLASK_ENV を設定しておく
-#   3. プロジェクト直下で以下を実行:
-#          python init_db.py
-#
-#   何度実行しても安全（テーブル・ユーザーが既にあればスキップする）。
-# ======================================================================
-
-from werkzeug.security import generate_password_hash
-from app import create_app
-from extensions import db
-from models import User
-import config
-
-# werkzeug が生成するパスワードハッシュの接頭辞（ハッシュ済みかどうかの判定用）
-_HASH_PREFIXES = ('pbkdf2:', 'scrypt:', 'argon2')
-
-
-def _resolve_password_hash(raw: str) -> str:
-    """
-    ADMIN_PASSWORD の値を「DB に保存するハッシュ」に変換する。
-
-    - 既にハッシュ済み（pbkdf2:/scrypt:/argon2 で始まる）ならそのまま使う
-    - 平文が渡された場合はここでハッシュ化する
-
-    どちらの形式でも受け付けることで、初心者が平文を設定しても
-    正しくログインできるようにする（安全側・利便性重視）。
-    """
-    raw = raw or ''
-    if raw.startswith(_HASH_PREFIXES):
-        return raw
-    return generate_password_hash(raw)
-
-
-def main():
-    app = create_app()
-    with app.app_context():
-        # --------------------------------------------------------------
-        # 1) 全テーブルを作成（既に存在するテーブルはそのまま）
-        # --------------------------------------------------------------
-        db.create_all()
-        print('[OK] テーブルを作成しました。')
-
-        # --------------------------------------------------------------
-        # 2) 管理者ユーザーを作成（既に存在すれば作成しない）
-        # --------------------------------------------------------------
-        if not config.ADMIN_USERNAME:
-            raise SystemExit('[ERROR] ADMIN_USERNAME が未設定です。.env を確認してください。')
-
-        existing = User.query.filter_by(username=config.ADMIN_USERNAME).first()
-        if existing:
-            print(f'[SKIP] 管理者ユーザー "{config.ADMIN_USERNAME}" は既に存在します。')
-        else:
-            user = User(
-                username=config.ADMIN_USERNAME,
-                password=_resolve_password_hash(config.ADMIN_PASSWORD),
-                nickname=None,
-            )
-            db.session.add(user)
-            db.session.commit()
-            print(f'[OK] 管理者ユーザー "{config.ADMIN_USERNAME}" を作成しました。')
-
-        print('\n初期化が完了しました。Web タブから Reload してください。')
-
-
-if __name__ == '__main__':
-    main()
-</file>
-
-<file path="migrations/alembic.ini">
-# A generic, single database configuration.
-
-[alembic]
-# template used to generate migration files
-# file_template = %%(rev)s_%%(slug)s
-
-# set to 'true' to run the environment during
-# the 'revision' command, regardless of autogenerate
-# revision_environment = false
-
-
-# Logging configuration
-[loggers]
-keys = root,sqlalchemy,alembic,flask_migrate
-
-[handlers]
-keys = console
-
-[formatters]
-keys = generic
-
-[logger_root]
-level = WARN
-handlers = console
-qualname =
-
-[logger_sqlalchemy]
-level = WARN
-handlers =
-qualname = sqlalchemy.engine
-
-[logger_alembic]
-level = INFO
-handlers =
-qualname = alembic
-
-[logger_flask_migrate]
-level = INFO
-handlers =
-qualname = flask_migrate
-
-[handler_console]
-class = StreamHandler
-args = (sys.stderr,)
-level = NOTSET
-formatter = generic
-
-[formatter_generic]
-format = %(levelname)-5.5s [%(name)s] %(message)s
-datefmt = %H:%M:%S
-</file>
-
-<file path="migrations/env.py">
-import logging
-from logging.config import fileConfig
-
-from flask import current_app
-
-from alembic import context
-
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
-config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
-logger = logging.getLogger('alembic.env')
-
-
-def get_engine():
-    try:
-        # this works with Flask-SQLAlchemy<3 and Alchemical
-        return current_app.extensions['migrate'].db.get_engine()
-    except (TypeError, AttributeError):
-        # this works with Flask-SQLAlchemy>=3
-        return current_app.extensions['migrate'].db.engine
-
-
-def get_engine_url():
-    try:
-        return get_engine().url.render_as_string(hide_password=False).replace(
-            '%', '%%')
-    except AttributeError:
-        return str(get_engine().url).replace('%', '%%')
-
-
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-config.set_main_option('sqlalchemy.url', get_engine_url())
-target_db = current_app.extensions['migrate'].db
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
-
-def get_metadata():
-    if hasattr(target_db, 'metadatas'):
-        return target_db.metadatas[None]
-    return target_db.metadata
-
-
-def run_migrations_offline():
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url, target_metadata=get_metadata(), literal_binds=True
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-def run_migrations_online():
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-
-    # this callback is used to prevent an auto-migration from being generated
-    # when there are no changes to the schema
-    # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
-    def process_revision_directives(context, revision, directives):
-        if getattr(config.cmd_opts, 'autogenerate', False):
-            script = directives[0]
-            if script.upgrade_ops.is_empty():
-                directives[:] = []
-                logger.info('No changes in schema detected.')
-
-    conf_args = current_app.extensions['migrate'].configure_args
-    if conf_args.get("process_revision_directives") is None:
-        conf_args["process_revision_directives"] = process_revision_directives
-
-    connectable = get_engine()
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=get_metadata(),
-            **conf_args
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
-
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
-</file>
-
-<file path="migrations/README">
-Single-database configuration for Flask.
-</file>
-
-<file path="migrations/script.py.mako">
-"""${message}
-
-Revision ID: ${up_revision}
-Revises: ${down_revision | comma,n}
-Create Date: ${create_date}
-
-"""
-from alembic import op
-import sqlalchemy as sa
-${imports if imports else ""}
-
-# revision identifiers, used by Alembic.
-revision = ${repr(up_revision)}
-down_revision = ${repr(down_revision)}
-branch_labels = ${repr(branch_labels)}
-depends_on = ${repr(depends_on)}
-
-
-def upgrade():
-    ${upgrades if upgrades else "pass"}
-
-
-def downgrade():
-    ${downgrades if downgrades else "pass"}
-</file>
 
 <file path="migrations/versions/42dc0996903d_add_default_thumb_to_post.py">
 """Add default_thumb to Post
@@ -1558,262 +371,204 @@ def downgrade():
         )
 </file>
 
-<file path="models.py">
-# ======================================================================
-# models.py — データベースのテーブル定義（ORM モデル）
-# ======================================================================
-#
-# 【役割】
-#   データベースのテーブル構造を Python クラスで定義するファイル。
-#   SQLAlchemy が各クラスを DB のテーブルに対応させる。
-#
-# 【このファイルの構成（目次）】
-#   [1] post_hashtags : Post ↔ Hashtag の多対多を実現する中間テーブル
-#   [2] Hashtag       : ハッシュタグ
-#   [3] Post          : ブログ記事
-#   [4] User          : 管理者
-#
-# 【テーブル構成と関係図】
-#
-#   user (User)                     hashtag (Hashtag)
-#   ┌──────────┐                    ┌──────────┐
-#   │ id       │                    │ id       │
-#   │ username │                    │ name     │
-#   │ password │                    └────┬─────┘
-#   │ nickname │                         │ 多対多
-#   └────┬─────┘                         │ (post_hashtags 経由)
-#        │ 1対多                          │
-#        │ (user.posts)                  │
-#        ▼                               ▼
-#   post (Post) ◄────────────── post_hashtags（中間テーブル）
-#   ┌──────────────┐            ┌─────────────────────┐
-#   │ id / title   │            │ post_id  (FK)        │
-#   │ body / genre │            │ hashtag_id (FK)      │
-#   │ img_name ... │            └─────────────────────┘
-#   └──────────────┘
-#
-# ======================================================================
+<file path="migrations/alembic.ini">
+# A generic, single database configuration.
 
-from extensions import db          # extensions.py で作成した db インスタンスを使う
-from flask_login import UserMixin  # ログイン機能に必要なメソッドを User に追加するミックスイン
-from datetime import datetime
-import pytz                        # タイムゾーン指定（Asia/Tokyo）に使用
+[alembic]
+# template used to generate migration files
+# file_template = %%(rev)s_%%(slug)s
+
+# set to 'true' to run the environment during
+# the 'revision' command, regardless of autogenerate
+# revision_environment = false
 
 
-# ======================================================================
-# [1] 中間テーブル: post_hashtags
-# ======================================================================
-# Post と Hashtag は「多対多」の関係（1つの記事に複数タグ、1つのタグが複数記事に付く）。
-# SQLAlchemy では多対多を表現するために「中間テーブル」が必要。
-#
-# db.Table() で定義すると「モデルクラスを持たない純粋な関連テーブル」になる。
-# Post モデルの hashtags リレーションが secondary=post_hashtags を参照することで
-# Post ↔ Hashtag 間の JOIN が自動で行われる。
-post_hashtags = db.Table(
-    'post_hashtags',
-    # post_id: post テーブルの id を外部キーとして参照
-    db.Column('post_id',    db.Integer, db.ForeignKey('post.id'),    primary_key=True),
-    # hashtag_id: hashtag テーブルの id を外部キーとして参照
-    db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True)
-    # 2カラムの組み合わせが主キー → 同じ (post_id, hashtag_id) の重複を防ぐ
-)
+# Logging configuration
+[loggers]
+keys = root,sqlalchemy,alembic,flask_migrate
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = WARN
+handlers = console
+qualname =
+
+[logger_sqlalchemy]
+level = WARN
+handlers =
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
+
+[logger_flask_migrate]
+level = INFO
+handlers =
+qualname = flask_migrate
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S
+</file>
+
+<file path="migrations/env.py">
+import logging
+from logging.config import fileConfig
+
+from flask import current_app
+
+from alembic import context
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+fileConfig(config.config_file_name)
+logger = logging.getLogger('alembic.env')
 
 
-# ======================================================================
-# [2] Hashtag モデル
-# ======================================================================
-class Hashtag(db.Model):
-    __tablename__ = 'hashtag'  # DB 上のテーブル名を明示的に指定
-
-    id   = db.Column(db.Integer, primary_key=True)
-    # name: '#' を除いたタグ文字列で保存（例: "Flask", "Python"）
-    #   unique=True    → 同じ名前のタグは 1 件だけ存在できる
-    #   nullable=False → 必須項目
-    name = db.Column(db.String(100), nullable=False, unique=True)
-
-    # posts リレーションは Post モデル側の backref で自動定義される（[3] 参照）
+def get_engine():
+    try:
+        # this works with Flask-SQLAlchemy<3 and Alchemical
+        return current_app.extensions['migrate'].db.get_engine()
+    except (TypeError, AttributeError):
+        # this works with Flask-SQLAlchemy>=3
+        return current_app.extensions['migrate'].db.engine
 
 
-# ======================================================================
-# [3] Post モデル（ブログ記事）
-# ======================================================================
-class Post(db.Model):
-    # __tablename__ を省略すると SQLAlchemy がクラス名を小文字化した 'post' をテーブル名にする
+def get_engine_url():
+    try:
+        return get_engine().url.render_as_string(hide_password=False).replace(
+            '%', '%%')
+    except AttributeError:
+        return str(get_engine().url).replace('%', '%%')
 
-    # ------------------------------------------------------------------
-    # (3-1) 基本カラム
-    # ------------------------------------------------------------------
-    id         = db.Column(db.Integer, primary_key=True)  # 記事の一意な識別子（自動採番）
-    title      = db.Column(db.TEXT, nullable=False)        # 記事タイトル（必須）
-    body       = db.Column(db.TEXT, nullable=False)        # 記事本文（マークダウン形式、必須）
-    genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
 
-    # ------------------------------------------------------------------
-    # (3-2) 日時カラム
-    # ------------------------------------------------------------------
-    # created_at: 投稿日時。lambda を使ってインスタンス生成時の時刻を設定する。
-    created_at = db.Column(db.DateTime, nullable=False,
-                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+config.set_main_option('sqlalchemy.url', get_engine_url())
+target_db = current_app.extensions['migrate'].db
 
-    # updated_at: 更新日時。
-    #   nullable=True にすることで「まだ一度も更新されていない」状態を NULL で表現する。
-    #   これにより detail.html の「更新日時 != 投稿日時」という条件判定が
-    #   秒単位のズレで誤表示されるバグを防ぐ。
-    #   - 新規投稿時: NULL（テンプレート側で「更新なし」として扱う）
-    #   - 編集保存時: admin.py の update() で現在時刻をセット
-    updated_at = db.Column(db.DateTime, nullable=True)
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
 
-    # ------------------------------------------------------------------
-    # (3-3) ユーザー紐付け
-    # ------------------------------------------------------------------
-    # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # ------------------------------------------------------------------
-    # (3-4) 画像関連カラム
-    # ------------------------------------------------------------------
-    # img_name: アップロード画像のファイル名をカンマ区切りで保存
-    #   例: "uuid1.jpg,uuid2.png"
-    #   複数画像に対応するため 1 カラムにまとめて格納している
-    #
-    #   【バグ修正】String(100) → Text に変更
-    #   UUID 化したファイル名は 1 件あたり約 40 文字（UUID 36 文字 + 拡張子）あり、
-    #   3 枚以上アップロードするとカンマ区切り文字列が 100 文字を超えて
-    #   PostgreSQL で "value too long for type character varying(100)"
-    #   エラーになっていた。枚数上限を設けない設計のため可変長の Text にする。
-    #   （migrations/versions/change_img_name_to_text.py で DB 側も変更）
-    img_name      = db.Column(db.Text, nullable=True)
+def get_metadata():
+    if hasattr(target_db, 'metadatas'):
+        return target_db.metadatas[None]
+    return target_db.metadata
 
-    # default_thumb: 画像未アップロード時に使うデフォルトサムネイルのファイル名
-    #   例: "thumb_option1.jpg"（static/img/thbnails/ 以下に配置済みの画像）
-    default_thumb = db.Column(db.String(100), nullable=True)
 
-    # img_captions: 各画像のキャプションをタブ区切りで保存
-    #   例: "東京タワー全景\t夜景のアップ"
-    #   img_name のカンマ区切りと順番が対応する（img_name[0] → captions[0]）
-    img_captions  = db.Column(db.Text, nullable=True)
+def run_migrations_offline():
+    """Run migrations in 'offline' mode.
 
-    # ------------------------------------------------------------------
-    # (3-5) 公開設定
-    # ------------------------------------------------------------------
-    # True = 全体公開 / False = 非公開（管理者だけ閲覧可）
-    is_published = db.Column(db.Boolean, nullable=False, default=True)
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
 
-    # ------------------------------------------------------------------
-    # (3-6) リレーション
-    # ------------------------------------------------------------------
-    # user: Post → User への多対一リレーション
-    #   backref='posts' により User インスタンスから user.posts で
-    #   その管理者の全記事リストが取得できる
-    user = db.relationship('User', backref=db.backref('posts', lazy=True))
+    Calls to context.execute() here emit the given string to the
+    script output.
 
-    # hashtags: Post ↔ Hashtag の多対多リレーション
-    #   secondary=post_hashtags → 中間テーブルを経由して結合
-    #   lazy='selectin' → Post の id リストを IN 句で一括取得するロード戦略。
-    #                      一覧ページで複数の Post をまとめてロードする際に
-    #                      N+1 問題（記事ごとに個別クエリが走る問題）を防ぐ。
-    #   backref → Hashtag インスタンスから hashtag.posts で
-    #             そのタグが付いた全記事リストが取得できる
-    hashtags = db.relationship(
-        'Hashtag',
-        secondary=post_hashtags,
-        lazy='selectin',
-        backref=db.backref('posts', lazy=True)
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url, target_metadata=get_metadata(), literal_binds=True
     )
 
+    with context.begin_transaction():
+        context.run_migrations()
 
-# ======================================================================
-# [4] User モデル（管理者）
-# ======================================================================
-class User(UserMixin, db.Model):
-    # UserMixin が提供するメソッド:
-    #   is_authenticated → ログイン済みかどうか（常に True を返す）
-    #   is_active        → アカウントが有効か（常に True を返す）
-    #   is_anonymous     → 匿名ユーザーかどうか（常に False を返す）
-    #   get_id()         → Flask-Login がセッションに保存する一意のID文字列を返す
 
-    id       = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(30), unique=True)   # ログイン時に使うユーザー名（重複不可）
-    password = db.Column(db.String(200))               # Werkzeug でハッシュ化したパスワード
-    nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
+def run_migrations_online():
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+
+    # this callback is used to prevent an auto-migration from being generated
+    # when there are no changes to the schema
+    # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
+    def process_revision_directives(context, revision, directives):
+        if getattr(config.cmd_opts, 'autogenerate', False):
+            script = directives[0]
+            if script.upgrade_ops.is_empty():
+                directives[:] = []
+                logger.info('No changes in schema detected.')
+
+    conf_args = current_app.extensions['migrate'].configure_args
+    if conf_args.get("process_revision_directives") is None:
+        conf_args["process_revision_directives"] = process_revision_directives
+
+    connectable = get_engine()
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=get_metadata(),
+            **conf_args
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
 </file>
 
-<file path="requirements-pythonanywhere.txt">
-# ======================================================================
-# requirements-pythonanywhere.txt
-# ======================================================================
-# PythonAnywhere 無料枠（SQLite 運用）向けの依存パッケージ一覧。
-#
-# 元の requirements.txt から PostgreSQL ドライバ（psycopg 系）を除外している。
-# SQLite は Python 標準機能なので追加ドライバは不要で、
-# 無料枠の限られたディスク容量を節約できる。
-#
-# 【インストール方法（PythonAnywhere の Bash コンソール）】
-#   workon <venv名>
-#   pip install -r requirements-pythonanywhere.txt
-# ======================================================================
-alembic==1.16.5
-blinker==1.9.0
-click==8.1.8
-colorama==0.4.6
-filetype==1.2.0
-Flask==3.1.3
-Flask-Login==0.6.3
-Flask-Migrate==4.1.0
-Flask-SQLAlchemy==3.1.1
-Flask-WTF==1.2.2
-greenlet==3.2.5
-importlib_metadata==8.7.1
-itsdangerous==2.2.0
-Jinja2==3.1.6
-Mako==1.3.12
-Markdown==3.9
-MarkupSafe==3.0.3
-python-dotenv==1.2.1
-pytz==2026.2
-SQLAlchemy==2.0.50
-tomli==2.4.1
-typing_extensions==4.15.0
-tzdata==2026.2
-Werkzeug==3.1.8
-WTForms==3.2.1
-zipp==3.23.1
+<file path="migrations/README">
+Single-database configuration for Flask.
 </file>
 
-<file path="requirements.txt">
-alembic==1.16.5                                                                         
-blinker==1.9.0
-click==8.1.8
-colorama==0.4.6
-filetype==1.2.0
-Flask==3.1.3
-Flask-Login==0.6.3
-Flask-Migrate==4.1.0
-Flask-SQLAlchemy==3.1.1
-Flask-WTF==1.2.2
-greenlet==3.2.5
-importlib_metadata==8.7.1
-itsdangerous==2.2.0
-Jinja2==3.1.6
-Mako==1.3.12
-Markdown==3.9
-MarkupSafe==3.0.3
-psycopg==3.2.13
-psycopg-binary==3.2.13
-psycopg2-binary==2.9.12
-python-dotenv==1.2.1
-pytz==2026.2
-SQLAlchemy==2.0.50
-tomli==2.4.1
-typing_extensions==4.15.0
-tzdata==2026.2
-Werkzeug==3.1.8
-WTForms==3.2.1
-zipp==3.23.1
-</file>
+<file path="migrations/script.py.mako">
+"""${message}
 
-<file path="save_path">
+Revision ID: ${up_revision}
+Revises: ${down_revision | comma,n}
+Create Date: ${create_date}
 
+"""
+from alembic import op
+import sqlalchemy as sa
+${imports if imports else ""}
+
+# revision identifiers, used by Alembic.
+revision = ${repr(up_revision)}
+down_revision = ${repr(down_revision)}
+branch_labels = ${repr(branch_labels)}
+depends_on = ${repr(depends_on)}
+
+
+def upgrade():
+    ${upgrades if upgrades else "pass"}
+
+
+def downgrade():
+    ${downgrades if downgrades else "pass"}
 </file>
 
 <file path="static/css/auth.css">
@@ -5449,6 +4204,87 @@ a[role="button"]:hover {
 }
 </file>
 
+<file path="static/css/mobile_editor.css">
+/* ============================================================
+   static/css/mobile-editor.css
+   スマホでの記事編集（create / update）ツールバー操作性の改善
+   ============================================================
+   【役割】
+   base.html から全ページで読み込まれるが、対象の要素
+   （#md-toolbar / #bodyTextarea）は create / update ページにしか
+   存在しないため、それ以外のページには一切影響しない。
+
+   実際のフォーカス検知・位置計算は base.html の JS が担当し、
+   このファイルは「固定表示時の見た目」と「編集時の下部余白」だけを定義する。
+
+   【解決する2つの問題】
+   問題1: 本文欄をタップするとツールバーが画面外に隠れて使えなくなる
+          → フォーカス中は .md-toolbar--docked を付与し、キーボード直上に固定表示
+   問題2: 最終行がキーボードに隠れて見えなくなる
+          → 編集中は本文欄下部に余白を確保（ドッキング時は JS が高さに合わせて上書き）
+   ============================================================ */
+
+@media (max-width: 767px) {
+
+    /* ------------------------------------------------------------
+       【問題2】最終行がキーボードに隠れる対策
+       ------------------------------------------------------------
+       本文欄フォーカス中（JS が .is-md-editing を付与）に下部余白を確保し、
+       最終行のカーソルがキーボードの上に出るようにする。
+       ドッキング時は JS がツールバー高さに合わせて padding-bottom を上書きする。
+       ------------------------------------------------------------ */
+    #bodyTextarea.is-md-editing {
+        padding-bottom: 80px !important;
+    }
+
+    /* ------------------------------------------------------------
+       【問題1】ツールバーをキーボードの直上に固定
+       ------------------------------------------------------------
+       本文欄フォーカス中、JS が .md-toolbar--docked を付与して
+       ツールバーを画面下部（キーボードの直上）に固定表示する。
+       - 位置（top / bottom）は端末差に応じて JS が設定する
+         （iOS はレイアウトが縮まないので top、Android は bottom:0 で自然に直上）
+       - 縦幅を節約するため、折り返さず横スクロールできる1行にする
+       ------------------------------------------------------------ */
+    .md-toolbar.md-toolbar--docked {
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        bottom: 0;                     /* iOS では JS が top を設定して上書き */
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: 1px solid #7dd3fa !important;
+        border-bottom: none !important;
+        box-shadow: 0 -6px 16px rgba(14, 165, 233, 0.28) !important;
+        z-index: 1000 !important;
+        flex-wrap: nowrap !important;  /* 折り返さず1行に */
+        overflow-x: auto !important;   /* ボタンが多い時は横スクロール */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 固定表示中はボタンが縮まないようにして横スクロールで全ボタンに届くようにする */
+    .md-toolbar.md-toolbar--docked > * {
+        flex-shrink: 0;
+    }
+
+    /* ツールバーが固定表示に切り替わって通常配置（フロー）から外れた分、
+       元の位置に空きを作ってレイアウトのガタつきを防ぐ。
+       高さは JS が --docked-toolbar-h に実測値を入れる。 */
+    .md-toolbar-wrapper.is-toolbar-docked {
+        padding-top: var(--docked-toolbar-h, 48px);
+    }
+
+    /* ダークモード時の固定ツールバーの見た目 */
+    html[data-theme="dark"] .md-toolbar.md-toolbar--docked {
+        background-color: var(--dk-surface-2) !important;
+        border-top-color: var(--dk-border) !important;
+        box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.55) !important;
+    }
+}
+</file>
+
 <file path="static/css/mypage.css">
 /* ============================================================
    static/css/mypage.css - Coastal Dawn v2
@@ -6471,7 +5307,7 @@ a[role="button"]:hover {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mycreate1.mitblog.jp</title>
+    <title>Mycreate1.MITOblog.jp</title>
 
     {# ============================================================
        ダークモード初期化スクリプト
@@ -6497,42 +5333,36 @@ a[role="button"]:hover {
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
-    {# ダークモード用の上書きCSS。全セレクタが html[data-theme="dark"] 前置で
-       詳細度が高いため、ページ個別CSSより後に読み込まれなくても上書きが効く。 #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-editor.css') }}">
 </head>
 <body>
 
     <header class="main-header" id="mainHeader">
         <div class="header-container">
             <div class="header-logo">
-                <a href="{{ url_for('blog.index') }}">MIT Blog</a>
+                <a href="{{ url_for('blog.index') }}">MITO Blog</a>
             </div>
 
-            {# ヘッダーのキーワード検索ボックスは廃止した。
-               キーワード検索は index ページの検索エリア（search_area.html）に一本化。 #}
-
-            {# ナビ・テーマ切り替え・ハンバーガーを右側の塊としてまとめる #}
             <div class="header-right">
                 <nav class="header-nav">
                     <ul>
                         {% if current_user.is_authenticated %}
                             <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                            {# 「ジャンル検索」と同じ構造・同じCSSクラスの自己紹介ボタン。
-                               blog.about（/about）へ遷移する。 #}
+             
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
                             <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
                             <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
                         {% else %}
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                            {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+                 
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
                         {% endif %}
                     </ul>
                 </nav>
 
-                {# ダークモード切り替えボタン（PC・スマホ共通で常時表示） #}
+                {# ダークモード切り替えボタン #}
                 <button class="theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="ダークモードに切り替え">
                     <span class="theme-toggle-icon">🌙</span>
                 </button>
@@ -6559,13 +5389,13 @@ a[role="button"]:hover {
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
-                {# 「ジャンル検索」と同じ構造の自己紹介ボタン（スマホ用ドロワー） #}
+
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
                 <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
             {% else %}
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
-                {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+  
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
             {% endif %}
         </ul>
@@ -6616,6 +5446,114 @@ a[role="button"]:hover {
                 document.documentElement.setAttribute('data-theme', next);
                 try { localStorage.setItem('theme', next); } catch (e) {}
                 syncButton();
+            });
+        })();
+
+
+        /* ============================================================
+           スマホの記事編集ツールバー改善（create / update ページ用）
+           ------------------------------------------------------------
+           問題1: 本文欄をタップするとツールバーが画面外に隠れて使えない
+             → フォーカス中はツールバーをキーボード直上に固定して常に使えるようにする
+           問題2: 最終行がキーボードに隠れて見えない
+             → 本文欄下部に余白を確保し、カーソル位置がキーボードの上に出るようにする
+           ------------------------------------------------------------
+           ※ #bodyTextarea と #md-toolbar があるページ（create/update）でのみ動作する。
+              それ以外のページ・PC表示では何もしない（挙動は従来どおり）。
+           ============================================================ */
+        (function () {
+            var textarea = document.getElementById('bodyTextarea');
+            var toolbar  = document.getElementById('md-toolbar');
+            if (!textarea || !toolbar) return;   // 編集ページ以外では何もしない
+
+            var wrapper = toolbar.closest('.md-toolbar-wrapper');
+            var mq = window.matchMedia('(max-width: 767px)');
+            var vv = window.visualViewport;
+            var docked = false;
+
+            // キーボードの高さ（レイアウトビューポート − 表示ビューポート）
+            function keyboardHeight() {
+                if (!vv) return 0;
+                return Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+            }
+
+            // 固定ツールバーの位置と本文欄の下部余白を計算して設定
+            function positionToolbar() {
+                var h = toolbar.offsetHeight || 48;
+                if (vv && keyboardHeight() > 40) {
+                    // iOS 等：レイアウトビューポートが縮まないので、キーボード上端に合わせる
+                    toolbar.style.bottom = 'auto';
+                    toolbar.style.top = Math.max(vv.offsetTop + vv.height - h, 0) + 'px';
+                } else {
+                    // Android 等：キーボードでレイアウト自体が縮むため bottom:0 が直上になる
+                    toolbar.style.top = 'auto';
+                    toolbar.style.bottom = '0px';
+                }
+                // 最終行がツールバー／キーボードに隠れないよう下部余白を確保
+                textarea.style.setProperty('padding-bottom', (h + 28) + 'px', 'important');
+            }
+
+            function dock() {
+                if (docked) { positionToolbar(); return; }
+                docked = true;
+                var h = toolbar.offsetHeight || 48;
+                if (wrapper) {
+                    // 固定化でフローから外れる分の空きを確保（レイアウトのガタつき防止）
+                    wrapper.style.setProperty('--docked-toolbar-h', h + 'px');
+                    wrapper.classList.add('is-toolbar-docked');
+                }
+                toolbar.classList.add('md-toolbar--docked');
+                positionToolbar();
+            }
+
+            function undock() {
+                if (!docked) return;
+                docked = false;
+                toolbar.classList.remove('md-toolbar--docked');
+                toolbar.style.top = '';
+                toolbar.style.bottom = '';
+                textarea.style.removeProperty('padding-bottom');
+                if (wrapper) {
+                    wrapper.classList.remove('is-toolbar-docked');
+                    wrapper.style.removeProperty('--docked-toolbar-h');
+                }
+            }
+
+            function update() {
+                if (mq.matches && document.activeElement === textarea) {
+                    dock();
+                } else {
+                    undock();
+                }
+            }
+
+            textarea.addEventListener('focus', function () {
+                textarea.classList.add('is-md-editing');
+                // キーボードが開くのを少し待ってから配置する
+                setTimeout(update, 250);
+            });
+            textarea.addEventListener('blur', function () {
+                // ツールバー操作でのブラーはボタン側で抑止しているが、念のため少し待つ
+                setTimeout(function () {
+                    if (document.activeElement !== textarea) {
+                        textarea.classList.remove('is-md-editing');
+                        undock();
+                    }
+                }, 100);
+            });
+
+            // キーボードの開閉・スクロールに追従して位置を更新
+            if (vv) {
+                vv.addEventListener('resize', update);
+                vv.addEventListener('scroll', function () { if (docked) positionToolbar(); });
+            }
+
+            // ツールバーのボタンはフォーカスを奪わない
+            // → 本文欄のフォーカス（＝キーボードと固定表示）を保ったまま連続操作できる
+            toolbar.addEventListener('mousedown', function (e) {
+                if (mq.matches && document.activeElement === textarea) {
+                    e.preventDefault();
+                }
             });
         })();
 
@@ -7754,7 +6692,6 @@ function ytPlay(facadeEl) {
             <p>
                 トップページ上の検索エリアでは、「ジャンル」と「キーワード」を組み合わせて記事を絞り込めます。
                 ジャンルだけ、キーワードだけの検索も可能です。<br>
-                ヘッダー上部の検索バーからも、キーワード検索を行えます。
                 絞り込み中は「絞り込みを解除」から、いつでも一覧表示に戻れます。
             </p>
         </section>
@@ -7773,7 +6710,7 @@ function ytPlay(facadeEl) {
             <p>
                 旅行先やお店などの記事では、本文中にGoogleマップが埋め込まれ、その場で確認が可能です。
                 また、YouTube動画が紹介されている記事ではサムネイル画像が表示され、
-                タップするとその場で動画の再生が始まります（別サイトへ移動する必要はありません）。
+                タップするとその場で動画の再生が始まります。
             </p>
         </section>
 
@@ -7781,18 +6718,10 @@ function ytPlay(facadeEl) {
             <h2 class="info-section-title">📊 サイトの統計情報</h2>
             <p>
                 トップページでは、総投稿数・使用されているハッシュタグ数・最終更新日を
-                まとめた統計エリアが表示されています。ブログ全体の更新状況をひと目で確認できます。
+                まとめた統計エリアが表示されています。ブログ全体の更新状況を確認できます。
             </p>
         </section>
-
-        <section class="info-section">
-            <h2 class="info-section-title">👤 管理者について</h2>
-            <p>
-                トップページ下部の自己紹介エリア、または「自己紹介を読む」リンクから、
-                このブログを書いている管理者のプロフィールを見ることができます。
-            </p>
-        </section>
-
+        
     </div>
 
     <div class="info-page-footer">
@@ -11290,6 +10219,1261 @@ def _replace_youtube(m: re.Match) -> str:
         f'  </div>'
         f'</div>'
     )
+</file>
+
+<file path=".gitignore">
+# Python関連
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 仮想環境（venvを使用している場合）
+venv/
+.venv/
+env/
+
+# 環境変数・シークレット情報
+# config.pyでOS環境変数を読み込む運用が基本ですが、
+# もし .env ファイルを作成して管理している場合は必須です
+.env
+.env.*
+
+# データベース関連
+# SQLiteを使用している場合は、そのファイルを除外（PostgreSQLなら不要）
+*.db
+*.sqlite3
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+
+# アップロードされた画像（static/img/ 以下を丸ごと除外したい場合）
+# もし初期設定画像以外をgit管理したくない場合は以下を追加
+# static/img/uploads/
+</file>
+
+<file path=".python-version">
+3.10.11
+</file>
+
+<file path="app.py">
+# ======================================================================
+# app.py — Flask アプリケーションのエントリーポイント
+# ======================================================================
+#
+# 【役割】
+#   Flask アプリを生成・設定する起点となるファイル。
+#   create_app() 関数でアプリを組み立てる「Application Factory パターン」を採用。
+#
+#   Application Factory パターンのメリット:
+#     - テスト時に設定を変えた別アプリを簡単に作れる
+#     - extensions.py と組み合わせることで循環インポートを避けられる
+#
+# 【このファイルの構成（目次）】
+#   [1] import / Blueprint の読み込み
+#   [2] create_app() : アプリ生成ファクトリ関数
+#        (2-1) ProxyFix の適用（リバースプロキシ対応）
+#        (2-2) SECRET_KEY の設定
+#        (2-3) セッション Cookie の属性設定
+#        (2-4) アップロードサイズ制限
+#        (2-5) データベース接続 URL の設定
+#        (2-6) 拡張機能の初期化（db / migrate / login_manager）
+#        (2-7) CSRF 保護の適用
+#        (2-8) Flask-Login の詳細設定（unauthorized_handler / user_loader）
+#        (2-9) セキュリティヘッダーの付与
+#        (2-10) カスタムエラーハンドラー（413）
+#        (2-11) Blueprint の登録
+#   [3] 直接実行時のエントリポイント（python app.py）
+#
+# 【処理フロー図】
+#
+#   python app.py 実行
+#        │
+#        ▼
+#   create_app() ──► Flask インスタンス生成
+#        │              │
+#        │              ├─ (2-1)〜(2-5) 各種設定（プロキシ・鍵・Cookie・DB）
+#        │              ├─ (2-6)〜(2-7) 拡張機能を app に紐付け
+#        │              ├─ (2-8)〜(2-10) 認証まわり・ヘッダー・エラー処理
+#        │              └─ (2-11) Blueprint 登録（auth / blog / admin）
+#        ▼
+#   app.run() ──► リクエスト待ち受け開始
+#
+# ======================================================================
+
+
+# ======================================================================
+# app.py — Flask アプリケーションのエントリーポイント
+# ======================================================================
+#
+# 【役割】
+#   Flask アプリを生成・設定する起点となるファイル。
+#   create_app() 関数でアプリを組み立てる「Application Factory パターン」を採用。
+#
+#   Application Factory パターンのメリット:
+#     - テスト時に設定を変えた別アプリを簡単に作れる
+#     - extensions.py と組み合わせることで循環インポートを避けられる
+#
+# 【このファイルの構成（目次）】
+#   [1] import / Blueprint の読み込み
+#   [2] create_app() : アプリ生成ファクトリ関数
+#        (2-1) ProxyFix の適用（リバースプロキシ対応）
+#        (2-2) SECRET_KEY の設定
+#        (2-3) セッション Cookie の属性設定
+#        (2-4) アップロードサイズ制限
+#        (2-5) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
+#        (2-6) 拡張機能の初期化（db / migrate / login_manager）
+#        (2-7) CSRF 保護の適用
+#        (2-8) Flask-Login の詳細設定（unauthorized_handler / user_loader）
+#        (2-9) セキュリティヘッダーの付与
+#        (2-10) カスタムエラーハンドラー（413）
+#        (2-11) Blueprint の登録
+#   [3] 直接実行時のエントリポイント（python app.py）
+#
+# ======================================================================
+
+
+# ======================================================================
+# [1] import / Blueprint の読み込み
+# ======================================================================
+
+import os
+from flask import Flask, flash, redirect, url_for, abort
+from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
+from werkzeug.middleware.proxy_fix import ProxyFix  # リバースプロキシ配下での HTTPS 判定補正
+from extensions import db, login_manager, migrate
+from models import User
+import config
+
+# Blueprint: 機能ごとにルートをまとめたモジュール（views/ 配下で定義）
+from views.auth  import auth_bp   # ログイン・ログアウト関連
+from views.blog  import blog_bp   # 一般公開ページ（一覧・詳細・ジャンル）
+from views.admin import admin_bp  # 管理者専用ページ（投稿・編集・削除・マイページ）
+
+
+# ======================================================================
+# [2] create_app() : アプリ生成ファクトリ関数
+# ======================================================================
+
+def create_app():
+    """
+    Flask アプリインスタンスを生成して返すファクトリ関数。
+    """
+
+    # ------------------------------------------------------------------
+    # STEP 1. Flask インスタンスを生成
+    # ------------------------------------------------------------------
+    app = Flask(__name__)
+
+    # ------------------------------------------------------------------
+    # STEP 2. 【セキュリティ改善①】ProxyFix の適用（リバースプロキシ対応）
+    # ------------------------------------------------------------------
+    # Render / Heroku / PythonAnywhere などでは、HTTPS はリバースプロキシで
+    # 終端され、Flask アプリ自体には HTTP で届く。そのままだと
+    # request.is_secure が本番でも False と判定されてしまうため、
+    # ProxyFix で X-Forwarded-Proto / X-Forwarded-Host を信頼して補正する。
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+    # ------------------------------------------------------------------
+    # STEP 3. SECRET_KEY の設定（セッション・CSRF トークンの署名に使用）
+    # ------------------------------------------------------------------
+    # 本番環境判定:
+    #   - DATABASE_URL が設定されている（PaaS の PostgreSQL 等）か
+    #   - FLASK_ENV=production が設定されている
+    # のいずれかであれば本番とみなす。
+    #
+    # 【PythonAnywhere での注意】
+    #   SQLite 運用（USE_SQLITE=1）では DATABASE_URL を設定しないため、
+    #   必ず環境変数に FLASK_ENV=production を設定して本番扱いにすること。
+    #   これにより SECRET_KEY の必須化・Secure Cookie が有効になる。
+    is_production = os.getenv("DATABASE_URL") is not None or os.getenv("FLASK_ENV") == "production"
+    secret_key    = os.getenv("SECRET_KEY")
+
+    if not secret_key:
+        if is_production:
+            raise ValueError("【重大なエラー】本番環境の環境変数 'SECRET_KEY' が設定されていません。")
+        else:
+            secret_key = "dev-secret-key-for-local-use"
+
+    app.config['SECRET_KEY'] = secret_key
+
+    # ------------------------------------------------------------------
+    # STEP 4. 【セキュリティ修正】セッション Cookie の属性を明示的に設定
+    # ------------------------------------------------------------------
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SECURE']   = is_production
+
+    # ------------------------------------------------------------------
+    # STEP 5. ファイルアップロードサイズ制限（30MB）
+    # ------------------------------------------------------------------
+    app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 30MB
+
+    # ------------------------------------------------------------------
+    # STEP 6. データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
+    # ------------------------------------------------------------------
+    # 優先順位:
+    #   (1) DATABASE_URL が設定されていれば最優先（Postgres でも SQLite でも可）
+    #   (2) USE_SQLITE=1 なら、プロジェクト内 instance/blog.db を SQLite として使う
+    #       （PythonAnywhere 無料枠向け。永続ディスクに DB ファイルが残る）
+    #   (3) どちらもなければローカル開発（docker-compose の PostgreSQL）に接続
+    #
+    # 【PythonAnywhere 無料枠での使い方】
+    #   環境変数に USE_SQLITE=1 を設定するだけでよい。
+    #   DB ファイルの絶対パスは app.py の位置から自動計算するので、
+    #   長い sqlite:////home/... のようなパスを手で書く必要はない。
+    database_url = os.getenv("DATABASE_URL")
+    use_sqlite   = os.getenv("USE_SQLITE", "").lower() in ("1", "true", "yes")
+
+    if database_url:
+        # (1) 明示指定を最優先
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+
+    elif use_sqlite:
+        # (2) SQLite（PythonAnywhere など）
+        basedir      = os.path.abspath(os.path.dirname(__file__))
+        instance_dir = os.path.join(basedir, 'instance')
+        os.makedirs(instance_dir, exist_ok=True)   # instance/ がなければ作成
+        sqlite_path  = os.path.join(instance_dir, 'blog.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
+
+    else:
+        # (3) ローカル開発用フォールバック（docker-compose の PostgreSQL）
+        local_db_url = (
+            f"postgresql+psycopg://{config.postgre_user}:{config.postgre_password}"
+            f"@localhost:15432/{config.postgre_DB}"
+        )
+        app.config['SQLALCHEMY_DATABASE_URI'] = local_db_url
+
+    # モデル変更のたびにイベントを発行する機能（使わないのでオフにしてメモリ節約）
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # ------------------------------------------------------------------
+    # STEP 7. 拡張機能の初期化（extensions.py で作ったインスタンスを app に紐付け）
+    # ------------------------------------------------------------------
+    db.init_app(app)             # SQLAlchemy を app に接続
+    migrate.init_app(app, db)    # Alembic マイグレーションを app + db に接続
+    login_manager.init_app(app)  # Flask-Login を app に接続
+
+    # ------------------------------------------------------------------
+    # STEP 8. CSRF 保護の適用
+    # ------------------------------------------------------------------
+    csrf = CSRFProtect()
+    csrf.init_app(app)
+
+    # ------------------------------------------------------------------
+    # STEP 9. Flask-Login の詳細設定
+    # ------------------------------------------------------------------
+    login_manager.login_view = None
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        # 未ログイン状態で @login_required なページへアクセスされた場合、
+        # ログインページへ誘導せず 404 Not Found を返して存在を偽装する。
+        abort(404)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # ------------------------------------------------------------------
+    # STEP 10. 【セキュリティ修正】セキュリティヘッダーの付与
+    # ------------------------------------------------------------------
+    @app.after_request
+    def set_security_headers(response):
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        return response
+
+    # ------------------------------------------------------------------
+    # STEP 11. カスタムエラーハンドラー: 413 Request Entity Too Large
+    # ------------------------------------------------------------------
+    @app.errorhandler(413)
+    def request_entity_too_large(error):
+        flash("アップロードされたファイルの合計サイズが30MBを超えています。", "danger")
+        return redirect(url_for('admin.mypage'))
+
+    # ------------------------------------------------------------------
+    # STEP 12. Blueprint の登録
+    # ------------------------------------------------------------------
+    app.register_blueprint(auth_bp)   # /login, /logout 系
+    app.register_blueprint(blog_bp)   # /, /about, /howto, /genre, /<id>/detail 系
+    app.register_blueprint(admin_bp)  # /create, /<id>/update, /<id>/delete, /mypage 系
+
+    return app
+
+
+# ======================================================================
+# [3] 直接実行時のエントリポイント（python app.py で起動）
+# ======================================================================
+#
+# 【重要】PythonAnywhere では app.run() は使われない。
+#   PythonAnywhere は WSGI ファイルから create_app() を呼び出して
+#   application 変数として公開する方式のため、この __main__ ブロックは
+#   ローカル開発でのみ実行される（サーバー上では import されるだけ）。
+
+if __name__ == '__main__':
+    app = create_app()
+
+    is_production = (
+        os.getenv("DATABASE_URL") is not None
+        or os.getenv("FLASK_ENV") == "production"
+    )
+
+    debug_mode = (
+        not is_production
+        and os.getenv("FLASK_DEBUG", "").lower() in ("1", "true")
+    )
+
+    app.run(debug=debug_mode)
+</file>
+
+<file path="config.py">
+# ======================================================================
+# config.py — 環境変数の読み込み・提供
+# ======================================================================
+#
+# 【役割】
+#   .env ファイルから環境変数を読み込み、
+#   アプリ全体で使いやすい変数名で提供するモジュール。
+#
+# 【このファイルの構成（目次）】
+#   [1] .env ファイルの読み込み（load_dotenv / 絶対パス指定）
+#   [2] PostgreSQL 接続情報（ローカル開発用・任意）
+#   [3] 管理者認証情報
+#   [4] ADMIN_LOGIN_PATH 未設定チェック（フェイルクローズ）
+#
+# ======================================================================
+
+import os
+from dotenv import load_dotenv  # python-dotenv: .env ファイルを読み込むライブラリ
+
+
+# ======================================================================
+# [1] .env ファイルの読み込み
+# ======================================================================
+# 【修正】.env をこのファイル（config.py）と同じディレクトリから明示的に読み込む。
+#
+# 従来は load_dotenv()（引数なし）だったが、これはカレントディレクトリを
+# 基準に .env を探すため、PythonAnywhere の WSGI からアプリが import された際に
+# 「カレントディレクトリがプロジェクト外」になり .env が読み込まれないことがあった。
+# config.py の絶対パスから .env の場所を特定することで、
+# どこから起動されても確実にプロジェクト直下の .env を読み込めるようにする。
+_BASEDIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(_BASEDIR, '.env'))
+
+
+# ======================================================================
+# [2] PostgreSQL 接続情報（ローカル開発用・任意）
+# ======================================================================
+# SQLite 運用（PythonAnywhere など）では使われないため未設定でも問題ない。
+# ローカルで docker-compose の PostgreSQL に接続する場合のみ必要。
+postgre_user     = os.getenv("POSTGRES_USER")      # DB ユーザー名
+postgre_password = os.getenv("POSTGRES_PASSWORD")  # DB パスワード
+postgre_DB       = os.getenv("POSTGRES_DB")        # DB 名
+
+
+# ======================================================================
+# [3] 管理者認証情報
+# ======================================================================
+# ADMIN_USERNAME   : ログインフォームで入力するユーザー名
+# ADMIN_PASSWORD   : 管理者パスワード
+#                    （ハッシュ済み文字列でも平文でも可。init_db.py が適切に処理する）
+# ADMIN_LOGIN_PATH : ログインページの URL パス（推測されにくいランダム文字列）
+ADMIN_USERNAME   = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD")
+ADMIN_LOGIN_PATH = os.getenv("ADMIN_LOGIN_PATH")
+
+
+# ======================================================================
+# [4] ADMIN_LOGIN_PATH 未設定チェック（フェイルクローズ）
+# ======================================================================
+# 設定漏れをアプリ起動前の最も早い段階で検出する。
+if not ADMIN_LOGIN_PATH:
+    raise ValueError("【重大なエラー】環境変数 'ADMIN_LOGIN_PATH' が設定されていません。")
+</file>
+
+<file path="constants.py">
+# ======================================================================
+# constants.py — アプリ全体で共有する定数の一元管理
+# ======================================================================
+#
+# 【役割】
+#   アプリ全体で共有する「定数」を一元管理するファイル。
+#
+#   【なぜ定数ファイルを分けるのか】
+#   もし admin.py と blog.py にそれぞれ同じリストを書くと、
+#   ジャンルを追加・削除したいときに 2 か所を修正しなければならず
+#   片方だけ更新するバグが起きやすい。
+#   ここに一か所まとめることで「変更は 1 か所だけ」になる（DRY 原則）。
+#
+# 【このファイルの構成（目次）】
+#   [1] DEFAULT_GENRES : デフォルトジャンル一覧
+#
+# 【処理フロー図（利用のされ方）】
+#
+#   constants.DEFAULT_GENRES
+#        │
+#        ├──► views/admin.py : _get_genre_list()
+#        │      投稿フォームのジャンル選択肢の「母集合」として使用
+#        │
+#        └──► views/blog.py : genre_list() / index()
+#               ジャンル一覧ページ・検索エリアの表示に使用
+#
+# ======================================================================
+
+
+# ======================================================================
+# [1] DEFAULT_GENRES : アプリがデフォルトで用意するジャンルの一覧
+# ======================================================================
+# - 順番がそのままジャンル選択 UI の表示順になる
+# - ユーザーが記事に使ったジャンルはこのリストに追加されることはなく、
+#   あくまで「選択肢のひな形」として機能する
+# - ユーザーが「+ 新しいジャンルを作成する」を選んで独自のジャンルを
+#   追加することも可能（その場合 DB の Post.genre に直接保存される）
+DEFAULT_GENRES = [
+    # ライフスタイル系
+    '日常', '健康', '旅行', '趣味', 'イラスト',
+    # 社会・経済系
+    'ニュース', '経済', '投資',
+    # 技術・勉強系
+    'プログラミング学習', '開発記録', '資格勉強', '勉強',
+    # スポーツ系
+    'サッカー', '野球', '競馬',
+    # 娯楽系
+    'アニメ', '漫画', '本', 'ゲーム', '音楽',
+    '国内映画', '海外映画', '国内ドラマ', '海外ドラマ',
+    # 仕事系
+    'バイト', '就活', '仕事',
+]
+</file>
+
+<file path="deploy_pythonanywhere.md">
+# MIT Blog — PythonAnywhere デプロイ・運用仕様書
+
+Flask 製ブログアプリを **PythonAnywhere 無料枠**に **GitHub 経由**で公開し、公開後にコードを更新・反映していくための仕様書です。実際のデプロイで使用した設定値・遭遇したつまずきポイントも反映しています。
+
+---
+
+## 1. この仕様書の概要
+
+| 項目 | 内容 |
+|------|------|
+| 対象アプリ | Flask 製個人ブログ（Application Factory パターン / `create_app()` 方式） |
+| 公開の目的 | 学習目的の一時公開・動作確認 |
+| ホスティング | PythonAnywhere 無料枠（Beginner、クレジットカード不要） |
+| データベース | SQLite（無料枠でも使える。永続ディスクに DB ファイルを保存） |
+| コード配布 | GitHub リポジトリからの `git clone` / `git pull` |
+| 公開URL | `https://<PythonAnywhereユーザー名>.pythonanywhere.com` |
+
+### なぜ PostgreSQL ではなく SQLite なのか
+
+PythonAnywhere 無料枠は 2026年1月以降、新規アカウントでは MySQL も使えず、PostgreSQL は有料アドオンのみです。そのため DB サービスを使わず、ファイル1つで完結する **SQLite** に切り替えて運用します。このアプリは SQLAlchemy を使っているため、接続先を切り替えるだけで大きな改修なく動作します。
+
+---
+
+## 2. 構成情報（本番デプロイで使用した値）
+
+以降の手順で使うパス・名称の一覧です。自分の環境に合わせて読み替えてください。
+
+| 種別 | 値 |
+|------|-----|
+| PythonAnywhere ユーザー名 | `yuta1728` |
+| GitHub リポジトリ | `https://github.com/Yuta1728/blog_project_private.git`（private） |
+| clone 先フォルダ | `myblog` |
+| **プロジェクト本体の場所** | **`/home/yuta1728/myblog/matome`** |
+| 仮想環境名 | `blog-venv`（Python 3.10） |
+| 仮想環境のパス | `/home/yuta1728/.virtualenvs/blog-venv` |
+| WSGI 設定ファイル | `/var/www/yuta1728_pythonanywhere_com_wsgi.py` |
+| SQLite DB ファイル | `/home/yuta1728/myblog/matome/instance/blog.db` |
+| 静的ファイル | `/home/yuta1728/myblog/matome/static` |
+| 公開URL | `https://yuta1728.pythonanywhere.com` |
+
+> ⚠️ **重要な前提**: このリポジトリは、アプリ本体が clone 直下ではなく **`matome/` サブフォルダ**の中にあります。そのため、以降のコマンド・パス指定はすべて `matome` を含めた `/home/yuta1728/myblog/matome` を「プロジェクトのルート」として扱います。
+
+---
+
+## 3. コードの変更点（デプロイ前に反映済み）
+
+SQLite で動かすために、以下のファイルを修正・追加しています。
+
+| ファイル | 種別 | 内容 |
+|----------|------|------|
+| `app.py` | 修正 | DB 接続に SQLite 対応を追加。`USE_SQLITE=1` で `instance/blog.db` を使用 |
+| `config.py` | 修正 | `.env` を config.py と同じ場所から確実に読み込む（WSGI 起動対策） |
+| `init_db.py` | 新規 | `db.create_all()` でテーブル作成＋管理者ユーザー作成を一括実行 |
+| `requirements-pythonanywhere.txt` | 新規 | PostgreSQL ドライバ（psycopg 系）を除いた依存一覧 |
+| `wsgi_pythonanywhere_sample.py` | 新規 | WSGI 設定に貼り付ける内容のサンプル（参考用） |
+
+### 変更のポイント
+
+- **`app.py`**: DB 接続の優先順位は `(1) DATABASE_URL` → `(2) USE_SQLITE=1` → `(3) ローカル PostgreSQL`。`USE_SQLITE=1` を指定すると、`app.py` の位置から DB ファイルの絶対パスを自動計算するため、環境変数に長いパスを書く必要がない。
+- **`config.py`**: PythonAnywhere の WSGI から起動されるとカレントディレクトリがずれて `.env` を読めないことがあるため、`config.py` 自身の絶対パスを基準に `.env` を読み込むよう変更。
+- **`init_db.py`**: このアプリはログイン時に管理者ユーザーが DB に存在する前提のため、テーブル作成と同時に管理者ユーザーも作成する。`ADMIN_PASSWORD` は平文・ハッシュ済みどちらでも受け付ける。
+
+---
+
+## 4. 初回デプロイ手順
+
+### フェーズ 0：全体像
+
+```
+[自分のPC]                    [GitHub]                [PythonAnywhere]
+修正を反映  ──push──▶  リポジトリ  ──git clone──▶  サーバーに配置
+                                                     ├ 仮想環境作成
+                                                     ├ pip install
+                                                     ├ .env 作成（手動）
+                                                     ├ init_db.py で初期化
+                                                     └ Web タブで公開設定 → Reload
+```
+
+### フェーズ 1：自分のPCでの準備
+
+**1-1.** 修正・新規ファイルをプロジェクトに反映し、`.gitignore` に以下が含まれることを確認する（`.env` や DB ファイルの流出防止）。
+
+```
+.env
+.env.*
+*.db
+*.sqlite3
+```
+
+**1-2.** GitHub へ push する。
+
+```bash
+git add .
+git commit -m "PythonAnywhere向けにSQLite対応を追加"
+git push origin main
+```
+
+> リポジトリは private を推奨（管理画面を持つアプリのため）。
+
+### フェーズ 2：PythonAnywhere でのセットアップ
+
+#### 2-1. アカウント作成
+1. https://www.pythonanywhere.com/ で無料の **Beginner** アカウントを作成（カード不要）
+2. ログインするとダッシュボードが表示される
+
+#### 2-2. リポジトリを clone
+「**Consoles**」タブ →「**Bash**」で新しいコンソールを開き、以下を実行。
+
+```bash
+cd ~
+git clone https://github.com/Yuta1728/blog_project_private.git myblog
+cd myblog
+ls -la
+```
+
+> ✅ **確認**: `ls -la` で `matome` フォルダが見えること。アプリ本体はこの中にある。
+
+#### 2-3. 仮想環境の作成と依存インストール
+アプリ本体のある `matome` に移動してから作業する。
+
+```bash
+cd ~/myblog/matome
+mkvirtualenv --python=/usr/bin/python3.10 blog-venv
+pip install -r requirements-pythonanywhere.txt
+```
+
+- プロンプトが `(blog-venv) $` になれば仮想環境が有効。
+- あとで再度有効化するには `workon blog-venv`。
+
+> ⚠️ **つまずき例**: clone 直下（`~/myblog`）で `pip install` すると `requirements-pythonanywhere.txt が無い` エラーになる。プロジェクト本体は `matome/` の中なので、必ず `cd ~/myblog/matome` してから実行する。
+
+#### 2-4. `.env` をサーバー上に作成
+`.env` は `.gitignore` により **GitHub に含まれず、clone にも入っていない**。サーバー上で手動作成する。
+
+`nano` が難しい場合は、以下を **丸ごとコピーしてコンソールに貼り付け**れば一発で作成できる（値は自分のものに変更してから貼り付ける）。
+
+```bash
+cd ~/myblog/matome
+cat > .env << 'EOF'
+FLASK_ENV=production
+USE_SQLITE=1
+SECRET_KEY=ここにランダムな長い文字列
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=ここにログインパスワード（平文でOK）
+ADMIN_LOGIN_PATH=secret-login-xxxxxxxx
+ADMIN_GATE_KEY=ここに別のランダムな長い文字列
+EOF
+```
+
+作成後、内容を確認する。
+
+```bash
+cat .env
+```
+
+**各項目の意味:**
+
+| キー | 説明 |
+|------|------|
+| `FLASK_ENV=production` | 本番モード。Secure Cookie 有効化・SECRET_KEY 必須化（**SQLite運用でも必須**） |
+| `USE_SQLITE=1` | DB を SQLite にする |
+| `SECRET_KEY` | セッション・CSRF 署名用の秘密鍵（長いランダム文字列） |
+| `ADMIN_USERNAME` | 管理者ログインのユーザー名 |
+| `ADMIN_PASSWORD` | ログインパスワード（平文可。`init_db.py` がハッシュ化） |
+| `ADMIN_LOGIN_PATH` | ログイン画面の URL パス（推測されにくい文字列） |
+| `ADMIN_GATE_KEY` | ログイン画面を表示するための合言葉 |
+
+ランダム文字列の生成（`SECRET_KEY` と `ADMIN_GATE_KEY` に別々の値を使う）:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+> **nano で編集する場合の操作**: 保存 = `Ctrl + O` → `Enter`、終了 = `Ctrl + X`。（`^` は Ctrl キーの意味）
+
+#### 2-5. データベースの初期化
+テーブルと管理者ユーザーを作成する。
+
+```bash
+cd ~/myblog/matome
+workon blog-venv
+python init_db.py
+```
+
+成功時の表示:
+
+```
+[OK] テーブルを作成しました。
+[OK] 管理者ユーザー "admin" を作成しました。
+
+初期化が完了しました。Web タブから Reload してください。
+```
+
+これで `instance/blog.db` に SQLite DB が作成され、管理者ユーザーも登録される。
+
+### フェーズ 3：Web タブでの公開設定
+
+以降はブラウザ画面での操作。画面上部のメニューから「**Web**」タブを開く（見当たらない場合は右上のハンバーガーメニュー ≡ 内）。
+
+#### 3-1. Web アプリを作成（Manual configuration）
+1. 「**Add a new web app**」をクリック
+2. ドメイン確認 → 「**Next**」（無料枠は `yuta1728.pythonanywhere.com` 固定）
+3. フレームワーク選択で「**Manual configuration**」を選ぶ
+   - ⚠️ **「Flask」ではなく Manual configuration**。`create_app()` 方式のため手動設定が必要
+4. Python バージョンで「**Python 3.10**」を選ぶ（仮想環境と合わせる）
+5. 「**Next**」→ 設定ページが開く
+
+#### 3-2. Virtualenv パスを設定
+「**Virtualenv**」セクションに以下を入力してチェックマークで保存。
+
+```
+/home/yuta1728/.virtualenvs/blog-venv
+```
+
+#### 3-3. WSGI 設定ファイルを編集
+「**Code**」セクションの **WSGI configuration file** のリンクを開き、**中身をすべて削除**して以下に置き換え、「Save」で保存。
+
+```python
+import sys
+
+project_home = '/home/yuta1728/myblog/matome'
+if project_home not in sys.path:
+    sys.path.insert(0, project_home)
+
+from app import create_app
+application = create_app()
+```
+
+> ⚠️ `project_home` が `matome` まで含んでいることを必ず確認する。
+
+#### 3-4. 静的ファイルの配信設定
+「**Static files**」セクションに以下を入力してチェックマークで保存。
+
+| URL | Directory |
+|-----|-----------|
+| `/static/` | `/home/yuta1728/myblog/matome/static` |
+
+#### 3-5. Reload して公開
+Web タブ上部の緑色の「**Reload yuta1728.pythonanywhere.com**」ボタンを押す。
+
+ブラウザで `https://yuta1728.pythonanywhere.com` にアクセスし、トップページが表示されれば公開成功。
+
+---
+
+## 5. 動作確認
+
+### 5-1. トップページ
+`https://yuta1728.pythonanywhere.com` が表示されること。
+
+### 5-2. 管理者ログイン
+ログイン URL は隠蔽されている。以下の手順でアクセスする。
+
+1. ブラウザで合言葉付き URL を開く（`.env` の値を使用）:
+   ```
+   https://yuta1728.pythonanywhere.com/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>
+   ```
+2. 合言葉が正しければ Cookie が発行され、`?key=` なしの URL にリダイレクトされる
+3. `ADMIN_USERNAME` と `ADMIN_PASSWORD` でログイン
+
+ログイン後、記事投稿・画像アップロード（再起動しても消えない）・地図/YouTube 埋め込みが動作するか確認する。
+
+---
+
+## 6. 公開後の更新・反映の運用方法
+
+### 基本原則
+
+**「PCで修正 → GitHubにpush → サーバーでpull → Reload」** が全ケース共通の流れ。
+
+```
+[自分のPC]              [GitHub]           [PythonAnywhere]
+コード修正 ──push──▶ リポジトリ ──git pull──▶ サーバーに反映 → Reload
+```
+
+> ⚠️ **コードを変えただけでは反映されない。最後に必ず Web タブの「Reload」を押す**こと。Reload でアプリが再読み込みされて初めて変更が有効になる。
+
+### ケース①：コードを修正しただけ（最も多い）
+
+`templates/`（HTML）、`views/`（Python）、`static/`（CSS）などの変更のみ。
+
+**PC側:**
+```bash
+git add .
+git commit -m "修正内容"
+git push origin main
+```
+
+**PythonAnywhere（Bash コンソール）:**
+```bash
+cd ~/myblog/matome
+git pull origin main
+```
+
+**最後に** Web タブで「**Reload**」。
+
+### ケース②：ライブラリを追加した
+
+`requirements-pythonanywhere.txt` にパッケージを追加した場合は、pull 後にインストールが必要。
+
+```bash
+cd ~/myblog/matome
+git pull origin main
+workon blog-venv
+pip install -r requirements-pythonanywhere.txt
+```
+
+**最後に** Web タブで「**Reload**」。
+
+> `pip install` は既存分は飛ばして新規分だけ入れるため、毎回実行しても問題ない。
+
+### ケース③：データベースの構造を変えた（models.py 変更）
+
+`init_db.py`（`db.create_all()`）は「無いテーブルを作る」だけで、**既存テーブルへのカラム追加は行わない**。カラム追加などをした場合、動作確認用途であれば古い DB を作り直すのが手軽（**投稿データは消える**）。
+
+```bash
+cd ~/myblog/matome
+git pull origin main
+rm instance/blog.db          # 古いDBを削除（データ消去）
+workon blog-venv
+python init_db.py            # テーブルと管理者ユーザーを作り直す
+```
+
+**最後に** Web タブで「**Reload**」。
+
+> データを残したままカラムを追加したい場合は Alembic（`flask db migrate` / `flask db upgrade`）を使うが、設定が複雑なため、今回の目的では作り直しで十分。
+
+### 更新方法 早見表
+
+| 変更内容 | pull 後に必要な作業 | 最後 |
+|----------|---------------------|------|
+| HTML / CSS / Python コードのみ | なし | Reload |
+| ライブラリ追加 | `pip install -r requirements-pythonanywhere.txt` | Reload |
+| models.py（DB 構造） | `rm instance/blog.db` → `python init_db.py` | Reload |
+
+---
+
+## 7. トラブルシューティング
+
+| 症状 | 確認・対処 |
+|------|-----------|
+| 更新が反映されない | Web タブの **Reload を押し忘れていないか**（最頻出）。CSS はブラウザキャッシュ対策で `Ctrl + Shift + R` |
+| `requirements...txt が無い` | `cd ~/myblog/matome` に居るか確認（プロジェクト本体は `matome/` の中） |
+| `.env` が無い / 設定が効かない | `cat .env` で存在と内容を確認。`.env` は clone に含まれないためサーバー上で手動作成する |
+| ページを開くとエラー画面 | Web タブの「**Error log**」を開き、**末尾（最新）**のトレースバックを確認 |
+| ログインできない | `.env` の `ADMIN_USERNAME` / `ADMIN_PASSWORD` と、`init_db.py` を実行済みか確認 |
+| push したのに pull で変わらない | PC 側で `git status` が clean（コミット漏れなし）か、`git push` 済みか確認 |
+
+**ログの場所（Web タブ「Log files」）:**
+- **Error log**: アプリの例外・トレースバック（最重要）
+- **Server log**: 起動時メッセージ
+- **Access log**: アクセス記録
+
+---
+
+## 8. 無料枠の注意点・公開の終了
+
+- **アプリの延長**: 無料枠の Web アプリは Web タブの「Run until 3 months from today」（現在は約1か月）のボタンを定期的に押さないと失効する。期限が近づくとメール通知が届く。
+- **CPU時間**: 1日あたりの CPU 秒数に上限あり。動作確認レベルなら問題なし。
+- **外部ネット接続**: 無料枠はサーバーからの外部通信が制限される。ただし本アプリのアバター（DiceBear）・地図・YouTube 埋め込みはすべて**閲覧者のブラウザ側で読み込まれる**ため、この制限の影響を受けない。
+- **公開の終了**: 一時公開が目的のため、確認が済んだら Web タブで **Disable**（無効化）または Web アプリ自体を削除して公開を終える。
+
+---
+
+## 9. 初回デプロイ チェックリスト
+
+- [ ] `app.py` / `config.py` を修正版に置き換えた
+- [ ] `init_db.py` / `requirements-pythonanywhere.txt` を追加した
+- [ ] `.gitignore` に `.env` と `*.db` が含まれている
+- [ ] GitHub に push した
+- [ ] PythonAnywhere で `git clone`（`~/myblog`、本体は `matome/`）
+- [ ] `cd ~/myblog/matome` で仮想環境 `blog-venv`（Python 3.10）を作成した
+- [ ] `pip install -r requirements-pythonanywhere.txt` を実行した
+- [ ] `.env` をサーバー上に作成した（`USE_SQLITE=1` / `FLASK_ENV=production` 含む）
+- [ ] `python init_db.py` でテーブルと管理者ユーザーを作成した
+- [ ] Web タブで Manual configuration（Python 3.10）を作成した
+- [ ] Virtualenv パスを設定した（`/home/yuta1728/.virtualenvs/blog-venv`）
+- [ ] WSGI ファイルを編集した（`project_home` に `matome` を含む）
+- [ ] Static files（`/static/` → `.../matome/static`）を設定した
+- [ ] Reload した
+- [ ] トップページとログインが動作した
+</file>
+
+<file path="docker-compose.yml">
+services:
+    db:
+        image: postgres:18-alpine
+        container_name: dbtest
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+            TZ: Asia/Tokyo
+        ports:
+            # ホスト : コンテナ(PostgreSQL)
+            - "15432:5432"
+        volumes:
+            # データを永続化するための名前付きボリューム
+            - personal_blog_data:/var/lib/postgresql
+            # 初期化用(自動実行)
+            - ./init:/docker-entrypoint-initdb.d
+        restart: unless-stopped
+
+volumes:
+    personal_blog_data:
+</file>
+
+<file path="extensions.py">
+# ======================================================================
+# extensions.py — Flask 拡張機能インスタンスの「置き場」
+# ======================================================================
+#
+# 【役割】
+#   Flask の拡張機能（プラグイン）を「インスタンスだけ先に作っておく」ファイル。
+#
+#   【なぜ app.py に直接書かないのか】
+#   app.py で from extensions import db と書けば
+#   app.py と models.py の双方から同じ db オブジェクトを参照できる。
+#   app.py 内で db = SQLAlchemy(app) と書いてしまうと
+#   models.py が app.py を import して循環インポートが発生するため、
+#   このファイルで「中立な場所」に置いている。（Application Factory パターン）
+#
+# 【このファイルの構成（目次）】
+#   [1] db            : SQLAlchemy（ORM）インスタンス
+#   [2] login_manager : Flask-Login（ログイン状態管理）インスタンス
+#   [3] migrate       : Flask-Migrate（DB マイグレーション）インスタンス
+#
+# 【処理フロー図（初期化の流れ）】
+#
+#   extensions.py                    app.py の create_app()
+#   ┌───────────────────┐            ┌─────────────────────────────┐
+#   │ db            生成 │──import──►│ db.init_app(app)            │
+#   │ login_manager 生成 │──import──►│ login_manager.init_app(app) │
+#   │ migrate       生成 │──import──►│ migrate.init_app(app, db)   │
+#   └───────────────────┘            └─────────────────────────────┘
+#          ▲
+#          │ import（app.py を経由しないので循環しない）
+#   models.py / views/*.py が db を利用
+#
+# ======================================================================
+
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_migrate import Migrate
+
+
+# ======================================================================
+# [1] db : データベース操作の中心オブジェクト
+# ======================================================================
+# SQLAlchemy の ORM（Object-Relational Mapping）インスタンス。
+# models.py で db.Column / db.relationship などを使ってテーブル定義し、
+# views/ 内で db.session.add() / db.session.commit() などを使って
+# データの読み書きを行う。
+# 実際の DB への接続は app.py の db.init_app(app) 時に行われる。
+db = SQLAlchemy()
+
+
+# ======================================================================
+# [2] login_manager : ログイン状態の管理オブジェクト
+# ======================================================================
+# Flask-Login が提供するセッション管理の中心。
+# - @login_required デコレータで未ログイン時のアクセスを制御
+# - current_user でテンプレート・ビューから現在のユーザー情報を取得
+# - login_manager.login_view でログインページの URL を指定（app.py で設定）
+# - login_manager.user_loader でセッションから User を復元するコールバックを登録
+login_manager = LoginManager()
+
+
+# ======================================================================
+# [3] migrate : データベーススキーマのバージョン管理オブジェクト
+# ======================================================================
+# Alembic（マイグレーションツール）を Flask と連携させるラッパー。
+# models.py でテーブル定義を変更した後に
+#   flask db migrate -m "変更内容"  → 差分を検出して migrations/versions/ にファイル生成
+#   flask db upgrade                → 実際の DB に変更を適用
+# というワークフローで使用する。
+migrate = Migrate()
+</file>
+
+<file path="init_db.py">
+# ======================================================================
+# init_db.py — データベース初期化スクリプト（SQLite / マイグレーション不要）
+# ======================================================================
+#
+# 【役割】
+#   マイグレーション（flask db upgrade）を使わない環境向けに、
+#   テーブル作成と管理者ユーザーの登録を一括で行うスクリプト。
+#   PythonAnywhere 無料枠のように SQLite を使う場合に利用する。
+#
+# 【重要】
+#   このアプリはログイン時に「管理者ユーザー（ADMIN_USERNAME）」が
+#   DB に存在していることを前提にしている。
+#   空の DB のままだとログインできないため、テーブル作成と同時に
+#   管理者ユーザーも作成する。
+#
+# 【実行方法】
+#   1. 仮想環境を有効化する（PythonAnywhere では workon <venv名>）
+#   2. .env に ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_LOGIN_PATH /
+#      ADMIN_GATE_KEY / SECRET_KEY / USE_SQLITE / FLASK_ENV を設定しておく
+#   3. プロジェクト直下で以下を実行:
+#          python init_db.py
+#
+#   何度実行しても安全（テーブル・ユーザーが既にあればスキップする）。
+# ======================================================================
+
+from werkzeug.security import generate_password_hash
+from app import create_app
+from extensions import db
+from models import User
+import config
+
+# werkzeug が生成するパスワードハッシュの接頭辞（ハッシュ済みかどうかの判定用）
+_HASH_PREFIXES = ('pbkdf2:', 'scrypt:', 'argon2')
+
+
+def _resolve_password_hash(raw: str) -> str:
+    """
+    ADMIN_PASSWORD の値を「DB に保存するハッシュ」に変換する。
+
+    - 既にハッシュ済み（pbkdf2:/scrypt:/argon2 で始まる）ならそのまま使う
+    - 平文が渡された場合はここでハッシュ化する
+
+    どちらの形式でも受け付けることで、初心者が平文を設定しても
+    正しくログインできるようにする（安全側・利便性重視）。
+    """
+    raw = raw or ''
+    if raw.startswith(_HASH_PREFIXES):
+        return raw
+    return generate_password_hash(raw)
+
+
+def main():
+    app = create_app()
+    with app.app_context():
+        # --------------------------------------------------------------
+        # 1) 全テーブルを作成（既に存在するテーブルはそのまま）
+        # --------------------------------------------------------------
+        db.create_all()
+        print('[OK] テーブルを作成しました。')
+
+        # --------------------------------------------------------------
+        # 2) 管理者ユーザーを作成（既に存在すれば作成しない）
+        # --------------------------------------------------------------
+        if not config.ADMIN_USERNAME:
+            raise SystemExit('[ERROR] ADMIN_USERNAME が未設定です。.env を確認してください。')
+
+        existing = User.query.filter_by(username=config.ADMIN_USERNAME).first()
+        if existing:
+            print(f'[SKIP] 管理者ユーザー "{config.ADMIN_USERNAME}" は既に存在します。')
+        else:
+            user = User(
+                username=config.ADMIN_USERNAME,
+                password=_resolve_password_hash(config.ADMIN_PASSWORD),
+                nickname=None,
+            )
+            db.session.add(user)
+            db.session.commit()
+            print(f'[OK] 管理者ユーザー "{config.ADMIN_USERNAME}" を作成しました。')
+
+        print('\n初期化が完了しました。Web タブから Reload してください。')
+
+
+if __name__ == '__main__':
+    main()
+</file>
+
+<file path="models.py">
+# ======================================================================
+# models.py — データベースのテーブル定義（ORM モデル）
+# ======================================================================
+#
+# 【役割】
+#   データベースのテーブル構造を Python クラスで定義するファイル。
+#   SQLAlchemy が各クラスを DB のテーブルに対応させる。
+#
+# 【このファイルの構成（目次）】
+#   [1] post_hashtags : Post ↔ Hashtag の多対多を実現する中間テーブル
+#   [2] Hashtag       : ハッシュタグ
+#   [3] Post          : ブログ記事
+#   [4] User          : 管理者
+#
+# 【テーブル構成と関係図】
+#
+#   user (User)                     hashtag (Hashtag)
+#   ┌──────────┐                    ┌──────────┐
+#   │ id       │                    │ id       │
+#   │ username │                    │ name     │
+#   │ password │                    └────┬─────┘
+#   │ nickname │                         │ 多対多
+#   └────┬─────┘                         │ (post_hashtags 経由)
+#        │ 1対多                          │
+#        │ (user.posts)                  │
+#        ▼                               ▼
+#   post (Post) ◄────────────── post_hashtags（中間テーブル）
+#   ┌──────────────┐            ┌─────────────────────┐
+#   │ id / title   │            │ post_id  (FK)        │
+#   │ body / genre │            │ hashtag_id (FK)      │
+#   │ img_name ... │            └─────────────────────┘
+#   └──────────────┘
+#
+# ======================================================================
+
+from extensions import db          # extensions.py で作成した db インスタンスを使う
+from flask_login import UserMixin  # ログイン機能に必要なメソッドを User に追加するミックスイン
+from datetime import datetime
+import pytz                        # タイムゾーン指定（Asia/Tokyo）に使用
+
+
+# ======================================================================
+# [1] 中間テーブル: post_hashtags
+# ======================================================================
+# Post と Hashtag は「多対多」の関係（1つの記事に複数タグ、1つのタグが複数記事に付く）。
+# SQLAlchemy では多対多を表現するために「中間テーブル」が必要。
+#
+# db.Table() で定義すると「モデルクラスを持たない純粋な関連テーブル」になる。
+# Post モデルの hashtags リレーションが secondary=post_hashtags を参照することで
+# Post ↔ Hashtag 間の JOIN が自動で行われる。
+post_hashtags = db.Table(
+    'post_hashtags',
+    # post_id: post テーブルの id を外部キーとして参照
+    db.Column('post_id',    db.Integer, db.ForeignKey('post.id'),    primary_key=True),
+    # hashtag_id: hashtag テーブルの id を外部キーとして参照
+    db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True)
+    # 2カラムの組み合わせが主キー → 同じ (post_id, hashtag_id) の重複を防ぐ
+)
+
+
+# ======================================================================
+# [2] Hashtag モデル
+# ======================================================================
+class Hashtag(db.Model):
+    __tablename__ = 'hashtag'  # DB 上のテーブル名を明示的に指定
+
+    id   = db.Column(db.Integer, primary_key=True)
+    # name: '#' を除いたタグ文字列で保存（例: "Flask", "Python"）
+    #   unique=True    → 同じ名前のタグは 1 件だけ存在できる
+    #   nullable=False → 必須項目
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
+    # posts リレーションは Post モデル側の backref で自動定義される（[3] 参照）
+
+
+# ======================================================================
+# [3] Post モデル（ブログ記事）
+# ======================================================================
+class Post(db.Model):
+    # __tablename__ を省略すると SQLAlchemy がクラス名を小文字化した 'post' をテーブル名にする
+
+    # ------------------------------------------------------------------
+    # (3-1) 基本カラム
+    # ------------------------------------------------------------------
+    id         = db.Column(db.Integer, primary_key=True)  # 記事の一意な識別子（自動採番）
+    title      = db.Column(db.TEXT, nullable=False)        # 記事タイトル（必須）
+    body       = db.Column(db.TEXT, nullable=False)        # 記事本文（マークダウン形式、必須）
+    genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
+
+    # ------------------------------------------------------------------
+    # (3-2) 日時カラム
+    # ------------------------------------------------------------------
+    # created_at: 投稿日時。lambda を使ってインスタンス生成時の時刻を設定する。
+    created_at = db.Column(db.DateTime, nullable=False,
+                           default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
+
+    # updated_at: 更新日時。
+    #   nullable=True にすることで「まだ一度も更新されていない」状態を NULL で表現する。
+    #   これにより detail.html の「更新日時 != 投稿日時」という条件判定が
+    #   秒単位のズレで誤表示されるバグを防ぐ。
+    #   - 新規投稿時: NULL（テンプレート側で「更新なし」として扱う）
+    #   - 編集保存時: admin.py の update() で現在時刻をセット
+    updated_at = db.Column(db.DateTime, nullable=True)
+
+    # ------------------------------------------------------------------
+    # (3-3) ユーザー紐付け
+    # ------------------------------------------------------------------
+    # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # ------------------------------------------------------------------
+    # (3-4) 画像関連カラム
+    # ------------------------------------------------------------------
+    # img_name: アップロード画像のファイル名をカンマ区切りで保存
+    #   例: "uuid1.jpg,uuid2.png"
+    #   複数画像に対応するため 1 カラムにまとめて格納している
+    #
+    #   【バグ修正】String(100) → Text に変更
+    #   UUID 化したファイル名は 1 件あたり約 40 文字（UUID 36 文字 + 拡張子）あり、
+    #   3 枚以上アップロードするとカンマ区切り文字列が 100 文字を超えて
+    #   PostgreSQL で "value too long for type character varying(100)"
+    #   エラーになっていた。枚数上限を設けない設計のため可変長の Text にする。
+    #   （migrations/versions/change_img_name_to_text.py で DB 側も変更）
+    img_name      = db.Column(db.Text, nullable=True)
+
+    # default_thumb: 画像未アップロード時に使うデフォルトサムネイルのファイル名
+    #   例: "thumb_option1.jpg"（static/img/thbnails/ 以下に配置済みの画像）
+    default_thumb = db.Column(db.String(100), nullable=True)
+
+    # img_captions: 各画像のキャプションをタブ区切りで保存
+    #   例: "東京タワー全景\t夜景のアップ"
+    #   img_name のカンマ区切りと順番が対応する（img_name[0] → captions[0]）
+    img_captions  = db.Column(db.Text, nullable=True)
+
+    # ------------------------------------------------------------------
+    # (3-5) 公開設定
+    # ------------------------------------------------------------------
+    # True = 全体公開 / False = 非公開（管理者だけ閲覧可）
+    is_published = db.Column(db.Boolean, nullable=False, default=True)
+
+    # ------------------------------------------------------------------
+    # (3-6) リレーション
+    # ------------------------------------------------------------------
+    # user: Post → User への多対一リレーション
+    #   backref='posts' により User インスタンスから user.posts で
+    #   その管理者の全記事リストが取得できる
+    user = db.relationship('User', backref=db.backref('posts', lazy=True))
+
+    # hashtags: Post ↔ Hashtag の多対多リレーション
+    #   secondary=post_hashtags → 中間テーブルを経由して結合
+    #   lazy='selectin' → Post の id リストを IN 句で一括取得するロード戦略。
+    #                      一覧ページで複数の Post をまとめてロードする際に
+    #                      N+1 問題（記事ごとに個別クエリが走る問題）を防ぐ。
+    #   backref → Hashtag インスタンスから hashtag.posts で
+    #             そのタグが付いた全記事リストが取得できる
+    hashtags = db.relationship(
+        'Hashtag',
+        secondary=post_hashtags,
+        lazy='selectin',
+        backref=db.backref('posts', lazy=True)
+    )
+
+
+# ======================================================================
+# [4] User モデル（管理者）
+# ======================================================================
+class User(UserMixin, db.Model):
+    # UserMixin が提供するメソッド:
+    #   is_authenticated → ログイン済みかどうか（常に True を返す）
+    #   is_active        → アカウントが有効か（常に True を返す）
+    #   is_anonymous     → 匿名ユーザーかどうか（常に False を返す）
+    #   get_id()         → Flask-Login がセッションに保存する一意のID文字列を返す
+
+    id       = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(30), unique=True)   # ログイン時に使うユーザー名（重複不可）
+    password = db.Column(db.String(200))               # Werkzeug でハッシュ化したパスワード
+    nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
+</file>
+
+<file path="requirements-pythonanywhere.txt">
+# ======================================================================
+# requirements-pythonanywhere.txt
+# ======================================================================
+# PythonAnywhere 無料枠（SQLite 運用）向けの依存パッケージ一覧。
+#
+# 元の requirements.txt から PostgreSQL ドライバ（psycopg 系）を除外している。
+# SQLite は Python 標準機能なので追加ドライバは不要で、
+# 無料枠の限られたディスク容量を節約できる。
+#
+# 【インストール方法（PythonAnywhere の Bash コンソール）】
+#   workon <venv名>
+#   pip install -r requirements-pythonanywhere.txt
+# ======================================================================
+alembic==1.16.5
+blinker==1.9.0
+click==8.1.8
+colorama==0.4.6
+filetype==1.2.0
+Flask==3.1.3
+Flask-Login==0.6.3
+Flask-Migrate==4.1.0
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
+greenlet==3.2.5
+importlib_metadata==8.7.1
+itsdangerous==2.2.0
+Jinja2==3.1.6
+Mako==1.3.12
+Markdown==3.9
+MarkupSafe==3.0.3
+python-dotenv==1.2.1
+pytz==2026.2
+SQLAlchemy==2.0.50
+tomli==2.4.1
+typing_extensions==4.15.0
+tzdata==2026.2
+Werkzeug==3.1.8
+WTForms==3.2.1
+zipp==3.23.1
+</file>
+
+<file path="requirements.txt">
+alembic==1.16.5                                                                         
+blinker==1.9.0
+click==8.1.8
+colorama==0.4.6
+filetype==1.2.0
+Flask==3.1.3
+Flask-Login==0.6.3
+Flask-Migrate==4.1.0
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
+greenlet==3.2.5
+importlib_metadata==8.7.1
+itsdangerous==2.2.0
+Jinja2==3.1.6
+Mako==1.3.12
+Markdown==3.9
+MarkupSafe==3.0.3
+psycopg==3.2.13
+psycopg-binary==3.2.13
+psycopg2-binary==2.9.12
+python-dotenv==1.2.1
+pytz==2026.2
+SQLAlchemy==2.0.50
+tomli==2.4.1
+typing_extensions==4.15.0
+tzdata==2026.2
+Werkzeug==3.1.8
+WTForms==3.2.1
+zipp==3.23.1
+</file>
+
+<file path="save_path">
+
 </file>
 
 <file path="wsgi_pythonanywhere.py">
