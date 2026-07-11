@@ -380,6 +380,32 @@ a:hover {
    ========================================================================== */
 
 @media (max-width: 767px) {
+
+    /* ========================================================================
+       【スマホのフォントが細く見える問題への対応】
+       ------------------------------------------------------------------------
+       body に指定している -webkit-font-smoothing: antialiased は、
+       WebKit 系ブラウザ（iPhone の Safari / Chrome など）で文字の線を
+       グレースケール・アンチエイリアスで「細く」描画する。
+       一方 Windows の Chrome / Edge はこの指定を無視し、ClearType で
+       しっかりした太さで描画するため、
+       「Windows では普通なのにスマホだけ痩せて見える」差が生まれていた。
+
+       文字の太さ（font-weight）は Windows もスマホも同じ値なので、
+       スマホ側でこの痩せる描画（antialiased）を解除するだけで、
+       Windows とほぼ同じ見た目の太さになる。
+
+       - -webkit-font-smoothing: auto  … WebKit 系の痩せ描画を解除
+       - -moz-osx-font-smoothing: auto … macOS 版 Firefox 用の同等指定
+       ※ これらのプロパティは継承されるため html, body に指定すれば
+         ページ内すべての文字（他CSSファイルで装飾された要素も含む）に効く。
+       ======================================================================== */
+    html,
+    body {
+        -webkit-font-smoothing: auto;
+        -moz-osx-font-smoothing: auto;
+    }
+
     .header-container {
         padding: 0 15px;
         height: 63px;
