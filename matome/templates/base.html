@@ -149,13 +149,28 @@
         /* ============================================================
            スマホの記事編集ツールバー改善（create / update ページ用）
            ------------------------------------------------------------
-           問題1: 本文欄をタップするとツールバーが画面外に隠れて使えない
-             → フォーカス中はツールバーをキーボード直上に固定して常に使えるようにする
-           問題2: 最終行がキーボードに隠れて見えない
-             → 本文欄下部に余白を確保し、カーソル位置がキーボードの上に出るようにする
+           【Notion 風 UI への改良版】
+
+           問題1: 本文欄をタップした最初のタイミングで、ツールバーが
+                  キーボードの下に隠れてしまう
+             → フォーカス直後に一度だけ位置計算していたのをやめ、
+               キーボードのアニメーション完了を待つために
+               複数回リトライ（60〜650ms）＋ visualViewport の
+               resize / scroll に連動して位置を再計算する。
+               これにより最初のタップから確実にキーボード直上へ固定される。
+
+           問題2: text 枠の一番下付近の末尾をタップ／入力すると、
+                  文章の末尾がキーボードやツールバーの下に隠れて
+                  入力状況が見えない
+             → タップ・カーソル移動・入力のたびに「カーソルの画面上の
+               Y 座標」をミラー要素で計測し、ツールバーの上端より
+               下にある場合はページを自動スクロールして、カーソル
+               （＝文章の末尾）が常にツールバーの上に見えるようにする。
+               ページを持ち上げるためのスクロール余地は、body 末尾に
+               動的なスペーサーを差し込んで確保する。
            ------------------------------------------------------------
            ※ #bodyTextarea と #md-toolbar があるページ（create/update）でのみ動作する。
-              それ以外のページ・PC表示では何もしない（挙動は従来どおり）。
+              それ以外のページ・PC 表示では何もしない（挙動は従来どおり）。
            ============================================================ */
         (function () {
             var textarea = document.getElementById('bodyTextarea');
@@ -166,40 +181,167 @@
             var mq = window.matchMedia('(max-width: 767px)');
             var vv = window.visualViewport;
             var docked = false;
+            var spacer = null;
+            var mirror = null;
 
+            var CARET_GAP = 16;   // カーソルとツールバーの間に空ける余白(px)
+
+            /* --------------------------------------------------------
+               キーボード関連の寸法計算
+               -------------------------------------------------------- */
             // キーボードの高さ（レイアウトビューポート − 表示ビューポート）
             function keyboardHeight() {
                 if (!vv) return 0;
                 return Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
             }
+            // キーボードが開いていると判定できるか（iOS 判定用のしきい値）
+            function keyboardOpen() {
+                return keyboardHeight() > 80;
+            }
+            function toolbarHeight() {
+                return toolbar.offsetHeight || 48;
+            }
+            // ツールバー上端の「画面（viewport）上での Y 座標」を返す
+            function toolbarTopY() {
+                var h = toolbarHeight();
+                if (vv && keyboardOpen()) {
+                    // iOS 等：レイアウトが縮まないので visualViewport 下端基準
+                    return vv.offsetTop + vv.height - h;
+                }
+                // Android 等：レイアウト自体が縮むので innerHeight 下端基準
+                return window.innerHeight - keyboardHeight() - h;
+            }
 
-            // 固定ツールバーの位置と本文欄の下部余白を計算して設定
+            /* --------------------------------------------------------
+               ツールバーの固定位置を計算して設定
+               -------------------------------------------------------- */
             function positionToolbar() {
-                var h = toolbar.offsetHeight || 48;
-                if (vv && keyboardHeight() > 40) {
-                    // iOS 等：レイアウトビューポートが縮まないので、キーボード上端に合わせる
+                var h = toolbarHeight();
+                if (vv && keyboardOpen()) {
+                    // iOS 等：キーボード上端に合わせて top を指定
                     toolbar.style.bottom = 'auto';
                     toolbar.style.top = Math.max(vv.offsetTop + vv.height - h, 0) + 'px';
                 } else {
-                    // Android 等：キーボードでレイアウト自体が縮むため bottom:0 が直上になる
+                    // Android 等：レイアウトが縮むため bottom:0 が直上になる
                     toolbar.style.top = 'auto';
                     toolbar.style.bottom = '0px';
                 }
-                // 最終行がツールバー／キーボードに隠れないよう下部余白を確保
-                textarea.style.setProperty('padding-bottom', (h + 28) + 'px', 'important');
             }
 
-            function dock() {
-                if (docked) { positionToolbar(); return; }
-                docked = true;
-                var h = toolbar.offsetHeight || 48;
-                if (wrapper) {
-                    // 固定化でフローから外れる分の空きを確保（レイアウトのガタつき防止）
-                    wrapper.style.setProperty('--docked-toolbar-h', h + 'px');
-                    wrapper.classList.add('is-toolbar-docked');
+            // 本文欄下部の余白（最終行がツールバーに潜り込まないように）
+            function applyPadding() {
+                textarea.style.setProperty('padding-bottom', (toolbarHeight() + 48) + 'px', 'important');
+            }
+
+            /* --------------------------------------------------------
+               スクロール余地を確保するスペーサー
+               -------------------------------------------------------- */
+            function ensureSpacer() {
+                if (!spacer) {
+                    spacer = document.createElement('div');
+                    spacer.className = 'md-editing-spacer';
+                    spacer.setAttribute('aria-hidden', 'true');
+                    document.body.appendChild(spacer);
                 }
-                toolbar.classList.add('md-toolbar--docked');
+                spacer.style.height = (keyboardHeight() + toolbarHeight() + 80) + 'px';
+            }
+            function removeSpacer() {
+                if (spacer && spacer.parentNode) spacer.parentNode.removeChild(spacer);
+                spacer = null;
+            }
+
+            /* --------------------------------------------------------
+               カーソル位置の計測（ミラー要素方式）
+               --------------------------------------------------------
+               textarea 内のカーソル位置は直接取得できないため、
+               同じフォント・幅・padding を持つ隠し div（ミラー）に
+               「カーソルまでのテキスト」を流し込み、末尾へ置いた
+               マーカー要素の offsetTop を測ることでカーソルの
+               縦オフセット（textarea 内の px 位置）を求める。
+               -------------------------------------------------------- */
+            var MIRROR_PROPS = [
+                'boxSizing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+                'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
+                'lineHeight', 'letterSpacing', 'textTransform', 'textIndent',
+                'wordSpacing', 'tabSize', 'whiteSpace'
+            ];
+            function caretOffsetTop() {
+                if (!mirror) {
+                    mirror = document.createElement('div');
+                    mirror.style.position   = 'absolute';
+                    mirror.style.top         = '0';
+                    mirror.style.left        = '-9999px';
+                    mirror.style.visibility  = 'hidden';
+                    mirror.style.whiteSpace  = 'pre-wrap';
+                    mirror.style.wordWrap    = 'break-word';
+                    mirror.style.overflowWrap = 'break-word';
+                    document.body.appendChild(mirror);
+                }
+                var cs = window.getComputedStyle(textarea);
+                MIRROR_PROPS.forEach(function (p) { mirror.style[p] = cs[p]; });
+                // 折り返し幅を textarea に合わせる（getComputedStyle の width を使用）
+                mirror.style.width  = cs.width;
+                mirror.style.height = 'auto';
+
+                mirror.textContent = textarea.value.substring(0, textarea.selectionEnd);
+                var marker = document.createElement('span');
+                marker.textContent = '\u200b';  // ゼロ幅スペース
+                mirror.appendChild(marker);
+                return marker.offsetTop;
+            }
+
+            /* --------------------------------------------------------
+               カーソルをツールバーより上に見えるようスクロール
+               -------------------------------------------------------- */
+            function ensureCaretVisible() {
+                if (!docked) return;
+                var cs = window.getComputedStyle(textarea);
+                var lineHeight = parseFloat(cs.lineHeight);
+                if (isNaN(lineHeight)) lineHeight = parseFloat(cs.fontSize) * 1.6;
+
+                var caretTop = caretOffsetTop();
+                var taRect   = textarea.getBoundingClientRect();
+                // カーソルの画面上での上端・下端の Y 座標
+                var caretViewTop    = taRect.top - textarea.scrollTop + caretTop;
+                var caretViewBottom = caretViewTop + lineHeight;
+
+                var lowerLimit = toolbarTopY() - CARET_GAP;   // これより下は隠れる
+                if (caretViewBottom > lowerLimit) {
+                    // 下に隠れている → ページを下方向へスクロールして持ち上げる
+                    window.scrollBy(0, Math.ceil(caretViewBottom - lowerLimit));
+                    return;
+                }
+
+                // 上（ヘッダー等）に隠れている場合の保険
+                var upperLimit = (vv ? vv.offsetTop : 0) + 12;
+                if (caretViewTop < upperLimit) {
+                    window.scrollBy(0, Math.floor(caretViewTop - upperLimit));
+                }
+            }
+
+            // 描画・キーボード追従が落ち着いてから測るため 2 段階で実行
+            function scheduleCaret() {
+                if (!docked) return;
+                requestAnimationFrame(ensureCaretVisible);
+                setTimeout(ensureCaretVisible, 130);
+            }
+
+            /* --------------------------------------------------------
+               ドッキング / 解除
+               -------------------------------------------------------- */
+            function dock() {
+                if (!docked) {
+                    docked = true;
+                    if (wrapper) {
+                        wrapper.style.setProperty('--docked-toolbar-h', toolbarHeight() + 'px');
+                        wrapper.classList.add('is-toolbar-docked');
+                    }
+                    toolbar.classList.add('md-toolbar--docked');
+                }
                 positionToolbar();
+                applyPadding();
+                ensureSpacer();
             }
 
             function undock() {
@@ -213,6 +355,7 @@
                     wrapper.classList.remove('is-toolbar-docked');
                     wrapper.style.removeProperty('--docked-toolbar-h');
                 }
+                removeSpacer();
             }
 
             function update() {
@@ -223,12 +366,41 @@
                 }
             }
 
+            /* --------------------------------------------------------
+               位置決めを数回リトライ（キーボードのアニメーション待ち）
+               --------------------------------------------------------
+               端末やアニメーション速度によってキーボードが開く
+               タイミングがまちまちなため、フォーカス直後に複数回
+               update() を走らせて確実にキーボード直上へ固定する。
+               （問題1の対策の要）
+               -------------------------------------------------------- */
+            var retryTimers = [];
+            function clearRetries() {
+                retryTimers.forEach(clearTimeout);
+                retryTimers = [];
+            }
+            function scheduleUpdates() {
+                clearRetries();
+                [60, 150, 280, 450, 650].forEach(function (ms) {
+                    retryTimers.push(setTimeout(function () {
+                        if (document.activeElement === textarea) {
+                            update();
+                            scheduleCaret();
+                        }
+                    }, ms));
+                });
+            }
+
+            /* --------------------------------------------------------
+               イベント登録
+               -------------------------------------------------------- */
             textarea.addEventListener('focus', function () {
                 textarea.classList.add('is-md-editing');
-                // キーボードが開くのを少し待ってから配置する
-                setTimeout(update, 250);
+                scheduleUpdates();   // キーボードが開くのを待ちながら数回配置
             });
+
             textarea.addEventListener('blur', function () {
+                clearRetries();
                 // ツールバー操作でのブラーはボタン側で抑止しているが、念のため少し待つ
                 setTimeout(function () {
                     if (document.activeElement !== textarea) {
@@ -238,10 +410,26 @@
                 }, 100);
             });
 
-            // キーボードの開閉・スクロールに追従して位置を更新
+            // タップ位置・カーソル移動・入力に追従してカーソルを可視化（問題2の対策）
+            textarea.addEventListener('click',  scheduleCaret);
+            textarea.addEventListener('keyup',  scheduleCaret);
+            textarea.addEventListener('input', function () {
+                if (docked) { applyPadding(); ensureSpacer(); }
+                scheduleCaret();
+            });
+            document.addEventListener('selectionchange', function () {
+                if (docked && document.activeElement === textarea) scheduleCaret();
+            });
+
+            // キーボードの開閉・スクロールに追従して位置とカーソルを更新
             if (vv) {
-                vv.addEventListener('resize', update);
-                vv.addEventListener('scroll', function () { if (docked) positionToolbar(); });
+                vv.addEventListener('resize', function () {
+                    update();
+                    if (docked) { ensureSpacer(); scheduleCaret(); }
+                });
+                vv.addEventListener('scroll', function () {
+                    if (docked) positionToolbar();
+                });
             }
 
             // ツールバーのボタンはフォーカスを奪わない
