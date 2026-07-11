@@ -11,9 +11,15 @@
    ページ個別CSS（index.css / detail.css 等）より後に読み込まれなくても、
    また既存の !important 付きルールに対しても、確実に上書きが効く。
 
-   【切替】
-   base.html のトグルボタン（🌙 / ☀️）が data-theme を付け替え、
-   選択内容は localStorage に保存される（次回訪問時も維持）。
+   【見やすさ調整（このリビジョンの主な変更点）】
+   - カード色(surface)と背景色(bg)の明度差を広げ、ブロックが背景に
+     溶けないようにした。
+   - 枠線(border)を明るく・視認しやすい色に強化。検索エリア／ジャンル一覧
+     などの「囲み」は 2px でさらに強調。
+   - カードに暗い影を付けて縁を立たせた。
+   - detail ページの階層を明確化：タイトルを最も明るく、タイトル/メタと
+     本文の区切り線を強調、見出し(H2)下線をアクセント色に、目次を一段
+     明るいパネル＋強い枠で「箱」として際立たせた。
    ============================================================ */
 
 
@@ -22,28 +28,37 @@
    ------------------------------------------------------------
    html[data-theme="dark"] 直下に定義することで、配下の全要素へ継承される。
    色を微調整したいときはここの値だけ変えればサイト全体に反映される。
+
+   ★見やすさのキモ：
+     --dk-bg（背景）と --dk-surface（カード）の明度差をしっかり取ること。
+     この 2 色が近いとカードが背景に溶ける。
    ============================================================ */
 html[data-theme="dark"] {
-    --dk-bg:             #0b1622;  /* ページ背景（濃紺） */
-    --dk-surface:        #15273a;  /* カード・ヘッダー等の面 */
-    --dk-surface-2:      #1b3a52;  /* 入力欄・淡色背景だった箇所 */
-    --dk-surface-3:      #244560;  /* ホバー・バッジ背景 */
-    --dk-text:           #e9f3fa;  /* 見出し・主要テキスト */
-    --dk-text-body:      #c2d4e0;  /* 本文テキスト */
-    --dk-text-muted:     #8ba7ba;  /* 日付・補足など控えめテキスト */
-    --dk-link:           #6cc5f7;  /* リンク・ラベル */
+    --dk-bg:             #0a1420;  /* ページ背景（最も暗い） */
+    --dk-surface:        #1e344a;  /* カード・ヘッダー等の面（背景よりはっきり明るく） */
+    --dk-surface-2:      #26405b;  /* 入力欄・淡色背景だった箇所・目次パネル */
+    --dk-surface-3:      #33557a;  /* ホバー・バッジ背景 */
+    --dk-text:           #eef6fc;  /* 見出し・主要テキスト（最も明るい） */
+    --dk-text-body:      #c8d8e4;  /* 本文テキスト */
+    --dk-text-muted:     #92aabd;  /* 日付・補足など控えめテキスト */
+    --dk-link:           #74c8f8;  /* リンク・ラベル */
     --dk-accent:         #38bdf8;  /* アクセント（セルリアン） */
     --dk-accent-strong:  #0ea5e9;  /* 塗りボタン・左アクセント線 */
-    --dk-border:         #2c465d;  /* 枠線 */
-    --dk-danger:         #ff8f84;  /* 危険色テキスト（削除等） */
-    --dk-danger-bg:      #35191a;  /* 危険色背景 */
-    --dk-danger-border:  #7c3b38;  /* 危険色枠線 */
+    --dk-border:         #406687;  /* 枠線（明るめの鋼色。従来より視認性を強化） */
+    --dk-border-strong:  #5286b0;  /* 強調用の枠線（検索エリア・目次など囲みに使用） */
+    --dk-danger:         #ff9086;  /* 危険色テキスト（削除等） */
+    --dk-danger-bg:      #3a1b1b;  /* 危険色背景 */
+    --dk-danger-border:  #8a4440;  /* 危険色枠線 */
     --dk-gold:           #fbbf24;  /* ホバーのゴールド */
-    --dk-gold-bg:        #241d0c;  /* ゴールドホバー背景 */
-    --dk-gold-border:    #6b5518;  /* ゴールドホバー枠線 */
-    --dk-green-bg:       #123021;  /* 地図ボタン等の緑背景 */
-    --dk-green-text:     #7ee0a3;  /* 地図ボタン等の緑テキスト */
-    --dk-green-border:   #2f6b45;  /* 地図ボタン等の緑枠線 */
+    --dk-gold-bg:        #2a2210;  /* ゴールドホバー背景 */
+    --dk-gold-border:    #7a611c;  /* ゴールドホバー枠線 */
+    --dk-green-bg:       #133423;  /* 地図ボタン等の緑背景 */
+    --dk-green-text:     #85e2a8;  /* 地図ボタン等の緑テキスト */
+    --dk-green-border:   #35734c;  /* 地図ボタン等の緑枠線 */
+
+    /* カードを縁取って浮かせるための共通シャドウ */
+    --dk-shadow:         0 2px 14px rgba(0, 0, 0, 0.55);
+    --dk-shadow-strong:  0 6px 26px rgba(0, 0, 0, 0.6);
 
     color-scheme: dark;  /* スクロールバー等ブラウザUIも暗色に */
 }
@@ -134,7 +149,7 @@ html[data-theme="dark"] .theme-toggle-btn:active {
 /* スマホ用ドロワー */
 html[data-theme="dark"] .mobile-nav-drawer {
     background: var(--dk-surface);
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.6);
 }
 html[data-theme="dark"] .mobile-nav-header {
     background: var(--dk-surface);
@@ -181,6 +196,8 @@ html[data-theme="dark"] .flash-messages li.danger {
 
 /* ============================================================
    [4] カード・面（共通）
+   ------------------------------------------------------------
+   背景との明度差＋明るい枠線＋影の3点で、ブロックの範囲をはっきり示す。
    ============================================================ */
 /* 左アクセント線を持つカード群 */
 html[data-theme="dark"] .post-card,
@@ -196,15 +213,16 @@ html[data-theme="dark"] .related-card {
     background-color: var(--dk-surface);
     border-color: var(--dk-border);
     border-left-color: var(--dk-accent-strong);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--dk-shadow);
 }
 
-/* 全周枠のカード（左アクセントなし） */
+/* 全周枠のカード（左アクセントなし）は枠を 2px に強めて囲みを明確化 */
 html[data-theme="dark"] .genre-container,
 html[data-theme="dark"] .index-search-area {
     background-color: var(--dk-surface);
-    border-color: var(--dk-border);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    border-color: var(--dk-border-strong);
+    border-width: 2px;
+    box-shadow: var(--dk-shadow);
 }
 
 /* 上アクセント線のカード（統計） */
@@ -212,7 +230,12 @@ html[data-theme="dark"] .stats-card {
     background-color: var(--dk-surface);
     border-color: var(--dk-border);
     border-top-color: var(--dk-accent-strong);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--dk-shadow);
+}
+
+/* 記事一覧カード：枠をやや強めて一覧の1件ずつを見分けやすく */
+html[data-theme="dark"] .post-card {
+    border-color: var(--dk-border-strong);
 }
 
 /* カードのホバー（ゴールド） */
@@ -220,13 +243,13 @@ html[data-theme="dark"] .post-card:hover {
     background-color: var(--dk-gold-bg);
     border-color: var(--dk-gold-border);
     border-left-color: var(--dk-gold);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--dk-shadow-strong);
 }
 html[data-theme="dark"] .related-card:hover {
     background-color: var(--dk-gold-bg);
     border-color: var(--dk-gold-border);
     border-left-color: var(--dk-gold);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--dk-shadow-strong);
 }
 
 /* サムネイル枠 */
@@ -398,12 +421,12 @@ html[data-theme="dark"] .nickname-input:focus,
 html[data-theme="dark"] .map-modal-input:focus {
     background-color: var(--dk-surface) !important;
     border-color: var(--dk-accent) !important;
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22) !important;
 }
 html[data-theme="dark"] .hashtag-input-wrapper:focus-within {
     background-color: var(--dk-surface) !important;
     border-color: var(--dk-accent) !important;
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22);
 }
 
 /* プレースホルダー */
@@ -505,8 +528,24 @@ html[data-theme="dark"] .md-btn-img {
 
 
 /* ============================================================
-   [9] 記事詳細ページ
+   [9] 記事詳細ページ（階層をはっきりさせる）
    ============================================================ */
+/* 記事カード本体：枠と影を強めて記事範囲を明確に */
+html[data-theme="dark"] article {
+    border-color: var(--dk-border-strong);
+    box-shadow: var(--dk-shadow-strong);
+}
+
+/* 記事タイトル（最も明るく＝視線が最初に行くように） */
+html[data-theme="dark"] .detail-container h1 {
+    color: var(--dk-text);
+}
+
+/* タイトル＋メタ情報と本文を仕切る線を強調（1px→2px・明色） */
+html[data-theme="dark"] .post-meta {
+    border-bottom: 2px solid var(--dk-border);
+}
+
 /* 本文 */
 html[data-theme="dark"] .detail-article-body {
     color: var(--dk-text-body);
@@ -517,34 +556,45 @@ html[data-theme="dark"] .detail-article-body p {
 html[data-theme="dark"] .detail-article-body strong {
     color: var(--dk-text);
 }
+/* H2：セクション区切りが分かるよう下線をアクセント色に強調 */
 html[data-theme="dark"] .detail-article-body h2 {
     color: var(--dk-text);
-    border-bottom-color: var(--dk-border);
+    border-bottom: 2px solid var(--dk-accent);
 }
+/* H3：左のアクセント線をはっきり */
 html[data-theme="dark"] .detail-article-body h3 {
     color: var(--dk-text);
     border-left-color: var(--dk-accent-strong);
 }
-/* メタ情報の区切り線 */
-html[data-theme="dark"] .post-meta {
-    border-bottom-color: var(--dk-border);
-}
 
-/* 目次（!important 付きなので上書きも !important） */
+/* ------------------------------------------------------------
+   目次（TOC）を「箱」として際立たせる
+   ------------------------------------------------------------
+   - 背景を記事カード(surface)より一段明るい surface-2 にして浮かせる
+   - 枠を強調色 border-strong にし、左アクセントを 5px に
+   - 影を付けてパネルとして独立させる
+   （detail.css は !important 指定が多いので、こちらも !important で上書き）
+   ------------------------------------------------------------ */
 html[data-theme="dark"] .post-toc,
 html[data-theme="dark"] .detail-article-body .toc {
     background-color: var(--dk-surface-2) !important;
-    border-color: var(--dk-border) !important;
-    border-left-color: var(--dk-accent-strong) !important;
+    border: 1px solid var(--dk-border-strong) !important;
+    border-left: 5px solid var(--dk-accent-strong) !important;
+    box-shadow: var(--dk-shadow) !important;
 }
+/* 目次の見出し */
 html[data-theme="dark"] .post-toc .toc-title,
-html[data-theme="dark"] .detail-article-body .toc::before,
+html[data-theme="dark"] .detail-article-body .toc::before {
+    color: var(--dk-text) !important;
+}
+/* 目次のトップレベル項目：項目間の区切り線を見えるように */
 html[data-theme="dark"] .post-toc > ul > li,
 html[data-theme="dark"] .post-toc .toc > ul > li,
 html[data-theme="dark"] .detail-article-body .toc > ul > li {
     color: var(--dk-text) !important;
     border-bottom-color: var(--dk-border) !important;
 }
+/* 目次のサブ項目 */
 html[data-theme="dark"] .post-toc ul ul li,
 html[data-theme="dark"] .detail-article-body .toc ul ul li {
     color: var(--dk-text-body) !important;
@@ -567,6 +617,7 @@ html[data-theme="dark"] .post-figcaption {
 html[data-theme="dark"] .post-map-wrapper {
     border-color: var(--dk-border);
     border-left-color: var(--dk-accent-strong);
+    box-shadow: var(--dk-shadow);
 }
 html[data-theme="dark"] .post-map-label {
     background: var(--dk-surface-2);
@@ -576,6 +627,7 @@ html[data-theme="dark"] .post-map-label {
 /* YouTube 埋め込み枠 */
 html[data-theme="dark"] .post-youtube-wrapper {
     border-color: var(--dk-border);
+    box-shadow: var(--dk-shadow);
 }
 
 /* 区切り線 */
@@ -606,7 +658,7 @@ html[data-theme="dark"] code {
 html[data-theme="dark"] .md-toolbar {
     background: var(--dk-surface-2);
     border-color: var(--dk-border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 html[data-theme="dark"] .md-btn-separator {
     background: var(--dk-border);
@@ -633,7 +685,8 @@ html[data-theme="dark"] .preview-caption-wrapper {
 /* モーダル（地図・YouTube） */
 html[data-theme="dark"] .map-modal {
     background: var(--dk-surface);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--dk-border-strong);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
 }
 html[data-theme="dark"] .map-modal-header {
     background: var(--dk-surface-2);

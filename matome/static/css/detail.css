@@ -51,9 +51,9 @@ h1 {
     display: inline-block;
     background-color: #dbeafe;
     color: #0369a1;
-    padding: 4px 10px;
+    padding: 2px 7px;
     border-radius: 8px;
-    font-size: 11px;
+    font-size: 13px;
     margin-bottom: 8px;
     font-weight: 600;
     border: 1px solid #38bdf8;
@@ -66,6 +66,26 @@ h1 {
     border-color: #0ea5e9;
     color: #0c1f35;
     text-decoration: none;
+}
+
+/* ------------------------------------------------------------
+   【detail.html】ジャンルバッジ＋ハッシュタグを1行に並べる行
+   ------------------------------------------------------------
+   ジャンルバッジを左端に、その右にハッシュタグが並ぶ形にする。
+   （旧: ジャンルとハッシュタグが別々の行に分かれていたのを一体化）
+   ------------------------------------------------------------ */
+.detail-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+/* 行内に並べるジャンルバッジは、単体表示用の下マージン（margin-bottom: 8px）を
+   打ち消して、ハッシュタグと高さ・縦位置をそろえる */
+.detail-tag-row .genre-badge {
+    margin-bottom: 0;
 }
 
 /* ------------------------------------------------------------

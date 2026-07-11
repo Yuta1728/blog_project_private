@@ -101,12 +101,12 @@ a[role="button"]:hover {
    【index.html / mypage.html 共通】記事カードのジャンル・非公開バッジ
    ------------------------------------------------------------ */
 .badge-genre {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #0369a1;
     background: #dbeafe;
     border: 1px solid #38bdf8;
-    border-radius: 12px;
+    border-radius: 7px;
     padding: 2px 10px;
     white-space: nowrap;
 }

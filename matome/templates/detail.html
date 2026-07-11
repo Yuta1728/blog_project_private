@@ -11,9 +11,21 @@
         {% set genre_display = post.genre if post.genre else '未分類' %}
 
         <div class="post-meta">
-            <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
-                📂 {{ genre_display }}
-            </a>
+            {# ジャンルバッジ＋ハッシュタグを1行に並べる（ジャンルが左、ハッシュタグが右） #}
+            <div class="detail-tag-row">
+                <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
+                    📂 {{ genre_display }}
+                </a>
+
+                {% if post.hashtags %}
+                    {% for tag in post.hashtags %}
+                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                           class="hashtag-badge">
+                            #{{ tag.name }}
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
 
             <div class="post-user-info">
                 <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
@@ -28,17 +40,6 @@
                     更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
                 {% endif %}
             </div>
-
-            {% if post.hashtags %}
-                <div class="detail-hashtags">
-                    {% for tag in post.hashtags %}
-                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
-                           class="hashtag-badge">
-                            #{{ tag.name }}
-                        </a>
-                    {% endfor %}
-                </div>
-            {% endif %}
         </div>
 
         {% if toc_html and '<li>' in toc_html %}
