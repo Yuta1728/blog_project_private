@@ -1,0 +1,78 @@
+/* ============================================================
+   static/css/mobile-editor.css
+   スマホでの記事編集（create / update）ツールバー操作性の改善
+   ============================================================
+   【役割】
+   base.html から全ページで読み込まれるが、対象の要素
+   （#md-toolbar / #bodyTextarea）は create / update ページにしか
+   存在しないため、それ以外のページには一切影響しない。
+
+   実際のフォーカス検知・位置計算は base.html の JS が担当し、
+   このファイルは「固定表示時の見た目」と「編集時の下部余白」だけを定義する。
+
+   【解決する2つの問題】
+   問題1: 本文欄をタップするとツールバーが画面外に隠れて使えなくなる
+          → フォーカス中は .md-toolbar--docked を付与し、キーボード直上に固定表示
+   問題2: 最終行がキーボードに隠れて見えなくなる
+          → 編集中は本文欄下部に余白を確保（ドッキング時は JS が高さに合わせて上書き）
+   ============================================================ */
+
+@media (max-width: 767px) {
+
+    /* ------------------------------------------------------------
+       【問題2】最終行がキーボードに隠れる対策
+       ------------------------------------------------------------
+       本文欄フォーカス中（JS が .is-md-editing を付与）に下部余白を確保し、
+       最終行のカーソルがキーボードの上に出るようにする。
+       ドッキング時は JS がツールバー高さに合わせて padding-bottom を上書きする。
+       ------------------------------------------------------------ */
+    #bodyTextarea.is-md-editing {
+        padding-bottom: 80px !important;
+    }
+
+    /* ------------------------------------------------------------
+       【問題1】ツールバーをキーボードの直上に固定
+       ------------------------------------------------------------
+       本文欄フォーカス中、JS が .md-toolbar--docked を付与して
+       ツールバーを画面下部（キーボードの直上）に固定表示する。
+       - 位置（top / bottom）は端末差に応じて JS が設定する
+         （iOS はレイアウトが縮まないので top、Android は bottom:0 で自然に直上）
+       - 縦幅を節約するため、折り返さず横スクロールできる1行にする
+       ------------------------------------------------------------ */
+    .md-toolbar.md-toolbar--docked {
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        bottom: 0;                     /* iOS では JS が top を設定して上書き */
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: 1px solid #7dd3fa !important;
+        border-bottom: none !important;
+        box-shadow: 0 -6px 16px rgba(14, 165, 233, 0.28) !important;
+        z-index: 1000 !important;
+        flex-wrap: nowrap !important;  /* 折り返さず1行に */
+        overflow-x: auto !important;   /* ボタンが多い時は横スクロール */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 固定表示中はボタンが縮まないようにして横スクロールで全ボタンに届くようにする */
+    .md-toolbar.md-toolbar--docked > * {
+        flex-shrink: 0;
+    }
+
+    /* ツールバーが固定表示に切り替わって通常配置（フロー）から外れた分、
+       元の位置に空きを作ってレイアウトのガタつきを防ぐ。
+       高さは JS が --docked-toolbar-h に実測値を入れる。 */
+    .md-toolbar-wrapper.is-toolbar-docked {
+        padding-top: var(--docked-toolbar-h, 48px);
+    }
+
+    /* ダークモード時の固定ツールバーの見た目 */
+    html[data-theme="dark"] .md-toolbar.md-toolbar--docked {
+        background-color: var(--dk-surface-2) !important;
+        border-top-color: var(--dk-border) !important;
+        box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.55) !important;
+    }
+}

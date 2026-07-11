@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mycreate1.mitblog.jp</title>
+    <title>create1.blog.jp</title>
 
     {# ============================================================
        ダークモード初期化スクリプト
@@ -29,9 +29,8 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
-    {# ダークモード用の上書きCSS。全セレクタが html[data-theme="dark"] 前置で
-       詳細度が高いため、ページ個別CSSより後に読み込まれなくても上書きが効く。 #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-editor.css') }}">
 </head>
 <body>
 
@@ -41,30 +40,25 @@
                 <a href="{{ url_for('blog.index') }}">MIT Blog</a>
             </div>
 
-            {# ヘッダーのキーワード検索ボックスは廃止した。
-               キーワード検索は index ページの検索エリア（search_area.html）に一本化。 #}
-
-            {# ナビ・テーマ切り替え・ハンバーガーを右側の塊としてまとめる #}
             <div class="header-right">
                 <nav class="header-nav">
                     <ul>
                         {% if current_user.is_authenticated %}
                             <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                            {# 「ジャンル検索」と同じ構造・同じCSSクラスの自己紹介ボタン。
-                               blog.about（/about）へ遷移する。 #}
+             
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
                             <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
                             <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
                         {% else %}
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                            {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+                 
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
                         {% endif %}
                     </ul>
                 </nav>
 
-                {# ダークモード切り替えボタン（PC・スマホ共通で常時表示） #}
+                {# ダークモード切り替えボタン #}
                 <button class="theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="ダークモードに切り替え">
                     <span class="theme-toggle-icon">🌙</span>
                 </button>
@@ -91,13 +85,13 @@
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
-                {# 「ジャンル検索」と同じ構造の自己紹介ボタン（スマホ用ドロワー） #}
+
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
                 <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
             {% else %}
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
-                {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+  
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
             {% endif %}
         </ul>
@@ -148,6 +142,114 @@
                 document.documentElement.setAttribute('data-theme', next);
                 try { localStorage.setItem('theme', next); } catch (e) {}
                 syncButton();
+            });
+        })();
+
+
+        /* ============================================================
+           スマホの記事編集ツールバー改善（create / update ページ用）
+           ------------------------------------------------------------
+           問題1: 本文欄をタップするとツールバーが画面外に隠れて使えない
+             → フォーカス中はツールバーをキーボード直上に固定して常に使えるようにする
+           問題2: 最終行がキーボードに隠れて見えない
+             → 本文欄下部に余白を確保し、カーソル位置がキーボードの上に出るようにする
+           ------------------------------------------------------------
+           ※ #bodyTextarea と #md-toolbar があるページ（create/update）でのみ動作する。
+              それ以外のページ・PC表示では何もしない（挙動は従来どおり）。
+           ============================================================ */
+        (function () {
+            var textarea = document.getElementById('bodyTextarea');
+            var toolbar  = document.getElementById('md-toolbar');
+            if (!textarea || !toolbar) return;   // 編集ページ以外では何もしない
+
+            var wrapper = toolbar.closest('.md-toolbar-wrapper');
+            var mq = window.matchMedia('(max-width: 767px)');
+            var vv = window.visualViewport;
+            var docked = false;
+
+            // キーボードの高さ（レイアウトビューポート − 表示ビューポート）
+            function keyboardHeight() {
+                if (!vv) return 0;
+                return Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+            }
+
+            // 固定ツールバーの位置と本文欄の下部余白を計算して設定
+            function positionToolbar() {
+                var h = toolbar.offsetHeight || 48;
+                if (vv && keyboardHeight() > 40) {
+                    // iOS 等：レイアウトビューポートが縮まないので、キーボード上端に合わせる
+                    toolbar.style.bottom = 'auto';
+                    toolbar.style.top = Math.max(vv.offsetTop + vv.height - h, 0) + 'px';
+                } else {
+                    // Android 等：キーボードでレイアウト自体が縮むため bottom:0 が直上になる
+                    toolbar.style.top = 'auto';
+                    toolbar.style.bottom = '0px';
+                }
+                // 最終行がツールバー／キーボードに隠れないよう下部余白を確保
+                textarea.style.setProperty('padding-bottom', (h + 28) + 'px', 'important');
+            }
+
+            function dock() {
+                if (docked) { positionToolbar(); return; }
+                docked = true;
+                var h = toolbar.offsetHeight || 48;
+                if (wrapper) {
+                    // 固定化でフローから外れる分の空きを確保（レイアウトのガタつき防止）
+                    wrapper.style.setProperty('--docked-toolbar-h', h + 'px');
+                    wrapper.classList.add('is-toolbar-docked');
+                }
+                toolbar.classList.add('md-toolbar--docked');
+                positionToolbar();
+            }
+
+            function undock() {
+                if (!docked) return;
+                docked = false;
+                toolbar.classList.remove('md-toolbar--docked');
+                toolbar.style.top = '';
+                toolbar.style.bottom = '';
+                textarea.style.removeProperty('padding-bottom');
+                if (wrapper) {
+                    wrapper.classList.remove('is-toolbar-docked');
+                    wrapper.style.removeProperty('--docked-toolbar-h');
+                }
+            }
+
+            function update() {
+                if (mq.matches && document.activeElement === textarea) {
+                    dock();
+                } else {
+                    undock();
+                }
+            }
+
+            textarea.addEventListener('focus', function () {
+                textarea.classList.add('is-md-editing');
+                // キーボードが開くのを少し待ってから配置する
+                setTimeout(update, 250);
+            });
+            textarea.addEventListener('blur', function () {
+                // ツールバー操作でのブラーはボタン側で抑止しているが、念のため少し待つ
+                setTimeout(function () {
+                    if (document.activeElement !== textarea) {
+                        textarea.classList.remove('is-md-editing');
+                        undock();
+                    }
+                }, 100);
+            });
+
+            // キーボードの開閉・スクロールに追従して位置を更新
+            if (vv) {
+                vv.addEventListener('resize', update);
+                vv.addEventListener('scroll', function () { if (docked) positionToolbar(); });
+            }
+
+            // ツールバーのボタンはフォーカスを奪わない
+            // → 本文欄のフォーカス（＝キーボードと固定表示）を保ったまま連続操作できる
+            toolbar.addEventListener('mousedown', function (e) {
+                if (mq.matches && document.activeElement === textarea) {
+                    e.preventDefault();
+                }
             });
         })();
 
