@@ -1,0 +1,740 @@
+/* ============================================================
+   static/css/dark-mode.css — ダークモード「Coastal Dawn Night」
+   ============================================================
+   【役割】
+   既存のライトテーマ（各CSSに直書きされた Coastal Dawn の配色）を
+   一切変更せず、暗色版の配色だけを「上書き」で提供するファイル。
+
+   【有効化の仕組み】
+   <html> に data-theme="dark" が付くと、このファイルの各ルールが有効になる。
+   全セレクタを html[data-theme="dark"] で前置しているため詳細度が高く、
+   ページ個別CSS（index.css / detail.css 等）より後に読み込まれなくても、
+   また既存の !important 付きルールに対しても、確実に上書きが効く。
+
+   【切替】
+   base.html のトグルボタン（🌙 / ☀️）が data-theme を付け替え、
+   選択内容は localStorage に保存される（次回訪問時も維持）。
+   ============================================================ */
+
+
+/* ============================================================
+   [0] 暗色パレット（CSS変数）
+   ------------------------------------------------------------
+   html[data-theme="dark"] 直下に定義することで、配下の全要素へ継承される。
+   色を微調整したいときはここの値だけ変えればサイト全体に反映される。
+   ============================================================ */
+html[data-theme="dark"] {
+    --dk-bg:             #0b1622;  /* ページ背景（濃紺） */
+    --dk-surface:        #15273a;  /* カード・ヘッダー等の面 */
+    --dk-surface-2:      #1b3a52;  /* 入力欄・淡色背景だった箇所 */
+    --dk-surface-3:      #244560;  /* ホバー・バッジ背景 */
+    --dk-text:           #e9f3fa;  /* 見出し・主要テキスト */
+    --dk-text-body:      #c2d4e0;  /* 本文テキスト */
+    --dk-text-muted:     #8ba7ba;  /* 日付・補足など控えめテキスト */
+    --dk-link:           #6cc5f7;  /* リンク・ラベル */
+    --dk-accent:         #38bdf8;  /* アクセント（セルリアン） */
+    --dk-accent-strong:  #0ea5e9;  /* 塗りボタン・左アクセント線 */
+    --dk-border:         #2c465d;  /* 枠線 */
+    --dk-danger:         #ff8f84;  /* 危険色テキスト（削除等） */
+    --dk-danger-bg:      #35191a;  /* 危険色背景 */
+    --dk-danger-border:  #7c3b38;  /* 危険色枠線 */
+    --dk-gold:           #fbbf24;  /* ホバーのゴールド */
+    --dk-gold-bg:        #241d0c;  /* ゴールドホバー背景 */
+    --dk-gold-border:    #6b5518;  /* ゴールドホバー枠線 */
+    --dk-green-bg:       #123021;  /* 地図ボタン等の緑背景 */
+    --dk-green-text:     #7ee0a3;  /* 地図ボタン等の緑テキスト */
+    --dk-green-border:   #2f6b45;  /* 地図ボタン等の緑枠線 */
+
+    color-scheme: dark;  /* スクロールバー等ブラウザUIも暗色に */
+}
+
+
+/* ============================================================
+   [1] グローバル（背景・見出し・リンク）
+   ============================================================ */
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+    background-color: var(--dk-bg);
+    color: var(--dk-text-body);
+}
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2 {
+    color: var(--dk-text);
+}
+
+html[data-theme="dark"] a {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] a:hover {
+    color: var(--dk-accent);
+}
+
+
+/* ============================================================
+   [2] 共通ヘッダー・ドロワー・トグルボタン
+   ============================================================ */
+html[data-theme="dark"] .main-header {
+    background-color: var(--dk-surface);
+    border-bottom-color: var(--dk-accent-strong);
+}
+
+html[data-theme="dark"] .header-logo a,
+html[data-theme="dark"] .header-logo a:hover {
+    color: var(--dk-text) !important;
+}
+html[data-theme="dark"] .header-logo a:hover {
+    color: var(--dk-accent) !important;
+}
+
+/* PCナビの各ボタン（アウトライン） */
+html[data-theme="dark"] .header-nav ul li a {
+    color: var(--dk-link);
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .header-nav ul li a:hover {
+    color: var(--dk-text);
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+}
+/* 先頭「新規投稿」だけは塗りつぶしCTAを維持（詳細度を上げて確実に適用） */
+html[data-theme="dark"] .header-nav ul li:first-child a {
+    background-color: var(--dk-accent-strong);
+    color: #06131e;
+    border-color: var(--dk-accent-strong);
+}
+html[data-theme="dark"] .header-nav ul li:first-child a:hover {
+    background-color: #38bdf8;
+    border-color: #38bdf8;
+    color: #06131e;
+}
+
+/* ハンバーガー */
+html[data-theme="dark"] .hamburger-btn {
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .hamburger-btn span {
+    background-color: var(--dk-accent);
+}
+
+/* テーマ切り替えボタン */
+html[data-theme="dark"] .theme-toggle-btn {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .theme-toggle-btn:hover {
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .theme-toggle-btn:active {
+    background-color: var(--dk-surface);
+}
+
+/* スマホ用ドロワー */
+html[data-theme="dark"] .mobile-nav-drawer {
+    background: var(--dk-surface);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="dark"] .mobile-nav-header {
+    background: var(--dk-surface);
+    border-bottom-color: var(--dk-accent-strong);
+}
+html[data-theme="dark"] .mobile-nav-header-logo {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .mobile-nav-close {
+    color: var(--dk-text-muted);
+}
+html[data-theme="dark"] .mobile-nav-close:hover,
+html[data-theme="dark"] .mobile-nav-close:active {
+    background: var(--dk-surface-3);
+}
+html[data-theme="dark"] .mobile-nav-drawer ul li a {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .mobile-nav-drawer ul li a:hover,
+html[data-theme="dark"] .mobile-nav-drawer ul li a:active {
+    background: var(--dk-surface-2);
+    border-left-color: var(--dk-accent);
+}
+html[data-theme="dark"] .mobile-nav-drawer ul li:first-child a {
+    background-color: var(--dk-accent-strong);
+    color: #06131e;
+}
+
+
+/* ============================================================
+   [3] フラッシュメッセージ
+   ============================================================ */
+html[data-theme="dark"] .flash-messages li {
+    color: var(--dk-text-body);
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .flash-messages li.danger {
+    color: var(--dk-danger);
+    background-color: var(--dk-danger-bg);
+    border-color: var(--dk-danger-border);
+}
+
+
+/* ============================================================
+   [4] カード・面（共通）
+   ============================================================ */
+/* 左アクセント線を持つカード群 */
+html[data-theme="dark"] .post-card,
+html[data-theme="dark"] article,
+html[data-theme="dark"] .hero-section,
+html[data-theme="dark"] .howto-section,
+html[data-theme="dark"] .info-page-body,
+html[data-theme="dark"] .profile-header,
+html[data-theme="dark"] .auth-container,
+html[data-theme="dark"] .post-form,
+html[data-theme="dark"] .hashtag-filter-bar,
+html[data-theme="dark"] .related-card {
+    background-color: var(--dk-surface);
+    border-color: var(--dk-border);
+    border-left-color: var(--dk-accent-strong);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* 全周枠のカード（左アクセントなし） */
+html[data-theme="dark"] .genre-container,
+html[data-theme="dark"] .index-search-area {
+    background-color: var(--dk-surface);
+    border-color: var(--dk-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* 上アクセント線のカード（統計） */
+html[data-theme="dark"] .stats-card {
+    background-color: var(--dk-surface);
+    border-color: var(--dk-border);
+    border-top-color: var(--dk-accent-strong);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* カードのホバー（ゴールド） */
+html[data-theme="dark"] .post-card:hover {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+    border-left-color: var(--dk-gold);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="dark"] .related-card:hover {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+    border-left-color: var(--dk-gold);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* サムネイル枠 */
+html[data-theme="dark"] .post-thumbnail,
+html[data-theme="dark"] .related-thumb {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .post-card:hover .post-thumbnail {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+}
+html[data-theme="dark"] .related-card:hover .related-thumb {
+    background-color: var(--dk-gold-bg);
+    border-color: var(--dk-gold-border);
+}
+
+
+/* ============================================================
+   [5] カード内テキストの色
+   ============================================================ */
+/* 見出し・主要テキスト */
+html[data-theme="dark"] .hero-name,
+html[data-theme="dark"] .hero-section-title,
+html[data-theme="dark"] .info-page-title,
+html[data-theme="dark"] .info-section-title,
+html[data-theme="dark"] .profile-title,
+html[data-theme="dark"] .posts-section-title,
+html[data-theme="dark"] .section-title-genre,
+html[data-theme="dark"] .section-title-posts,
+html[data-theme="dark"] .related-heading,
+html[data-theme="dark"] .filter-label,
+html[data-theme="dark"] .related-title,
+html[data-theme="dark"] .group-title,
+html[data-theme="dark"] .preview-area-title,
+html[data-theme="dark"] .map-modal-title,
+html[data-theme="dark"] .post-form label,
+html[data-theme="dark"] .post-title a {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .stats-number,
+html[data-theme="dark"] .profile-post-count strong {
+    color: var(--dk-link);
+}
+
+/* 本文テキスト */
+html[data-theme="dark"] .hero-bio,
+html[data-theme="dark"] .info-section p,
+html[data-theme="dark"] .howto-item,
+html[data-theme="dark"] .profile-post-count,
+html[data-theme="dark"] .post-form p,
+html[data-theme="dark"] .empty-message {
+    color: var(--dk-text-body);
+}
+html[data-theme="dark"] .howto-item strong {
+    color: var(--dk-text);
+}
+
+/* 控えめテキスト */
+html[data-theme="dark"] .post-date,
+html[data-theme="dark"] .post-meta,
+html[data-theme="dark"] .post-time,
+html[data-theme="dark"] .profile-username,
+html[data-theme="dark"] .stats-label,
+html[data-theme="dark"] .related-date,
+html[data-theme="dark"] .preview-filename,
+html[data-theme="dark"] .genre-empty-note,
+html[data-theme="dark"] .genre-empty-message,
+html[data-theme="dark"] .index-empty-message,
+html[data-theme="dark"] .index-search-label,
+html[data-theme="dark"] .img-edit-note,
+html[data-theme="dark"] .img-change-note,
+html[data-theme="dark"] .map-preview-placeholder {
+    color: var(--dk-text-muted);
+}
+
+/* リンク色のテキスト */
+html[data-theme="dark"] .post-user-info,
+html[data-theme="dark"] .genre-tag-link,
+html[data-theme="dark"] .index-search-title,
+html[data-theme="dark"] .empty-message a {
+    color: var(--dk-link);
+}
+
+/* カードホバー時のタイトル・日付 */
+html[data-theme="dark"] .post-card:hover .post-title a,
+html[data-theme="dark"] .related-card:hover .related-title {
+    color: var(--dk-gold);
+}
+html[data-theme="dark"] .post-card:hover .post-date {
+    color: var(--dk-gold);
+}
+
+
+/* ============================================================
+   [6] バッジ・タグ
+   ============================================================ */
+html[data-theme="dark"] .badge-genre,
+html[data-theme="dark"] .genre-badge,
+html[data-theme="dark"] .hashtag-badge,
+html[data-theme="dark"] .hashtag-badge-preview,
+html[data-theme="dark"] .hashtag-filter-badge,
+html[data-theme="dark"] .genre-tag-item,
+html[data-theme="dark"] .related-heading-sub {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .genre-tag-link {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .genre-badge:hover,
+html[data-theme="dark"] .hashtag-badge:hover,
+html[data-theme="dark"] .hashtag-filter-badge:hover,
+html[data-theme="dark"] .genre-tag-item:hover {
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+    color: var(--dk-text);
+}
+/* 非公開バッジ（危険色） */
+html[data-theme="dark"] .badge-private {
+    background-color: var(--dk-danger-bg);
+    border-color: var(--dk-danger-border);
+    color: var(--dk-danger);
+}
+/* 選択中タグ（塗り）は視認性維持のためアクセント塗りに */
+html[data-theme="dark"] .hashtag-filter-badge.active {
+    background-color: var(--dk-accent-strong);
+    border-color: var(--dk-accent-strong);
+    color: #06131e;
+}
+
+
+/* ============================================================
+   [7] 入力欄・セレクト・テキストエリア
+   ============================================================ */
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="password"],
+html[data-theme="dark"] .post-form input[type="text"],
+html[data-theme="dark"] .post-form select,
+html[data-theme="dark"] .post-form textarea,
+html[data-theme="dark"] .index-search-select,
+html[data-theme="dark"] .index-search-input,
+html[data-theme="dark"] .nickname-input,
+html[data-theme="dark"] .map-modal-input,
+html[data-theme="dark"] .preview-caption-input,
+html[data-theme="dark"] .hashtag-input-wrapper {
+    background-color: var(--dk-surface-2) !important;
+    color: var(--dk-text) !important;
+    border-color: var(--dk-border) !important;
+}
+html[data-theme="dark"] .hashtag-text-input {
+    color: var(--dk-text) !important;
+    background: transparent !important;
+}
+html[data-theme="dark"] .hashtag-prefix {
+    color: var(--dk-accent);
+}
+
+/* フォーカス時（詳細度を上げて上書き） */
+html[data-theme="dark"] input[type="text"]:focus,
+html[data-theme="dark"] input[type="password"]:focus,
+html[data-theme="dark"] .post-form input[type="text"]:focus,
+html[data-theme="dark"] .post-form select:focus,
+html[data-theme="dark"] .post-form textarea:focus,
+html[data-theme="dark"] .index-search-select:focus,
+html[data-theme="dark"] .index-search-input:focus,
+html[data-theme="dark"] .nickname-input:focus,
+html[data-theme="dark"] .map-modal-input:focus {
+    background-color: var(--dk-surface) !important;
+    border-color: var(--dk-accent) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18) !important;
+}
+html[data-theme="dark"] .hashtag-input-wrapper:focus-within {
+    background-color: var(--dk-surface) !important;
+    border-color: var(--dk-accent) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+}
+
+/* プレースホルダー */
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+html[data-theme="dark"] .index-search-input::placeholder,
+html[data-theme="dark"] .preview-caption-input::placeholder {
+    color: var(--dk-text-muted);
+    opacity: 1;
+}
+
+/* 検索エリアのアイコン・矢印（currentColor 依存） */
+html[data-theme="dark"] .index-search-input-icon,
+html[data-theme="dark"] .index-search-select-arrow {
+    color: var(--dk-text-muted);
+}
+html[data-theme="dark"] .index-search-input-wrap:focus-within .index-search-input-icon,
+html[data-theme="dark"] .index-search-select-wrap:focus-within .index-search-select-arrow {
+    color: var(--dk-accent);
+}
+
+
+/* ============================================================
+   [8] ボタン類
+   ============================================================ */
+/* アウトライン系ボタン */
+html[data-theme="dark"] .detail-btn-back,
+html[data-theme="dark"] .page-btn,
+html[data-theme="dark"] .load-more-btn,
+html[data-theme="dark"] .load-less-btn,
+html[data-theme="dark"] .hero-link-btn,
+html[data-theme="dark"] .info-back-btn,
+html[data-theme="dark"] .genre-footer a,
+html[data-theme="dark"] .btn-edit,
+html[data-theme="dark"] .md-btn,
+html[data-theme="dark"] .img-upload-btn--bulk,
+html[data-theme="dark"] .img-upload-btn--one,
+html[data-theme="dark"] .map-modal-cancel,
+html[data-theme="dark"] .toggle-status-btn.private {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border);
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .detail-btn-back:hover,
+html[data-theme="dark"] .page-btn:hover:not(:disabled),
+html[data-theme="dark"] .load-more-btn:hover,
+html[data-theme="dark"] .load-less-btn:hover,
+html[data-theme="dark"] .hero-link-btn:hover,
+html[data-theme="dark"] .info-back-btn:hover,
+html[data-theme="dark"] .genre-footer a:hover,
+html[data-theme="dark"] .md-btn:hover,
+html[data-theme="dark"] .img-upload-btn--bulk:hover,
+html[data-theme="dark"] .img-upload-btn--one:hover,
+html[data-theme="dark"] .map-modal-cancel:hover,
+html[data-theme="dark"] .toggle-status-btn.private:hover {
+    background-color: var(--dk-surface-3);
+    border-color: var(--dk-accent);
+    color: var(--dk-text);
+}
+
+/* 現在ページ / 全体公開トグルなど（アクセント塗り） */
+html[data-theme="dark"] .page-btn.active,
+html[data-theme="dark"] .toggle-status-btn.published {
+    background-color: var(--dk-accent-strong);
+    border-color: var(--dk-accent-strong);
+    color: #06131e;
+}
+
+/* 危険（削除）系ボタン */
+html[data-theme="dark"] .btn-delete,
+html[data-theme="dark"] .hashtag-filter-clear,
+html[data-theme="dark"] .index-search-reset,
+html[data-theme="dark"] .preview-delete-btn {
+    background-color: var(--dk-danger-bg);
+    border-color: var(--dk-danger-border);
+    color: var(--dk-danger);
+}
+html[data-theme="dark"] .btn-delete:hover,
+html[data-theme="dark"] .hashtag-filter-clear:hover,
+html[data-theme="dark"] .index-search-reset:hover,
+html[data-theme="dark"] .preview-delete-btn:hover {
+    background-color: #4a2020;
+    border-color: var(--dk-danger);
+    color: var(--dk-danger);
+}
+
+/* 地図ボタン（緑） */
+html[data-theme="dark"] .md-btn-map {
+    background-color: var(--dk-green-bg);
+    border-color: var(--dk-green-border);
+    color: var(--dk-green-text);
+}
+/* 画像挿入ボタン */
+html[data-theme="dark"] .md-btn-img {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+    color: var(--dk-link);
+}
+
+
+/* ============================================================
+   [9] 記事詳細ページ
+   ============================================================ */
+/* 本文 */
+html[data-theme="dark"] .detail-article-body {
+    color: var(--dk-text-body);
+}
+html[data-theme="dark"] .detail-article-body p {
+    color: var(--dk-text-body);
+}
+html[data-theme="dark"] .detail-article-body strong {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .detail-article-body h2 {
+    color: var(--dk-text);
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .detail-article-body h3 {
+    color: var(--dk-text);
+    border-left-color: var(--dk-accent-strong);
+}
+/* メタ情報の区切り線 */
+html[data-theme="dark"] .post-meta {
+    border-bottom-color: var(--dk-border);
+}
+
+/* 目次（!important 付きなので上書きも !important） */
+html[data-theme="dark"] .post-toc,
+html[data-theme="dark"] .detail-article-body .toc {
+    background-color: var(--dk-surface-2) !important;
+    border-color: var(--dk-border) !important;
+    border-left-color: var(--dk-accent-strong) !important;
+}
+html[data-theme="dark"] .post-toc .toc-title,
+html[data-theme="dark"] .detail-article-body .toc::before,
+html[data-theme="dark"] .post-toc > ul > li,
+html[data-theme="dark"] .post-toc .toc > ul > li,
+html[data-theme="dark"] .detail-article-body .toc > ul > li {
+    color: var(--dk-text) !important;
+    border-bottom-color: var(--dk-border) !important;
+}
+html[data-theme="dark"] .post-toc ul ul li,
+html[data-theme="dark"] .detail-article-body .toc ul ul li {
+    color: var(--dk-text-body) !important;
+}
+html[data-theme="dark"] .post-toc a,
+html[data-theme="dark"] .detail-article-body .toc a {
+    color: var(--dk-link) !important;
+}
+html[data-theme="dark"] .post-toc a:hover,
+html[data-theme="dark"] .detail-article-body .toc a:hover {
+    color: var(--dk-accent) !important;
+}
+
+/* 画像キャプション */
+html[data-theme="dark"] .post-figcaption {
+    color: var(--dk-link);
+}
+
+/* 地図埋め込み */
+html[data-theme="dark"] .post-map-wrapper {
+    border-color: var(--dk-border);
+    border-left-color: var(--dk-accent-strong);
+}
+html[data-theme="dark"] .post-map-label {
+    background: var(--dk-surface-2);
+    border-bottom-color: var(--dk-border);
+    color: var(--dk-link);
+}
+/* YouTube 埋め込み枠 */
+html[data-theme="dark"] .post-youtube-wrapper {
+    border-color: var(--dk-border);
+}
+
+/* 区切り線 */
+html[data-theme="dark"] hr {
+    border-top-color: var(--dk-border);
+}
+
+/* 関連記事見出し・区切り */
+html[data-theme="dark"] .related-heading {
+    color: var(--dk-text);
+    border-bottom-color: var(--dk-accent-strong);
+}
+
+/* インラインコード・コードブロック（ライトでは無指定なので暗色で読みやすく） */
+html[data-theme="dark"] .detail-article-body code,
+html[data-theme="dark"] .detail-article-body pre,
+html[data-theme="dark"] code {
+    background-color: var(--dk-surface-2);
+    color: var(--dk-text);
+    border-radius: 4px;
+}
+
+
+/* ============================================================
+   [10] 投稿・編集フォーム（ツールバー・プレビュー・モーダル）
+   ============================================================ */
+/* ツールバー */
+html[data-theme="dark"] .md-toolbar {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+html[data-theme="dark"] .md-btn-separator {
+    background: var(--dk-border);
+}
+html[data-theme="dark"] #bodyTextarea {
+    border-top: none !important;
+}
+
+/* 画像プレビュー */
+html[data-theme="dark"] .preview-item {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .preview-label {
+    background: var(--dk-surface-3);
+    border-top-color: var(--dk-border);
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .preview-caption-wrapper {
+    background: var(--dk-surface-3);
+    border-top-color: var(--dk-border);
+}
+
+/* モーダル（地図・YouTube） */
+html[data-theme="dark"] .map-modal {
+    background: var(--dk-surface);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+html[data-theme="dark"] .map-modal-header {
+    background: var(--dk-surface-2);
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .map-modal-title {
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .map-modal-close {
+    color: var(--dk-text-muted);
+}
+html[data-theme="dark"] .map-modal-close:hover {
+    background: var(--dk-surface-3);
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .map-modal-label {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .map-preview-area {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+html[data-theme="dark"] .map-modal-footer {
+    border-top-color: var(--dk-border);
+}
+
+
+/* ============================================================
+   [11] ジャンル一覧ページ
+   ============================================================ */
+html[data-theme="dark"] .genre-item-all a {
+    color: var(--dk-link);
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .genre-item-all a:hover {
+    background: var(--dk-surface-3);
+    color: var(--dk-text);
+}
+html[data-theme="dark"] .genre-group {
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .group-title:hover,
+html[data-theme="dark"] details[open] .group-title {
+    background: var(--dk-surface-2);
+    color: var(--dk-text);
+}
+html[data-theme="dark"] details[open] .group-title {
+    border-bottom-color: var(--dk-border);
+}
+html[data-theme="dark"] .sub-genre-list {
+    background: var(--dk-surface-2);
+}
+html[data-theme="dark"] .sub-genre-list li a {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .sub-genre-list li a:hover {
+    background: var(--dk-surface-3);
+    color: var(--dk-text);
+}
+
+
+/* ============================================================
+   [12] マイページ
+   ============================================================ */
+html[data-theme="dark"] .nickname-form-wrapper {
+    border-top-color: var(--dk-border);
+}
+html[data-theme="dark"] .nickname-form-wrapper > p,
+html[data-theme="dark"] .nickname-form label {
+    color: var(--dk-text-muted);
+}
+
+
+/* ============================================================
+   [13] ハッシュタグ絞り込みバー
+   ============================================================ */
+html[data-theme="dark"] .hashtag-filter-label {
+    color: var(--dk-link);
+}
+
+
+/* ============================================================
+   [14] アバター画像の縁・背景
+   ============================================================ */
+html[data-theme="dark"] .hero-avatar img,
+html[data-theme="dark"] .info-page-avatar {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-accent);
+}
+html[data-theme="dark"] .post-user-info img {
+    background: var(--dk-surface-2);
+    border-color: var(--dk-border);
+}
+
+
+/* ============================================================
+   [15] 認証（ログイン）ページ
+   ============================================================ */
+html[data-theme="dark"] .auth-container label {
+    color: var(--dk-link);
+}
+html[data-theme="dark"] .auth-container h2 {
+    color: var(--dk-text);
+}

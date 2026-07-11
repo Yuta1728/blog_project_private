@@ -3,9 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mycreate1.mitblog.jp</title>
+    <title>create1.blog.jp</title>
+
+    {# ============================================================
+       ダークモード初期化スクリプト
+       ------------------------------------------------------------
+       描画（ペイント）される前に <html> へ data-theme を付与することで、
+       「一瞬ライトで表示されてから暗くなる」チラつき（FOUC）を防ぐ。
+       - localStorage に保存済みの選択があればそれを最優先
+       - なければ OS の設定（prefers-color-scheme）に追従
+       ============================================================ #}
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var theme = saved
+                    ? saved
+                    : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
+    {# ダークモード用の上書きCSS。全セレクタが html[data-theme="dark"] 前置で
+       詳細度が高いため、ページ個別CSSより後に読み込まれなくても上書きが効く。 #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
 </head>
 <body>
 
@@ -18,24 +44,37 @@
             {# ヘッダーのキーワード検索ボックスは廃止した。
                キーワード検索は index ページの検索エリア（search_area.html）に一本化。 #}
 
-            <nav class="header-nav">
-                <ul>
-                    {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
-                        <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                        <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
-                        <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
-                    {% else %}
-                        <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
+            {# ナビ・テーマ切り替え・ハンバーガーを右側の塊としてまとめる #}
+            <div class="header-right">
+                <nav class="header-nav">
+                    <ul>
+                        {% if current_user.is_authenticated %}
+                            <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
+                            <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            {# 「ジャンル検索」と同じ構造・同じCSSクラスの自己紹介ボタン。
+                               blog.about（/about）へ遷移する。 #}
+                            <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                            <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
+                            <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+                            <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
 
-            <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+                {# ダークモード切り替えボタン（PC・スマホ共通で常時表示） #}
+                <button class="theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="ダークモードに切り替え">
+                    <span class="theme-toggle-icon">🌙</span>
+                </button>
+
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="メニューを開く">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -52,10 +91,14 @@
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                {# 「ジャンル検索」と同じ構造の自己紹介ボタン（スマホ用ドロワー） #}
+                <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
                 <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
             {% else %}
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                {# 未ログインの訪問者も自己紹介ページを開けるように表示する #}
+                <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
             {% endif %}
         </ul>
     </div>
@@ -73,6 +116,42 @@
     {% block content %}{% endblock %}
 
     <script>
+        /* ============================================================
+           ダークモード切り替え
+           ============================================================
+           - クリックで <html> の data-theme を light / dark で切り替える
+           - 選択内容は localStorage に保存し、次回訪問時も維持する
+           - ボタンのアイコン（🌙 / ☀️）と aria-label を状態に合わせて更新
+           ※ 初期テーマ自体は <head> のインラインスクリプトで
+             描画前に設定済み（チラつき防止）。ここではその後の
+             切り替え操作とアイコン同期のみを担当する。
+           ============================================================ */
+        (function () {
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            if (!toggleBtn) return;
+            const icon = toggleBtn.querySelector('.theme-toggle-icon');
+
+            function syncButton() {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                // ライト時は「これから暗くする」意味で🌙、ダーク時は☀️を表示
+                if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+                toggleBtn.setAttribute('aria-label', isDark ? 'ライトモードに切り替え' : 'ダークモードに切り替え');
+                toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+            }
+
+            // ページ表示時点の状態にアイコンを合わせる
+            syncButton();
+
+            toggleBtn.addEventListener('click', function () {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const next = isDark ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                try { localStorage.setItem('theme', next); } catch (e) {}
+                syncButton();
+            });
+        })();
+
+
         /* ============================================================
            ドロワーナビ（スマホ）の開閉
            ============================================================ */

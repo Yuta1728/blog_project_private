@@ -38,6 +38,8 @@ body {
     min-height: 100vh;   
     min-height: 100dvh;  
     -webkit-font-smoothing: antialiased;
+    /* ダークモード切り替え時に背景・文字色をなめらかに変化させる */
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* ------------------------------------------------------------
@@ -109,7 +111,9 @@ a:hover {
     transform: translateY(0);
     visibility: visible;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                visibility 0s linear 0s;
+                visibility 0s linear 0s,
+                background-color 0.25s ease,
+                border-color 0.25s ease;
 }
 
 /* 下スクロール時にヘッダーを画面外へスライドアウトさせる状態（JSが付与） */
@@ -131,6 +135,19 @@ a:hover {
     padding: 0 20px;
     height: 85px;
     gap: 24px;
+}
+
+/* ------------------------------------------------------------
+   【共通ヘッダー】ヘッダー右側の操作群
+   ------------------------------------------------------------
+   ナビ・テーマ切り替えボタン・ハンバーガーを1つの塊にまとめ、
+   ロゴ（左）と右側操作群（右）を space-between で両端に配置する。
+   ------------------------------------------------------------ */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 0 0 auto;
 }
 
 /* ------------------------------------------------------------
@@ -159,7 +176,7 @@ a:hover {
 }
 
 /* ------------------------------------------------------------
-   【共通ヘッダー】PC用ナビゲーション（新規投稿／ジャンル検索／マイページ／ログアウト）
+   【共通ヘッダー】PC用ナビゲーション（新規投稿／ジャンル検索／自己紹介／マイページ／ログアウト）
    ------------------------------------------------------------
    白背景上のナビリンク。テキストを #0369a1（濃いセルリアン）に設定し
    白背景でも確実に視認できるコントラストを確保。
@@ -218,6 +235,46 @@ a:hover {
     background-color: #0369a1;
     border-color: #0369a1;
     color: #ffffff;
+}
+
+
+/* ------------------------------------------------------------
+   【共通ヘッダー】ダークモード切り替えボタン（🌙 / ☀️）
+   ------------------------------------------------------------
+   PC・スマホ共通で常時表示。クリックで data-theme を切り替え、
+   選択内容は localStorage に保存される（JS は base.html 側）。
+   ------------------------------------------------------------ */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1.5px solid #38bdf8;
+    background-color: #e0f2fe;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.13s ease;
+}
+
+.theme-toggle-btn:hover {
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+    transform: translateY(0);
+    background-color: #7dd3fa;
+}
+
+.theme-toggle-icon {
+    display: block;
+    pointer-events: none;
 }
 
 
@@ -424,6 +481,18 @@ a:hover {
 
     .header-nav {
         display: none;
+    }
+
+    /* スマホではナビが消える分、右側の間隔を詰める */
+    .header-right {
+        gap: 10px;
+    }
+
+    /* スマホでもテーマ切り替えボタンは常時表示（少しだけ小さく） */
+    .theme-toggle-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 17px;
     }
 
     .hamburger-btn {

@@ -76,7 +76,7 @@ a[role="button"]:hover {
    【index.html】「📋 最新の記事」セクション見出し
    ------------------------------------------------------------ */
 .posts-section-title {
-    font-size: 1.4rem !important;
+    font-size: 1.3rem !important;
     font-weight: 700;
     color: #0c1f35;
     line-height: 1.4;
@@ -89,7 +89,7 @@ a[role="button"]:hover {
    （実際の詳細レイアウトは top_sections.css で定義）
    ------------------------------------------------------------ */
 .hero-section-title {
-    font-size: 1.4rem !important;
+    font-size: 1.3rem !important;
     font-weight: 700;
     color: #0c1f35;
     line-height: 1.4;
