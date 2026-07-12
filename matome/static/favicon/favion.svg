@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MITO Blog">
+  <!-- =========================================================
+       個人共通シグネチャ「Coastal Dawn + 太陽の中の隠しM」
+       ▼ 形は全アプリ共通で固定。色だけを下の3スロットで派生させる
+         sky_top    : 空グラデ上（明）
+         sky_bottom : 空グラデ下（濃）… 背景の基調色
+         m_accent   : 隠しMの色（背景と同系の濃色を推奨）
+       このブログ = セルリアン
+       ========================================================= -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5cc6f7"/>   <!-- sky_top -->
+      <stop offset="1" stop-color="#0284c7"/>   <!-- sky_bottom -->
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sky)"/>
+
+  <!-- 昇る太陽 -->
+  <path d="M174 280 A82 82 0 0 1 338 280 Z" fill="#ffffff"/>
+
+  <!-- 隠しM（署名・透かし） -->
+  <path d="M214 272 V232 L256 260 L298 232 V272"
+        fill="none" stroke="#0369a1" stroke-width="15"
+        stroke-linejoin="round" stroke-linecap="round" opacity="0.22"/> <!-- m_accent -->
+
+  <!-- 海岸の水平線 -->
+  <path d="M120 316 Q190 300 256 316 T392 316"
+        fill="none" stroke="#ffffff" stroke-width="24"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 水面の反射 -->
+  <path d="M200 352 L312 352"
+        fill="none" stroke="#ffffff" stroke-width="15"
+        stroke-linecap="round" opacity="0.8"/>
+</svg>

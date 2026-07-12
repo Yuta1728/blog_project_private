@@ -7,12 +7,7 @@
 
     {# ============================================================
        ダークモード初期化スクリプト
-       ------------------------------------------------------------
-       描画（ペイント）される前に <html> へ data-theme を付与することで、
-       「一瞬ライトで表示されてから暗くなる」チラつき（FOUC）を防ぐ。
-       - localStorage に保存済みの選択があればそれを最優先
-       - なければ OS の設定（prefers-color-scheme）に追従
-       ============================================================ #}
+    ============================================================ #}
     <script>
         (function () {
             try {
@@ -26,6 +21,12 @@
             }
         })();
     </script>
+
+    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon/favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
