@@ -127,7 +127,15 @@ def index():
     # ------------------------------------------------------------------
     # STEP 4. 作成日時の降順（新しい記事が先頭）で取得
     # ------------------------------------------------------------------
-    posts = query.order_by(Post.created_at.desc()).all()
+    # N+1問題を避けるため、ハッシュタグを selectinload で一括取得し、
+    # サーバーサイドページネーションを適用する。
+    page = request.args.get('page', 1, type=int)
+    pagination = (
+        query.options(db.selectinload(Post.hashtags))
+        .order_by(Post.created_at.desc())
+        .paginate(page=page, per_page=4, error_out=False)
+    )
+    posts = pagination.items
 
     # ------------------------------------------------------------------
     # STEP 5. ジャンル選択中: そのジャンル内で使われているハッシュタグ一覧
@@ -224,6 +232,7 @@ def index():
     return render_template(
         'index.html',
         posts             = posts,
+        pagination        = pagination,
         selected_genre    = selected_genre,
         search_word       = search_word,
         selected_hashtag  = selected_hashtag,

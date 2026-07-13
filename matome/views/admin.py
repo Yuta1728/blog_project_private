@@ -55,7 +55,7 @@ from flask_login import current_user, login_required
 from datetime import datetime
 from urllib.parse import urlparse  # Open Redirect 対策のための URL パース
 import os
-import uuid        # 画像ファイル名を UUID でユニーク化するため
+from PIL import Image
 import pytz
 import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
 from extensions import db
@@ -399,20 +399,32 @@ def _save_images(files: list) -> list[str]:
                 raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
 
             # --------------------------------------------------------
-            # STEP 4. 【第 3 層】UUID でファイル名をランダム化して保存
+            # STEP 4. 【第 3 層】UUID でファイル名をランダム化して保存 ＋ サムネイル生成
             # --------------------------------------------------------
             filename  = f"{uuid.uuid4()}{ext}"
             save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
             file.save(save_path)
+
+            # --- サムネイル生成 (最大 400px) ---
+            try:
+                with Image.open(save_path) as img:
+                    img.thumbnail((400, 400))
+                    thumb_filename = f"thumb_{filename}"
+                    thumb_path = os.path.join(current_app.static_folder, 'img', 'posts', thumb_filename)
+                    img.save(thumb_path, optimize=True, quality=80)
+            except Exception as img_err:
+                # サムネイル生成失敗は致命的ではないためログのみ（ここでは単純に無視）
+                # 必要に応じてエラー処理を追加
+                pass
+
             filename_list.append(filename)
 
     except Exception:
         # ------------------------------------------------------------
         # STEP 5. 【バグ修正】途中まで保存したファイルをここで掃除する
         # ------------------------------------------------------------
-        # filename_list には「保存に成功したファイル名」だけが
-        # 入っているので、それらを削除すれば孤立ファイルは残らない。
-        # 掃除後に元の例外を再送出し、エラー通知は呼び出し側に委ねる。
+        # filename_list には「保存に成功したファイル名」だけが入っているので、
+        # 元ファイルとサムネイルの両方を削除する。
         if filename_list:
             _delete_images(','.join(filename_list))
         raise
@@ -455,9 +467,15 @@ def _delete_images(img_name_str: str) -> None:
 
     # STEP 2〜3. 分割して 1 件ずつ削除
     for img_file in img_name_str.split(','):
-        img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file.strip())
+        img_file = img_file.strip()
+        # 元ファイルの削除
+        img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file)
         if os.path.exists(img_path):
             os.remove(img_path)
+        # サムネイルファイルの削除
+        thumb_path = os.path.join(current_app.static_folder, 'img', 'posts', f"thumb_{img_file}")
+        if os.path.exists(thumb_path):
+            os.remove(thumb_path)
 
 
 # ======================================================================

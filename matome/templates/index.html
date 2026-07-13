@@ -19,7 +19,7 @@
 
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
-            🔍 
+            🔍
             {% if search_word %}「{{ search_word }}」{% endif %}
             {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
             {% if selected_hashtag %}ハッシュタグ「#{{ selected_hashtag }}」{% endif %}
@@ -42,8 +42,8 @@
                     <a href="{{ url_for('blog.index', genre=selected_genre) }}"
                        class="hashtag-filter-clear">✕ タグ解除</a>
                 {% endif %}
-            </div>
-        </div>
+            </div}
+        </div}
     {% endif %}
     {# ========================================================= #}
 
@@ -62,7 +62,7 @@
             <div class="post-thumbnail">
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
-                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/posts/thumb_' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
                 {% elif post.default_thumb %}
                     <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
                 {% else %}
@@ -119,8 +119,39 @@
         </p>
     {% endfor %}
 
-    {# ===== ページ番号によるページ送り ===== #}
-    <nav class="index-pagination" id="index-pagination" aria-label="記事一覧のページ送り"></nav>
+    {# ===== ページ番号によるページ送り（サーバーサイドページネーション） ===== #}
+    <nav class="index-pagination" aria-label="記事一覧のページ送り">
+        {% if pagination.pages > 1 %}
+            {# 前へ #}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('blog.index', page=pagination.prev_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag) }}"
+                   class="page-btn page-btn-arrow" aria-label="前のページ">‹</a>
+            {% else %}
+                <button class="page-btn page-btn-arrow" disabled aria-label="前のページ">‹</button>
+            {% endif %}
+
+            {# ページ番号 #}
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_edge=1, right_current=2) %}
+                {% if page_num %}
+                    <a href="{{ url_for('blog.index', page=page_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag) }}"
+                       class="page-btn {{ 'active' if page_num == pagination.page else '' }}"
+                       {% if page_num == pagination.page %}aria-current="page"{% endif %}>
+                        {{ page_num }}
+                    </a>
+                {% else %}
+                    <span class="page-btn disabled">...</span>
+                {% endif %}
+            {% endfor %}
+
+            {# 次へ #}
+            {% if pagination.has_next %}
+                <a href="{{ url_for('blog.index', page=pagination.next_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag) }}"
+                   class="page-btn page-btn-arrow" aria-label="次のページ">›</a>
+            {% else %}
+                <button class="page-btn page-btn-arrow" disabled aria-label="次のページ">›</button>
+            {% endif %}
+        {% endif %}
+    </nav>
     {# ================================================ #}
 
 
@@ -131,106 +162,5 @@
     {# ======================================================================= #}
 
 </div>
-
-<script>
-/* ============================================================
-   記事一覧のページ送り（ページ番号方式）
-   ------------------------------------------------------------
-   従来の「もっと見る／表示を減らす」による追加表示方式は、
-   ページが縦に伸び続けてスクロール量が増えてしまい、
-   どこからが新しく表示された記事なのか分かりにくいという
-   課題があったため、1ページあたり PAGE_SIZE 件ずつを表示し、
-   下部のページ番号ボタンで表示を「切り替える」方式に変更した。
-
-   記事自体はこれまでと同様にサーバー側で全件レンダリングされており、
-   JS側では表示するカードを display: none / '' で切り替えているだけ
-   （サーバーへの再リクエストは発生しない）。
-
-   ページを切り替えた際は、ユーザーが毎回一覧の先頭まで
-   手動でスクロールし直す必要がないよう、
-   #index-articles-anchor へ自動でスムーズスクロールする。
-   ============================================================ */
-(function () {
-    var PAGE_SIZE = 4;   // 1ページあたりの表示件数
-
-    var cards = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
-    var total = cards.length;
-    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    var currentPage = 1;
-
-    var nav    = document.getElementById('index-pagination');
-    var anchor = document.getElementById('index-articles-anchor');
-
-    function showPage(page, opts) {
-        opts = opts || {};
-        currentPage = Math.min(Math.max(page, 1), totalPages);
-
-        var start = (currentPage - 1) * PAGE_SIZE;
-        var end   = start + PAGE_SIZE;
-
-        cards.forEach(function (card, i) {
-            card.style.display = (i >= start && i < end) ? '' : 'none';
-        });
-
-        renderPagination();
-
-        if (opts.scroll && anchor) {
-            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    function makeButton(label, extraClass) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'page-btn' + (extraClass ? ' ' + extraClass : '');
-        btn.textContent = label;
-        return btn;
-    }
-
-    function renderPagination() {
-        if (!nav) return;
-        nav.innerHTML = '';
-
-        /* 1ページに収まる件数しかない場合はページ送り自体を表示しない */
-        if (totalPages <= 1) {
-            nav.style.display = 'none';
-            return;
-        }
-        nav.style.display = 'flex';
-
-        /* 前へ */
-        var prevBtn = makeButton('‹', 'page-btn-arrow');
-        prevBtn.setAttribute('aria-label', '前のページ');
-        prevBtn.disabled = currentPage === 1;
-        prevBtn.addEventListener('click', function () {
-            showPage(currentPage - 1, { scroll: true });
-        });
-        nav.appendChild(prevBtn);
-
-        /* ページ番号 1, 2, 3 ... */
-        for (var p = 1; p <= totalPages; p++) {
-            (function (pageNum) {
-                var btn = makeButton(String(pageNum), pageNum === currentPage ? 'active' : '');
-                btn.setAttribute('aria-current', pageNum === currentPage ? 'page' : 'false');
-                btn.addEventListener('click', function () {
-                    showPage(pageNum, { scroll: true });
-                });
-                nav.appendChild(btn);
-            })(p);
-        }
-
-        /* 次へ */
-        var nextBtn = makeButton('›', 'page-btn-arrow');
-        nextBtn.setAttribute('aria-label', '次のページ');
-        nextBtn.disabled = currentPage === totalPages;
-        nextBtn.addEventListener('click', function () {
-            showPage(currentPage + 1, { scroll: true });
-        });
-        nav.appendChild(nextBtn);
-    }
-
-    showPage(1);
-})();
-</script>
 
 {% endblock %}
