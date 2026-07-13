@@ -55,6 +55,7 @@ from flask_login import current_user, login_required
 from datetime import datetime
 from urllib.parse import urlparse  # Open Redirect 対策のための URL パース
 import os
+import uuid
 from PIL import Image
 import pytz
 import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
@@ -412,7 +413,7 @@ def _save_images(files: list) -> list[str]:
                     thumb_filename = f"thumb_{filename}"
                     thumb_path = os.path.join(current_app.static_folder, 'img', 'posts', thumb_filename)
                     img.save(thumb_path, optimize=True, quality=80)
-            except Exception as img_err:
+            except Exception:
                 # サムネイル生成失敗は致命的ではないためログのみ（ここでは単純に無視）
                 # 必要に応じてエラー処理を追加
                 pass
