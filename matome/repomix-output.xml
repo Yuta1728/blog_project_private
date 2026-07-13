@@ -66,6 +66,12 @@ static/
     mobile-editor.css
     mypage.css
     top_sections.css
+  favicon/
+    apple-touch-icon.png
+    favicon-16x16.png
+    favicon-32x32.png
+    favicon.ico
+    favion.svg
   img/
     posts/
       0e137436-bf43-4a9d-9ce2-9b5e53a4ca87.png
@@ -5284,6 +5290,45 @@ a[role="button"]:hover {
 }
 </file>
 
+<file path="static/favicon/favion.svg">
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MITO Blog">
+  <!-- =========================================================
+       個人共通シグネチャ「Coastal Dawn + 太陽の中の隠しM」
+       ▼ 形は全アプリ共通で固定。色だけを下の3スロットで派生させる
+         sky_top    : 空グラデ上（明）
+         sky_bottom : 空グラデ下（濃）… 背景の基調色
+         m_accent   : 隠しMの色（背景と同系の濃色を推奨）
+       このブログ = セルリアン
+       ========================================================= -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5cc6f7"/>   <!-- sky_top -->
+      <stop offset="1" stop-color="#0284c7"/>   <!-- sky_bottom -->
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sky)"/>
+
+  <!-- 昇る太陽 -->
+  <path d="M174 280 A82 82 0 0 1 338 280 Z" fill="#ffffff"/>
+
+  <!-- 隠しM（署名・透かし） -->
+  <path d="M214 272 V232 L256 260 L298 232 V272"
+        fill="none" stroke="#0369a1" stroke-width="15"
+        stroke-linejoin="round" stroke-linecap="round" opacity="0.22"/> <!-- m_accent -->
+
+  <!-- 海岸の水平線 -->
+  <path d="M120 316 Q190 300 256 316 T392 316"
+        fill="none" stroke="#ffffff" stroke-width="24"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 水面の反射 -->
+  <path d="M200 352 L312 352"
+        fill="none" stroke="#ffffff" stroke-width="15"
+        stroke-linecap="round" opacity="0.8"/>
+</svg>
+</file>
+
 <file path="templates/about.html">
 {% extends "base.html" %}
 {% block content %}
@@ -5344,12 +5389,7 @@ a[role="button"]:hover {
 
     {# ============================================================
        ダークモード初期化スクリプト
-       ------------------------------------------------------------
-       描画（ペイント）される前に <html> へ data-theme を付与することで、
-       「一瞬ライトで表示されてから暗くなる」チラつき（FOUC）を防ぐ。
-       - localStorage に保存済みの選択があればそれを最優先
-       - なければ OS の設定（prefers-color-scheme）に追従
-       ============================================================ #}
+    ============================================================ #}
     <script>
         (function () {
             try {
@@ -5363,6 +5403,12 @@ a[role="button"]:hover {
             }
         })();
     </script>
+
+    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon/favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
