@@ -6996,7 +6996,7 @@ function ytPlay(facadeEl) {
 
     {% if selected_genre or search_word or selected_hashtag %}
         <p class="filter-label">
-            🔍 
+            🔍
             {% if search_word %}「{{ search_word }}」{% endif %}
             {% if selected_genre %}ジャンル「{{ selected_genre }}」{% endif %}
             {% if selected_hashtag %}ハッシュタグ「#{{ selected_hashtag }}」{% endif %}
@@ -7019,8 +7019,8 @@ function ytPlay(facadeEl) {
                     <a href="{{ url_for('blog.index', genre=selected_genre) }}"
                        class="hashtag-filter-clear">✕ タグ解除</a>
                 {% endif %}
-            </div>
-        </div>
+            </div}
+        </div}
     {% endif %}
     {# ========================================================= #}
 
@@ -7039,7 +7039,7 @@ function ytPlay(facadeEl) {
             <div class="post-thumbnail">
                 {% if post.img_name %}
                     {% set first_img = post.img_name.split(',')[0] %}
-                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/posts/thumb_' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
                 {% elif post.default_thumb %}
                     <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
                 {% else %}
@@ -7096,8 +7096,39 @@ function ytPlay(facadeEl) {
         </p>
     {% endfor %}
 
-    {# ===== ページ番号によるページ送り ===== #}
-    <nav class="index-pagination" id="index-pagination" aria-label="記事一覧のページ送り"></nav>
+    {# ===== ページ番号によるページ送り（サーバーサイドページネーション） ===== #}
+    <nav class="index-pagination" aria-label="記事一覧のページ送り">
+        {% if pagination.pages > 1 %}
+            {# 前へ #}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('blog.index', page=pagination.prev_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag) }}"
+                   class="page-btn page-btn-arrow" aria-label="前のページ">‹</a>
+            {% else %}
+                <button class="page-btn page-btn-arrow" disabled aria-label="前のページ">‹</button>
+            {% endif %}
+
+            {# ページ番号 #}
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_edge=1, right_current=2) %}
+                {% if page_num %}
+                    <a href="{{ url_for('blog.index', page=page_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag) }}"
+                       class="page-btn {{ 'active' if page_num == pagination.page else '' }}"
+                       {% if page_num == pagination.page %}aria-current="page"{% endif %}>
+                        {{ page_num }}
+                    </a>
+                {% else %}
+                    <span class="page-btn disabled">...</span>
+                {% endif %}
+            {% endfor %}
+
+            {# 次へ #}
+            {% if pagination.has_next %}
+                <a href="{{ url_for('blog.index', page=pagination.next_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag) }}"
+                   class="page-btn page-btn-arrow" aria-label="次のページ">›</a>
+            {% else %}
+                <button class="page-btn page-btn-arrow" disabled aria-label="次のページ">›</button>
+            {% endif %}
+        {% endif %}
+    </nav>
     {# ================================================ #}
 
 
@@ -7108,107 +7139,6 @@ function ytPlay(facadeEl) {
     {# ======================================================================= #}
 
 </div>
-
-<script>
-/* ============================================================
-   記事一覧のページ送り（ページ番号方式）
-   ------------------------------------------------------------
-   従来の「もっと見る／表示を減らす」による追加表示方式は、
-   ページが縦に伸び続けてスクロール量が増えてしまい、
-   どこからが新しく表示された記事なのか分かりにくいという
-   課題があったため、1ページあたり PAGE_SIZE 件ずつを表示し、
-   下部のページ番号ボタンで表示を「切り替える」方式に変更した。
-
-   記事自体はこれまでと同様にサーバー側で全件レンダリングされており、
-   JS側では表示するカードを display: none / '' で切り替えているだけ
-   （サーバーへの再リクエストは発生しない）。
-
-   ページを切り替えた際は、ユーザーが毎回一覧の先頭まで
-   手動でスクロールし直す必要がないよう、
-   #index-articles-anchor へ自動でスムーズスクロールする。
-   ============================================================ */
-(function () {
-    var PAGE_SIZE = 4;   // 1ページあたりの表示件数
-
-    var cards = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
-    var total = cards.length;
-    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    var currentPage = 1;
-
-    var nav    = document.getElementById('index-pagination');
-    var anchor = document.getElementById('index-articles-anchor');
-
-    function showPage(page, opts) {
-        opts = opts || {};
-        currentPage = Math.min(Math.max(page, 1), totalPages);
-
-        var start = (currentPage - 1) * PAGE_SIZE;
-        var end   = start + PAGE_SIZE;
-
-        cards.forEach(function (card, i) {
-            card.style.display = (i >= start && i < end) ? '' : 'none';
-        });
-
-        renderPagination();
-
-        if (opts.scroll && anchor) {
-            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    function makeButton(label, extraClass) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'page-btn' + (extraClass ? ' ' + extraClass : '');
-        btn.textContent = label;
-        return btn;
-    }
-
-    function renderPagination() {
-        if (!nav) return;
-        nav.innerHTML = '';
-
-        /* 1ページに収まる件数しかない場合はページ送り自体を表示しない */
-        if (totalPages <= 1) {
-            nav.style.display = 'none';
-            return;
-        }
-        nav.style.display = 'flex';
-
-        /* 前へ */
-        var prevBtn = makeButton('‹', 'page-btn-arrow');
-        prevBtn.setAttribute('aria-label', '前のページ');
-        prevBtn.disabled = currentPage === 1;
-        prevBtn.addEventListener('click', function () {
-            showPage(currentPage - 1, { scroll: true });
-        });
-        nav.appendChild(prevBtn);
-
-        /* ページ番号 1, 2, 3 ... */
-        for (var p = 1; p <= totalPages; p++) {
-            (function (pageNum) {
-                var btn = makeButton(String(pageNum), pageNum === currentPage ? 'active' : '');
-                btn.setAttribute('aria-current', pageNum === currentPage ? 'page' : 'false');
-                btn.addEventListener('click', function () {
-                    showPage(pageNum, { scroll: true });
-                });
-                nav.appendChild(btn);
-            })(p);
-        }
-
-        /* 次へ */
-        var nextBtn = makeButton('›', 'page-btn-arrow');
-        nextBtn.setAttribute('aria-label', '次のページ');
-        nextBtn.disabled = currentPage === totalPages;
-        nextBtn.addEventListener('click', function () {
-            showPage(currentPage + 1, { scroll: true });
-        });
-        nav.appendChild(nextBtn);
-    }
-
-    showPage(1);
-})();
-</script>
 
 {% endblock %}
 </file>
@@ -8441,7 +8371,8 @@ from flask_login import current_user, login_required
 from datetime import datetime
 from urllib.parse import urlparse  # Open Redirect 対策のための URL パース
 import os
-import uuid        # 画像ファイル名を UUID でユニーク化するため
+import uuid
+from PIL import Image
 import pytz
 import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
 from extensions import db
@@ -8514,7 +8445,7 @@ def parse_hashtag_input(raw: str) -> list[str]:
         return []
 
     # STEP 2. 区切り文字: 半角スペース・全角スペース・カンマ・読点 のいずれか 1 文字以上
-    tokens = re.split(r'[\s\u3000,、]+', raw)
+    tokens = re.split(r'[\s　,、]+', raw)
 
     # STEP 3〜4. '#' 除去 + フィルタリング
     names, seen = [], set()
@@ -8688,7 +8619,7 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     all_genres_set.discard('未分類')
 
     # ------------------------------------------------------------------
-    # STEP 6. 並べ替えて返す
+    # la STEP 6. 並べ替えて返す
     # ------------------------------------------------------------------
     # 【バグ修正】ソートキーを hash(x) からタプルキーに変更
     #
@@ -8785,20 +8716,32 @@ def _save_images(files: list) -> list[str]:
                 raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
 
             # --------------------------------------------------------
-            # STEP 4. 【第 3 層】UUID でファイル名をランダム化して保存
+            # STEP 4. 【第 3 層】UUID でファイル名をランダム化して保存 ＋ サムネイル生成
             # --------------------------------------------------------
             filename  = f"{uuid.uuid4()}{ext}"
             save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
             file.save(save_path)
+
+            # --- サムネイル生成 (最大 400px) ---
+            try:
+                with Image.open(save_path) as img:
+                    img.thumbnail((400, 400))
+                    thumb_filename = f"thumb_{filename}"
+                    thumb_path = os.path.join(current_app.static_folder, 'img', 'posts', thumb_filename)
+                    img.save(thumb_path, optimize=True, quality=80)
+            except Exception:
+                # サムネイル生成失敗は致命的ではないためログのみ（ここでは単純に無視）
+                # 必要に応じてエラー処理を追加
+                pass
+
             filename_list.append(filename)
 
     except Exception:
         # ------------------------------------------------------------
         # STEP 5. 【バグ修正】途中まで保存したファイルをここで掃除する
         # ------------------------------------------------------------
-        # filename_list には「保存に成功したファイル名」だけが
-        # 入っているので、それらを削除すれば孤立ファイルは残らない。
-        # 掃除後に元の例外を再送出し、エラー通知は呼び出し側に委ねる。
+        # filename_list には「保存に成功したファイル名」だけが入っているので、
+        # 元ファイルとサムネイルの両方を削除する。
         if filename_list:
             _delete_images(','.join(filename_list))
         raise
@@ -8823,7 +8766,7 @@ def _delete_images(img_name_str: str) -> None:
     【バグ修正に伴う運用ルール】
     この関数は必ず「DB の commit が成功した後」に呼ぶこと。
     従来は commit 前に物理削除していたため、commit が失敗すると
-    「DB には記事（画像名）が残っているのに実ファイルだけ消えている」
+    「DB には記事が残っているのに画像だけ消えている」
     という復旧不能な不整合が発生し得た。
     commit 後の物理削除であれば、万一削除に失敗しても
     「孤立ファイルが残る」だけで済み、データは壊れない（安全側に倒す）。
@@ -8841,9 +8784,15 @@ def _delete_images(img_name_str: str) -> None:
 
     # STEP 2〜3. 分割して 1 件ずつ削除
     for img_file in img_name_str.split(','):
-        img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file.strip())
+        img_file = img_file.strip()
+        # 元ファイルの削除
+        img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file)
         if os.path.exists(img_path):
             os.remove(img_path)
+        # サムネイルファイルの削除
+        thumb_path = os.path.join(current_app.static_folder, 'img', 'posts', f"thumb_{img_file}")
+        if os.path.exists(thumb_path):
+            os.remove(thumb_path)
 
 
 # ======================================================================
@@ -9162,14 +9111,7 @@ def delete(id):
 
     POST メソッドのみ受け付ける（GET でアクセスできないようにする）
     → URL を直接叩いただけでは削除できない（CSRF トークンも必要）
-
-    【処理の流れ】
-      STEP 1. 管理者チェック + 記事の取得・権限チェック
-      STEP 2. 削除対象の画像名を退避（物理削除は commit 成功後）
-      STEP 3. ハッシュタグのリレーションをクリア + 孤立タグの削除予約
-      STEP 4. 記事を削除予約して commit（失敗時は rollback）
-      STEP 5. commit 成功後に関連画像ファイルを物理削除
-      STEP 6. リダイレクト先を決定（Open Redirect 対策付き）
+    （CSRF トークンも必要）
     """
     # ------------------------------------------------------------------
     # STEP 1. 管理者チェック + 記事の取得・権限チェック
@@ -9815,7 +9757,15 @@ def index():
     # ------------------------------------------------------------------
     # STEP 4. 作成日時の降順（新しい記事が先頭）で取得
     # ------------------------------------------------------------------
-    posts = query.order_by(Post.created_at.desc()).all()
+    # N+1問題を避けるため、ハッシュタグを selectinload で一括取得し、
+    # サーバーサイドページネーションを適用する。
+    page = request.args.get('page', 1, type=int)
+    pagination = (
+        query.options(db.selectinload(Post.hashtags))
+        .order_by(Post.created_at.desc())
+        .paginate(page=page, per_page=4, error_out=False)
+    )
+    posts = pagination.items
 
     # ------------------------------------------------------------------
     # STEP 5. ジャンル選択中: そのジャンル内で使われているハッシュタグ一覧
@@ -9912,6 +9862,7 @@ def index():
     return render_template(
         'index.html',
         posts             = posts,
+        pagination        = pagination,
         selected_genre    = selected_genre,
         search_word       = search_word,
         selected_hashtag  = selected_hashtag,
