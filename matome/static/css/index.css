@@ -20,10 +20,11 @@
 }
 
 /* ------------------------------------------------------------
-   【index.html】ページ送り時にスクロールを戻す目印（非表示要素）
+   【index.html】ページ送り後に記事一覧の先頭へ戻すための目印（非表示要素）
    ------------------------------------------------------------
-   固定ヘッダー（position: fixed）の下に隠れないよう
-   scroll-margin-top をヘッダーの高さ分だけ確保しておく。
+   ページ番号リンクの #index-articles-anchor フラグメントで
+   ここへスクロールする。固定ヘッダー（position: fixed）の下に
+   隠れないよう scroll-margin-top をヘッダーの高さ分だけ確保しておく。
    ------------------------------------------------------------ */
 #index-articles-anchor {
     scroll-margin-top: 100px;
@@ -224,7 +225,7 @@ a[role="button"]:hover {
 }
 
 /* ------------------------------------------------------------
-   【index.html / mypage.html 共通】「編集」「削除」ボタン行（投稿者本人のみ表示）
+   【index.html / mypage.html 共通】「編集」「削除」ボタン行(投稿者本人のみ表示)
    ------------------------------------------------------------ */
 .post-actions {
     position: relative;
@@ -283,12 +284,20 @@ a[role="button"]:hover {
 
 
 /* ============================================================
-   【index.html】ページ番号によるページ送り（1ページ5件表示）
+   【index.html】ページ番号によるページ送り（サーバー側・1ページ4件表示）
+   ============================================================
+   【変更点】
+   以前はクライアント JS がカードを分割表示し、totalPages > 1 の
+   ときだけこのナビを JS で flex 表示していた。サーバー側
+   ページネーションに一本化したため、Jinja 側でページ数が
+   2 以上のときだけ <nav> 自体を出力する方式に変更。
+   このため、初期状態を display: none にする必要がなくなり、
+   常に flex 表示にしている。
    ============================================================ */
 
-/* ページ送りナビ全体（JS側で totalPages > 1 のときだけ flex 表示） */
+/* ページ送りナビ全体 */
 .index-pagination {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -296,7 +305,8 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
-/* ページ番号・前へ／次へ の共通ボタンデザイン */
+/* ページ番号・前へ／次へ の共通ボタンデザイン
+   （リンク <a> と現在ページ・無効状態の <span> で共用する） */
 .page-btn {
     display: inline-flex;
     align-items: center;
@@ -312,37 +322,43 @@ a[role="button"]:hover {
     background-color: #ffffff;
     border: 1px solid #7dd3fa;
     cursor: pointer;
+    text-decoration: none;
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
     transition: background-color 0.2s ease, border-color 0.2s ease,
                 color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.page-btn:hover:not(:disabled) {
+.page-btn:hover {
     background-color: #dbeafe;
     border-color: #38bdf8;
     color: #0c1f35;
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
     transform: translateY(-1px);
+    text-decoration: none;
 }
 
-.page-btn:active:not(:disabled) {
+.page-btn:active {
     transform: translateY(0);
     box-shadow: none;
     background-color: #bae6fd;
 }
 
-/* 現在表示中のページ番号ボタン（塗りつぶし強調） */
+/* 現在表示中のページ番号（塗りつぶし強調、<span> で出力） */
 .page-btn.active {
     background-color: #0ea5e9;
     border-color: #0ea5e9;
     color: #ffffff;
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+    cursor: default;
 }
 
+/* 現在ページはリンクではないのでホバーで浮かせない */
 .page-btn.active:hover {
-    background-color: #0369a1;
-    border-color: #0369a1;
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
     color: #ffffff;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
 /* 「‹」「›」前へ／次へ ボタン */
@@ -351,12 +367,30 @@ a[role="button"]:hover {
     font-weight: 700;
 }
 
-/* 先頭・末尾ページで無効化された前へ／次へボタン */
-.page-btn:disabled {
+/* 先頭・末尾ページで無効化された前へ／次へ（<span> で出力）
+   ------------------------------------------------------------
+   <a> と違い <span> は :disabled を持てないため、専用クラスで
+   見た目を無効化する。pointer-events: none によりホバー効果も
+   無効になる。 */
+.page-btn-disabled {
     opacity: 0.4;
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
+    pointer-events: none;
+}
+
+/* ページ番号の省略記号（…） */
+.page-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 40px;
+    color: #7dd3fa;
+    font-size: 14px;
+    font-weight: 700;
+    user-select: none;
 }
 
 
@@ -446,5 +480,10 @@ a[role="button"]:hover {
         height: 36px;
         padding: 0 10px;
         font-size: 13px;
+    }
+
+    .page-ellipsis {
+        height: 36px;
+        min-width: 20px;
     }
 }
