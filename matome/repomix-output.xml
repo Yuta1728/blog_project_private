@@ -3696,10 +3696,11 @@ details[open] .group-title {
 }
 
 /* ------------------------------------------------------------
-   【index.html】ページ送り時にスクロールを戻す目印（非表示要素）
+   【index.html】ページ送り後に記事一覧の先頭へ戻すための目印（非表示要素）
    ------------------------------------------------------------
-   固定ヘッダー（position: fixed）の下に隠れないよう
-   scroll-margin-top をヘッダーの高さ分だけ確保しておく。
+   ページ番号リンクの #index-articles-anchor フラグメントで
+   ここへスクロールする。固定ヘッダー（position: fixed）の下に
+   隠れないよう scroll-margin-top をヘッダーの高さ分だけ確保しておく。
    ------------------------------------------------------------ */
 #index-articles-anchor {
     scroll-margin-top: 100px;
@@ -3900,7 +3901,7 @@ a[role="button"]:hover {
 }
 
 /* ------------------------------------------------------------
-   【index.html / mypage.html 共通】「編集」「削除」ボタン行（投稿者本人のみ表示）
+   【index.html / mypage.html 共通】「編集」「削除」ボタン行(投稿者本人のみ表示)
    ------------------------------------------------------------ */
 .post-actions {
     position: relative;
@@ -3959,12 +3960,20 @@ a[role="button"]:hover {
 
 
 /* ============================================================
-   【index.html】ページ番号によるページ送り（1ページ5件表示）
+   【index.html】ページ番号によるページ送り（サーバー側・1ページ4件表示）
+   ============================================================
+   【変更点】
+   以前はクライアント JS がカードを分割表示し、totalPages > 1 の
+   ときだけこのナビを JS で flex 表示していた。サーバー側
+   ページネーションに一本化したため、Jinja 側でページ数が
+   2 以上のときだけ <nav> 自体を出力する方式に変更。
+   このため、初期状態を display: none にする必要がなくなり、
+   常に flex 表示にしている。
    ============================================================ */
 
-/* ページ送りナビ全体（JS側で totalPages > 1 のときだけ flex 表示） */
+/* ページ送りナビ全体 */
 .index-pagination {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -3972,7 +3981,8 @@ a[role="button"]:hover {
     flex-wrap: wrap;
 }
 
-/* ページ番号・前へ／次へ の共通ボタンデザイン */
+/* ページ番号・前へ／次へ の共通ボタンデザイン
+   （リンク <a> と現在ページ・無効状態の <span> で共用する） */
 .page-btn {
     display: inline-flex;
     align-items: center;
@@ -3988,37 +3998,43 @@ a[role="button"]:hover {
     background-color: #ffffff;
     border: 1px solid #7dd3fa;
     cursor: pointer;
+    text-decoration: none;
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
     transition: background-color 0.2s ease, border-color 0.2s ease,
                 color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.page-btn:hover:not(:disabled) {
+.page-btn:hover {
     background-color: #dbeafe;
     border-color: #38bdf8;
     color: #0c1f35;
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
     transform: translateY(-1px);
+    text-decoration: none;
 }
 
-.page-btn:active:not(:disabled) {
+.page-btn:active {
     transform: translateY(0);
     box-shadow: none;
     background-color: #bae6fd;
 }
 
-/* 現在表示中のページ番号ボタン（塗りつぶし強調） */
+/* 現在表示中のページ番号（塗りつぶし強調、<span> で出力） */
 .page-btn.active {
     background-color: #0ea5e9;
     border-color: #0ea5e9;
     color: #ffffff;
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+    cursor: default;
 }
 
+/* 現在ページはリンクではないのでホバーで浮かせない */
 .page-btn.active:hover {
-    background-color: #0369a1;
-    border-color: #0369a1;
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
     color: #ffffff;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
 /* 「‹」「›」前へ／次へ ボタン */
@@ -4027,12 +4043,30 @@ a[role="button"]:hover {
     font-weight: 700;
 }
 
-/* 先頭・末尾ページで無効化された前へ／次へボタン */
-.page-btn:disabled {
+/* 先頭・末尾ページで無効化された前へ／次へ（<span> で出力）
+   ------------------------------------------------------------
+   <a> と違い <span> は :disabled を持てないため、専用クラスで
+   見た目を無効化する。pointer-events: none によりホバー効果も
+   無効になる。 */
+.page-btn-disabled {
     opacity: 0.4;
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
+    pointer-events: none;
+}
+
+/* ページ番号の省略記号（…） */
+.page-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 40px;
+    color: #7dd3fa;
+    font-size: 14px;
+    font-weight: 700;
+    user-select: none;
 }
 
 
@@ -4122,6 +4156,11 @@ a[role="button"]:hover {
         height: 36px;
         padding: 0 10px;
         font-size: 13px;
+    }
+
+    .page-ellipsis {
+        height: 36px;
+        min-width: 20px;
     }
 }
 </file>
@@ -7087,8 +7126,11 @@ function ytPlay(facadeEl) {
 
 <div class="page-wrapper">
 
-    {# ===== フィルターなし（トップ表示）のときだけ stats を表示 ===== #}
-    {% if not selected_genre and not search_word and not selected_hashtag %}
+    {# ===== フィルターなし かつ 1ページ目のときだけ stats を表示 =====
+       サーバー側ページネーションに変更したため、2ページ目以降で
+       「統計」「最新の記事」「自己紹介」が繰り返し表示されないよう
+       pagination.page == 1 の条件を追加している。 #}
+    {% if not selected_genre and not search_word and not selected_hashtag and pagination.page == 1 %}
         {% include 'stats.html' %}
     {% endif %}
     {# ======================================================================= #}
@@ -7127,12 +7169,15 @@ function ytPlay(facadeEl) {
     {% endif %}
     {# ========================================================= #}
 
-    {# ===== ページ送り時にここへスクロールを戻すための目印 ===== #}
+    {# ===== ページ送りのリンク先がここへ来るようにするための目印 =====
+       固定ヘッダーに隠れないよう scroll-margin-top を index.css で確保。
+       ページ番号リンクの #index-articles-anchor フラグメントで
+       記事一覧の先頭へジャンプする。 #}
     <div id="index-articles-anchor"></div>
     {# ========================================================= #}
 
-    {# ===== 記事一覧の見出し ===== #}
-    {% if not selected_genre and not search_word and not selected_hashtag %}
+    {# ===== 記事一覧の見出し（フィルターなし かつ 1ページ目のみ） ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag and pagination.page == 1 %}
         <h3 class="posts-section-title">📋 最新の記事</h3>
     {% endif %}
     {# =========================== #}
@@ -7147,11 +7192,11 @@ function ytPlay(facadeEl) {
                    ※ 以前は img_name の先頭画像をサムネイルに流用していたが、
                      サムネイルは thumbnail_img で独立管理する方式に変更した。 #}
                 {% if post.thumbnail_img %}
-                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img" loading="lazy">
                 {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img" loading="lazy">
                 {% else %}
-                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
+                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img" loading="lazy">
                 {% endif %}
             </div>
 
@@ -7204,119 +7249,71 @@ function ytPlay(facadeEl) {
         </p>
     {% endfor %}
 
-    {# ===== ページ番号によるページ送り ===== #}
-    <nav class="index-pagination" id="index-pagination" aria-label="記事一覧のページ送り"></nav>
+    {# ============================================================
+       ページ番号によるページ送り（サーバー側ページネーション）
+       ------------------------------------------------------------
+       【変更点】
+       以前はサーバー側で最大4件しか渡していないのに、クライアント
+       JS が「全記事がレンダリングされている前提」でページ分割して
+       いたため、常に totalPages=1 となりページ送りUIが表示されず、
+       最新4件より古い記事に一切到達できないバグがあった。
+
+       これを解消するため、クライアント JS のページ送りを廃止し、
+       ビューから渡される Flask-SQLAlchemy の pagination オブジェクトを
+       もとに、サーバー側ページネーションのリンクを描画する方式へ一本化した。
+
+       - 各リンクは現在の絞り込み条件（genre / search / hashtag）を
+         引き継ぐ。url_for は値が None のクエリを自動で省くため、
+         絞り込みなしのときは余計なパラメータが付かない。
+       - #index-articles-anchor フラグメントを付与し、ページ遷移後に
+         記事一覧の先頭へスクロールする（固定ヘッダー分は
+         scroll-margin-top で吸収）。
+       ============================================================ #}
+    {% if pagination.pages > 1 %}
+        <nav class="index-pagination" aria-label="記事一覧のページ送り">
+
+            {# --- 前へ --- #}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('blog.index', page=pagination.prev_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag, _anchor='index-articles-anchor') }}"
+                   class="page-btn page-btn-arrow" aria-label="前のページ" rel="prev">‹</a>
+            {% else %}
+                <span class="page-btn page-btn-arrow page-btn-disabled" aria-hidden="true">‹</span>
+            {% endif %}
+
+            {# --- ページ番号（前後2ページ + 端を表示、間は … で省略） --- #}
+            {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                {% if p %}
+                    {% if p == pagination.page %}
+                        <span class="page-btn active" aria-current="page">{{ p }}</span>
+                    {% else %}
+                        <a href="{{ url_for('blog.index', page=p, genre=selected_genre, search=search_word, hashtag=selected_hashtag, _anchor='index-articles-anchor') }}"
+                           class="page-btn">{{ p }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="page-ellipsis" aria-hidden="true">…</span>
+                {% endif %}
+            {% endfor %}
+
+            {# --- 次へ --- #}
+            {% if pagination.has_next %}
+                <a href="{{ url_for('blog.index', page=pagination.next_num, genre=selected_genre, search=search_word, hashtag=selected_hashtag, _anchor='index-articles-anchor') }}"
+                   class="page-btn page-btn-arrow" aria-label="次のページ" rel="next">›</a>
+            {% else %}
+                <span class="page-btn page-btn-arrow page-btn-disabled" aria-hidden="true">›</span>
+            {% endif %}
+
+        </nav>
+    {% endif %}
     {# ================================================ #}
 
 
-    {# ===== フィルターなし（トップ表示）のときだけ hero・howtoを表示 ===== #}
-    {% if not selected_genre and not search_word and not selected_hashtag %}
+    {# ===== フィルターなし かつ 1ページ目のときだけ hero を表示 ===== #}
+    {% if not selected_genre and not search_word and not selected_hashtag and pagination.page == 1 %}
         {% include 'hero.html' %}
     {% endif %}
     {# ======================================================================= #}
 
 </div>
-
-<script>
-/* ============================================================
-   記事一覧のページ送り（ページ番号方式）
-   ------------------------------------------------------------
-   従来の「もっと見る／表示を減らす」による追加表示方式は、
-   ページが縦に伸び続けてスクロール量が増えてしまい、
-   どこからが新しく表示された記事なのか分かりにくいという
-   課題があったため、1ページあたり PAGE_SIZE 件ずつを表示し、
-   下部のページ番号ボタンで表示を「切り替える」方式に変更した。
-
-   記事自体はこれまでと同様にサーバー側で全件レンダリングされており、
-   JS側では表示するカードを display: none / '' で切り替えているだけ
-   （サーバーへの再リクエストは発生しない）。
-
-   ページを切り替えた際は、ユーザーが毎回一覧の先頭まで
-   手動でスクロールし直す必要がないよう、
-   #index-articles-anchor へ自動でスムーズスクロールする。
-   ============================================================ */
-(function () {
-    var PAGE_SIZE = 4;   // 1ページあたりの表示件数
-
-    var cards = Array.from(document.querySelectorAll('.page-wrapper > article.post-card'));
-    var total = cards.length;
-    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    var currentPage = 1;
-
-    var nav    = document.getElementById('index-pagination');
-    var anchor = document.getElementById('index-articles-anchor');
-
-    function showPage(page, opts) {
-        opts = opts || {};
-        currentPage = Math.min(Math.max(page, 1), totalPages);
-
-        var start = (currentPage - 1) * PAGE_SIZE;
-        var end   = start + PAGE_SIZE;
-
-        cards.forEach(function (card, i) {
-            card.style.display = (i >= start && i < end) ? '' : 'none';
-        });
-
-        renderPagination();
-
-        if (opts.scroll && anchor) {
-            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    function makeButton(label, extraClass) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'page-btn' + (extraClass ? ' ' + extraClass : '');
-        btn.textContent = label;
-        return btn;
-    }
-
-    function renderPagination() {
-        if (!nav) return;
-        nav.innerHTML = '';
-
-        /* 1ページに収まる件数しかない場合はページ送り自体を表示しない */
-        if (totalPages <= 1) {
-            nav.style.display = 'none';
-            return;
-        }
-        nav.style.display = 'flex';
-
-        /* 前へ */
-        var prevBtn = makeButton('‹', 'page-btn-arrow');
-        prevBtn.setAttribute('aria-label', '前のページ');
-        prevBtn.disabled = currentPage === 1;
-        prevBtn.addEventListener('click', function () {
-            showPage(currentPage - 1, { scroll: true });
-        });
-        nav.appendChild(prevBtn);
-
-        /* ページ番号 1, 2, 3 ... */
-        for (var p = 1; p <= totalPages; p++) {
-            (function (pageNum) {
-                var btn = makeButton(String(pageNum), pageNum === currentPage ? 'active' : '');
-                btn.setAttribute('aria-current', pageNum === currentPage ? 'page' : 'false');
-                btn.addEventListener('click', function () {
-                    showPage(pageNum, { scroll: true });
-                });
-                nav.appendChild(btn);
-            })(p);
-        }
-
-        /* 次へ */
-        var nextBtn = makeButton('›', 'page-btn-arrow');
-        nextBtn.setAttribute('aria-label', '次のページ');
-        nextBtn.disabled = currentPage === totalPages;
-        nextBtn.addEventListener('click', function () {
-            showPage(currentPage + 1, { scroll: true });
-        });
-        nav.appendChild(nextBtn);
-    }
-
-    showPage(1);
-})();
-</script>
 
 {% endblock %}
 </file>

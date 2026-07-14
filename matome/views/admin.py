@@ -954,13 +954,22 @@ def mypage():
     """
     マイページの表示（GET）とニックネーム変更（POST）を行う。
 
+    【修正の背景】
+    以前この関数は request.args の search / genre を読んで自分の記事を
+    絞り込み、selected_genre / search_word をテンプレートに渡していたが、
+    mypage.html には検索フォームが存在せず、それらの変数を使う箇所も
+    なかったため、UI からは一切トリガーできないデッドコードだった。
+    混乱と保守コストの原因になるため、到達不能な絞り込み処理を削除し、
+    「自分の投稿を新しい順に一覧表示する」というマイページ本来の役割に絞った。
+    （将来マイページ内検索を実装する場合は、mypage.html に検索フォームを
+      追加したうえで、この関数に絞り込みを再導入すること）
+
     【処理の流れ】
       STEP 1. 管理者チェック
       STEP 2. [POST] ニックネームを更新して commit → マイページへリダイレクト
-      STEP 3. [GET]  URL クエリパラメータ（search / genre）を取得
-      STEP 4. [GET]  自分の記事を対象にクエリを構築・絞り込み
-      STEP 5. [GET]  使用ジャンル一覧を生成（'未分類' は末尾へ）
-      STEP 6. [GET]  mypage.html をレンダリング
+      STEP 3. [GET]  自分の記事を作成日時の降順で取得
+      STEP 4. [GET]  使用ジャンル一覧を生成（'未分類' は末尾へ）
+      STEP 5. [GET]  mypage.html をレンダリング
     """
     # ------------------------------------------------------------------
     # STEP 1. 管理者チェック
@@ -980,30 +989,17 @@ def mypage():
         return redirect('/mypage')
 
     # ------------------------------------------------------------------
-    # STEP 3. GET: URL クエリパラメータの取得
+    # STEP 3. GET: 自分の記事を作成日時の降順（新しい記事が先頭）で取得
     # ------------------------------------------------------------------
-    # マイページ内でも絞り込み・検索ができる（URL クエリパラメータを使用）
-    search_word    = request.args.get('search')
-    selected_genre = request.args.get('genre')
-
-    # ------------------------------------------------------------------
-    # STEP 4. 自分の記事だけを対象にクエリを構築・絞り込み
-    # ------------------------------------------------------------------
-    posts_query = Post.query.filter(Post.user_id == current_user.id)
-
-    # (4-1) キーワード検索（タイトルに含まれているか）
-    if search_word and search_word.strip():
-        posts_query = posts_query.filter(Post.title.contains(search_word.strip()))
-
-    # (4-2) ジャンル絞り込み
-    if selected_genre:
-        posts_query = posts_query.filter(Post.genre == selected_genre)
-
-    # (4-3) 作成日時の降順（新しい記事が先頭）で取得
-    user_posts = posts_query.order_by(Post.created_at.desc()).all()
+    user_posts = (
+        Post.query
+        .filter(Post.user_id == current_user.id)
+        .order_by(Post.created_at.desc())
+        .all()
+    )
 
     # ------------------------------------------------------------------
-    # STEP 5. 使用ジャンル一覧の生成（サイドバー表示用）
+    # STEP 4. 使用ジャンル一覧の生成（サイドバー表示用）
     # ------------------------------------------------------------------
     # DB クエリで DISTINCT なジャンル名を取得し、
     # Python 側で set → sorted で整理する。
@@ -1023,12 +1019,10 @@ def mypage():
         user_genres.append('未分類')
 
     # ------------------------------------------------------------------
-    # STEP 6. テンプレートのレンダリング
+    # STEP 5. テンプレートのレンダリング
     # ------------------------------------------------------------------
     return render_template(
         'mypage.html',
-        posts          = user_posts,
-        user_genres    = user_genres,
-        selected_genre = selected_genre,
-        search_word    = search_word,
+        posts       = user_posts,
+        user_genres = user_genres,
     )
