@@ -159,9 +159,9 @@
         </div>
         <div id="hashtag-preview" class="hashtag-preview-area"></div>
 
-        <!-- ===== 画像アップロード ===== -->
+        <!-- ===== 画像アップロード（本文中に載せる画像） ===== -->
         <p>
-            <label>画像</label>
+            <label>画像（本文中に [imgN] で挿入されます）</label>
         </p>
 
         <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
@@ -193,8 +193,42 @@
             <div id="preview-list"></div>
         </div>
 
+        {# ============================================================
+           【機能追加】サムネイル専用画像のアップロード
+           ------------------------------------------------------------
+           以前は「本文画像の先頭」がサムネイルに流用されていたが、
+           本文に載せたい画像とサムネイルにしたい画像は別なので、
+           サムネイルを個別にアップロードできるようにした。
+           アップロードしない場合は下のデフォルトサムネイルが使われる。
+           ============================================================ #}
         <p>
-            <label for="default_thumb_select">デフォルトサムネイル画像を選択（画像アップロードをしない場合）</label>
+            <label>サムネイル画像（任意）</label>
+            ※記事一覧などで表示されるサムネイルを個別にアップロードできます。<br>
+            　アップロードしない場合は、下で選択したデフォルトサムネイルが使用されます。
+        </p>
+
+        <!-- サムネイル選択用の隠し input（ボタンから .click() で起動） -->
+        <input type="file" name="thumbnail_img" id="thumbnailUpload" accept="image/*"
+               onchange="onThumbnailSelect(this)" class="img-input-hidden">
+
+        <div class="img-upload-btn-row">
+            <button type="button" class="img-upload-btn img-upload-btn--one"
+                    onclick="document.getElementById('thumbnailUpload').click()">
+                🖼️ サムネイル画像を選択
+            </button>
+        </div>
+
+        <!-- サムネイルプレビュー（初期非表示。JS が style.display を切り替える） -->
+        <div id="thumbnail-preview-area" style="display: none; margin-bottom: 20px;">
+            <div class="preview-item preview-item--thumb">
+                <img id="thumbnail-preview-img" src="" alt="サムネイルプレビュー">
+                <div class="preview-label">アップロードするサムネイル</div>
+                <button type="button" class="preview-delete-btn" onclick="clearThumbnail()">✕ 選択を解除</button>
+            </div>
+        </div>
+
+        <p>
+            <label for="default_thumb_select">デフォルトサムネイル画像を選択（サムネイル画像をアップロードしない場合）</label>
             <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                 <option value="none" selected>-- 選択なし（システム共通のデフォルトになります） --</option>
                 <option value="thumb_option1.jpg">選択肢1：趣味（thumb_option1.jpg）</option>
@@ -378,6 +412,33 @@ function renderPreviews() {
     });
 
     rebuildImgBtns(_fileList.length);
+}
+
+/* =========================================================
+   【機能追加】サムネイル専用画像のプレビュー
+   =========================================================
+   本文画像とは独立した 1 枚のサムネイルを選択・プレビューする。
+   input[name="thumbnail_img"] は単一ファイルなので、
+   File オブジェクトの管理配列は不要で、選択されたファイルを
+   そのままプレビュー表示する（送信は input が担う）。
+   ========================================================= */
+function onThumbnailSelect(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('thumbnail-preview-img').src = e.target.result;
+        document.getElementById('thumbnail-preview-area').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+/** サムネイルの選択を解除してプレビューを消す。 */
+function clearThumbnail() {
+    var input = document.getElementById('thumbnailUpload');
+    input.value = '';
+    document.getElementById('thumbnail-preview-img').src = '';
+    document.getElementById('thumbnail-preview-area').style.display = 'none';
 }
 
 /* =========================================================

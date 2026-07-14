@@ -210,7 +210,7 @@
 
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
-            <label>画像を変更する</label>
+            <label>画像を変更する（本文中に載せる画像）</label>
             <p class="img-change-note">
                 ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。<br>
                 　「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
@@ -245,8 +245,61 @@
                 <div id="preview-list"></div>
             </div>
 
+            {# ============================================================
+               【機能追加】サムネイル専用画像のアップロード・変更・削除
+               ------------------------------------------------------------
+               サムネイルは本文画像（img_name）とは独立して 1 枚管理する。
+                 ・現在のサムネイルがある場合は表示し、個別削除できる
+                 ・新しいサムネイルを選ぶと、更新後に差し替えられる
+                 ・どちらもなければ下のデフォルトサムネイルが使われる
+               ============================================================ #}
             <p>
-                <label for="default_thumb_select">デフォルトサムネイル画像を選択</label>
+                <label>サムネイル画像（任意）</label>
+                ※記事一覧などで表示されるサムネイルを個別にアップロードできます。<br>
+                　新しく選択すると現在のサムネイルは置き換えられます。<br>
+                　サムネイルがない場合は、下で選択したデフォルトサムネイルが使用されます。
+            </p>
+
+            {# 現在のサムネイル（既存）— 存在するときのみ表示 #}
+            {% if post.thumbnail_img %}
+                {# keep_thumbnail: '1'=残す（デフォルト） / '0'=削除予定。
+                   サーバー側 update() の STEP 5.5 がこの値を見て削除判定する #}
+                <input type="hidden" name="keep_thumbnail" id="keep_thumbnail" value="1">
+                <div id="current-thumbnail-area">
+                    <div class="preview-item preview-item--thumb" id="current-thumbnail-item">
+                        <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}"
+                             alt="現在のサムネイル">
+                        <div class="preview-label">現在のサムネイル</div>
+                        <button type="button"
+                                class="preview-delete-btn"
+                                id="thumbnail-delete-btn"
+                                onclick="toggleThumbnailDelete()">✕ このサムネイルを削除</button>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- サムネイル選択用の隠し input（ボタンから .click() で起動） -->
+            <input type="file" name="thumbnail_img" id="thumbnailUpload" accept="image/*"
+                   onchange="onThumbnailSelect(this)" class="img-input-hidden">
+
+            <div class="img-upload-btn-row">
+                <button type="button" class="img-upload-btn img-upload-btn--one"
+                        onclick="document.getElementById('thumbnailUpload').click()">
+                    🖼️ サムネイル画像を選択
+                </button>
+            </div>
+
+            <!-- 新規サムネイルのプレビュー（初期非表示。JS が style.display を切り替える） -->
+            <div id="thumbnail-preview-area" style="display: none; margin-bottom: 20px;">
+                <div class="preview-item preview-item--thumb">
+                    <img id="thumbnail-preview-img" src="" alt="サムネイルプレビュー">
+                    <div class="preview-label">新しいサムネイル（更新後に差し替え）</div>
+                    <button type="button" class="preview-delete-btn" onclick="clearThumbnail()">✕ 選択を解除</button>
+                </div>
+            </div>
+
+            <p>
+                <label for="default_thumb_select">デフォルトサムネイル画像を選択（サムネイル画像がない場合）</label>
                 <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                     <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
                     <option value="thumb_option1.jpg"  {% if post.default_thumb == 'thumb_option1.jpg'  %}selected{% endif %}>選択肢1：趣味</option>
@@ -418,6 +471,53 @@ function renderPreviews() {
     });
 
     rebuildImgBtns(_fileList.length);
+}
+
+
+/* =========================================================
+   【機能追加】サムネイル専用画像のプレビュー・削除
+   =========================================================
+   ・onThumbnailSelect : 新しいサムネイルを選択したときのプレビュー
+   ・clearThumbnail    : 選択した新規サムネイルを取り消す
+   ・toggleThumbnailDelete : 現在のサムネイルを「削除予定」にする／取り消す
+     （hidden の keep_thumbnail を '0'/'1' で切り替え、
+       実際の削除は「更新」ボタン押下後にサーバー側で行われる）
+   ========================================================= */
+function onThumbnailSelect(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('thumbnail-preview-img').src = e.target.result;
+        document.getElementById('thumbnail-preview-area').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearThumbnail() {
+    var input = document.getElementById('thumbnailUpload');
+    input.value = '';
+    document.getElementById('thumbnail-preview-img').src = '';
+    document.getElementById('thumbnail-preview-area').style.display = 'none';
+}
+
+function toggleThumbnailDelete() {
+    var flag = document.getElementById('keep_thumbnail');
+    var item = document.getElementById('current-thumbnail-item');
+    var btn  = document.getElementById('thumbnail-delete-btn');
+    if (!flag) return;
+
+    if (flag.value === '0') {
+        /* --- 削除の取り消し --- */
+        flag.value = '1';
+        item.style.opacity = '';
+        btn.textContent = '✕ このサムネイルを削除';
+    } else {
+        /* --- 削除予定としてマーク --- */
+        flag.value = '0';
+        item.style.opacity = '0.45';
+        btn.textContent = '↩ 削除を取り消す';
+    }
 }
 
 

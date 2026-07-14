@@ -114,6 +114,9 @@ class Post(db.Model):
     # img_name: アップロード画像のファイル名をカンマ区切りで保存
     #   例: "uuid1.jpg,uuid2.png"
     #   複数画像に対応するため 1 カラムにまとめて格納している
+    #   （記事本文の [imgN] タグに対応する「本文中の画像」であり、
+    #     サムネイルとは無関係。以前は先頭画像がサムネイルに流用されていたが
+    #     現在は thumbnail_img で独立管理する）
     #
     #   【バグ修正】String(100) → Text に変更
     #   UUID 化したファイル名は 1 件あたり約 40 文字（UUID 36 文字 + 拡張子）あり、
@@ -126,6 +129,20 @@ class Post(db.Model):
     # default_thumb: 画像未アップロード時に使うデフォルトサムネイルのファイル名
     #   例: "thumb_option1.jpg"（static/img/thbnails/ 以下に配置済みの画像）
     default_thumb = db.Column(db.String(100), nullable=True)
+
+    # thumbnail_img: サムネイル専用にアップロードされた画像のファイル名
+    #   例: "uuid.jpg"（static/img/posts/ 以下に UUID 名で保存）
+    #
+    #   【機能追加】サムネイル画像の個別アップロードに対応するため新設。
+    #   以前は「本文画像（img_name）の先頭」がそのままサムネイルに使われていたが、
+    #   本文中に載せたい画像とサムネイルにしたい画像は必ずしも一致しないため、
+    #   サムネイル専用の 1 枚をこのカラムで独立して管理する。
+    #
+    #   サムネイル表示の優先順位（index.html / detail.html / mypage.html）:
+    #     1. thumbnail_img（アップロードされた専用サムネイル）
+    #     2. default_thumb（プリセットから選択したデフォルトサムネイル）
+    #     3. system-default.jpg（システム共通のデフォルト）
+    thumbnail_img = db.Column(db.String(100), nullable=True)
 
     # img_captions: 各画像のキャプションをタブ区切りで保存
     #   例: "東京タワー全景\t夜景のアップ"

@@ -88,9 +88,12 @@
                     <li class="related-item">
                         <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
                             <div class="related-thumb">
-                                {% if rel.img_name %}
-                                    {% set first_img = rel.img_name.split(',')[0] %}
-                                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}"
+                                {# サムネイル表示の優先順位:
+                                   1. thumbnail_img（アップロードされた専用サムネイル）
+                                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
+                                   3. system-default.jpg（システム共通のデフォルト） #}
+                                {% if rel.thumbnail_img %}
+                                    <img src="{{ url_for('static', filename='img/posts/' + rel.thumbnail_img) }}"
                                          alt="{{ rel.title }}" loading="lazy">
                                 {% elif rel.default_thumb %}
                                     <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"

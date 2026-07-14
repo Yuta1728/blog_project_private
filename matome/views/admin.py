@@ -26,6 +26,7 @@
 #   [6] 画像ファイル操作ヘルパー
 #        (6-1) _save_images()            : 検証 + 保存（アトミック保証）
 #        (6-2) _delete_images()          : 実ファイルの物理削除
+#        (6-3) _save_thumbnail()         : サムネイル専用画像の検証 + 保存
 #   [7] create()  : 新規投稿ビュー
 #   [8] update()  : 記事編集ビュー
 #   [9] delete()  : 記事削除ビュー
@@ -33,10 +34,8 @@
 #
 # 【処理フロー図（投稿・編集・削除に共通する整合性ルール）】
 #
-#   画像ファイルと DB の不整合を防ぐため、次の順序を厳守している:
-#
-#   新規保存: _save_images()（全成功 or 全掃除のアトミック動作）
-#        │
+#   画像ファイル（本文画像 + サムネイル）を保存
+#        │        （全成功 or 全掃除のアトミック動作）
 #        ▼
 #   DB 変更をセッションに積む（add / 属性変更 / delete）
 #        │
@@ -303,7 +302,7 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     all_genres_set.discard('未分類')
 
     # ------------------------------------------------------------------
-    # la STEP 6. 並べ替えて返す
+    # STEP 6. 並べ替えて返す
     # ------------------------------------------------------------------
     # 【バグ修正】ソートキーを hash(x) からタプルキーに変更
     #
@@ -434,6 +433,8 @@ def _delete_images(img_name_str: str) -> None:
 
     記事削除・画像更新時に呼ばれ、サーバー上の孤立ファイルを防ぐ。
     ファイルが存在しない場合はスキップする（エラーにしない）。
+    サムネイル専用画像（thumbnail_img）も同じ static/img/posts/ 配下に
+    保存されるため、この関数でそのまま削除できる。
 
     【バグ修正に伴う運用ルール】
     この関数は必ず「DB の commit が成功した後」に呼ぶこと。
@@ -460,6 +461,29 @@ def _delete_images(img_name_str: str) -> None:
         if os.path.exists(img_path):
             os.remove(img_path)
 
+
+# ----------------------------------------------------------------------
+# (6-3) サムネイル専用画像の検証 + 保存
+# ----------------------------------------------------------------------
+def _save_thumbnail(file) -> str | None:
+    """
+    サムネイル専用にアップロードされた 1 枚の画像を検証・保存し、
+    保存したファイル名を返す。ファイル未選択なら None を返す。
+
+    内部的には本文画像と同じ _save_images() を単一要素リストで呼び出し、
+    拡張子チェック・MIME タイプチェック・UUID 命名・アトミック保証を
+    そのまま流用する（保存先も static/img/posts/ で共通）。
+
+    @param file: request.files.get('thumbnail_img') で取得したファイルオブジェクト
+    @return: 保存したファイル名（未選択なら None）
+    @raises ValueError: 検証エラー時（拡張子不正・MIME タイプ不正）
+    """
+    if not file or file.filename == '':
+        return None
+    saved = _save_images([file])
+    return saved[0] if saved else None
+
+
 # ======================================================================
 # [7] 新規投稿
 # ======================================================================
@@ -474,7 +498,9 @@ def create():
       STEP 1. 管理者チェック（管理者以外はトップへ）
       STEP 2. [POST] フォーム入力値を取得・バリデーション
       STEP 3. [POST] ジャンル・デフォルトサムネイルを決定
-      STEP 4. [POST] 画像を検証・保存（失敗時はフラッシュしてリダイレクト）
+      STEP 4. [POST] 本文画像を検証・保存（失敗時はフラッシュしてリダイレクト）
+      STEP 4.5. [POST] サムネイル専用画像を検証・保存
+                （失敗時は本文画像を掃除してからリダイレクト）
       STEP 5. [POST] Post オブジェクトを作成してセッションに追加
       STEP 6. [POST] flush() で post.id を確定 → ハッシュタグを同期
       STEP 7. [POST] commit（失敗時は rollback + 保存済み画像を掃除）
@@ -507,13 +533,13 @@ def create():
         # ジャンルの優先順位: 新規入力 > プリセット選択 > デフォルト（未分類）
         final_genre = new_genre if new_genre else (selected_genre or '未分類')
 
-        # デフォルトサムネイル: フォームで 'none' が選ばれた場合は NULL（サムネイル画像なし）
+        # デフォルトサムネイル: フォームで 'none' が選ばれた場合は NULL（デフォルトサムネイルなし）
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':
             selected_default_thumb = None
 
         # --------------------------------------------------------------
-        # STEP 4. 画像の保存
+        # STEP 4. 本文画像の保存
         # --------------------------------------------------------------
         # _save_images() は検証エラー時に ValueError を raise するので try/except で受ける
         try:
@@ -529,6 +555,19 @@ def create():
         captions         = parse_img_captions(len(filename_list))
         img_captions_str = '\t'.join(captions) if captions else None
 
+        # --------------------------------------------------------------
+        # STEP 4.5. サムネイル専用画像の保存
+        # --------------------------------------------------------------
+        # 本文画像とは独立した 1 枚のサムネイルをアップロードできる。
+        # 検証エラー時は、直前で保存した本文画像が孤立しないよう掃除してから戻る。
+        try:
+            thumbnail_name = _save_thumbnail(request.files.get('thumbnail_img'))
+        except ValueError as e:
+            if img_name_str:
+                _delete_images(img_name_str)
+            flash(str(e), 'danger')
+            return redirect('/create')
+
         # 公開設定: hidden フィールド is_published の値が 'true' なら True
         is_published = request.form.get('is_published') == 'true'
 
@@ -542,6 +581,7 @@ def create():
             user_id       = current_user.id,
             img_name      = img_name_str,
             default_thumb = selected_default_thumb,
+            thumbnail_img = thumbnail_name,
             genre         = final_genre,
             is_published  = is_published,
             img_captions  = img_captions_str,
@@ -565,13 +605,16 @@ def create():
         # 【バグ修正】commit 失敗時に保存済みファイルを掃除する
         # 画像ファイルは commit より先にディスク保存されるため、
         # commit が失敗した場合はそのままだと孤立ファイルが残る。
-        # rollback 後に今回保存したファイルを削除して整合性を保つ。
+        # rollback 後に今回保存したファイル（本文画像・サムネイル）を
+        # 削除して整合性を保つ。
         try:
             db.session.commit()  # ここで全変更を DB に書き込む
         except Exception:
             db.session.rollback()
             if img_name_str:
                 _delete_images(img_name_str)
+            if thumbnail_name:
+                _delete_images(thumbnail_name)
             flash('投稿の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
             return redirect('/create')
 
@@ -599,7 +642,8 @@ def update(id):
       STEP 2. [GET]  既存データ（ジャンル・タグ・キャプション）を整えてフォーム表示
       STEP 3. [POST] タイトル・本文のバリデーションと基本項目の更新
       STEP 4. [POST] ハッシュタグの同期 + 孤立タグの削除予約
-      STEP 5. [POST] 画像の更新（3 パターン: A 差し替え / B 個別削除 / C キャプションのみ）
+      STEP 5. [POST] 本文画像の更新（3 パターン: A 差し替え / B 個別削除 / C キャプションのみ）
+      STEP 5.5. [POST] サムネイル専用画像の更新（差し替え / 削除 / 維持）
       STEP 6. [POST] 更新日時をセットして commit
               （失敗時は rollback + 新規保存ファイルを掃除）
       STEP 7. [POST] commit 成功後に削除対象の旧ファイルを物理削除
@@ -666,7 +710,7 @@ def update(id):
     delete_orphaned_hashtags()
 
     # ------------------------------------------------------------------
-    # STEP 5. 画像の更新
+    # STEP 5. 本文画像の更新
     # ------------------------------------------------------------------
     # 3 つのパターンを扱う:
     #   A) 新しい画像が選択された          → 全画像を新画像で差し替え
@@ -729,9 +773,43 @@ def update(id):
 
         # 残った画像だけで DB 上の参照を再構築する。
         # 全画像を削除した場合は None にして「画像なし記事」に戻す
-        # （一覧・詳細ではデフォルトサムネイル表示に自然にフォールバックする）。
+        # （一覧・詳細ではサムネイルは thumbnail_img / default_thumb に
+        #   自然にフォールバックする）。
         post.img_name     = ','.join(kept_imgs) if kept_imgs else None
         post.img_captions = '\t'.join(kept_captions) if kept_imgs else None
+
+    # ------------------------------------------------------------------
+    # STEP 5.5. サムネイル専用画像の更新
+    # ------------------------------------------------------------------
+    # 3 パターン:
+    #   ・新しいサムネイルがアップロードされた → 差し替え（旧サムネイルは commit 後に削除）
+    #   ・keep_thumbnail == '0'（削除ボタン ON）→ 現在のサムネイルを削除
+    #   ・それ以外                               → 現状維持
+    #
+    # 新規サムネイルのアップロードが最優先。アップロードがあれば
+    # keep_thumbnail フラグ（削除指定）は無視される（差し替え優先）。
+    old_thumbnail_name  = None   # commit 成功後に物理削除する旧サムネイル
+    new_thumbnail_saved = None   # commit 失敗時に掃除する新規保存サムネイル
+
+    thumb_file = request.files.get('thumbnail_img')
+    if thumb_file and thumb_file.filename != '':
+        # --- サムネイルの差し替え ---
+        try:
+            new_thumbnail_saved = _save_thumbnail(thumb_file)
+        except ValueError as e:
+            # 本文画像で今回新規保存したものがあれば掃除してから戻る
+            if new_filenames:
+                _delete_images(','.join(new_filenames))
+            flash(str(e), 'danger')
+            return redirect(f'/{id}/update')
+
+        old_thumbnail_name = post.thumbnail_img   # 旧サムネイルを退避（commit 後に削除）
+        post.thumbnail_img = new_thumbnail_saved
+
+    elif request.form.get('keep_thumbnail', '1') == '0':
+        # --- 現在のサムネイルを削除 ---
+        old_thumbnail_name = post.thumbnail_img
+        post.thumbnail_img = None
 
     # ------------------------------------------------------------------
     # STEP 6. 更新日時をセットして commit
@@ -748,15 +826,20 @@ def update(id):
         # rollback だけで完全に元の状態に戻る（掃除対象なし）。
         if new_filenames:
             _delete_images(','.join(new_filenames))
+        if new_thumbnail_saved:
+            _delete_images(new_thumbnail_saved)
         flash('更新の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
         return redirect(f'/{id}/update')
 
     # ------------------------------------------------------------------
     # STEP 7. commit 成功 → ここで初めて削除対象のファイルを物理削除する
     # ------------------------------------------------------------------
-    # （差し替え時は旧全画像、個別削除時は削除予定の画像のみ）
+    # （本文画像: 差し替え時は旧全画像、個別削除時は削除予定の画像のみ）
     if old_img_name:
         _delete_images(old_img_name)
+    # （サムネイル: 差し替え時 or 削除指定時の旧サムネイル）
+    if old_thumbnail_name:
+        _delete_images(old_thumbnail_name)
 
     # ------------------------------------------------------------------
     # STEP 8. 記事詳細ページへリダイレクト
@@ -790,7 +873,7 @@ def delete(id):
         return redirect('/')
 
     # ------------------------------------------------------------------
-    # STEP 2. 削除対象の画像名を退避
+    # STEP 2. 削除対象の画像名を退避（本文画像 + サムネイル）
     # ------------------------------------------------------------------
     # 【バグ修正】画像ファイルの物理削除を DB commit 成功後に移動
     #
@@ -799,7 +882,15 @@ def delete(id):
     # という不整合が発生し得た。
     # 削除対象の画像名を退避してから DB 削除を commit し、
     # 成功した場合にのみ実ファイルを削除する。
-    img_name_to_delete = post.img_name  # commit 成功後に物理削除するため退避
+    #
+    # 本文画像（img_name）とサムネイル専用画像（thumbnail_img）は
+    # どちらも static/img/posts/ 配下にあるため、まとめて退避する。
+    files_to_delete = []
+    if post.img_name:
+        files_to_delete.append(post.img_name)
+    if post.thumbnail_img:
+        files_to_delete.append(post.thumbnail_img)
+    img_name_to_delete = ','.join(files_to_delete) if files_to_delete else None
 
     # ------------------------------------------------------------------
     # STEP 3. ハッシュタグのリレーションをクリア + 孤立タグの削除予約

@@ -51,9 +51,12 @@
     {% for post in posts %}
         <article class="post-card">
             <div class="post-thumbnail">
-                {% if post.img_name %}
-                    {% set first_img = post.img_name.split(',')[0] %}
-                    <img src="{{ url_for('static', filename='img/posts/' + first_img) }}" alt="{{ post.title }}" class="thumb-img">
+                {# サムネイル表示の優先順位:
+                   1. thumbnail_img（アップロードされた専用サムネイル）
+                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
+                   3. system-default.jpg（システム共通のデフォルト） #}
+                {% if post.thumbnail_img %}
+                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img">
                 {% elif post.default_thumb %}
                     <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
                 {% else %}
