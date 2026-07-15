@@ -55,7 +55,6 @@ from datetime import datetime
 from urllib.parse import urlparse  # Open Redirect 対策のための URL パース
 import os
 import uuid
-from PIL import Image
 import pytz
 import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
 from extensions import db
