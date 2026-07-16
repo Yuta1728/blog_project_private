@@ -12,9 +12,10 @@
 #     /mypage          → マイページ（投稿一覧・ニックネーム変更）
 #
 # 【このファイルの構成（目次）】
-#   [1] 定数定義（ファイルアップロード検証用ホワイトリスト）
+#   [1] 定数定義（ファイルアップロード検証・画像最適化のパラメータ）
 #   [2] ファイル検証ヘルパー
 #        (2-1) allowed_file()            : 拡張子チェック
+#        (2-2) _validate_image()         : 拡張子 + MIME の多層検証
 #   [3] ハッシュタグ関連ヘルパー
 #        (3-1) parse_hashtag_input()     : 入力文字列 → タグ名リスト
 #        (3-2) sync_hashtags()           : Post とタグリストの同期
@@ -24,17 +25,32 @@
 #   [5] ジャンルリスト生成ヘルパー
 #        (5-1) _get_genre_list()         : 投稿フォームのジャンル選択肢
 #   [6] 画像ファイル操作ヘルパー
-#        (6-1) _save_images()            : 検証 + 保存（アトミック保証）
-#        (6-2) _delete_images()          : 実ファイルの物理削除
-#        (6-3) _save_thumbnail()         : サムネイル専用画像の検証 + 保存
+#        (6-1) _optimize_body_image_save(): 本文画像を Pillow で縮小・再圧縮して保存
+#        (6-2) _save_images()            : 検証 + 最適化保存（アトミック保証）
+#        (6-3) _delete_images()          : 実ファイルの物理削除
+#        (6-4) _save_thumbnail()         : サムネイル専用画像を WebP 縮小版で保存
 #   [7] create()  : 新規投稿ビュー
 #   [8] update()  : 記事編集ビュー
 #   [9] delete()  : 記事削除ビュー
 #   [10] mypage() : マイページビュー
 #
+# 【画像最適化の方針（このリビジョンでの追加）】
+#   従来 _save_images() は原本を UUID 名で保存するだけで、リサイズも圧縮も
+#   行っていなかった。一覧サムネイルは CSS 上 260×158px 程度なのに、
+#   数 MB の原寸画像がそのまま配信され、読み込み速度を大きく損ねていた。
+#
+#   対策として Pillow でアップロード時に最適化する:
+#     ・本文画像       … 長辺を BODY_IMAGE_MAX_EDGE（既定 1600px）まで縮小し再圧縮。
+#                         形式は原則そのまま（JPEG/PNG/WebP/GIF）を尊重する。
+#                         アニメーション GIF は劣化・静止化を避けるため原本のまま保存。
+#     ・サムネイル画像 … 幅 THUMBNAIL_MAX_WIDTH（既定 400px）の WebP に変換して保存。
+#                         thumbnail_img はこの軽量版ファイルを指す。
+#   いずれも「上限を超える場合のみ縮小（拡大はしない）」で、EXIF の向き情報を
+#   反映してから縮小する（スマホ写真の回転ズレ対策）。
+#
 # 【処理フロー図（投稿・編集・削除に共通する整合性ルール）】
 #
-#   画像ファイル（本文画像 + サムネイル）を保存
+#   画像ファイル（本文画像 + サムネイル）を最適化して保存
 #        │        （全成功 or 全掃除のアトミック動作）
 #        ▼
 #   DB 変更をセッションに積む（add / 属性変更 / delete）
@@ -57,6 +73,7 @@ import os
 import uuid
 import pytz
 import filetype    # ファイルの実際の MIME タイプを判定するライブラリ（拡張子偽装の検出）
+from PIL import Image, ImageOps  # アップロード画像の縮小・再圧縮に使用
 from extensions import db
 from models import Post, Hashtag
 from constants import DEFAULT_GENRES
@@ -64,9 +81,16 @@ import config
 
 admin_bp = Blueprint('admin', __name__)
 
+# Pillow の高品質リサンプリング定数。
+# Pillow 9.1 以降は Image.Resampling 名前空間、それ以前はトップレベル定数。
+try:
+    _RESAMPLE = Image.Resampling.LANCZOS
+except AttributeError:  # Pillow < 9.1 用のフォールバック
+    _RESAMPLE = Image.LANCZOS
+
 
 # ======================================================================
-# [1] 定数定義: ファイルアップロード検証用ホワイトリスト
+# [1] 定数定義: アップロード検証用ホワイトリスト + 画像最適化パラメータ
 # ======================================================================
 
 # 拡張子チェック（第 1 層の防御）: ファイル名の末尾を確認
@@ -75,6 +99,16 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 # MIME タイプチェック（第 2 層の防御）: ファイルの先頭バイトを読んで実際の形式を確認
 # 拡張子を偽装した悪意あるファイル（例: malware.exe を image.jpg にリネーム）を弾く
 ALLOWED_MIME_TYPES  = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+
+# ---- 画像最適化パラメータ --------------------------------------------
+# 本文画像: 長辺がこの値（px）を超える場合のみ、この値まで縮小する（拡大はしない）
+BODY_IMAGE_MAX_EDGE = 1600
+# サムネイル専用画像: 幅がこの値（px）を超える場合のみ、この幅まで縮小して WebP 化する
+THUMBNAIL_MAX_WIDTH = 400
+# 再エンコード時の品質（0〜100。大きいほど高画質・大サイズ）
+JPEG_QUALITY       = 85
+WEBP_QUALITY_BODY  = 82
+WEBP_QUALITY_THUMB = 80
 
 
 # ======================================================================
@@ -91,6 +125,34 @@ def allowed_file(filename: str) -> bool:
     （例: 'photo.jpg' → True, 'script.php' → False）
     """
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# ----------------------------------------------------------------------
+# (2-2) 拡張子 + MIME の多層検証
+# ----------------------------------------------------------------------
+def _validate_image(file) -> None:
+    """
+    アップロードされた 1 ファイルを検証する（多層防御）。
+
+    第 1 層: allowed_file() で拡張子チェック
+    第 2 層: filetype.guess() で先頭バイトから MIME タイプを判定（拡張子偽装の検出）
+
+    問題があれば ValueError を送出する。検証後はストリーム位置を先頭へ戻すので、
+    続けて Pillow の Image.open() / file.save() が読み込める状態になる。
+
+    ※ 従来は _save_images() 内にインラインで書かれていた検証を、
+       本文画像・サムネイルの両方から使えるよう関数として切り出した（DRY）。
+    """
+    # 第 1 層: 拡張子
+    if not allowed_file(file.filename):
+        raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
+
+    # 第 2 層: 先頭バイトから MIME タイプを判定
+    header = file.stream.read(2048)
+    file.stream.seek(0)  # ストリーム位置をリセット（後続の読み込みに備える）
+    kind = filetype.guess(header)
+    if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+        raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
 
 
 # ======================================================================
@@ -325,49 +387,111 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
 # ======================================================================
 
 # ----------------------------------------------------------------------
-# (6-1) 検証 + 保存（アトミック保証）
+# (6-1) 本文画像を Pillow で最適化して保存
+# ----------------------------------------------------------------------
+def _optimize_body_image_save(file, save_path: str, ext: str) -> None:
+    """
+    本文画像 1 枚を Pillow で最適化し、save_path に保存する。
+
+    最適化の内容:
+      ・EXIF の向き情報を画素に反映（スマホ写真の回転ズレ対策）
+      ・長辺が BODY_IMAGE_MAX_EDGE を超える場合のみ、その値まで縮小
+        （thumbnail() は縮小専用でアスペクト比を保ち、拡大はしない）
+      ・元の形式を尊重して再エンコード（JPEG は品質指定、PNG/WebP は最適化）
+      ・アニメーション GIF は劣化・静止化を避けるため原本をそのまま保存
+
+    【呼び出し前の前提】
+      file は _validate_image() で検証済みで、ストリーム位置は先頭にある。
+
+    【エラー方針】
+      Pillow の処理に失敗した場合は ValueError に変換して送出する。
+      これにより _save_images() の except（掃除 + 再送出）や、さらに
+      呼び出し元の create()/update()（ValueError を捕捉して flash）の
+      既存経路にそのまま乗せられる（未捕捉例外による 500 を避ける）。
+
+    @param file:      werkzeug の FileStorage（検証済み）
+    @param save_path: 保存先の絶対パス
+    @param ext:       小文字の拡張子（'.jpg' など）
+    @raises ValueError: 画像処理に失敗した場合
+    """
+    ext = ext.lower()
+    try:
+        img = Image.open(file.stream)
+
+        # アニメーション GIF は原本を保存してフレーム・ループを保持する
+        if getattr(img, 'is_animated', False):
+            file.stream.seek(0)
+            file.save(save_path)
+            return
+
+        # 撮影時の回転情報を画素に焼き込む（未指定の画像では実質何もしない）
+        img = ImageOps.exif_transpose(img)
+
+        # 長辺を上限まで縮小（超えていなければそのまま）
+        img.thumbnail((BODY_IMAGE_MAX_EDGE, BODY_IMAGE_MAX_EDGE), _RESAMPLE)
+
+        # 形式ごとに再エンコード
+        if ext in ('.jpg', '.jpeg'):
+            img = img.convert('RGB')  # JPEG は透過を持てないため RGB 化
+            img.save(save_path, 'JPEG', quality=JPEG_QUALITY, optimize=True, progressive=True)
+        elif ext == '.png':
+            img.save(save_path, 'PNG', optimize=True)   # 透過（RGBA/P）を保持
+        elif ext == '.webp':
+            img.save(save_path, 'WEBP', quality=WEBP_QUALITY_BODY, method=6)
+        elif ext == '.gif':
+            img.save(save_path, 'GIF')                  # 静止 GIF
+        else:
+            img.save(save_path)
+    except ValueError:
+        # 既に ValueError のものはそのまま上位へ
+        raise
+    except Exception:
+        # Pillow 由来の各種例外（壊れた画像・巨大画像など）は
+        # ユーザー向けの ValueError に正規化する
+        raise ValueError('画像の処理中にエラーが発生しました。別の画像でお試しください。')
+
+
+# ----------------------------------------------------------------------
+# (6-2) 検証 + 最適化保存（アトミック保証）
 # ----------------------------------------------------------------------
 def _save_images(files: list) -> list[str]:
     """
-    アップロードされた画像ファイルを検証・保存し、
+    アップロードされた本文画像を検証・最適化・保存し、
     保存したファイル名のリストを返す。
 
     【セキュリティの多層防御】
-    第 1 層: allowed_file() で拡張子チェック
-    第 2 層: filetype.guess() で MIME タイプチェック（ファイルの中身を確認）
+    第 1 層: allowed_file() で拡張子チェック（_validate_image 内）
+    第 2 層: filetype.guess() で MIME タイプチェック（_validate_image 内）
     第 3 層: UUID でファイル名を完全にランダム化
     （第 4 層: app.py で 30MB の容量制限）
 
-    【バグ修正】途中の検証エラーで保存済みファイルが孤立する問題を解消
-    従来は「1 枚ずつ検証 → 保存」をループしていたため、
-    例えば 3 枚中 3 枚目で ValueError が発生すると、
-    1〜2 枚目はすでにディスク保存済みのまま例外で処理が中断し、
-    どの記事からも参照されない孤立ファイルとして残っていた。
-    （呼び出し側の create() / update() は例外を捕捉して
-      リダイレクトするだけなので、掃除する機会がなかった）
+    【最適化（このリビジョンの追加）】
+    検証を通過した各ファイルは、原本をそのまま保存するのではなく
+    _optimize_body_image_save() で縮小・再圧縮してから保存する。
+    これにより一覧・詳細の読み込みが軽くなる。
 
-    対策: 例外発生時に、この関数内でそれまでに保存した
-    ファイルを _delete_images() で掃除してから例外を再送出する。
-    これにより「この関数は全ファイルの保存に成功したときだけ
-    ファイルを残す」というアトミックな挙動が保証され、
+    【アトミックな挙動（従来から維持）】
+    途中の検証・処理エラーで例外が発生した場合、この関数内でそれまでに
+    保存したファイルを _delete_images() で掃除してから例外を再送出する。
+    「全ファイルの保存に成功したときだけファイルを残す」ことを保証するため、
     呼び出し側は従来どおり ValueError を捕捉するだけでよい。
 
-    ※ ValueError（検証エラー）だけでなく Exception 全般を対象にするのは、
-       file.save() がディスクフル等で OSError を送出した場合にも
-       同様に途中保存分が孤立し得るため。掃除後は元の例外を
-       そのまま re-raise するので、呼び出し側の挙動は変わらない。
+    保存対象のファイル名は「保存を試みる直前」に filename_list へ登録する。
+    こうすることで、_optimize_body_image_save() が途中まで書き込んで失敗した
+    場合でも、その半端なファイルが確実に掃除対象に含まれる
+    （_delete_images は存在チェック付きなので、未生成でも無害）。
 
     【処理の流れ】
       STEP 1. ファイルを 1 枚ずつ取り出す（未選択はスキップ）
-      STEP 2. 【第 1 層】拡張子チェック → 不正なら ValueError
-      STEP 3. 【第 2 層】先頭バイトから MIME タイプを判定 → 不正なら ValueError
-      STEP 4. 【第 3 層】UUID + 元の拡張子でファイル名を生成して保存
+      STEP 2. _validate_image() で拡張子・MIME を検証
+      STEP 3. UUID + 元の拡張子でファイル名を生成し、掃除対象として登録
+      STEP 4. _optimize_body_image_save() で縮小・再圧縮して保存
       STEP 5. 例外発生時 → 保存済みファイルを掃除してから例外を再送出
       STEP 6. 全成功 → 保存したファイル名のリストを返す
 
     @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
     @return: 保存したファイル名のリスト
-    @raises ValueError: 検証エラー時（拡張子不正・MIME タイプ不正）
+    @raises ValueError: 検証エラー・画像処理エラー時
     """
     filename_list = []
 
@@ -380,38 +504,29 @@ def _save_images(files: list) -> list[str]:
                 continue
 
             # --------------------------------------------------------
-            # STEP 2. 【第 1 層】拡張子チェック
+            # STEP 2. 拡張子 + MIME 検証（失敗時は ValueError）
             # --------------------------------------------------------
-            if not allowed_file(file.filename):
-                raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
+            _validate_image(file)
 
             # 拡張子は検証済みの元ファイル名から直接取得する
             ext = '.' + file.filename.rsplit('.', 1)[1].lower()
 
             # --------------------------------------------------------
-            # STEP 3. 【第 2 層】MIME タイプチェック
-            # --------------------------------------------------------
-            header = file.stream.read(2048)
-            file.stream.seek(0)  # ストリーム位置をリセット（後で save() が読めるように）
-            kind = filetype.guess(header)
-            if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
-                raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
-
-            # --------------------------------------------------------
-            # STEP 4. 【第 3 層】UUID でファイル名をランダム化して保存 
+            # STEP 3. UUID でファイル名をランダム化し、掃除対象へ先行登録
             # --------------------------------------------------------
             filename  = f"{uuid.uuid4()}{ext}"
-            save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
-            file.save(save_path)
             filename_list.append(filename)
+            save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+
+            # --------------------------------------------------------
+            # STEP 4. 縮小・再圧縮して保存
+            # --------------------------------------------------------
+            _optimize_body_image_save(file, save_path, ext)
 
     except Exception:
         # ------------------------------------------------------------
-        # STEP 5. 【バグ修正】途中まで保存したファイルをここで掃除する
+        # STEP 5. 途中まで保存したファイルをここで掃除する
         # ------------------------------------------------------------
-        # filename_list には「保存に成功したファイル名」だけが
-        # 入っているので、それらを削除すれば孤立ファイルは残らない。
-        # 掃除後に元の例外を再送出し、エラー通知は呼び出し側に委ねる。
         if filename_list:
             _delete_images(','.join(filename_list))
         raise
@@ -423,7 +538,7 @@ def _save_images(files: list) -> list[str]:
 
 
 # ----------------------------------------------------------------------
-# (6-2) 実ファイルの物理削除
+# (6-3) 実ファイルの物理削除
 # ----------------------------------------------------------------------
 def _delete_images(img_name_str: str) -> None:
     """
@@ -462,25 +577,66 @@ def _delete_images(img_name_str: str) -> None:
 
 
 # ----------------------------------------------------------------------
-# (6-3) サムネイル専用画像の検証 + 保存
+# (6-4) サムネイル専用画像を WebP 縮小版で保存
 # ----------------------------------------------------------------------
 def _save_thumbnail(file) -> str | None:
     """
-    サムネイル専用にアップロードされた 1 枚の画像を検証・保存し、
-    保存したファイル名を返す。ファイル未選択なら None を返す。
+    サムネイル専用にアップロードされた 1 枚の画像を検証し、
+    幅 THUMBNAIL_MAX_WIDTH（既定 400px）の軽量な WebP に変換して保存する。
+    保存したファイル名（.webp）を返す。ファイル未選択なら None を返す。
 
-    内部的には本文画像と同じ _save_images() を単一要素リストで呼び出し、
-    拡張子チェック・MIME タイプチェック・UUID 命名・アトミック保証を
-    そのまま流用する（保存先も static/img/posts/ で共通）。
+    【最適化の内容】
+      ・拡張子 + MIME を検証（_validate_image）
+      ・EXIF の向き情報を反映
+      ・幅が上限を超える場合のみ、アスペクト比を保って縮小（拡大はしない）
+      ・WebP へ変換して保存（透過は保持: RGB/RGBA のまま WebP 化）
+    元がどの形式でも保存名は常に UUID + '.webp' になる。
+    thumbnail_img カラムはこの軽量版ファイルを指す。
+
+    【エラー方針】
+      検証エラー・画像処理エラーはいずれも ValueError として送出する
+      （呼び出し元 create()/update() は ValueError を捕捉して flash する）。
+      途中まで書き込んだ WebP が残らないよう、失敗時は自分で掃除してから送出する。
 
     @param file: request.files.get('thumbnail_img') で取得したファイルオブジェクト
-    @return: 保存したファイル名（未選択なら None）
-    @raises ValueError: 検証エラー時（拡張子不正・MIME タイプ不正）
+    @return: 保存したファイル名（.webp。未選択なら None）
+    @raises ValueError: 検証エラー・画像処理エラー時
     """
     if not file or file.filename == '':
         return None
-    saved = _save_images([file])
-    return saved[0] if saved else None
+
+    # 拡張子 + MIME 検証（失敗時は ValueError。ここではまだファイル未生成）
+    _validate_image(file)
+
+    filename  = f"{uuid.uuid4()}.webp"   # サムネイルは形式を WebP に統一
+    save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
+
+    try:
+        img = Image.open(file.stream)
+        img = ImageOps.exif_transpose(img)
+
+        # WebP は RGB / RGBA を扱えるため、透過を保持したまま変換する
+        if img.mode in ('P', 'LA'):
+            img = img.convert('RGBA')
+        elif img.mode not in ('RGB', 'RGBA'):
+            img = img.convert('RGB')
+
+        # 幅が上限を超える場合のみ、アスペクト比を保って縮小（拡大しない）
+        w, h = img.size
+        if w > THUMBNAIL_MAX_WIDTH:
+            new_h = max(1, round(h * THUMBNAIL_MAX_WIDTH / w))
+            img = img.resize((THUMBNAIL_MAX_WIDTH, new_h), _RESAMPLE)
+
+        img.save(save_path, 'WEBP', quality=WEBP_QUALITY_THUMB, method=6)
+
+    except ValueError:
+        _delete_images(filename)  # 半端なファイルがあれば掃除
+        raise
+    except Exception:
+        _delete_images(filename)
+        raise ValueError('サムネイル画像の処理中にエラーが発生しました。別の画像でお試しください。')
+
+    return filename
 
 
 # ======================================================================
@@ -497,8 +653,8 @@ def create():
       STEP 1. 管理者チェック（管理者以外はトップへ）
       STEP 2. [POST] フォーム入力値を取得・バリデーション
       STEP 3. [POST] ジャンル・デフォルトサムネイルを決定
-      STEP 4. [POST] 本文画像を検証・保存（失敗時はフラッシュしてリダイレクト）
-      STEP 4.5. [POST] サムネイル専用画像を検証・保存
+      STEP 4. [POST] 本文画像を検証・最適化保存（失敗時はフラッシュしてリダイレクト）
+      STEP 4.5. [POST] サムネイル専用画像を検証・最適化保存
                 （失敗時は本文画像を掃除してからリダイレクト）
       STEP 5. [POST] Post オブジェクトを作成してセッションに追加
       STEP 6. [POST] flush() で post.id を確定 → ハッシュタグを同期
@@ -538,9 +694,9 @@ def create():
             selected_default_thumb = None
 
         # --------------------------------------------------------------
-        # STEP 4. 本文画像の保存
+        # STEP 4. 本文画像の保存（検証 + 最適化）
         # --------------------------------------------------------------
-        # _save_images() は検証エラー時に ValueError を raise するので try/except で受ける
+        # _save_images() は検証・処理エラー時に ValueError を raise するので try/except で受ける
         try:
             filename_list = _save_images(request.files.getlist('img[]'))
         except ValueError as e:
@@ -555,7 +711,7 @@ def create():
         img_captions_str = '\t'.join(captions) if captions else None
 
         # --------------------------------------------------------------
-        # STEP 4.5. サムネイル専用画像の保存
+        # STEP 4.5. サムネイル専用画像の保存（検証 + WebP 縮小）
         # --------------------------------------------------------------
         # 本文画像とは独立した 1 枚のサムネイルをアップロードできる。
         # 検証エラー時は、直前で保存した本文画像が孤立しないよう掃除してから戻る。
@@ -732,7 +888,7 @@ def update(id):
 
     if files and files[0].filename != '':
         # --------------------------------------------------------------
-        # (5-A) パターン A: 画像の全差し替え
+        # (5-A) パターン A: 画像の全差し替え（検証 + 最適化保存）
         # --------------------------------------------------------------
         try:
             new_filenames = _save_images(files)
@@ -792,7 +948,7 @@ def update(id):
 
     thumb_file = request.files.get('thumbnail_img')
     if thumb_file and thumb_file.filename != '':
-        # --- サムネイルの差し替え ---
+        # --- サムネイルの差し替え（検証 + WebP 縮小） ---
         try:
             new_thumbnail_saved = _save_thumbnail(thumb_file)
         except ValueError as e:

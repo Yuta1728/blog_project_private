@@ -7,6 +7,9 @@
 # SQLite は Python 標準機能なので追加ドライバは不要で、
 # 無料枠の限られたディスク容量を節約できる。
 #
+# pillow はアップロード画像の縮小・WebP 変換（views/admin.py）に必須のため、
+# SQLite 運用でも含める。
+#
 # 【インストール方法（PythonAnywhere の Bash コンソール）】
 #   workon <venv名>
 #   pip install -r requirements-pythonanywhere.txt
@@ -28,6 +31,7 @@ Jinja2==3.1.6
 Mako==1.3.12
 Markdown==3.9
 MarkupSafe==3.0.3
+pillow==12.1.1
 python-dotenv==1.2.1
 pytz==2026.2
 SQLAlchemy==2.0.50
