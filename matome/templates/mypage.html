@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_macros.html' import post_card with context %}
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -7,7 +8,7 @@
 
 
 <div class="mypage-container">
-    
+
     <div class="profile-header">
         <h2 class="profile-title">
             👤 {% if current_user.nickname %}{{ current_user.nickname }}{% endif %} さんのマイページ
@@ -20,11 +21,11 @@
         <div class="nickname-form-wrapper">
             <form method="POST" action="{{ url_for('admin.mypage') }}" class="nickname-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
+
                 <label for="nickname">ニックネーム変更:</label>
-                <input type="text" name="nickname" id="nickname" 
+                <input type="text" name="nickname" id="nickname"
                     class="nickname-input"
-                    placeholder="新しいニックネーム" 
+                    placeholder="新しいニックネーム"
                     maxlength="50">
                 <button type="submit" class="nickname-submit-btn">変更する</button>
             </form>
@@ -48,62 +49,12 @@
 
     <h3 class="section-title-posts">📝 投稿一覧</h3>
 
+    {# 記事カードは _macros.html の post_card マクロで描画（index.html と共通）。
+       マイページは自分の記事のみ一覧するため、マクロ内の
+       「ログイン中 かつ 自分の記事」条件は常に真となり、
+       従来どおり全カードに編集・削除ボタンが表示される。 #}
     {% for post in posts %}
-        <article class="post-card">
-            <div class="post-thumbnail">
-                {# サムネイル表示の優先順位:
-                   1. thumbnail_img（アップロードされた専用サムネイル）
-                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
-                   3. system-default.jpg（システム共通のデフォルト） #}
-                {% if post.thumbnail_img %}
-                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img">
-                {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
-                {% else %}
-                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
-                {% endif %}
-            </div>
-
-            <div class="post-content">
-                <div class="post-header-meta">
-                    <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-                    {% if not post.is_published %}
-                        <span class="badge-private">🔒 非公開</span>
-                    {% endif %}
-                </div>
-
-                <h2 class="post-title">
-                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
-                </h2>
-
-                {# ===== ハッシュタグバッジ ===== #}
-                {% if post.hashtags %}
-                    <div class="post-hashtags">
-                        {% for tag in post.hashtags %}
-                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
-                                #{{ tag.name }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                {# ============================= #}
-
-                <p class="post-date">
-                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.updated_at %}
-                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
-                    {% endif %}
-                </p>
-
-                <div class="post-actions">
-                    <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                    <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn-delete">削除</button>
-                    </form>
-                </div>
-            </div>
-        </article>
+        {{ post_card(post) }}
     {% else %}
         <p class="empty-message">まだ投稿がありません。<br><a href="{{ url_for('admin.create') }}">最初の記事を書いてみましょう</a></p>
     {% endfor %}

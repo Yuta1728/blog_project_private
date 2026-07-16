@@ -1,0 +1,28 @@
+{# ============================================================
+   templates/_map_modal.html
+   create.html / update.html 共通の「🗺️ 地図挿入モーダル」
+   使い方: {% include '_map_modal.html' %}
+   （挙動は static/js/editor.js の openMapModal 系が担当）
+   ============================================================ #}
+<div id="map-modal-overlay" class="map-modal-overlay" onclick="closeMapModal()"></div>
+<div id="map-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="地図挿入">
+    <div class="map-modal-header">
+        <span class="map-modal-title">🗺️ 地図を挿入</span>
+        <button type="button" class="map-modal-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div class="map-modal-body">
+        <label class="map-modal-label" for="map-place-input">場所・住所を入力</label>
+        <input type="text" id="map-place-input" class="map-modal-input"
+               placeholder="例：東京スカイツリー、京都市伏見稲荷大社"
+               autocomplete="off"
+               oninput="updateMapPreview(this.value)">
+        <div class="map-preview-area" id="map-preview-area">
+            <p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>
+        </div>
+    </div>
+    <div class="map-modal-footer">
+        <button type="button" class="map-modal-cancel" onclick="closeMapModal()">キャンセル</button>
+        <button type="button" class="map-modal-insert" id="map-insert-btn"
+                onclick="insertMapTag()" disabled>本文に挿入</button>
+    </div>
+</div>

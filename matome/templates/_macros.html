@@ -1,0 +1,98 @@
+{# ============================================================
+   templates/_macros.html
+   複数テンプレートで重複していたマークアップを共通化するマクロ集
+   ============================================================
+   使い方（呼び出し側で import する）:
+     {% from '_macros.html' import post_thumbnail %}
+     {% from '_macros.html' import post_card with context %}
+
+   ※ post_card は current_user / csrf_token を参照するため、
+     必ず「with context」付きで import すること。
+     （import しただけでは呼び出し元のコンテキストが渡らない）
+   ============================================================ #}
+
+
+{# ------------------------------------------------------------
+   post_thumbnail : 記事サムネイルを表示する
+
+   サムネイル表示の優先順位:
+     1. thumbnail_img（アップロードされた専用サムネイル）
+     2. default_thumb（プリセットから選択したデフォルトサムネイル）
+     3. system-default.jpg（システム共通のデフォルト）
+
+   @param post      : Post オブジェクト（index/mypage/detail の関連記事）
+   @param css_class : 付与する class（例 'thumb-img'）。省略時は class なし
+   ------------------------------------------------------------ #}
+{% macro post_thumbnail(post, css_class='') %}
+    {%- if post.thumbnail_img -%}
+        <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}"
+             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+    {%- elif post.default_thumb -%}
+        <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}"
+             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+    {%- else -%}
+        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+    {%- endif -%}
+{% endmacro %}
+
+
+{# ------------------------------------------------------------
+   post_card : 記事一覧用の記事カード（index.html / mypage.html 共通）
+
+   編集・削除ボタンは「ログイン中 かつ 自分の記事」のときだけ表示する。
+   マイページは自分の記事だけを一覧するため、この条件は常に真になり
+   従来どおり全カードに操作ボタンが表示される。
+
+   ※ current_user / csrf_token を参照するため、
+     import 時に「with context」が必要。
+   ------------------------------------------------------------ #}
+{% macro post_card(post) %}
+<article class="post-card">
+    <div class="post-thumbnail">
+        {{ post_thumbnail(post, 'thumb-img') }}
+    </div>
+
+    <div class="post-content">
+        <div class="post-header-meta">
+            <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
+            {% if not post.is_published %}
+                <span class="badge-private">🔒 非公開</span>
+            {% endif %}
+        </div>
+
+        <h2 class="post-title">
+            <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
+        </h2>
+
+        {# ===== ハッシュタグバッジ ===== #}
+        {% if post.hashtags %}
+            <div class="post-hashtags">
+                {% for tag in post.hashtags %}
+                    <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {# ============================= #}
+
+        <p class="post-date">
+            🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
+            {% if post.updated_at %}
+                <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
+            {% endif %}
+        </p>
+
+        {% if current_user.is_authenticated and post.user_id == current_user.id %}
+            <div class="post-actions">
+                <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
+                <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-delete">削除</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</article>
+{% endmacro %}

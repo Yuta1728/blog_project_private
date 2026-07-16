@@ -1,0 +1,28 @@
+{# ============================================================
+   templates/_youtube_modal.html
+   create.html / update.html 共通の「▶ YouTube 挿入モーダル」
+   使い方: {% include '_youtube_modal.html' %}
+   （挙動は static/js/editor.js の openYoutubeModal 系が担当）
+   ============================================================ #}
+<div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
+<div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
+    <div class="map-modal-header">
+        <span class="map-modal-title">▶ YouTube 動画を挿入</span>
+        <button type="button" class="map-modal-close" onclick="closeYoutubeModal()">✕</button>
+    </div>
+    <div class="map-modal-body">
+        <label class="map-modal-label" for="youtube-url-input">YouTube URL または動画 ID を入力</label>
+        <input type="text" id="youtube-url-input" class="map-modal-input"
+               placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+               autocomplete="off"
+               oninput="updateYoutubePreview(this.value)">
+        <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
+            <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
+        </div>
+    </div>
+    <div class="map-modal-footer">
+        <button type="button" class="map-modal-cancel" onclick="closeYoutubeModal()">キャンセル</button>
+        <button type="button" class="map-modal-insert" id="youtube-insert-btn"
+                onclick="insertYoutubeTag()" disabled>本文に挿入</button>
+    </div>
+</div>

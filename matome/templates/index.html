@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_macros.html' import post_card with context %}
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -63,67 +64,9 @@
     {% endif %}
     {# =========================== #}
 
+    {# 記事カードは _macros.html の post_card マクロで描画（mypage.html と共通） #}
     {% for post in posts %}
-        <article class="post-card">
-            <div class="post-thumbnail">
-                {# サムネイル表示の優先順位:
-                   1. thumbnail_img（アップロードされた専用サムネイル）
-                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
-                   3. system-default.jpg（システム共通のデフォルト）
-                   ※ 以前は img_name の先頭画像をサムネイルに流用していたが、
-                     サムネイルは thumbnail_img で独立管理する方式に変更した。 #}
-                {% if post.thumbnail_img %}
-                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img" loading="lazy">
-                {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img" loading="lazy">
-                {% else %}
-                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img" loading="lazy">
-                {% endif %}
-            </div>
-
-            <div class="post-content">
-                <div class="post-header-meta">
-                    <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-
-                    {% if not post.is_published %}
-                        <span class="badge-private">🔒 非公開</span>
-                    {% endif %}
-                </div>
-
-                <h2 class="post-title">
-                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
-                </h2>
-
-                {# ===== ハッシュタグバッジ ===== #}
-                {% if post.hashtags %}
-                    <div class="post-hashtags">
-                        {% for tag in post.hashtags %}
-                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
-                                #{{ tag.name }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                {# ============================= #}
-
-                <p class="post-date">
-                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.updated_at %}
-                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
-                    {% endif %}
-                </p>
-
-                {% if current_user.is_authenticated and post.user_id == current_user.id %}
-                    <div class="post-actions">
-                        <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn-delete">削除</button>
-                        </form>
-                    </div>
-                {% endif %}
-            </div>
-        </article>
+        {{ post_card(post) }}
     {% else %}
         <p class="index-empty-message">
             該当する記事が見つかりませんでした。
@@ -133,22 +76,10 @@
     {# ============================================================
        ページ番号によるページ送り（サーバー側ページネーション）
        ------------------------------------------------------------
-       【変更点】
-       以前はサーバー側で最大4件しか渡していないのに、クライアント
-       JS が「全記事がレンダリングされている前提」でページ分割して
-       いたため、常に totalPages=1 となりページ送りUIが表示されず、
-       最新4件より古い記事に一切到達できないバグがあった。
-
-       これを解消するため、クライアント JS のページ送りを廃止し、
-       ビューから渡される Flask-SQLAlchemy の pagination オブジェクトを
-       もとに、サーバー側ページネーションのリンクを描画する方式へ一本化した。
-
-       - 各リンクは現在の絞り込み条件（genre / search / hashtag）を
-         引き継ぐ。url_for は値が None のクエリを自動で省くため、
-         絞り込みなしのときは余計なパラメータが付かない。
-       - #index-articles-anchor フラグメントを付与し、ページ遷移後に
-         記事一覧の先頭へスクロールする（固定ヘッダー分は
-         scroll-margin-top で吸収）。
+       各リンクは現在の絞り込み条件（genre / search / hashtag）を引き継ぐ。
+       url_for は値が None のクエリを自動で省くため、絞り込みなしのときは
+       余計なパラメータが付かない。#index-articles-anchor フラグメントで
+       ページ遷移後に記事一覧の先頭へスクロールする。
        ============================================================ #}
     {% if pagination.pages > 1 %}
         <nav class="index-pagination" aria-label="記事一覧のページ送り">
