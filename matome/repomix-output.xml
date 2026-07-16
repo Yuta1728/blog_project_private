@@ -95,7 +95,12 @@ static/
       thumb_option7.jpg
       thumb_option8.jpg
       thumb_option9.jpg
+  js/
+    editor.js
 templates/
+  _macros.html
+  _map_modal.html
+  _youtube_modal.html
   about.html
   base.html
   create.html
@@ -5465,6 +5470,850 @@ a[role="button"]:hover {
 </svg>
 </file>
 
+<file path="static/js/editor.js">
+/* ============================================================
+   static/js/editor.js
+   【対象ページ】 create.html（新規投稿）／ update.html（記事編集）共通
+   ============================================================
+   以前は create.html と update.html にほぼ同一の JavaScript が
+   それぞれ数百行ずつ重複して書かれていた。差異はごく一部だったため、
+   共通ロジックをこのファイルに一本化し、両テンプレートから読み込む。
+
+   【ページ固有の差異は window.EDITOR_CONFIG で受け取る】
+     newImageCaptionPrefix : 新規画像キャプションの input name 接頭辞
+       - create.html : 'img_caption_'
+       - update.html : 'new_img_caption_'
+         （編集時は「既存画像のキャプション欄（img_caption_N）」と
+           名前が衝突しないよう、新規画像側を別接頭辞にしている）
+
+   【読み込み方法】
+     各テンプレートの末尾で、
+       <script>window.EDITOR_CONFIG = { ... };</script>
+       <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+     の順に読み込む。<body> 末尾で読み込まれるため DOM は構築済み。
+
+   【備考】
+     onclick 属性から呼ばれる関数（handleStatusToggle など）は
+     グローバル関数として定義する必要があるため、このファイルは
+     全体を IIFE で包まず、トップレベルの関数宣言で定義している。
+   ============================================================ */
+
+/* 差異設定の取り込み（未設定時は新規投稿相当のデフォルト） */
+var EDITOR_CONFIG          = window.EDITOR_CONFIG || {};
+var NEW_IMG_CAPTION_PREFIX = EDITOR_CONFIG.newImageCaptionPrefix || 'img_caption_';
+
+
+/* =========================================================
+   公開設定トグル（🔒非公開 / 🔓全体公開）
+   ========================================================= */
+function handleStatusToggle() {
+    var hiddenInput = document.getElementById('is_published');
+    var btn  = document.getElementById('toggle_status_btn');
+    var icon = btn.querySelector('.status-icon');
+    var text = btn.querySelector('.status-text');
+
+    if (hiddenInput.value === 'false') {
+        hiddenInput.value = 'true';
+        btn.classList.remove('private');
+        btn.classList.add('published');
+        icon.textContent = '🔓';
+        text.textContent = '全体公開';
+    } else {
+        hiddenInput.value = 'false';
+        btn.classList.remove('published');
+        btn.classList.add('private');
+        icon.textContent = '🔒';
+        text.textContent = '非公開';
+    }
+}
+
+
+/* =========================================================
+   画像ファイル管理（追加・削除・プレビュー再描画）
+   =========================================================
+   _fileList : File オブジェクトの配列（正データ）
+   _captions : キャプション文字列の配列（インデックス対応）
+
+   input[name="img[]"] の files は DataTransfer で都度再構築して同期する。
+   これにより既存の Flask バックエンド（request.files.getlist('img[]')）は
+   一切変更せずに動作する。
+   ========================================================= */
+var _fileList = [];   // File オブジェクトを格納する配列
+var _captions = [];   // キャプション文字列を格納する配列
+
+/** input[name="img[]"] の files プロパティを _fileList と同期する。 */
+function _syncInputFiles() {
+    var dt    = new DataTransfer();
+    var input = document.getElementById('imgUpload');
+    _fileList.forEach(function(f) { dt.items.add(f); });
+    input.files = dt.files;
+}
+
+/** 「複数まとめて選択」: _fileList を完全置き換えして再描画。 */
+function onBulkSelect(input) {
+    var newFiles = Array.from(input.files);
+    if (newFiles.length === 0) return;
+    _fileList = newFiles;
+    _captions = new Array(newFiles.length).fill('');
+    _syncInputFiles();
+    renderPreviews();
+}
+
+/** 「1枚追加」: _fileList に追記して再描画。 */
+function onOneSelect(input) {
+    var newFiles = Array.from(input.files);
+    if (newFiles.length === 0) return;
+    _saveCaptions();
+    newFiles.forEach(function(f) {
+        _fileList.push(f);
+        _captions.push('');
+    });
+    _syncInputFiles();
+    renderPreviews();
+    // 同じファイルを再度選べるよう input をリセット
+    input.value = '';
+}
+
+/** 指定インデックスの画像を削除して再描画。 */
+function deleteImage(index) {
+    _saveCaptions();
+    _fileList.splice(index, 1);
+    _captions.splice(index, 1);
+    _syncInputFiles();
+    renderPreviews();
+}
+
+/**
+ * DOM 上のキャプション入力欄の値を _captions に保存する。
+ * 新規画像プレビューは常に #preview-list 内にあるため、
+ * update.html の既存画像キャプション欄（#existing-img-list 内）と
+ * 混ざらないよう、スコープを #preview-list に限定する。
+ * （create.html でも新規プレビューは #preview-list 内にあるため同じ挙動）
+ */
+function _saveCaptions() {
+    var inputs = document.querySelectorAll('#preview-list .preview-caption-input');
+    inputs.forEach(function(el, i) {
+        if (i < _captions.length) { _captions[i] = el.value; }
+    });
+}
+
+/**
+ * プレビューエリアを _fileList の内容で再描画する。
+ * [imgN] ボタン・キャプション入力・削除ボタンもここで生成する。
+ */
+function renderPreviews() {
+    var previewArea = document.getElementById('preview-area');
+    var previewList = document.getElementById('preview-list');
+    previewList.innerHTML = '';
+
+    if (_fileList.length === 0) {
+        previewArea.style.display = 'none';
+        rebuildImgBtns(0);
+        return;
+    }
+    previewArea.style.display = 'block';
+
+    _fileList.forEach(function(file, index) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var item = document.createElement('div');
+            item.className = 'preview-item';
+            item.style.width = '150px';
+
+            // サムネイル
+            var img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+
+            // [imgN] ラベル
+            var label = document.createElement('div');
+            label.className = 'preview-label';
+            label.textContent = '[img' + (index + 1) + ']';
+
+            // ファイル名
+            var filename = document.createElement('div');
+            filename.className = 'preview-filename';
+            filename.textContent = file.name;
+            filename.title = file.name;
+
+            // キャプション入力
+            // 【重要】input name の接頭辞はページごとに異なる（EDITOR_CONFIG）。
+            //   create: img_caption_N / update: new_img_caption_N
+            var captionWrapper = document.createElement('div');
+            captionWrapper.className = 'preview-caption-wrapper';
+            var captionInput = document.createElement('input');
+            captionInput.type        = 'text';
+            captionInput.name        = NEW_IMG_CAPTION_PREFIX + (index + 1);
+            captionInput.placeholder = '画像の説明（省略可）';
+            captionInput.className   = 'preview-caption-input';
+            captionInput.maxLength   = 100;
+            captionInput.value       = _captions[index] || '';
+            captionWrapper.appendChild(captionInput);
+
+            // 削除ボタン（クロージャでインデックスを束縛）
+            var deleteBtn = document.createElement('button');
+            deleteBtn.type      = 'button';
+            deleteBtn.className = 'preview-delete-btn';
+            deleteBtn.textContent = '✕ この画像を削除';
+            (function(i) {
+                deleteBtn.onclick = function() { deleteImage(i); };
+            })(index);
+
+            item.appendChild(img);
+            item.appendChild(label);
+            item.appendChild(filename);
+            item.appendChild(captionWrapper);
+            item.appendChild(deleteBtn);
+            previewList.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    rebuildImgBtns(_fileList.length);
+}
+
+
+/* =========================================================
+   サムネイル専用画像のプレビュー・削除
+   =========================================================
+   ・onThumbnailSelect : 新しいサムネイル選択時のプレビュー
+   ・clearThumbnail    : 選択した新規サムネイルを取り消す
+   ・toggleThumbnailDelete : 現在のサムネイルを「削除予定」にする／取り消す
+       （update.html のみ。hidden の keep_thumbnail を '0'/'1' で切り替える。
+         対象要素が無い create.html では呼ばれないため無害）
+   ========================================================= */
+function onThumbnailSelect(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('thumbnail-preview-img').src = e.target.result;
+        document.getElementById('thumbnail-preview-area').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearThumbnail() {
+    var input = document.getElementById('thumbnailUpload');
+    input.value = '';
+    document.getElementById('thumbnail-preview-img').src = '';
+    document.getElementById('thumbnail-preview-area').style.display = 'none';
+}
+
+function toggleThumbnailDelete() {
+    var flag = document.getElementById('keep_thumbnail');
+    var item = document.getElementById('current-thumbnail-item');
+    var btn  = document.getElementById('thumbnail-delete-btn');
+    if (!flag) return;
+
+    if (flag.value === '0') {
+        // 削除の取り消し
+        flag.value = '1';
+        item.style.opacity = '';
+        btn.textContent = '✕ このサムネイルを削除';
+    } else {
+        // 削除予定としてマーク
+        flag.value = '0';
+        item.style.opacity = '0.45';
+        btn.textContent = '↩ 削除を取り消す';
+    }
+}
+
+
+/* =========================================================
+   既存画像の個別削除（update.html のみ）
+   =========================================================
+   各既存画像カードの hidden keep_img_N（'1'=残す / '0'=削除予定）を
+   トグルし、削除予定のカードをグレーアウトして可視化する。
+   実際の削除はフォーム送信後にサーバー側で行う。
+   対象要素が無い create.html では呼ばれないため無害。
+   ========================================================= */
+function toggleExistingDelete(btn) {
+    var item    = btn.closest('.existing-img-item');
+    var flag    = item.querySelector('.keep-img-flag');
+    var caption = item.querySelector('.preview-caption-input');
+
+    if (flag.value === '0') {
+        // 削除の取り消し
+        flag.value        = '1';
+        item.style.opacity = '';
+        caption.disabled  = false;
+        btn.textContent   = '✕ この画像を削除';
+    } else {
+        // 削除予定としてマーク
+        flag.value        = '0';
+        item.style.opacity = '0.45';
+        caption.disabled  = true;
+        btn.textContent   = '↩ 削除を取り消す';
+    }
+
+    renumberExistingLabels();
+}
+
+/** 削除予定を除いた「更新後の番号」を [imgN] ラベルに反映する。 */
+function renumberExistingLabels() {
+    var items = document.querySelectorAll('.existing-img-item');
+    var n = 0;
+    items.forEach(function (item) {
+        var label = item.querySelector('.preview-label');
+        if (item.querySelector('.keep-img-flag').value === '0') {
+            label.textContent = '（削除予定）';
+        } else {
+            n += 1;
+            label.textContent = '[img' + n + ']（更新後）';
+        }
+    });
+}
+
+
+/* =========================================================
+   ジャンル入力切替
+   ========================================================= */
+function toggleNewGenreInput() {
+    var selectBox       = document.getElementById('genre_select');
+    var newGenreWrapper = document.getElementById('new_genre_wrapper');
+    var newGenreInput   = document.getElementById('genre_new');
+
+    if (selectBox.value === '__NEW__') {
+        newGenreWrapper.style.display = 'block';
+        newGenreInput.required = true;
+    } else {
+        newGenreWrapper.style.display = 'none';
+        newGenreInput.required = false;
+        newGenreInput.value = '';
+    }
+}
+
+
+/* =========================================================
+   デフォルトサムネイルプレビュー
+   ========================================================= */
+function previewDefaultThumb(select) {
+    var previewArea = document.getElementById('default-thumb-preview-area');
+    var previewImg  = document.getElementById('default-thumb-preview-img');
+    if (select.value === 'none') {
+        previewArea.style.display = 'none';
+        previewImg.src = '';
+    } else {
+        previewArea.style.display = 'block';
+        previewImg.src = "/static/img/thbnails/" + select.value;
+    }
+}
+
+
+/* =========================================================
+   マークダウンツールバー共通ユーティリティ
+   ========================================================= */
+function mdInsertAt(ta, text, selectFrom, selectTo) {
+    var start  = ta.selectionStart;
+    var end    = ta.selectionEnd;
+    var before = ta.value.substring(0, start);
+    var after  = ta.value.substring(end);
+    ta.value = before + text + after;
+    var newPos = selectFrom !== undefined ? start + selectFrom : start + text.length;
+    var newEnd = selectTo   !== undefined ? start + selectTo   : newPos;
+    ta.setSelectionRange(newPos, newEnd);
+    ta.focus();
+}
+
+function mdInsertLinePrefix(ta, prefix) {
+    var start     = ta.selectionStart;
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', start - 1) + 1;
+    var before    = val.substring(0, lineStart);
+    var after     = val.substring(lineStart);
+    ta.value = before + prefix + after;
+    var newPos = start + prefix.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+}
+
+function mdInsertHeading2() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## '); }
+function mdInsertHeading3() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### '); }
+
+function mdWrapBold() {
+    var ta       = document.getElementById('bodyTextarea');
+    var start    = ta.selectionStart;
+    var end      = ta.selectionEnd;
+    var selected = ta.value.substring(start, end);
+    if (selected.length > 0) {
+        mdInsertAt(ta, '**' + selected + '**', 2, 2 + selected.length);
+    } else {
+        mdInsertAt(ta, '**太字テキスト**', 2, 6);
+    }
+}
+
+function mdInsertToc() {
+    var ta  = document.getElementById('bodyTextarea');
+    var pos = ta.selectionStart;
+    var val = ta.value;
+    var before = val.substring(0, pos);
+    var leadingNewlines = before.length === 0      ? ''
+                        : before.endsWith('\n\n')  ? ''
+                        : before.endsWith('\n')     ? '\n'
+                        :                              '\n\n';
+    var after = val.substring(pos);
+    var trailingNewlines = after.length === 0       ? '\n'
+                         : after.startsWith('\n\n') ? ''
+                         : after.startsWith('\n')   ? '\n'
+                         :                              '\n\n';
+    mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
+}
+
+function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), '[img' + n + ']'); }
+
+/**
+ * [imgN] 挿入ボタンを count 個ぶん再生成する。
+ * ボタンには data-img-index を付与し、クリックは #img-btn-group 上の
+ * 委譲リスナー（このファイル末尾で登録）でまとめて処理する。
+ * これにより「create の直接 onclick」「update の初期サーバー描画ボタン」の
+ * 両方を単一の仕組みで扱える。
+ */
+function rebuildImgBtns(count) {
+    var group = document.getElementById('img-btn-group');
+    group.innerHTML = '';
+    for (var i = 1; i <= count; i++) {
+        var btn = document.createElement('button');
+        btn.type      = 'button';
+        btn.className = 'md-btn md-btn-img';
+        btn.textContent = '[img' + i + ']';
+        btn.dataset.imgIndex = i;
+        group.appendChild(btn);
+    }
+}
+
+
+/* =========================================================
+   箇条書きリスト挿入
+   ========================================================= */
+var LIST_PREFIXES = { bullet: '●  ' };
+
+function mdInsertList(type) {
+    var ta     = document.getElementById('bodyTextarea');
+    var prefix = LIST_PREFIXES[type];
+    if (!prefix) return;
+    var start        = ta.selectionStart;
+    var end          = ta.selectionEnd;
+    var hasSelection = (start !== end);
+    if (hasSelection) { _mdListWrapSelection(ta, prefix, start, end); }
+    else              { _mdListInsertEmpty(ta, prefix, start); }
+}
+
+function _mdListInsertEmpty(ta, prefix, cursorPos) {
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', cursorPos - 1) + 1;
+    var lineEnd   = val.indexOf('\n', cursorPos);
+    var currentLine = val.substring(lineStart, lineEnd === -1 ? val.length : lineEnd);
+    if (currentLine.trim() === '') {
+        ta.value = val.substring(0, cursorPos) + prefix + val.substring(cursorPos);
+        var newPos = cursorPos + prefix.length;
+        ta.setSelectionRange(newPos, newPos);
+    } else if (!currentLine.startsWith(prefix)) {
+        ta.value = val.substring(0, lineStart) + prefix + val.substring(lineStart);
+        var newPos2 = cursorPos + prefix.length;
+        ta.setSelectionRange(newPos2, newPos2);
+    } else {
+        ta.setSelectionRange(cursorPos, cursorPos);
+    }
+    ta.focus();
+}
+
+function _mdListWrapSelection(ta, prefix, start, end) {
+    var val      = ta.value;
+    var selText  = val.substring(start, end);
+    var converted = selText.split('\n').map(function(line) {
+        if (line.trim() === '')       return line;
+        if (line.startsWith(prefix)) return line;
+        return prefix + line;
+    }).join('\n');
+    ta.value = val.substring(0, start) + converted + val.substring(end);
+    ta.setSelectionRange(start, start + converted.length);
+    ta.focus();
+}
+
+
+/* =========================================================
+   ハッシュタグ入力プレビュー
+   =========================================================
+   innerHTML による文字列組み立てを避け、DOM API
+   （createElement + textContent）で構築することで
+   自己 XSS の経路を作らない。
+   ========================================================= */
+function renderHashtagPreview(value) {
+    var area   = document.getElementById('hashtag-preview');
+    var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
+
+    area.textContent = '';
+    tokens.forEach(function(t) {
+        var name = t.replace(/^#+/, '');
+        if (!name) return;
+        var span = document.createElement('span');
+        span.className   = 'hashtag-badge-preview';
+        span.textContent = '#' + name;
+        area.appendChild(span);
+    });
+}
+
+
+/* =========================================================
+   地図挿入モーダル
+   ========================================================= */
+var _mapPreviewTimer = null;
+
+function openMapModal() {
+    // モーダル本体が DOM に無い場合は、原因を明示して安全に中断する
+    // （_map_modal.html の include 忘れなどを早期に発見できるようにする）
+    var modal = document.getElementById('map-modal');
+    if (!modal) {
+        console.error('[editor.js] #map-modal が見つかりません。_map_modal.html が include されているか確認してください。');
+        return;
+    }
+    var ta = document.getElementById('bodyTextarea');
+    window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
+    document.getElementById('map-place-input').value = '';
+    document.getElementById('map-preview-area').innerHTML =
+        '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
+    document.getElementById('map-insert-btn').disabled = true;
+    document.getElementById('map-modal-overlay').classList.add('open');
+    document.getElementById('map-modal').classList.add('open');
+    setTimeout(function() { document.getElementById('map-place-input').focus(); }, 80);
+}
+function closeMapModal() {
+    document.getElementById('map-modal-overlay').classList.remove('open');
+    document.getElementById('map-modal').classList.remove('open');
+}
+function updateMapPreview(value) {
+    var insertBtn   = document.getElementById('map-insert-btn');
+    var previewArea = document.getElementById('map-preview-area');
+    clearTimeout(_mapPreviewTimer);
+    var place = value.trim();
+    if (!place) {
+        previewArea.innerHTML = '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
+        insertBtn.disabled = true;
+        return;
+    }
+    insertBtn.disabled = false;
+    _mapPreviewTimer = setTimeout(function() {
+        var encoded = encodeURIComponent(place);
+        previewArea.innerHTML =
+            '<iframe class="map-preview-iframe"' +
+            ' src="https://maps.google.com/maps?q=' + encoded + '&output=embed&hl=ja"' +
+            ' loading="lazy" allowfullscreen></iframe>';
+    }, 600);
+}
+function insertMapTag() {
+    var place = document.getElementById('map-place-input').value.trim();
+    if (!place) return;
+    var ta        = document.getElementById('bodyTextarea');
+    var pos       = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    var tag       = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
+    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos    = pos.start + tag.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+    closeMapModal();
+}
+
+
+/* =========================================================
+   YouTube 挿入モーダル
+   =========================================================
+   ※ extractYoutubeId() はクライアント側の入力検証用。
+      サーバー側 views/blog.py の _extract_youtube_id() が
+      同等の抽出ロジックを持つ（正規表現の分岐が対応する）。
+      クライアント検証とサーバー検証は独立して必要なため二重定義となるが、
+      片方を変更したらもう片方も合わせること。
+   ========================================================= */
+var _ytPreviewTimer = null;
+
+function openYoutubeModal() {
+    // モーダル本体が DOM に無い場合は、原因を明示して安全に中断する
+    // （_youtube_modal.html の include 忘れなどを早期に発見できるようにする）
+    var modal = document.getElementById('youtube-modal');
+    if (!modal) {
+        console.error('[editor.js] #youtube-modal が見つかりません。_youtube_modal.html が include されているか確認してください。');
+        return;
+    }
+    var ta = document.getElementById('bodyTextarea');
+    window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
+    document.getElementById('youtube-url-input').value = '';
+    document.getElementById('youtube-preview-area').innerHTML =
+        '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
+    document.getElementById('youtube-insert-btn').disabled = true;
+    document.getElementById('youtube-modal-overlay').classList.add('open');
+    document.getElementById('youtube-modal').classList.add('open');
+    setTimeout(function() { document.getElementById('youtube-url-input').focus(); }, 80);
+}
+function closeYoutubeModal() {
+    document.getElementById('youtube-modal-overlay').classList.remove('open');
+    document.getElementById('youtube-modal').classList.remove('open');
+}
+function extractYoutubeId(raw) {
+    raw = raw.trim();
+    var m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    m = raw.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    m = raw.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    m = raw.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+    return null;
+}
+function updateYoutubePreview(value) {
+    var insertBtn   = document.getElementById('youtube-insert-btn');
+    var previewArea = document.getElementById('youtube-preview-area');
+    clearTimeout(_ytPreviewTimer);
+    var videoId = extractYoutubeId(value);
+    if (!videoId) {
+        previewArea.innerHTML = '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
+        insertBtn.disabled = true;
+        return;
+    }
+    insertBtn.disabled = false;
+    _ytPreviewTimer = setTimeout(function() {
+        var thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
+        previewArea.innerHTML =
+            '<img src="' + thumbUrl + '" alt="サムネイルプレビュー"' +
+            ' style="width:100%; height:100%; object-fit:cover; display:block;"' +
+            ' onerror="this.parentNode.innerHTML=\'<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>\'">';
+    }, 600);
+}
+function insertYoutubeTag() {
+    var rawUrl = document.getElementById('youtube-url-input').value.trim();
+    if (!rawUrl || !extractYoutubeId(rawUrl)) return;
+    var ta        = document.getElementById('bodyTextarea');
+    var pos       = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
+    var val       = ta.value;
+    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
+    var tag       = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
+    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
+    var newPos    = pos.start + tag.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+    closeYoutubeModal();
+}
+
+
+/* =========================================================
+   初期化処理（DOM 構築後に実行）
+   =========================================================
+   このファイルは <body> 末尾で読み込まれるため、
+   以下の登録時点で対象要素は既に存在する。
+   ========================================================= */
+
+/* [imgN] ボタンのクリック委譲
+   create の動的生成ボタンも update の初期サーバー描画ボタンも
+   すべて #img-btn-group 上の 1 つのリスナーで処理する。 */
+(function () {
+    var group = document.getElementById('img-btn-group');
+    if (!group) return;
+    group.addEventListener('click', function (e) {
+        var btn = e.target.closest('.md-btn-img');
+        if (btn && btn.dataset.imgIndex) {
+            mdInsertImg(parseInt(btn.dataset.imgIndex, 10));
+        }
+    });
+})();
+
+/* Escape キーでモーダルを閉じる */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeMapModal(); closeYoutubeModal(); }
+});
+
+/* Sticky ツールバー（本文欄上部への貼り付き検知） */
+(function () {
+    'use strict';
+    var toolbar = document.getElementById('md-toolbar');
+    if (!toolbar) return;
+    var sentinel = document.createElement('div');
+    sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
+    toolbar.parentElement.insertBefore(sentinel, toolbar);
+    var observer = new IntersectionObserver(
+        function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
+        { rootMargin: '-85px 0px 0px 0px', threshold: 0 }
+    );
+    observer.observe(sentinel);
+    var mq = window.matchMedia('(max-width: 767px)');
+    function updateRootMargin(e) {
+        observer.disconnect();
+        var offset = e.matches ? '-63px' : '-85px';
+        observer = new IntersectionObserver(
+            function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
+            { rootMargin: offset + ' 0px 0px 0px', threshold: 0 }
+        );
+        observer.observe(sentinel);
+    }
+    mq.addEventListener('change', updateRootMargin);
+})();
+</file>
+
+<file path="templates/_macros.html">
+{# ============================================================
+   templates/_macros.html
+   複数テンプレートで重複していたマークアップを共通化するマクロ集
+   ============================================================
+   使い方（呼び出し側で import する）:
+     {% from '_macros.html' import post_thumbnail %}
+     {% from '_macros.html' import post_card with context %}
+
+   ※ post_card は current_user / csrf_token を参照するため、
+     必ず「with context」付きで import すること。
+     （import しただけでは呼び出し元のコンテキストが渡らない）
+   ============================================================ #}
+
+
+{# ------------------------------------------------------------
+   post_thumbnail : 記事サムネイルを表示する
+
+   サムネイル表示の優先順位:
+     1. thumbnail_img（アップロードされた専用サムネイル）
+     2. default_thumb（プリセットから選択したデフォルトサムネイル）
+     3. system-default.jpg（システム共通のデフォルト）
+
+   @param post      : Post オブジェクト（index/mypage/detail の関連記事）
+   @param css_class : 付与する class（例 'thumb-img'）。省略時は class なし
+   ------------------------------------------------------------ #}
+{% macro post_thumbnail(post, css_class='') %}
+    {%- if post.thumbnail_img -%}
+        <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}"
+             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+    {%- elif post.default_thumb -%}
+        <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}"
+             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+    {%- else -%}
+        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
+             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+    {%- endif -%}
+{% endmacro %}
+
+
+{# ------------------------------------------------------------
+   post_card : 記事一覧用の記事カード（index.html / mypage.html 共通）
+
+   編集・削除ボタンは「ログイン中 かつ 自分の記事」のときだけ表示する。
+   マイページは自分の記事だけを一覧するため、この条件は常に真になり
+   従来どおり全カードに操作ボタンが表示される。
+
+   ※ current_user / csrf_token を参照するため、
+     import 時に「with context」が必要。
+   ------------------------------------------------------------ #}
+{% macro post_card(post) %}
+<article class="post-card">
+    <div class="post-thumbnail">
+        {{ post_thumbnail(post, 'thumb-img') }}
+    </div>
+
+    <div class="post-content">
+        <div class="post-header-meta">
+            <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
+            {% if not post.is_published %}
+                <span class="badge-private">🔒 非公開</span>
+            {% endif %}
+        </div>
+
+        <h2 class="post-title">
+            <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
+        </h2>
+
+        {# ===== ハッシュタグバッジ ===== #}
+        {% if post.hashtags %}
+            <div class="post-hashtags">
+                {% for tag in post.hashtags %}
+                    <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {# ============================= #}
+
+        <p class="post-date">
+            🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
+            {% if post.updated_at %}
+                <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
+            {% endif %}
+        </p>
+
+        {% if current_user.is_authenticated and post.user_id == current_user.id %}
+            <div class="post-actions">
+                <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
+                <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-delete">削除</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</article>
+{% endmacro %}
+</file>
+
+<file path="templates/_map_modal.html">
+{# ============================================================
+   templates/_map_modal.html
+   create.html / update.html 共通の「🗺️ 地図挿入モーダル」
+   使い方: {% include '_map_modal.html' %}
+   （挙動は static/js/editor.js の openMapModal 系が担当）
+   ============================================================ #}
+<div id="map-modal-overlay" class="map-modal-overlay" onclick="closeMapModal()"></div>
+<div id="map-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="地図挿入">
+    <div class="map-modal-header">
+        <span class="map-modal-title">🗺️ 地図を挿入</span>
+        <button type="button" class="map-modal-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div class="map-modal-body">
+        <label class="map-modal-label" for="map-place-input">場所・住所を入力</label>
+        <input type="text" id="map-place-input" class="map-modal-input"
+               placeholder="例：東京スカイツリー、京都市伏見稲荷大社"
+               autocomplete="off"
+               oninput="updateMapPreview(this.value)">
+        <div class="map-preview-area" id="map-preview-area">
+            <p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>
+        </div>
+    </div>
+    <div class="map-modal-footer">
+        <button type="button" class="map-modal-cancel" onclick="closeMapModal()">キャンセル</button>
+        <button type="button" class="map-modal-insert" id="map-insert-btn"
+                onclick="insertMapTag()" disabled>本文に挿入</button>
+    </div>
+</div>
+</file>
+
+<file path="templates/_youtube_modal.html">
+{# ============================================================
+   templates/_youtube_modal.html
+   create.html / update.html 共通の「▶ YouTube 挿入モーダル」
+   使い方: {% include '_youtube_modal.html' %}
+   （挙動は static/js/editor.js の openYoutubeModal 系が担当）
+   ============================================================ #}
+<div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
+<div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
+    <div class="map-modal-header">
+        <span class="map-modal-title">▶ YouTube 動画を挿入</span>
+        <button type="button" class="map-modal-close" onclick="closeYoutubeModal()">✕</button>
+    </div>
+    <div class="map-modal-body">
+        <label class="map-modal-label" for="youtube-url-input">YouTube URL または動画 ID を入力</label>
+        <input type="text" id="youtube-url-input" class="map-modal-input"
+               placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+               autocomplete="off"
+               oninput="updateYoutubePreview(this.value)">
+        <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
+            <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
+        </div>
+    </div>
+    <div class="map-modal-footer">
+        <button type="button" class="map-modal-cancel" onclick="closeYoutubeModal()">キャンセル</button>
+        <button type="button" class="map-modal-insert" id="youtube-insert-btn"
+                onclick="insertYoutubeTag()" disabled>本文に挿入</button>
+    </div>
+</div>
+</file>
+
 <file path="templates/about.html">
 {% extends "base.html" %}
 {% block content %}
@@ -6042,7 +6891,7 @@ a[role="button"]:hover {
 <div>
     <form action="{{ url_for('admin.create') }}" method="post" enctype="multipart/form-data" class="post-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        
+
         <label for="title">タイトル</label>
         <input type="text" name="title" required>
 
@@ -6050,7 +6899,7 @@ a[role="button"]:hover {
             <label for="genre_select">ジャンル</label>
             <select name="genre_select" id="genre_select" onchange="toggleNewGenreInput()">
                 <option value="未分類" selected>-- ジャンルを選択（選択なしは未分類） --</option>
-                
+
                 {% for genre in genres %}
                     <option value="{{ genre }}">{{ genre }}</option>
                 {% endfor %}
@@ -6066,35 +6915,12 @@ a[role="button"]:hover {
         <p>
             <label>公開設定</label>
             <input type="hidden" name="is_published" id="is_published" value="false">
-            
+
             <button type="button" id="toggle_status_btn" class="toggle-status-btn private" onclick="handleStatusToggle()">
                 <span class="status-icon">🔒</span>
                 <span class="status-text">非公開</span>
             </button>
         </p>
-
-        <script>
-        function handleStatusToggle() {
-            const hiddenInput = document.getElementById('is_published');
-            const btn = document.getElementById('toggle_status_btn');
-            const icon = btn.querySelector('.status-icon');
-            const text = btn.querySelector('.status-text');
-
-            if (hiddenInput.value === 'false') {
-                hiddenInput.value = 'true';
-                btn.classList.remove('private');
-                btn.classList.add('published');
-                icon.textContent = '🔓';
-                text.textContent = '全体公開';
-            } else {
-                hiddenInput.value = 'false';
-                btn.classList.remove('published');
-                btn.classList.add('private');
-                icon.textContent = '🔒';
-                text.textContent = '非公開';
-            }
-        }
-        </script>
 
         <label for="bodyTextarea">内容</label>
 
@@ -6124,53 +6950,9 @@ a[role="button"]:hover {
             <span id="img-btn-group"></span>
         </div>
 
-        <!-- ===== 地図挿入モーダル ===== -->
-        <div id="map-modal-overlay" class="map-modal-overlay" onclick="closeMapModal()"></div>
-        <div id="map-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="地図挿入">
-            <div class="map-modal-header">
-                <span class="map-modal-title">🗺️ 地図を挿入</span>
-                <button type="button" class="map-modal-close" onclick="closeMapModal()">✕</button>
-            </div>
-            <div class="map-modal-body">
-                <label class="map-modal-label" for="map-place-input">場所・住所を入力</label>
-                <input type="text" id="map-place-input" class="map-modal-input"
-                       placeholder="例：東京スカイツリー、京都市伏見稲荷大社"
-                       autocomplete="off"
-                       oninput="updateMapPreview(this.value)">
-                <div class="map-preview-area" id="map-preview-area">
-                    <p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>
-                </div>
-            </div>
-            <div class="map-modal-footer">
-                <button type="button" class="map-modal-cancel" onclick="closeMapModal()">キャンセル</button>
-                <button type="button" class="map-modal-insert" id="map-insert-btn"
-                        onclick="insertMapTag()" disabled>本文に挿入</button>
-            </div>
-        </div>
-
-        <!-- ===== YouTube 挿入モーダル ===== -->
-        <div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
-        <div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
-            <div class="map-modal-header">
-                <span class="map-modal-title">▶ YouTube 動画を挿入</span>
-                <button type="button" class="map-modal-close" onclick="closeYoutubeModal()">✕</button>
-            </div>
-            <div class="map-modal-body">
-                <label class="map-modal-label" for="youtube-url-input">YouTube URL または動画 ID を入力</label>
-                <input type="text" id="youtube-url-input" class="map-modal-input"
-                       placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                       autocomplete="off"
-                       oninput="updateYoutubePreview(this.value)">
-                <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
-                    <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
-                </div>
-            </div>
-            <div class="map-modal-footer">
-                <button type="button" class="map-modal-cancel" onclick="closeYoutubeModal()">キャンセル</button>
-                <button type="button" class="map-modal-insert" id="youtube-insert-btn"
-                        onclick="insertYoutubeTag()" disabled>本文に挿入</button>
-            </div>
-        </div>
+        {# 地図・YouTube 挿入モーダル（create/update 共通部分テンプレート） #}
+        {% include '_map_modal.html' %}
+        {% include '_youtube_modal.html' %}
 
         <textarea name="body" id="bodyTextarea" rows="17" required
                   placeholder="ここに文章を書く&#10;[img1]&#10;ここに続きの文章を書く..."></textarea>
@@ -6230,11 +7012,7 @@ a[role="button"]:hover {
         </div>
 
         {# ============================================================
-           【機能追加】サムネイル専用画像のアップロード
-           ------------------------------------------------------------
-           以前は「本文画像の先頭」がサムネイルに流用されていたが、
-           本文に載せたい画像とサムネイルにしたい画像は別なので、
-           サムネイルを個別にアップロードできるようにした。
+           サムネイル専用画像のアップロード
            アップロードしない場合は下のデフォルトサムネイルが使われる。
            ============================================================ #}
         <p>
@@ -6292,531 +7070,22 @@ a[role="button"]:hover {
     </form>
 </div>
 
-
+{# ============================================================
+   共通エディタスクリプト（create/update 共有）
+   ページ固有の差異のみ EDITOR_CONFIG で渡す。
+   新規投稿では画像キャプションの input name 接頭辞は 'img_caption_'。
+   ============================================================ #}
 <script>
-/* =========================================================
-   画像ファイル管理（追加・削除・プレビュー再描画）
-   =========================================================
-   _fileList : File オブジェクトの配列（正データ）
-   _captions : キャプション文字列の配列（インデックス対応）
-
-   input[name="img[]"] の files は DataTransfer で都度再構築して同期する。
-   これにより既存の Flask バックエンド（request.files.getlist('img[]')）は
-   一切変更せずに動作する。
-   ========================================================= */
-var _fileList = [];   // File オブジェクトを格納する配列
-var _captions = [];   // キャプション文字列を格納する配列
-
-/**
- * input[name="img[]"] の files プロパティを _fileList と同期する。
- * DataTransfer を使うことでブラウザ制限を回避してファイルリストを書き換える。
- */
-function _syncInputFiles() {
-    var dt    = new DataTransfer();
-    var input = document.getElementById('imgUpload');
-    _fileList.forEach(function(f) { dt.items.add(f); });
-    input.files = dt.files;
-}
-
-/**
- * 既存の「複数まとめて選択」: _fileList を完全置き換えして再描画。
- * 元の previewImages(input) の動作を維持。
- */
-function onBulkSelect(input) {
-    var newFiles = Array.from(input.files);
-    if (newFiles.length === 0) return;
-
-    // 既存キャプションを一旦保存（枚数が変わるのでリセット）
-    _fileList = newFiles;
-    _captions = new Array(newFiles.length).fill('');
-    _syncInputFiles();
-    renderPreviews();
-}
-
-/**
- * 新規追加：「1枚追加」ボタン用。_fileList に1枚追記して再描画。
- */
-function onOneSelect(input) {
-    var newFiles = Array.from(input.files);
-    if (newFiles.length === 0) return;
-
-    // キャプションを現在の枚数分保存してから追加
-    _saveCaptions();
-    newFiles.forEach(function(f) {
-        _fileList.push(f);
-        _captions.push('');
-    });
-    _syncInputFiles();
-    renderPreviews();
-
-    // 同じファイルを再度選べるよう input をリセット
-    input.value = '';
-}
-
-/**
- * 指定インデックスの画像を削除して再描画。
- */
-function deleteImage(index) {
-    _saveCaptions();          
-    _fileList.splice(index, 1);
-    _captions.splice(index, 1);
-    _syncInputFiles();
-    renderPreviews();
-}
-
-/**
- * DOM 上のキャプション入力欄の値を _captions に保存する。
- * 再描画前に必ず呼ぶことで入力内容を引き継ぐ。
- */
-function _saveCaptions() {
-    var inputs = document.querySelectorAll('.preview-caption-input');
-    inputs.forEach(function(el, i) {
-        if (i < _captions.length) {
-            _captions[i] = el.value;
-        }
-    });
-}
-
-/**
- * プレビューエリアを _fileList の内容で再描画する。
- * [imgN] ボタン・キャプション入力・削除ボタンもここで生成する。
- */
-function renderPreviews() {
-    var previewArea = document.getElementById('preview-area');
-    var previewList = document.getElementById('preview-list');
-    previewList.innerHTML = '';
-
-    if (_fileList.length === 0) {
-        previewArea.style.display = 'none';
-        rebuildImgBtns(0);
-        return;
-    }
-    previewArea.style.display = 'block';
-
-    _fileList.forEach(function(file, index) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var item = document.createElement('div');
-            item.className = 'preview-item';
-            item.style.width = '150px';
-
-            // サムネイル
-            var img = document.createElement('img');
-            img.src = e.target.result;
-            img.alt = file.name;
-
-            // [imgN] ラベル
-            var label = document.createElement('div');
-            label.className = 'preview-label';
-            label.textContent = '[img' + (index + 1) + ']';
-
-            // ファイル名
-            var filename = document.createElement('div');
-            filename.className = 'preview-filename';
-            filename.textContent = file.name;
-            filename.title = file.name;
-
-            // キャプション入力
-            var captionWrapper = document.createElement('div');
-            captionWrapper.className = 'preview-caption-wrapper';
-            var captionInput = document.createElement('input');
-            captionInput.type        = 'text';
-            captionInput.name        = 'img_caption_' + (index + 1);
-            captionInput.placeholder = '画像の説明（省略可）';
-            captionInput.className   = 'preview-caption-input';
-            captionInput.maxLength   = 100;
-            captionInput.value       = _captions[index] || '';
-            captionWrapper.appendChild(captionInput);
-
-            // 削除ボタン（クロージャでインデックスを束縛）
-            var deleteBtn = document.createElement('button');
-            deleteBtn.type      = 'button';
-            deleteBtn.className = 'preview-delete-btn';
-            deleteBtn.textContent = '✕ この画像を削除';
-            (function(i) {
-                deleteBtn.onclick = function() { deleteImage(i); };
-            })(index);
-
-            item.appendChild(img);
-            item.appendChild(label);
-            item.appendChild(filename);
-            item.appendChild(captionWrapper);
-            item.appendChild(deleteBtn);
-            previewList.appendChild(item);
-        };
-        reader.readAsDataURL(file);
-    });
-
-    rebuildImgBtns(_fileList.length);
-}
-
-/* =========================================================
-   【機能追加】サムネイル専用画像のプレビュー
-   =========================================================
-   本文画像とは独立した 1 枚のサムネイルを選択・プレビューする。
-   input[name="thumbnail_img"] は単一ファイルなので、
-   File オブジェクトの管理配列は不要で、選択されたファイルを
-   そのままプレビュー表示する（送信は input が担う）。
-   ========================================================= */
-function onThumbnailSelect(input) {
-    var file = input.files && input.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        document.getElementById('thumbnail-preview-img').src = e.target.result;
-        document.getElementById('thumbnail-preview-area').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-}
-
-/** サムネイルの選択を解除してプレビューを消す。 */
-function clearThumbnail() {
-    var input = document.getElementById('thumbnailUpload');
-    input.value = '';
-    document.getElementById('thumbnail-preview-img').src = '';
-    document.getElementById('thumbnail-preview-area').style.display = 'none';
-}
-
-/* =========================================================
-   ジャンル入力切替
-   ========================================================= */
-function toggleNewGenreInput() {
-    const selectBox = document.getElementById('genre_select');
-    const newGenreWrapper = document.getElementById('new_genre_wrapper');
-    const newGenreInput   = document.getElementById('genre_new');
-
-    if (selectBox.value === '__NEW__') {
-        newGenreWrapper.style.display = 'block';
-        newGenreInput.required = true;
-    } else {
-        newGenreWrapper.style.display = 'none';
-        newGenreInput.required = false;
-        newGenreInput.value = '';
-    }
-}
-
-/* =========================================================
-   デフォルトサムネイルプレビュー
-   ========================================================= */
-function previewDefaultThumb(select) {
-    const previewArea = document.getElementById('default-thumb-preview-area');
-    const previewImg  = document.getElementById('default-thumb-preview-img');
-    if (select.value === 'none') {
-        previewArea.style.display = 'none';
-        previewImg.src = '';
-    } else {
-        previewArea.style.display = 'block';
-        previewImg.src = "/static/img/thbnails/" + select.value;
-    }
-}
-
-/* =========================================================
-   マークダウンツールバー共通ユーティリティ
-   ========================================================= */
-function mdInsertAt(ta, text, selectFrom, selectTo) {
-    const start = ta.selectionStart;
-    const end   = ta.selectionEnd;
-    const before = ta.value.substring(0, start);
-    const after  = ta.value.substring(end);
-    ta.value = before + text + after;
-    const newPos = selectFrom !== undefined ? start + selectFrom : start + text.length;
-    const newEnd = selectTo   !== undefined ? start + selectTo   : newPos;
-    ta.setSelectionRange(newPos, newEnd);
-    ta.focus();
-}
-
-function mdInsertLinePrefix(ta, prefix) {
-    const start = ta.selectionStart;
-    const val   = ta.value;
-    const lineStart = val.lastIndexOf('\n', start - 1) + 1;
-    const before = val.substring(0, lineStart);
-    const after  = val.substring(lineStart);
-    ta.value = before + prefix + after;
-    const newPos = start + prefix.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-}
-
-function mdInsertHeading2() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## '); }
-function mdInsertHeading3() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### '); }
-
-function mdWrapBold() {
-    const ta    = document.getElementById('bodyTextarea');
-    const start = ta.selectionStart;
-    const end   = ta.selectionEnd;
-    const selected = ta.value.substring(start, end);
-    if (selected.length > 0) {
-        mdInsertAt(ta, '**' + selected + '**', 2, 2 + selected.length);
-    } else {
-        mdInsertAt(ta, '**太字テキスト**', 2, 6);
-    }
-}
-
-function mdInsertToc() {
-    const ta  = document.getElementById('bodyTextarea');
-    const pos = ta.selectionStart;
-    const val = ta.value;
-    const before = val.substring(0, pos);
-    const leadingNewlines = before.length === 0      ? ''
-                          : before.endsWith('\n\n')  ? ''
-                          : before.endsWith('\n')     ? '\n'
-                          :                              '\n\n';
-    const after = val.substring(pos);
-    const trailingNewlines = after.length === 0      ? '\n'
-                           : after.startsWith('\n\n') ? ''
-                           : after.startsWith('\n')   ? '\n'
-                           :                              '\n\n';
-    mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
-}
-
-function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), '[img' + n + ']'); }
-
-function rebuildImgBtns(count) {
-    const group = document.getElementById('img-btn-group');
-    group.innerHTML = '';
-    for (let i = 1; i <= count; i++) {
-        const btn = document.createElement('button');
-        btn.type      = 'button';
-        btn.className = 'md-btn md-btn-img';
-        btn.textContent = '[img' + i + ']';
-        btn.onclick   = (function(n){ return function(){ mdInsertImg(n); }; })(i);
-        group.appendChild(btn);
-    }
-}
-
-/* =========================================================
-   箇条書きリスト挿入
-   ========================================================= */
-var LIST_PREFIXES = { bullet: '●  ' };
-
-function mdInsertList(type) {
-    var ta     = document.getElementById('bodyTextarea');
-    var prefix = LIST_PREFIXES[type];
-    if (!prefix) return;
-    var start        = ta.selectionStart;
-    var end          = ta.selectionEnd;
-    var hasSelection = (start !== end);
-    if (hasSelection) { _mdListWrapSelection(ta, prefix, start, end); }
-    else              { _mdListInsertEmpty(ta, prefix, start); }
-}
-
-function _mdListInsertEmpty(ta, prefix, cursorPos) {
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', cursorPos - 1) + 1;
-    var lineEnd   = val.indexOf('\n', cursorPos);
-    var currentLine = val.substring(lineStart, lineEnd === -1 ? val.length : lineEnd);
-    if (currentLine.trim() === '') {
-        ta.value = val.substring(0, cursorPos) + prefix + val.substring(cursorPos);
-        var newPos = cursorPos + prefix.length;
-        ta.setSelectionRange(newPos, newPos);
-    } else if (!currentLine.startsWith(prefix)) {
-        ta.value = val.substring(0, lineStart) + prefix + val.substring(lineStart);
-        var newPos2 = cursorPos + prefix.length;
-        ta.setSelectionRange(newPos2, newPos2);
-    } else {
-        ta.setSelectionRange(cursorPos, cursorPos);
-    }
-    ta.focus();
-}
-
-function _mdListWrapSelection(ta, prefix, start, end) {
-    var val      = ta.value;
-    var selText  = val.substring(start, end);
-    var converted = selText.split('\n').map(function(line) {
-        if (line.trim() === '')       return line;
-        if (line.startsWith(prefix)) return line;
-        return prefix + line;
-    }).join('\n');
-    ta.value = val.substring(0, start) + converted + val.substring(end);
-    ta.setSelectionRange(start, start + converted.length);
-    ta.focus();
-}
-
-/* =========================================================
-   ハッシュタグ入力プレビュー
-   =========================================================
-   【セキュリティ修正】innerHTML による文字列組み立てを廃止し、
-   DOM API（createElement + textContent）に置き換えた。
-   従来は入力値をそのまま HTML 文字列に連結していたため、
-   <img src=x onerror=...> のような入力がそのまま実行される
-   自己 XSS の経路になっていた。textContent への代入は
-   ブラウザが常にプレーンテキストとして扱うため安全。
-   ========================================================= */
-function renderHashtagPreview(value) {
-    var area   = document.getElementById('hashtag-preview');
-    var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
-
-    // 一旦クリアしてから安全な DOM ノードとして再構築する
-    area.textContent = '';
-    tokens.forEach(function(t) {
-        var name = t.replace(/^#+/, '');
-        if (!name) return;
-        var span = document.createElement('span');
-        span.className   = 'hashtag-badge-preview';
-        span.textContent = '#' + name;   
-        area.appendChild(span);
-    });
-}
-
-/* =========================================================
-   地図挿入モーダル
-   ========================================================= */
-var _mapPreviewTimer = null;
-
-function openMapModal() {
-    var ta = document.getElementById('bodyTextarea');
-    window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-    document.getElementById('map-place-input').value = '';
-    document.getElementById('map-preview-area').innerHTML =
-        '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
-    document.getElementById('map-insert-btn').disabled = true;
-    document.getElementById('map-modal-overlay').classList.add('open');
-    document.getElementById('map-modal').classList.add('open');
-    setTimeout(function() { document.getElementById('map-place-input').focus(); }, 80);
-}
-function closeMapModal() {
-    document.getElementById('map-modal-overlay').classList.remove('open');
-    document.getElementById('map-modal').classList.remove('open');
-}
-function updateMapPreview(value) {
-    var insertBtn   = document.getElementById('map-insert-btn');
-    var previewArea = document.getElementById('map-preview-area');
-    clearTimeout(_mapPreviewTimer);
-    var place = value.trim();
-    if (!place) {
-        previewArea.innerHTML = '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
-        insertBtn.disabled = true;
-        return;
-    }
-    insertBtn.disabled = false;
-    _mapPreviewTimer = setTimeout(function() {
-        var encoded = encodeURIComponent(place);
-        previewArea.innerHTML =
-            '<iframe class="map-preview-iframe"' +
-            ' src="https://maps.google.com/maps?q=' + encoded + '&output=embed&hl=ja"' +
-            ' loading="lazy" allowfullscreen></iframe>';
-    }, 600);
-}
-function insertMapTag() {
-    var place = document.getElementById('map-place-input').value.trim();
-    if (!place) return;
-    var ta        = document.getElementById('bodyTextarea');
-    var pos       = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    var tag       = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
-    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    var newPos    = pos.start + tag.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-    closeMapModal();
-}
-
-/* =========================================================
-   YouTube 挿入モーダル
-   ========================================================= */
-var _ytPreviewTimer = null;
-
-function openYoutubeModal() {
-    var ta = document.getElementById('bodyTextarea');
-    window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-    document.getElementById('youtube-url-input').value = '';
-    document.getElementById('youtube-preview-area').innerHTML =
-        '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
-    document.getElementById('youtube-insert-btn').disabled = true;
-    document.getElementById('youtube-modal-overlay').classList.add('open');
-    document.getElementById('youtube-modal').classList.add('open');
-    setTimeout(function() { document.getElementById('youtube-url-input').focus(); }, 80);
-}
-function closeYoutubeModal() {
-    document.getElementById('youtube-modal-overlay').classList.remove('open');
-    document.getElementById('youtube-modal').classList.remove('open');
-}
-function extractYoutubeId(raw) {
-    raw = raw.trim();
-    var m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    m = raw.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    m = raw.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    m = raw.match(/\/embed\/([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
-    return null;
-}
-function updateYoutubePreview(value) {
-    var insertBtn   = document.getElementById('youtube-insert-btn');
-    var previewArea = document.getElementById('youtube-preview-area');
-    clearTimeout(_ytPreviewTimer);
-    var videoId = extractYoutubeId(value);
-    if (!videoId) {
-        previewArea.innerHTML = '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
-        insertBtn.disabled = true;
-        return;
-    }
-    insertBtn.disabled = false;
-    _ytPreviewTimer = setTimeout(function() {
-        var thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
-        previewArea.innerHTML =
-            '<img src="' + thumbUrl + '" alt="サムネイルプレビュー"' +
-            ' style="width:100%; height:100%; object-fit:cover; display:block;"' +
-            ' onerror="this.parentNode.innerHTML=\'<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>\'">';
-    }, 600);
-}
-function insertYoutubeTag() {
-    var rawUrl = document.getElementById('youtube-url-input').value.trim();
-    if (!rawUrl || !extractYoutubeId(rawUrl)) return;
-    var ta        = document.getElementById('bodyTextarea');
-    var pos       = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    var tag       = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
-    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    var newPos    = pos.start + tag.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-    closeYoutubeModal();
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeMapModal(); closeYoutubeModal(); }
-});
-
-/* =========================================================
-   Sticky ツールバー
-   ========================================================= */
-(function () {
-    'use strict';
-    var toolbar = document.getElementById('md-toolbar');
-    if (!toolbar) return;
-    var sentinel = document.createElement('div');
-    sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
-    toolbar.parentElement.insertBefore(sentinel, toolbar);
-    var observer = new IntersectionObserver(
-        function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
-        { rootMargin: '-85px 0px 0px 0px', threshold: 0 }
-    );
-    observer.observe(sentinel);
-    var mq = window.matchMedia('(max-width: 767px)');
-    function updateRootMargin(e) {
-        observer.disconnect();
-        var offset = e.matches ? '-63px' : '-85px';
-        observer = new IntersectionObserver(
-            function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
-            { rootMargin: offset + ' 0px 0px 0px', threshold: 0 }
-        );
-        observer.observe(sentinel);
-    }
-    mq.addEventListener('change', updateRootMargin);
-})();
+    window.EDITOR_CONFIG = { newImageCaptionPrefix: 'img_caption_' };
 </script>
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 
 {% endblock %}
 </file>
 
 <file path="templates/detail.html">
 {% extends "base.html" %}
+{% from '_macros.html' import post_thumbnail %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
 
@@ -6889,6 +7158,8 @@ document.addEventListener('keydown', function(e) {
 
     {# ================================================================
        関連記事セクション（単一ブロック、最大4件）
+       サムネイルは _macros.html の post_thumbnail マクロで描画
+       （index/mypage と共通の優先順位ロジック）。
        ================================================================ #}
     {% if related_posts %}
         <section class="related-section">
@@ -6906,20 +7177,7 @@ document.addEventListener('keydown', function(e) {
                     <li class="related-item">
                         <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
                             <div class="related-thumb">
-                                {# サムネイル表示の優先順位:
-                                   1. thumbnail_img（アップロードされた専用サムネイル）
-                                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
-                                   3. system-default.jpg（システム共通のデフォルト） #}
-                                {% if rel.thumbnail_img %}
-                                    <img src="{{ url_for('static', filename='img/posts/' + rel.thumbnail_img) }}"
-                                         alt="{{ rel.title }}" loading="lazy">
-                                {% elif rel.default_thumb %}
-                                    <img src="{{ url_for('static', filename='img/thbnails/' + rel.default_thumb) }}"
-                                         alt="{{ rel.title }}" loading="lazy">
-                                {% else %}
-                                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
-                                         alt="{{ rel.title }}" loading="lazy">
-                                {% endif %}
+                                {{ post_thumbnail(rel) }}
                             </div>
                             <div class="related-body">
                                 <p class="related-title">{{ rel.title }}</p>
@@ -7134,6 +7392,7 @@ function ytPlay(facadeEl) {
 
 <file path="templates/index.html">
 {% extends "base.html" %}
+{% from '_macros.html' import post_card with context %}
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -7198,67 +7457,9 @@ function ytPlay(facadeEl) {
     {% endif %}
     {# =========================== #}
 
+    {# 記事カードは _macros.html の post_card マクロで描画（mypage.html と共通） #}
     {% for post in posts %}
-        <article class="post-card">
-            <div class="post-thumbnail">
-                {# サムネイル表示の優先順位:
-                   1. thumbnail_img（アップロードされた専用サムネイル）
-                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
-                   3. system-default.jpg（システム共通のデフォルト）
-                   ※ 以前は img_name の先頭画像をサムネイルに流用していたが、
-                     サムネイルは thumbnail_img で独立管理する方式に変更した。 #}
-                {% if post.thumbnail_img %}
-                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img" loading="lazy">
-                {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img" loading="lazy">
-                {% else %}
-                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img" loading="lazy">
-                {% endif %}
-            </div>
-
-            <div class="post-content">
-                <div class="post-header-meta">
-                    <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-
-                    {% if not post.is_published %}
-                        <span class="badge-private">🔒 非公開</span>
-                    {% endif %}
-                </div>
-
-                <h2 class="post-title">
-                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
-                </h2>
-
-                {# ===== ハッシュタグバッジ ===== #}
-                {% if post.hashtags %}
-                    <div class="post-hashtags">
-                        {% for tag in post.hashtags %}
-                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
-                                #{{ tag.name }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                {# ============================= #}
-
-                <p class="post-date">
-                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.updated_at %}
-                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
-                    {% endif %}
-                </p>
-
-                {% if current_user.is_authenticated and post.user_id == current_user.id %}
-                    <div class="post-actions">
-                        <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                        <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn-delete">削除</button>
-                        </form>
-                    </div>
-                {% endif %}
-            </div>
-        </article>
+        {{ post_card(post) }}
     {% else %}
         <p class="index-empty-message">
             該当する記事が見つかりませんでした。
@@ -7268,22 +7469,10 @@ function ytPlay(facadeEl) {
     {# ============================================================
        ページ番号によるページ送り（サーバー側ページネーション）
        ------------------------------------------------------------
-       【変更点】
-       以前はサーバー側で最大4件しか渡していないのに、クライアント
-       JS が「全記事がレンダリングされている前提」でページ分割して
-       いたため、常に totalPages=1 となりページ送りUIが表示されず、
-       最新4件より古い記事に一切到達できないバグがあった。
-
-       これを解消するため、クライアント JS のページ送りを廃止し、
-       ビューから渡される Flask-SQLAlchemy の pagination オブジェクトを
-       もとに、サーバー側ページネーションのリンクを描画する方式へ一本化した。
-
-       - 各リンクは現在の絞り込み条件（genre / search / hashtag）を
-         引き継ぐ。url_for は値が None のクエリを自動で省くため、
-         絞り込みなしのときは余計なパラメータが付かない。
-       - #index-articles-anchor フラグメントを付与し、ページ遷移後に
-         記事一覧の先頭へスクロールする（固定ヘッダー分は
-         scroll-margin-top で吸収）。
+       各リンクは現在の絞り込み条件（genre / search / hashtag）を引き継ぐ。
+       url_for は値が None のクエリを自動で省くため、絞り込みなしのときは
+       余計なパラメータが付かない。#index-articles-anchor フラグメントで
+       ページ遷移後に記事一覧の先頭へスクロールする。
        ============================================================ #}
     {% if pagination.pages > 1 %}
         <nav class="index-pagination" aria-label="記事一覧のページ送り">
@@ -7367,6 +7556,7 @@ function ytPlay(facadeEl) {
 
 <file path="templates/mypage.html">
 {% extends "base.html" %}
+{% from '_macros.html' import post_card with context %}
 {% block content %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -7375,7 +7565,7 @@ function ytPlay(facadeEl) {
 
 
 <div class="mypage-container">
-    
+
     <div class="profile-header">
         <h2 class="profile-title">
             👤 {% if current_user.nickname %}{{ current_user.nickname }}{% endif %} さんのマイページ
@@ -7388,11 +7578,11 @@ function ytPlay(facadeEl) {
         <div class="nickname-form-wrapper">
             <form method="POST" action="{{ url_for('admin.mypage') }}" class="nickname-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
+
                 <label for="nickname">ニックネーム変更:</label>
-                <input type="text" name="nickname" id="nickname" 
+                <input type="text" name="nickname" id="nickname"
                     class="nickname-input"
-                    placeholder="新しいニックネーム" 
+                    placeholder="新しいニックネーム"
                     maxlength="50">
                 <button type="submit" class="nickname-submit-btn">変更する</button>
             </form>
@@ -7416,62 +7606,12 @@ function ytPlay(facadeEl) {
 
     <h3 class="section-title-posts">📝 投稿一覧</h3>
 
+    {# 記事カードは _macros.html の post_card マクロで描画（index.html と共通）。
+       マイページは自分の記事のみ一覧するため、マクロ内の
+       「ログイン中 かつ 自分の記事」条件は常に真となり、
+       従来どおり全カードに編集・削除ボタンが表示される。 #}
     {% for post in posts %}
-        <article class="post-card">
-            <div class="post-thumbnail">
-                {# サムネイル表示の優先順位:
-                   1. thumbnail_img（アップロードされた専用サムネイル）
-                   2. default_thumb（プリセットから選択したデフォルトサムネイル）
-                   3. system-default.jpg（システム共通のデフォルト） #}
-                {% if post.thumbnail_img %}
-                    <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}" alt="{{ post.title }}" class="thumb-img">
-                {% elif post.default_thumb %}
-                    <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}" alt="選択されたデフォルトサムネイル" class="thumb-img">
-                {% else %}
-                    <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}" alt="システム共通デフォルトサムネイル" class="thumb-img">
-                {% endif %}
-            </div>
-
-            <div class="post-content">
-                <div class="post-header-meta">
-                    <span class="badge-genre">📂 {{ post.genre if post.genre else '未分類' }}</span>
-                    {% if not post.is_published %}
-                        <span class="badge-private">🔒 非公開</span>
-                    {% endif %}
-                </div>
-
-                <h2 class="post-title">
-                    <a href="{{ url_for('blog.detail', id=post.id) }}">{{ post.title }}</a>
-                </h2>
-
-                {# ===== ハッシュタグバッジ ===== #}
-                {% if post.hashtags %}
-                    <div class="post-hashtags">
-                        {% for tag in post.hashtags %}
-                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}" class="hashtag-badge">
-                                #{{ tag.name }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                {# ============================= #}
-
-                <p class="post-date">
-                    🕒 投稿: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                    {% if post.updated_at %}
-                        <span class="updated-date">（更新: {{ post.updated_at.strftime('%Y年%m月%d日') }}）</span>
-                    {% endif %}
-                </p>
-
-                <div class="post-actions">
-                    <a href="{{ url_for('admin.update', id=post.id) }}" role="button" class="btn-edit">編集</a>
-                    <form action="{{ url_for('admin.delete', id=post.id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn-delete">削除</button>
-                    </form>
-                </div>
-            </div>
-        </article>
+        {{ post_card(post) }}
     {% else %}
         <p class="empty-message">まだ投稿がありません。<br><a href="{{ url_for('admin.create') }}">最初の記事を書いてみましょう</a></p>
     {% endfor %}
@@ -7735,28 +7875,6 @@ function ytPlay(facadeEl) {
             </button>
         </p>
 
-        <script>
-        function handleStatusToggle() {
-            var hiddenInput = document.getElementById('is_published');
-            var btn  = document.getElementById('toggle_status_btn');
-            var icon = btn.querySelector('.status-icon');
-            var text = btn.querySelector('.status-text');
-            if (hiddenInput.value === 'false') {
-                hiddenInput.value = 'true';
-                btn.classList.remove('private');
-                btn.classList.add('published');
-                icon.textContent = '🔓';
-                text.textContent = '全体公開';
-            } else {
-                hiddenInput.value = 'false';
-                btn.classList.remove('published');
-                btn.classList.add('private');
-                icon.textContent = '🔒';
-                text.textContent = '非公開';
-            }
-        }
-        </script>
-
         <label for="bodyTextarea">内容</label>
 
         <div class="md-toolbar-wrapper">
@@ -7792,53 +7910,9 @@ function ytPlay(facadeEl) {
             </span>
         </div>
 
-        <!-- ===== 地図挿入モーダル ===== -->
-        <div id="map-modal-overlay" class="map-modal-overlay" onclick="closeMapModal()"></div>
-        <div id="map-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="地図挿入">
-            <div class="map-modal-header">
-                <span class="map-modal-title">🗺️ 地図を挿入</span>
-                <button type="button" class="map-modal-close" onclick="closeMapModal()">✕</button>
-            </div>
-            <div class="map-modal-body">
-                <label class="map-modal-label" for="map-place-input">場所・住所を入力</label>
-                <input type="text" id="map-place-input" class="map-modal-input"
-                       placeholder="例：東京スカイツリー、京都市伏見稲荷大社"
-                       autocomplete="off"
-                       oninput="updateMapPreview(this.value)">
-                <div class="map-preview-area" id="map-preview-area">
-                    <p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>
-                </div>
-            </div>
-            <div class="map-modal-footer">
-                <button type="button" class="map-modal-cancel" onclick="closeMapModal()">キャンセル</button>
-                <button type="button" class="map-modal-insert" id="map-insert-btn"
-                        onclick="insertMapTag()" disabled>本文に挿入</button>
-            </div>
-        </div>
-
-        <!-- ===== YouTube 挿入モーダル ===== -->
-        <div id="youtube-modal-overlay" class="map-modal-overlay" onclick="closeYoutubeModal()"></div>
-        <div id="youtube-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="YouTube動画挿入">
-            <div class="map-modal-header">
-                <span class="map-modal-title">▶ YouTube 動画を挿入</span>
-                <button type="button" class="map-modal-close" onclick="closeYoutubeModal()">✕</button>
-            </div>
-            <div class="map-modal-body">
-                <label class="map-modal-label" for="youtube-url-input">YouTube URL または動画 ID を入力</label>
-                <input type="text" id="youtube-url-input" class="map-modal-input"
-                       placeholder="例：https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                       autocomplete="off"
-                       oninput="updateYoutubePreview(this.value)">
-                <div class="map-preview-area map-preview-area--dark" id="youtube-preview-area">
-                    <p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>
-                </div>
-            </div>
-            <div class="map-modal-footer">
-                <button type="button" class="map-modal-cancel" onclick="closeYoutubeModal()">キャンセル</button>
-                <button type="button" class="map-modal-insert" id="youtube-insert-btn"
-                        onclick="insertYoutubeTag()" disabled>本文に挿入</button>
-            </div>
-        </div>
+        {# 地図・YouTube 挿入モーダル（create/update 共通部分テンプレート） #}
+        {% include '_map_modal.html' %}
+        {% include '_youtube_modal.html' %}
 
         <textarea name="body" id="bodyTextarea" rows="17">{{post.body}}</textarea>
 
@@ -7941,12 +8015,10 @@ function ytPlay(facadeEl) {
             </div>
 
             {# ============================================================
-               【機能追加】サムネイル専用画像のアップロード・変更・削除
-               ------------------------------------------------------------
-               サムネイルは本文画像（img_name）とは独立して 1 枚管理する。
-                 ・現在のサムネイルがある場合は表示し、個別削除できる
-                 ・新しいサムネイルを選ぶと、更新後に差し替えられる
-                 ・どちらもなければ下のデフォルトサムネイルが使われる
+               サムネイル専用画像のアップロード・変更・削除
+               ・現在のサムネイルがある場合は表示し、個別削除できる
+               ・新しいサムネイルを選ぶと、更新後に差し替えられる
+               ・どちらもなければ下のデフォルトサムネイルが使われる
                ============================================================ #}
             <p>
                 <label>サムネイル画像（任意）</label>
@@ -8028,581 +8100,16 @@ function ytPlay(facadeEl) {
     </form>
 </div>
 
-
+{# ============================================================
+   共通エディタスクリプト（create/update 共有）
+   編集時の新規画像キャプションは、既存画像のキャプション欄
+   （img_caption_N）と衝突しないよう input name 接頭辞を
+   'new_img_caption_' にする（サーバー側 update() も対応済み）。
+   ============================================================ #}
 <script>
-/* =========================================================
-   画像ファイル管理（追加・削除・プレビュー再描画）
-   =========================================================
-   _fileList : File オブジェクトの配列（正データ）
-   _captions : キャプション文字列の配列（インデックス対応）
-
-   input[name="img[]"] の files は DataTransfer で都度再構築して同期する。
-   既存の Flask バックエンドは一切変更せずに動作する。
-   ========================================================= */
-var _fileList = [];
-var _captions = [];
-
-function _syncInputFiles() {
-    var dt    = new DataTransfer();
-    var input = document.getElementById('imgUpload');
-    _fileList.forEach(function(f) { dt.items.add(f); });
-    input.files = dt.files;
-}
-
-/**
- * 「複数まとめて選択」: _fileList を完全置き換えして再描画。
- */
-function onBulkSelect(input) {
-    var newFiles = Array.from(input.files);
-    if (newFiles.length === 0) return;
-    _fileList = newFiles;
-    _captions = new Array(newFiles.length).fill('');
-    _syncInputFiles();
-    renderPreviews();
-}
-
-/**
- * 「1枚追加」: _fileList に追記して再描画。
- */
-function onOneSelect(input) {
-    var newFiles = Array.from(input.files);
-    if (newFiles.length === 0) return;
-    _saveCaptions();
-    newFiles.forEach(function(f) {
-        _fileList.push(f);
-        _captions.push('');
-    });
-    _syncInputFiles();
-    renderPreviews();
-    input.value = '';
-}
-
-/**
- * 指定インデックスの画像を削除して再描画。
- */
-function deleteImage(index) {
-    _saveCaptions();
-    _fileList.splice(index, 1);
-    _captions.splice(index, 1);
-    _syncInputFiles();
-    renderPreviews();
-}
-
-function _saveCaptions() {
-    var inputs = document.querySelectorAll('#preview-list .preview-caption-input');
-    inputs.forEach(function(el, i) {
-        if (i < _captions.length) { _captions[i] = el.value; }
-    });
-}
-
-function renderPreviews() {
-    var previewArea = document.getElementById('preview-area');
-    var previewList = document.getElementById('preview-list');
-    previewList.innerHTML = '';
-
-    if (_fileList.length === 0) {
-        previewArea.style.display = 'none';
-        rebuildImgBtns(0);
-        return;
-    }
-    previewArea.style.display = 'block';
-
-    _fileList.forEach(function(file, index) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var item = document.createElement('div');
-            item.className = 'preview-item';
-            item.style.width = '150px';
-
-            var img = document.createElement('img');
-            img.src = e.target.result;
-            img.alt = file.name;
-
-            var label = document.createElement('div');
-            label.className = 'preview-label';
-            label.textContent = '[img' + (index + 1) + ']';
-
-            var filename = document.createElement('div');
-            filename.className = 'preview-filename';
-            filename.textContent = file.name;
-            filename.title = file.name;
-
-            var captionWrapper = document.createElement('div');
-            captionWrapper.className = 'preview-caption-wrapper';
-            var captionInput = document.createElement('input');
-            captionInput.type        = 'text';
-            /* -----------------------------------------------------------
-               【バグ修正】新規画像のキャプション名を new_img_caption_N に変更
-               従来は既存画像のキャプション欄（img_caption_N）と同名だったため、
-               画像を差し替えて更新すると、サーバー側の request.form.get() が
-               フォーム上で先に現れる「旧画像のキャプション」を拾ってしまい、
-               新規画像に旧キャプションが割り当てられる（ずれる）バグがあった。
-               views/admin.py の update() 側も
-               parse_img_captions(..., prefix='new_img_caption_') で対応済み。
-               ----------------------------------------------------------- */
-            captionInput.name        = 'new_img_caption_' + (index + 1);
-            captionInput.placeholder = '画像の説明（省略可）';
-            captionInput.className   = 'preview-caption-input';
-            captionInput.maxLength   = 100;
-            captionInput.value       = _captions[index] || '';
-            captionWrapper.appendChild(captionInput);
-
-            var deleteBtn = document.createElement('button');
-            deleteBtn.type      = 'button';
-            deleteBtn.className = 'preview-delete-btn';
-            deleteBtn.textContent = '✕ この画像を削除';
-            (function(i) {
-                deleteBtn.onclick = function() { deleteImage(i); };
-            })(index);
-
-            item.appendChild(img);
-            item.appendChild(label);
-            item.appendChild(filename);
-            item.appendChild(captionWrapper);
-            item.appendChild(deleteBtn);
-            previewList.appendChild(item);
-        };
-        reader.readAsDataURL(file);
-    });
-
-    rebuildImgBtns(_fileList.length);
-}
-
-
-/* =========================================================
-   【機能追加】サムネイル専用画像のプレビュー・削除
-   =========================================================
-   ・onThumbnailSelect : 新しいサムネイルを選択したときのプレビュー
-   ・clearThumbnail    : 選択した新規サムネイルを取り消す
-   ・toggleThumbnailDelete : 現在のサムネイルを「削除予定」にする／取り消す
-     （hidden の keep_thumbnail を '0'/'1' で切り替え、
-       実際の削除は「更新」ボタン押下後にサーバー側で行われる）
-   ========================================================= */
-function onThumbnailSelect(input) {
-    var file = input.files && input.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        document.getElementById('thumbnail-preview-img').src = e.target.result;
-        document.getElementById('thumbnail-preview-area').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-}
-
-function clearThumbnail() {
-    var input = document.getElementById('thumbnailUpload');
-    input.value = '';
-    document.getElementById('thumbnail-preview-img').src = '';
-    document.getElementById('thumbnail-preview-area').style.display = 'none';
-}
-
-function toggleThumbnailDelete() {
-    var flag = document.getElementById('keep_thumbnail');
-    var item = document.getElementById('current-thumbnail-item');
-    var btn  = document.getElementById('thumbnail-delete-btn');
-    if (!flag) return;
-
-    if (flag.value === '0') {
-        /* --- 削除の取り消し --- */
-        flag.value = '1';
-        item.style.opacity = '';
-        btn.textContent = '✕ このサムネイルを削除';
-    } else {
-        /* --- 削除予定としてマーク --- */
-        flag.value = '0';
-        item.style.opacity = '0.45';
-        btn.textContent = '↩ 削除を取り消す';
-    }
-}
-
-
-/* =========================================================
-   【機能追加】既存画像の個別削除（削除予定マークのトグル）
-   =========================================================
-   仕組み:
-   - 各既存画像カードは hidden の keep_img_N（'1'=残す）を持つ
-   - 削除ボタンを押すと keep_img_N を '0' に切り替え、
-     カードをグレーアウトして「削除予定」であることを可視化する
-   - もう一度押すと '1' に戻り、削除を取り消せる
-   - 実際の削除（DB 参照の除去 + ファイルの物理削除）は
-     フォーム送信後にサーバー側で行われるため、
-     「更新」を押すまでは何も確定しない（誤操作に強い）
-   ========================================================= */
-function toggleExistingDelete(btn) {
-    var item    = btn.closest('.existing-img-item');
-    var flag    = item.querySelector('.keep-img-flag');
-    var caption = item.querySelector('.preview-caption-input');
-
-    if (flag.value === '0') {
-        /* --- 削除の取り消し --- */
-        flag.value        = '1';
-        item.style.opacity = '';
-        caption.disabled  = false;
-        btn.textContent   = '✕ この画像を削除';
-    } else {
-        /* --- 削除予定としてマーク --- */
-        flag.value        = '0';
-        item.style.opacity = '0.45';
-        /* disabled にした input は送信されないが、
-           サーバー側は削除予定画像のキャプションを読まないため問題ない */
-        caption.disabled  = true;
-        btn.textContent   = '↩ 削除を取り消す';
-    }
-
-    renumberExistingLabels();
-}
-
-/* 削除予定を除いた「更新後の番号」を [imgN] ラベルに反映する。
-   保存後に画像番号が繰り上がることをその場で確認できるようにする */
-function renumberExistingLabels() {
-    var items = document.querySelectorAll('.existing-img-item');
-    var n = 0;
-    items.forEach(function (item) {
-        var label = item.querySelector('.preview-label');
-        if (item.querySelector('.keep-img-flag').value === '0') {
-            label.textContent = '（削除予定）';
-        } else {
-            n += 1;
-            label.textContent = '[img' + n + ']（更新後）';
-        }
-    });
-}
-
-
-/* =========================================================
-   ジャンル入力切替
-   ========================================================= */
-function toggleNewGenreInput() {
-    var selectBox = document.getElementById('genre_select');
-    var newGenreWrapper = document.getElementById('new_genre_wrapper');
-    var newGenreInput   = document.getElementById('genre_new');
-    if (selectBox.value === '__NEW__') {
-        newGenreWrapper.style.display = 'block';
-        newGenreInput.required = true;
-    } else {
-        newGenreWrapper.style.display = 'none';
-        newGenreInput.required = false;
-        newGenreInput.value = '';
-    }
-}
-
-/* =========================================================
-   デフォルトサムネイルプレビュー
-   ========================================================= */
-function previewDefaultThumb(select) {
-    var previewArea = document.getElementById('default-thumb-preview-area');
-    var previewImg  = document.getElementById('default-thumb-preview-img');
-    if (select.value === 'none') {
-        previewArea.style.display = 'none';
-        previewImg.src = '';
-    } else {
-        previewArea.style.display = 'block';
-        previewImg.src = "/static/img/thbnails/" + select.value;
-    }
-}
-
-/* =========================================================
-   マークダウンツールバー共通ユーティリティ
-   ========================================================= */
-function mdInsertAt(ta, text, selectFrom, selectTo) {
-    var start  = ta.selectionStart;
-    var end    = ta.selectionEnd;
-    var before = ta.value.substring(0, start);
-    var after  = ta.value.substring(end);
-    ta.value = before + text + after;
-    var newPos = selectFrom !== undefined ? start + selectFrom : start + text.length;
-    var newEnd = selectTo   !== undefined ? start + selectTo   : newPos;
-    ta.setSelectionRange(newPos, newEnd);
-    ta.focus();
-}
-function mdInsertLinePrefix(ta, prefix) {
-    var start     = ta.selectionStart;
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', start - 1) + 1;
-    var before    = val.substring(0, lineStart);
-    var after     = val.substring(lineStart);
-    ta.value = before + prefix + after;
-    var newPos = start + prefix.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-}
-function mdInsertHeading2() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '## '); }
-function mdInsertHeading3() { mdInsertLinePrefix(document.getElementById('bodyTextarea'), '### '); }
-
-function mdWrapBold() {
-    var ta       = document.getElementById('bodyTextarea');
-    var start    = ta.selectionStart;
-    var end      = ta.selectionEnd;
-    var selected = ta.value.substring(start, end);
-    if (selected.length > 0) {
-        mdInsertAt(ta, '**' + selected + '**', 2, 2 + selected.length);
-    } else {
-        mdInsertAt(ta, '**太字テキスト**', 2, 6);
-    }
-}
-function mdInsertToc() {
-    var ta  = document.getElementById('bodyTextarea');
-    var pos = ta.selectionStart;
-    var val = ta.value;
-    var before = val.substring(0, pos);
-    var leadingNewlines = before.length === 0      ? ''
-                        : before.endsWith('\n\n')  ? ''
-                        : before.endsWith('\n')     ? '\n'
-                        :                              '\n\n';
-    var after = val.substring(pos);
-    var trailingNewlines = after.length === 0       ? '\n'
-                         : after.startsWith('\n\n') ? ''
-                         : after.startsWith('\n')   ? '\n'
-                         :                              '\n\n';
-    mdInsertAt(ta, leadingNewlines + '[toc]' + trailingNewlines);
-}
-function mdInsertImg(n) { mdInsertAt(document.getElementById('bodyTextarea'), '[img' + n + ']'); }
-
-function rebuildImgBtns(count) {
-    var group = document.getElementById('img-btn-group');
-    group.innerHTML = '';
-    for (var i = 1; i <= count; i++) {
-        var btn     = document.createElement('button');
-        btn.type      = 'button';
-        btn.className = 'md-btn md-btn-img';
-        btn.textContent = '[img' + i + ']';
-        btn.dataset.imgIndex = i;
-        group.appendChild(btn);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('img-btn-group').addEventListener('click', function (e) {
-        var btn = e.target.closest('.md-btn-img');
-        if (btn && btn.dataset.imgIndex) {
-            mdInsertImg(parseInt(btn.dataset.imgIndex));
-        }
-    });
-});
-
-/* =========================================================
-   箇条書きリスト挿入
-   ========================================================= */
-var LIST_PREFIXES = { bullet: '●  ' };
-
-function mdInsertList(type) {
-    var ta     = document.getElementById('bodyTextarea');
-    var prefix = LIST_PREFIXES[type];
-    if (!prefix) return;
-    var start        = ta.selectionStart;
-    var end          = ta.selectionEnd;
-    var hasSelection = (start !== end);
-    if (hasSelection) { _mdListWrapSelection(ta, prefix, start, end); }
-    else              { _mdListInsertEmpty(ta, prefix, start); }
-}
-function _mdListInsertEmpty(ta, prefix, cursorPos) {
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', cursorPos - 1) + 1;
-    var lineEnd   = val.indexOf('\n', cursorPos);
-    var currentLine = val.substring(lineStart, lineEnd === -1 ? val.length : lineEnd);
-    if (currentLine.trim() === '') {
-        ta.value = val.substring(0, cursorPos) + prefix + val.substring(cursorPos);
-        var newPos = cursorPos + prefix.length;
-        ta.setSelectionRange(newPos, newPos);
-    } else if (!currentLine.startsWith(prefix)) {
-        ta.value = val.substring(0, lineStart) + prefix + val.substring(lineStart);
-        var newPos2 = cursorPos + prefix.length;
-        ta.setSelectionRange(newPos2, newPos2);
-    } else {
-        ta.setSelectionRange(cursorPos, cursorPos);
-    }
-    ta.focus();
-}
-function _mdListWrapSelection(ta, prefix, start, end) {
-    var val      = ta.value;
-    var selText  = val.substring(start, end);
-    var converted = selText.split('\n').map(function(line) {
-        if (line.trim() === '')       return line;
-        if (line.startsWith(prefix)) return line;
-        return prefix + line;
-    }).join('\n');
-    ta.value = val.substring(0, start) + converted + val.substring(end);
-    ta.setSelectionRange(start, start + converted.length);
-    ta.focus();
-}
-
-/* =========================================================
-   ハッシュタグ入力プレビュー
-   =========================================================
-   【セキュリティ修正】innerHTML による文字列組み立てを廃止し、
-   DOM API（createElement + textContent）に置き換えた。
-   従来は入力値をそのまま HTML 文字列に連結していたため、
-   <img src=x onerror=...> のような入力がそのまま実行される
-   自己 XSS の経路になっていた。textContent への代入は
-   ブラウザが常にプレーンテキストとして扱うため安全。
-   ========================================================= */
-function renderHashtagPreview(value) {
-    var area   = document.getElementById('hashtag-preview');
-    var tokens = value.trim().split(/[\s\u3000,、]+/).filter(Boolean);
-
-    // 一旦クリアしてから安全な DOM ノードとして再構築する
-    area.textContent = '';
-    tokens.forEach(function(t) {
-        var name = t.replace(/^#+/, '');
-        if (!name) return;
-        var span = document.createElement('span');
-        span.className   = 'hashtag-badge-preview';
-        span.textContent = '#' + name;   
-        area.appendChild(span);
-    });
-}
-
-/* =========================================================
-   地図挿入モーダル
-   ========================================================= */
-var _mapPreviewTimer = null;
-function openMapModal() {
-    var ta = document.getElementById('bodyTextarea');
-    window._mapInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-    document.getElementById('map-place-input').value = '';
-    document.getElementById('map-preview-area').innerHTML =
-        '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
-    document.getElementById('map-insert-btn').disabled = true;
-    document.getElementById('map-modal-overlay').classList.add('open');
-    document.getElementById('map-modal').classList.add('open');
-    setTimeout(function() { document.getElementById('map-place-input').focus(); }, 80);
-}
-function closeMapModal() {
-    document.getElementById('map-modal-overlay').classList.remove('open');
-    document.getElementById('map-modal').classList.remove('open');
-}
-function updateMapPreview(value) {
-    var insertBtn   = document.getElementById('map-insert-btn');
-    var previewArea = document.getElementById('map-preview-area');
-    clearTimeout(_mapPreviewTimer);
-    var place = value.trim();
-    if (!place) {
-        previewArea.innerHTML = '<p class="map-preview-placeholder">場所を入力するとプレビューが表示されます</p>';
-        insertBtn.disabled = true;
-        return;
-    }
-    insertBtn.disabled = false;
-    _mapPreviewTimer = setTimeout(function() {
-        var encoded = encodeURIComponent(place);
-        previewArea.innerHTML =
-            '<iframe class="map-preview-iframe"' +
-            ' src="https://maps.google.com/maps?q=' + encoded + '&output=embed&hl=ja"' +
-            ' loading="lazy" allowfullscreen></iframe>';
-    }, 600);
-}
-function insertMapTag() {
-    var place = document.getElementById('map-place-input').value.trim();
-    if (!place) return;
-    var ta        = document.getElementById('bodyTextarea');
-    var pos       = window._mapInsertPos || { start: ta.value.length, end: ta.value.length };
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    var tag       = (pos.start === lineStart ? '' : '\n') + '[map:' + place + ']\n';
-    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    var newPos    = pos.start + tag.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-    closeMapModal();
-}
-
-/* =========================================================
-   YouTube 挿入モーダル
-   ========================================================= */
-var _ytPreviewTimer = null;
-function openYoutubeModal() {
-    var ta = document.getElementById('bodyTextarea');
-    window._youtubeInsertPos = { start: ta.selectionStart, end: ta.selectionEnd };
-    document.getElementById('youtube-url-input').value = '';
-    document.getElementById('youtube-preview-area').innerHTML =
-        '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
-    document.getElementById('youtube-insert-btn').disabled = true;
-    document.getElementById('youtube-modal-overlay').classList.add('open');
-    document.getElementById('youtube-modal').classList.add('open');
-    setTimeout(function() { document.getElementById('youtube-url-input').focus(); }, 80);
-}
-function closeYoutubeModal() {
-    document.getElementById('youtube-modal-overlay').classList.remove('open');
-    document.getElementById('youtube-modal').classList.remove('open');
-}
-function extractYoutubeId(raw) {
-    raw = raw.trim();
-    var m = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    m = raw.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    m = raw.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    m = raw.match(/\/embed\/([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
-    return null;
-}
-function updateYoutubePreview(value) {
-    var insertBtn   = document.getElementById('youtube-insert-btn');
-    var previewArea = document.getElementById('youtube-preview-area');
-    clearTimeout(_ytPreviewTimer);
-    var videoId = extractYoutubeId(value);
-    if (!videoId) {
-        previewArea.innerHTML = '<p class="map-preview-placeholder youtube-preview-placeholder">URL を入力するとプレビューが表示されます</p>';
-        insertBtn.disabled = true;
-        return;
-    }
-    insertBtn.disabled = false;
-    _ytPreviewTimer = setTimeout(function() {
-        var thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
-        previewArea.innerHTML =
-            '<img src="' + thumbUrl + '" alt="サムネイルプレビュー"' +
-            ' style="width:100%; height:100%; object-fit:cover; display:block;"' +
-            ' onerror="this.parentNode.innerHTML=\'<p class=map-preview-placeholder>サムネイルを取得できませんでした</p>\'">';
-    }, 600);
-}
-function insertYoutubeTag() {
-    var rawUrl = document.getElementById('youtube-url-input').value.trim();
-    if (!rawUrl || !extractYoutubeId(rawUrl)) return;
-    var ta        = document.getElementById('bodyTextarea');
-    var pos       = window._youtubeInsertPos || { start: ta.value.length, end: ta.value.length };
-    var val       = ta.value;
-    var lineStart = val.lastIndexOf('\n', pos.start - 1) + 1;
-    var tag       = (pos.start === lineStart ? '' : '\n') + '[youtube:' + rawUrl + ']\n';
-    ta.value      = val.substring(0, pos.start) + tag + val.substring(pos.end);
-    var newPos    = pos.start + tag.length;
-    ta.setSelectionRange(newPos, newPos);
-    ta.focus();
-    closeYoutubeModal();
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeMapModal(); closeYoutubeModal(); }
-});
-
-/* =========================================================
-   Sticky ツールバー
-   ========================================================= */
-(function () {
-    'use strict';
-    var toolbar = document.getElementById('md-toolbar');
-    if (!toolbar) return;
-    var sentinel = document.createElement('div');
-    sentinel.style.cssText = 'position:absolute;top:0;height:1px;pointer-events:none;';
-    toolbar.parentElement.insertBefore(sentinel, toolbar);
-    var observer = new IntersectionObserver(
-        function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
-        { rootMargin: '-85px 0px 0px 0px', threshold: 0 }
-    );
-    observer.observe(sentinel);
-    var mq = window.matchMedia('(max-width: 767px)');
-    function updateRootMargin(e) {
-        observer.disconnect();
-        var offset = e.matches ? '-63px' : '-85px';
-        observer = new IntersectionObserver(
-            function(entries) { toolbar.classList.toggle('is-sticky', !entries[0].isIntersecting); },
-            { rootMargin: offset + ' 0px 0px 0px', threshold: 0 }
-        );
-        observer.observe(sentinel);
-    }
-    mq.addEventListener('change', updateRootMargin);
-})();
+    window.EDITOR_CONFIG = { newImageCaptionPrefix: 'new_img_caption_' };
 </script>
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 
 {% endblock %}
 </file>
@@ -10867,7 +10374,7 @@ Thumbs.db
 #        (2-2) SECRET_KEY の設定
 #        (2-3) セッション Cookie の属性設定
 #        (2-4) アップロードサイズ制限
-#        (2-5) データベース接続 URL の設定
+#        (2-5) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
 #        (2-6) 拡張機能の初期化（db / migrate / login_manager）
 #        (2-7) CSRF 保護の適用
 #        (2-8) Flask-Login の詳細設定（unauthorized_handler / user_loader）
@@ -10889,37 +10396,6 @@ Thumbs.db
 #        │              └─ (2-11) Blueprint 登録（auth / blog / admin）
 #        ▼
 #   app.run() ──► リクエスト待ち受け開始
-#
-# ======================================================================
-
-
-# ======================================================================
-# app.py — Flask アプリケーションのエントリーポイント
-# ======================================================================
-#
-# 【役割】
-#   Flask アプリを生成・設定する起点となるファイル。
-#   create_app() 関数でアプリを組み立てる「Application Factory パターン」を採用。
-#
-#   Application Factory パターンのメリット:
-#     - テスト時に設定を変えた別アプリを簡単に作れる
-#     - extensions.py と組み合わせることで循環インポートを避けられる
-#
-# 【このファイルの構成（目次）】
-#   [1] import / Blueprint の読み込み
-#   [2] create_app() : アプリ生成ファクトリ関数
-#        (2-1) ProxyFix の適用（リバースプロキシ対応）
-#        (2-2) SECRET_KEY の設定
-#        (2-3) セッション Cookie の属性設定
-#        (2-4) アップロードサイズ制限
-#        (2-5) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
-#        (2-6) 拡張機能の初期化（db / migrate / login_manager）
-#        (2-7) CSRF 保護の適用
-#        (2-8) Flask-Login の詳細設定（unauthorized_handler / user_loader）
-#        (2-9) セキュリティヘッダーの付与
-#        (2-10) カスタムエラーハンドラー（413）
-#        (2-11) Blueprint の登録
-#   [3] 直接実行時のエントリポイント（python app.py）
 #
 # ======================================================================
 
