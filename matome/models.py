@@ -67,6 +67,8 @@ class Hashtag(db.Model):
     id   = db.Column(db.Integer, primary_key=True)
     # name: '#' を除いたタグ文字列で保存（例: "Flask", "Python"）
     #   unique=True    → 同じ名前のタグは 1 件だけ存在できる
+    #                    （unique 制約は多くの DB で暗黙的にインデックスを作るため、
+    #                      タグ名での検索・重複チェックは索引が効く）
     #   nullable=False → 必須項目
     name = db.Column(db.String(100), nullable=False, unique=True)
 
@@ -80,18 +82,53 @@ class Post(db.Model):
     # __tablename__ を省略すると SQLAlchemy がクラス名を小文字化した 'post' をテーブル名にする
 
     # ------------------------------------------------------------------
+    # (3-0) テーブルレベルのオプション（複合インデックス）
+    # ------------------------------------------------------------------
+    # 【パフォーマンス改善】単一カラムのインデックス（各カラムの index=True）に加えて、
+    # トップページの主要クエリに合わせた複合インデックスを 1 本用意する。
+    #
+    # index.py の index() は
+    #     WHERE is_published = True （+ 自分の記事）
+    #     ORDER BY created_at DESC
+    #     LIMIT/OFFSET（ページネーション）
+    # という形で毎回呼ばれる。
+    # (is_published, created_at) の複合インデックスがあると、
+    # 「公開記事を新しい順に並べて先頭 N 件」を
+    # インデックスの走査だけで取得でき、全表スキャン＋ソートを避けられる。
+    #
+    # カラムの並び順は「等値で絞るカラム（is_published）を先、
+    # 範囲・並べ替えに使うカラム（created_at）を後」にするのが定石。
+    #
+    # インデックスは (is_published ASC, created_at ASC) の昇順で作るが、
+    # PostgreSQL / SQLite いずれもインデックスを逆順に走査できるため、
+    # ORDER BY created_at DESC のクエリでもこのインデックスがそのまま使える。
+    __table_args__ = (
+        db.Index('ix_post_is_published_created_at', 'is_published', 'created_at'),
+    )
+
+    # ------------------------------------------------------------------
     # (3-1) 基本カラム
     # ------------------------------------------------------------------
     id         = db.Column(db.Integer, primary_key=True)  # 記事の一意な識別子（自動採番）
     title      = db.Column(db.TEXT, nullable=False)        # 記事タイトル（必須）
     body       = db.Column(db.TEXT, nullable=False)        # 記事本文（マークダウン形式、必須）
-    genre      = db.Column(db.String(100), nullable=False, default='未分類')  # ジャンル名
+
+    # genre: ジャンル名。
+    #   【パフォーマンス改善】index=True を付与。
+    #   index() / genre_list() のジャンル絞り込み（WHERE genre = ?）や
+    #   DISTINCT 取得で使うため、単体インデックスで全表スキャンを避ける。
+    genre      = db.Column(db.String(100), nullable=False, default='未分類', index=True)
 
     # ------------------------------------------------------------------
     # (3-2) 日時カラム
     # ------------------------------------------------------------------
     # created_at: 投稿日時。lambda を使ってインスタンス生成時の時刻を設定する。
-    created_at = db.Column(db.DateTime, nullable=False,
+    #   【パフォーマンス改善】index=True を付与。
+    #   一覧・関連記事・統計のほぼすべてが ORDER BY created_at DESC を伴うため、
+    #   並べ替えコストを下げる目的で単体インデックスを張る。
+    #   （公開記事を新しい順に取る主経路は上の複合インデックスがカバーするが、
+    #     マイページ等「公開状態で絞らない並べ替え」では単体側が効く）
+    created_at = db.Column(db.DateTime, nullable=False, index=True,
                            default=lambda: datetime.now(pytz.timezone('Asia/Tokyo')))
 
     # updated_at: 更新日時。
@@ -106,7 +143,11 @@ class Post(db.Model):
     # (3-3) ユーザー紐付け
     # ------------------------------------------------------------------
     # user_id: user テーブルの id への外部キー（どの管理者が書いた記事か）
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    #   【パフォーマンス改善】index=True を付与。
+    #   マイページ（WHERE user_id = ?）や、詳細ページの権限チェック、
+    #   ログイン中ユーザーの記事を含める一覧クエリで使う。
+    #   外部キーでも DB によっては自動索引が張られないため明示する。
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
 
     # ------------------------------------------------------------------
     # (3-4) 画像関連カラム
@@ -153,7 +194,16 @@ class Post(db.Model):
     # (3-5) 公開設定
     # ------------------------------------------------------------------
     # True = 全体公開 / False = 非公開（管理者だけ閲覧可）
-    is_published = db.Column(db.Boolean, nullable=False, default=True)
+    #   【パフォーマンス改善】index=True を付与。
+    #   ほぼすべての公開ページが WHERE is_published = True で絞るため、
+    #   単体インデックスを張る。トップの主経路は上の複合インデックス
+    #   (is_published, created_at) がカバーするが、統計カウントや
+    #   ジャンル内タグ集計など「並べ替えを伴わない公開状態フィルタ」では
+    #   この単体インデックスが効く。
+    #
+    #   ※ is_published は真偽 2 値のため選択性（カーディナリティ）は低いが、
+    #     非公開記事が少ない運用では「公開記事を絞る」用途で十分機能する。
+    is_published = db.Column(db.Boolean, nullable=False, default=True, index=True)
 
     # ------------------------------------------------------------------
     # (3-6) リレーション
