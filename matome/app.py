@@ -184,7 +184,11 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        # 【非推奨 API の置き換え（improvement.md 項目 6）】
+        # 従来の User.query.get() は SQLAlchemy 2.0 で Legacy 扱いのため、
+        # 主キー取得の推奨 API である db.session.get() に変更する。
+        # 挙動（主キーで 1 件取得。無ければ None）は従来と同じ。
+        return db.session.get(User, int(user_id))
 
     # ------------------------------------------------------------------
     # STEP 10. 【セキュリティ修正】セキュリティヘッダーの付与

@@ -34,34 +34,13 @@
 #   [9] delete()  : 記事削除ビュー
 #   [10] mypage() : マイページビュー
 #
-# 【画像最適化の方針（このリビジョンでの追加）】
-#   従来 _save_images() は原本を UUID 名で保存するだけで、リサイズも圧縮も
-#   行っていなかった。一覧サムネイルは CSS 上 260×158px 程度なのに、
-#   数 MB の原寸画像がそのまま配信され、読み込み速度を大きく損ねていた。
-#
-#   対策として Pillow でアップロード時に最適化する:
-#     ・本文画像       … 長辺を BODY_IMAGE_MAX_EDGE（既定 1600px）まで縮小し再圧縮。
-#                         形式は原則そのまま（JPEG/PNG/WebP/GIF）を尊重する。
-#                         アニメーション GIF は劣化・静止化を避けるため原本のまま保存。
-#     ・サムネイル画像 … 幅 THUMBNAIL_MAX_WIDTH（既定 400px）の WebP に変換して保存。
-#                         thumbnail_img はこの軽量版ファイルを指す。
-#   いずれも「上限を超える場合のみ縮小（拡大はしない）」で、EXIF の向き情報を
-#   反映してから縮小する（スマホ写真の回転ズレ対策）。
-#
-# 【処理フロー図（投稿・編集・削除に共通する整合性ルール）】
-#
-#   画像ファイル（本文画像 + サムネイル）を最適化して保存
-#        │        （全成功 or 全掃除のアトミック動作）
-#        ▼
-#   DB 変更をセッションに積む（add / 属性変更 / delete）
-#        │
-#        ▼
-#   db.session.commit()
-#        ├─ 失敗 → rollback + 今回保存した新ファイルを掃除
-#        │          （DB は旧状態のまま無傷。孤立ファイルも残らない）
-#        └─ 成功 → ここで初めて「削除対象の旧ファイル」を物理削除
-#                   （万一削除に失敗しても孤立ファイルが残るだけで
-#                     データは壊れない = 安全側に倒す）
+# 【本文 HTML の事前生成について（improvement.md 項目 5）】
+#   本文（Markdown + 独自タグ）の HTML 変換は閲覧のたびに行うと無駄なため、
+#   投稿・編集時に rendering.render_post_body() で
+#   (body_html, toc_html) を生成し、Post の同名カラムに保存する。
+#   詳細表示（views/blog.py の detail）は保存済み HTML をそのまま出力する。
+#   本文・画像（img_name / img_captions）が確定した後に生成することで、
+#   [imgN] 置換なども含めた最終形をキャッシュできる。
 #
 # ======================================================================
 
@@ -77,6 +56,7 @@ from PIL import Image, ImageOps  # アップロード画像の縮小・再圧縮
 from extensions import db
 from models import Post, Hashtag
 from constants import DEFAULT_GENRES
+from rendering import render_post_body  # 本文 → (body_html, toc_html) の事前生成に使用
 import config
 
 admin_bp = Blueprint('admin', __name__)
@@ -114,8 +94,6 @@ WEBP_QUALITY_THUMB = 80
 # マイページ（mypage）の 1 ページあたりの表示件数。
 # トップページ（views/blog.py の index）は per_page=4 でページネーションして
 # いるため、体験をそろえる意味で同じ 4 件にしている。
-# （index 側は blog.py 内に直接 4 を書いているが、マイページは admin.py 内で
-#   完結するので定数として明示しておく）
 POSTS_PER_PAGE = 4
 
 
@@ -147,9 +125,6 @@ def _validate_image(file) -> None:
 
     問題があれば ValueError を送出する。検証後はストリーム位置を先頭へ戻すので、
     続けて Pillow の Image.open() / file.save() が読み込める状態になる。
-
-    ※ 従来は _save_images() 内にインラインで書かれていた検証を、
-       本文画像・サムネイルの両方から使えるよう関数として切り出した（DRY）。
     """
     # 第 1 層: 拡張子
     if not allowed_file(file.filename):
@@ -175,16 +150,10 @@ def parse_hashtag_input(raw: str) -> list[str]:
     フォームから受け取ったハッシュタグ入力文字列を
     「# なしのタグ名リスト」に変換する。
 
-    対応する入力形式（ユーザーにとって入力しやすい形式を幅広く受け付ける）:
+    対応する入力形式:
       "#Flask #Python ブログ" → ['Flask', 'Python', 'ブログ']
       "Flask,Python,ブログ"   → ['Flask', 'Python', 'ブログ']
       "Flask　Python"         → ['Flask', 'Python']  （全角スペースも対応）
-
-    【処理の流れ】
-      STEP 1. 前後の空白を除去。空なら空リストを返す
-      STEP 2. 全角スペース・半角スペース・カンマ・読点 で分割
-      STEP 3. 各トークンの先頭の '#' を除去
-      STEP 4. 空文字列・50文字超・重複 を排除してリスト化
 
     @param raw: フォームの hashtag_input フィールドの値
     @return: タグ名文字列のリスト（'#' なし）
@@ -216,34 +185,22 @@ def parse_hashtag_input(raw: str) -> list[str]:
 def sync_hashtags(post: Post, tag_names: list[str]) -> None:
     """
     post.hashtags リレーションを tag_names リストと同期する。
-
-    【なぜ「同期」が必要か】
-    単純に post.hashtags = [new_tag1, new_tag2, ...] と上書きすると
-    編集前に付いていたタグが外れ、新しいタグが追加されるが、
-    すでに DB に存在する同名タグが重複登録されるリスクがある。
-    この関数では「既存タグがあれば再利用、なければ新規作成」を行う。
-
-    【処理の流れ】
-      STEP 1. tag_names の各タグ名を Hashtag テーブルで検索
-      STEP 2. 存在すれば既存の Hashtag オブジェクトを使う
-      STEP 3. 存在しなければ新規 Hashtag を作成して db.session.add()
-      STEP 4. post.hashtags を新しいリストで上書き
-              （SQLAlchemy が差分を検出して post_hashtags 中間テーブルを更新する）
+    「既存タグがあれば再利用、なければ新規作成」を行う。
 
     @param post: 同期対象の Post オブジェクト
     @param tag_names: 新しいタグ名リスト（'#' なし）
     """
     new_tags = []
     for name in tag_names:
-        # STEP 1〜2. 既存タグの検索・再利用
+        # 既存タグの検索・再利用
         tag = Hashtag.query.filter_by(name=name).first()
         if not tag:
-            # STEP 3. DB に存在しない新タグ → 新規作成
+            # DB に存在しない新タグ → 新規作成
             tag = Hashtag(name=name)
             db.session.add(tag)
         new_tags.append(tag)
 
-    # STEP 4. リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
+    # リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
     post.hashtags = new_tags
 
 
@@ -253,23 +210,7 @@ def sync_hashtags(post: Post, tag_names: list[str]) -> None:
 def delete_orphaned_hashtags() -> None:
     """
     どの記事にも紐付いていない孤立ハッシュタグを一括削除する。
-
-    【呼び出しタイミング】
-    - 記事削除後（delete ビュー）
-    - 記事編集後（update ビュー）
-    どちらの操作でも「以前付いていたタグが外れる」可能性があるため、
-    commit 前にこの関数を呼んでセッションにまとめて乗せてから commit する。
-
-    【なぜ commit 前に呼ぶのか】
-    sync_hashtags() が post.hashtags を新しいリストで上書きした時点で
-    SQLAlchemy のセッション上では中間テーブルの削除が予約された状態になる。
-    この段階で Hashtag.posts.any() を評価すると、まだ DB には反映されていないが
-    セッション内の変更を考慮した結果が返るため、正確に孤立タグを検出できる。
-
-    【処理の流れ】
-      STEP 1. 「どの記事にも紐付いていない」タグを検索（~Hashtag.posts.any()）
-      STEP 2. 該当タグを db.session.delete() で削除予約
-              （実際の削除は呼び出し元の commit 時に実行される）
+    記事削除後・記事編集後に、commit 前に呼んでセッションに乗せてから commit する。
     """
     orphaned = Hashtag.query.filter(~Hashtag.posts.any()).all()
     for tag in orphaned:
@@ -289,20 +230,6 @@ def parse_img_captions(file_count: int, prefix: str = 'img_caption_') -> list[st
 
     フォームの入力フィールド名の命名規則:
       {prefix}1, {prefix}2, {prefix}3, ...
-    （create.html / update.html の JavaScript で動的に生成される）
-
-    【バグ修正】prefix 引数を追加
-    update.html では「既存画像のキャプション欄（img_caption_N）」と
-    「新規画像のキャプション欄」が同名だったため、画像を差し替えた際に
-    request.form.get() が先に現れる旧画像側の値を拾ってしまい、
-    新規画像のキャプションがずれるバグがあった。
-    新規画像側のフィールド名を new_img_caption_N に分離し、
-    呼び出し側で prefix を切り替えて取得する。
-
-    【処理の流れ】
-      STEP 1. 1 〜 file_count まで順番にフォーム値を取得
-      STEP 2. 前後の空白を除去してリストに追加
-              （インデックスが画像の順番と対応する）
 
     @param file_count: アップロードされた画像の枚数
     @param prefix: フォームフィールド名のプレフィックス
@@ -328,21 +255,14 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     """
     投稿フォームのジャンル選択肢リストを生成する。
 
-    【処理の流れ】
-      STEP 1. DEFAULT_GENRES（constants.py のプリセット）を取得
-      STEP 2. このユーザーが既存記事で使っているジャンルを DB から取得
-      STEP 3. STEP 1 + STEP 2 の和集合を取る（重複は除去）
-      STEP 4. 編集中の記事のジャンルが上記にない場合も必ず含める
-      STEP 5. '未分類' を除外（select の先頭に固定で置くため）
-      STEP 6. DEFAULT_GENRES の順番を優先して並べ替えて返す
+    プリセット（DEFAULT_GENRES）とユーザーが過去に使ったジャンルの和集合を作り、
+    プリセット順 → 独自ジャンル辞書順で安定して並べて返す。
 
     @param user_id: 現在ログイン中のユーザー ID
     @param current_genre: 編集中の記事のジャンル名（update 時のみ指定）
     @return: ジャンル名のソート済みリスト
     """
-    # ------------------------------------------------------------------
-    # STEP 2. ユーザーが過去に使ったジャンル名を DB から取得（重複なし）
-    # ------------------------------------------------------------------
+    # ユーザーが過去に使ったジャンル名を DB から取得（重複なし）
     existing = (
         db.session.query(Post.genre)
         .filter(Post.user_id == user_id,
@@ -354,36 +274,17 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     )
     user_genres_list = [g[0] for g in existing]
 
-    # ------------------------------------------------------------------
-    # STEP 3. プリセット + ユーザー既存ジャンルの和集合を作成
-    # ------------------------------------------------------------------
+    # プリセット + ユーザー既存ジャンルの和集合を作成
     all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
 
-    # ------------------------------------------------------------------
-    # STEP 4. 編集中の記事のジャンルが選択肢にない場合も追加（データの整合性を保つ）
-    # ------------------------------------------------------------------
+    # 編集中の記事のジャンルが選択肢にない場合も追加（データの整合性を保つ）
     if current_genre:
         all_genres_set.add(current_genre)
 
-    # ------------------------------------------------------------------
-    # STEP 5. '未分類' は select の先頭に固定で置くので除外
-    # ------------------------------------------------------------------
+    # '未分類' は select の先頭に固定で置くので除外
     all_genres_set.discard('未分類')
 
-    # ------------------------------------------------------------------
-    # STEP 6. 並べ替えて返す
-    # ------------------------------------------------------------------
-    # 【バグ修正】ソートキーを hash(x) からタプルキーに変更
-    #
-    # 従来は独自ジャンルのキーに len(DEFAULT_GENRES) + hash(x) を使っていたが、
-    # hash() は負値を返しうるため、独自ジャンルがプリセットより
-    # 前に並んでしまうことがあった（さらに実行のたびに順序が変わり不安定）。
-    #
-    # タプルキーによる 2 段階ソートに変更:
-    #   プリセットジャンル → (0, DEFAULT_GENRES 内のインデックス)
-    #   独自ジャンル       → (1, ジャンル名の辞書順)
-    # タプル比較では第 1 要素が優先されるため、
-    # 「プリセット順 → 独自ジャンル辞書順」の安定した並びが保証される。
+    # 並べ替えて返す（プリセット順 → 独自ジャンル辞書順）
     return sorted(
         list(all_genres_set),
         key=lambda x: (0, DEFAULT_GENRES.index(x)) if x in DEFAULT_GENRES else (1, x)
@@ -404,18 +305,8 @@ def _optimize_body_image_save(file, save_path: str, ext: str) -> None:
     最適化の内容:
       ・EXIF の向き情報を画素に反映（スマホ写真の回転ズレ対策）
       ・長辺が BODY_IMAGE_MAX_EDGE を超える場合のみ、その値まで縮小
-        （thumbnail() は縮小専用でアスペクト比を保ち、拡大はしない）
       ・元の形式を尊重して再エンコード（JPEG は品質指定、PNG/WebP は最適化）
       ・アニメーション GIF は劣化・静止化を避けるため原本をそのまま保存
-
-    【呼び出し前の前提】
-      file は _validate_image() で検証済みで、ストリーム位置は先頭にある。
-
-    【エラー方針】
-      Pillow の処理に失敗した場合は ValueError に変換して送出する。
-      これにより _save_images() の except（掃除 + 再送出）や、さらに
-      呼び出し元の create()/update()（ValueError を捕捉して flash）の
-      既存経路にそのまま乗せられる（未捕捉例外による 500 を避ける）。
 
     @param file:      werkzeug の FileStorage（検証済み）
     @param save_path: 保存先の絶対パス
@@ -467,37 +358,10 @@ def _save_images(files: list) -> list[str]:
     アップロードされた本文画像を検証・最適化・保存し、
     保存したファイル名のリストを返す。
 
-    【セキュリティの多層防御】
-    第 1 層: allowed_file() で拡張子チェック（_validate_image 内）
-    第 2 層: filetype.guess() で MIME タイプチェック（_validate_image 内）
-    第 3 層: UUID でファイル名を完全にランダム化
-    （第 4 層: app.py で 30MB の容量制限）
+    途中でエラーが出た場合はそれまでに保存したファイルを掃除してから
+    例外を再送出する（全成功のときだけファイルを残す）。
 
-    【最適化（このリビジョンの追加）】
-    検証を通過した各ファイルは、原本をそのまま保存するのではなく
-    _optimize_body_image_save() で縮小・再圧縮してから保存する。
-    これにより一覧・詳細の読み込みが軽くなる。
-
-    【アトミックな挙動（従来から維持）】
-    途中の検証・処理エラーで例外が発生した場合、この関数内でそれまでに
-    保存したファイルを _delete_images() で掃除してから例外を再送出する。
-    「全ファイルの保存に成功したときだけファイルを残す」ことを保証するため、
-    呼び出し側は従来どおり ValueError を捕捉するだけでよい。
-
-    保存対象のファイル名は「保存を試みる直前」に filename_list へ登録する。
-    こうすることで、_optimize_body_image_save() が途中まで書き込んで失敗した
-    場合でも、その半端なファイルが確実に掃除対象に含まれる
-    （_delete_images は存在チェック付きなので、未生成でも無害）。
-
-    【処理の流れ】
-      STEP 1. ファイルを 1 枚ずつ取り出す（未選択はスキップ）
-      STEP 2. _validate_image() で拡張子・MIME を検証
-      STEP 3. UUID + 元の拡張子でファイル名を生成し、掃除対象として登録
-      STEP 4. _optimize_body_image_save() で縮小・再圧縮して保存
-      STEP 5. 例外発生時 → 保存済みファイルを掃除してから例外を再送出
-      STEP 6. 全成功 → 保存したファイル名のリストを返す
-
-    @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
+    @param files: request.files.getlist('img[]') のファイルオブジェクトのリスト
     @return: 保存したファイル名のリスト
     @raises ValueError: 検証エラー・画像処理エラー時
     """
@@ -505,43 +369,31 @@ def _save_images(files: list) -> list[str]:
 
     try:
         for file in files:
-            # --------------------------------------------------------
-            # STEP 1. ファイルが選択されていない場合はスキップ
-            # --------------------------------------------------------
+            # ファイルが選択されていない場合はスキップ
             if not file or file.filename == '':
                 continue
 
-            # --------------------------------------------------------
-            # STEP 2. 拡張子 + MIME 検証（失敗時は ValueError）
-            # --------------------------------------------------------
+            # 拡張子 + MIME 検証（失敗時は ValueError）
             _validate_image(file)
 
             # 拡張子は検証済みの元ファイル名から直接取得する
             ext = '.' + file.filename.rsplit('.', 1)[1].lower()
 
-            # --------------------------------------------------------
-            # STEP 3. UUID でファイル名をランダム化し、掃除対象へ先行登録
-            # --------------------------------------------------------
+            # UUID でファイル名をランダム化し、掃除対象へ先行登録
             filename  = f"{uuid.uuid4()}{ext}"
             filename_list.append(filename)
             save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
 
-            # --------------------------------------------------------
-            # STEP 4. 縮小・再圧縮して保存
-            # --------------------------------------------------------
+            # 縮小・再圧縮して保存
             _optimize_body_image_save(file, save_path, ext)
 
     except Exception:
-        # ------------------------------------------------------------
-        # STEP 5. 途中まで保存したファイルをここで掃除する
-        # ------------------------------------------------------------
+        # 途中まで保存したファイルをここで掃除する
         if filename_list:
             _delete_images(','.join(filename_list))
         raise
 
-    # ------------------------------------------------------------------
-    # STEP 6. 全成功: 保存したファイル名のリストを返す
-    # ------------------------------------------------------------------
+    # 全成功: 保存したファイル名のリストを返す
     return filename_list
 
 
@@ -550,34 +402,14 @@ def _save_images(files: list) -> list[str]:
 # ----------------------------------------------------------------------
 def _delete_images(img_name_str: str) -> None:
     """
-    post.img_name カラムの値（カンマ区切りファイル名）をもとに
-    static/img/posts/ 以下の実ファイルを物理削除する。
-
-    記事削除・画像更新時に呼ばれ、サーバー上の孤立ファイルを防ぐ。
-    ファイルが存在しない場合はスキップする（エラーにしない）。
-    サムネイル専用画像（thumbnail_img）も同じ static/img/posts/ 配下に
-    保存されるため、この関数でそのまま削除できる。
-
-    【バグ修正に伴う運用ルール】
-    この関数は必ず「DB の commit が成功した後」に呼ぶこと。
-    従来は commit 前に _delete_images() を呼んでいたため、
-    commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
-    という復旧不能な不整合が発生し得た。
-    commit 後の物理削除であれば、万一削除に失敗しても
-    「孤立ファイルが残る」だけで済み、データは壊れない（安全側に倒す）。
-
-    【処理の流れ】
-      STEP 1. 引数が空なら何もしない
-      STEP 2. カンマ区切りをファイル名ごとに分割
-      STEP 3. 存在するファイルだけを os.remove() で削除
+    カンマ区切りファイル名をもとに static/img/posts/ 以下の実ファイルを物理削除する。
+    必ず「DB の commit が成功した後」に呼ぶこと。
 
     @param img_name_str: post.img_name の値（例: "uuid1.jpg,uuid2.png"）
     """
-    # STEP 1. 空チェック
     if not img_name_str:
         return
 
-    # STEP 2〜3. 分割して 1 件ずつ削除
     for img_file in img_name_str.split(','):
         img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file.strip())
         if os.path.exists(img_path):
@@ -590,23 +422,10 @@ def _delete_images(img_name_str: str) -> None:
 def _save_thumbnail(file) -> str | None:
     """
     サムネイル専用にアップロードされた 1 枚の画像を検証し、
-    幅 THUMBNAIL_MAX_WIDTH（既定 400px）の軽量な WebP に変換して保存する。
-    保存したファイル名（.webp）を返す。ファイル未選択なら None を返す。
+    幅 THUMBNAIL_MAX_WIDTH の軽量な WebP に変換して保存する。
+    保存したファイル名（.webp）を返す。ファイル未選択なら None。
 
-    【最適化の内容】
-      ・拡張子 + MIME を検証（_validate_image）
-      ・EXIF の向き情報を反映
-      ・幅が上限を超える場合のみ、アスペクト比を保って縮小（拡大はしない）
-      ・WebP へ変換して保存（透過は保持: RGB/RGBA のまま WebP 化）
-    元がどの形式でも保存名は常に UUID + '.webp' になる。
-    thumbnail_img カラムはこの軽量版ファイルを指す。
-
-    【エラー方針】
-      検証エラー・画像処理エラーはいずれも ValueError として送出する
-      （呼び出し元 create()/update() は ValueError を捕捉して flash する）。
-      途中まで書き込んだ WebP が残らないよう、失敗時は自分で掃除してから送出する。
-
-    @param file: request.files.get('thumbnail_img') で取得したファイルオブジェクト
+    @param file: request.files.get('thumbnail_img') のファイルオブジェクト
     @return: 保存したファイル名（.webp。未選択なら None）
     @raises ValueError: 検証エラー・画像処理エラー時
     """
@@ -663,7 +482,7 @@ def create():
       STEP 3. [POST] ジャンル・デフォルトサムネイルを決定
       STEP 4. [POST] 本文画像を検証・最適化保存（失敗時はフラッシュしてリダイレクト）
       STEP 4.5. [POST] サムネイル専用画像を検証・最適化保存
-                （失敗時は本文画像を掃除してからリダイレクト）
+      STEP 4.7. [POST] 本文 HTML・目次 HTML を事前生成（詳細表示の再変換を防ぐ）
       STEP 5. [POST] Post オブジェクトを作成してセッションに追加
       STEP 6. [POST] flush() で post.id を確定 → ハッシュタグを同期
       STEP 7. [POST] commit（失敗時は rollback + 保存済み画像を掃除）
@@ -672,7 +491,6 @@ def create():
     # ------------------------------------------------------------------
     # STEP 1. 管理者チェック
     # ------------------------------------------------------------------
-    # 管理者以外のユーザー（将来的なマルチユーザー対応時の保険）はトップへ
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
 
@@ -696,7 +514,7 @@ def create():
         # ジャンルの優先順位: 新規入力 > プリセット選択 > デフォルト（未分類）
         final_genre = new_genre if new_genre else (selected_genre or '未分類')
 
-        # デフォルトサムネイル: フォームで 'none' が選ばれた場合は NULL（デフォルトサムネイルなし）
+        # デフォルトサムネイル: フォームで 'none' が選ばれた場合は NULL
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':
             selected_default_thumb = None
@@ -704,7 +522,6 @@ def create():
         # --------------------------------------------------------------
         # STEP 4. 本文画像の保存（検証 + 最適化）
         # --------------------------------------------------------------
-        # _save_images() は検証・処理エラー時に ValueError を raise するので try/except で受ける
         try:
             filename_list = _save_images(request.files.getlist('img[]'))
         except ValueError as e:
@@ -721,8 +538,6 @@ def create():
         # --------------------------------------------------------------
         # STEP 4.5. サムネイル専用画像の保存（検証 + WebP 縮小）
         # --------------------------------------------------------------
-        # 本文画像とは独立した 1 枚のサムネイルをアップロードできる。
-        # 検証エラー時は、直前で保存した本文画像が孤立しないよう掃除してから戻る。
         try:
             thumbnail_name = _save_thumbnail(request.files.get('thumbnail_img'))
         except ValueError as e:
@@ -735,12 +550,22 @@ def create():
         is_published = request.form.get('is_published') == 'true'
 
         # --------------------------------------------------------------
+        # STEP 4.7. 本文 HTML・目次 HTML を事前生成
+        # --------------------------------------------------------------
+        # 本文・画像（img_name / img_captions）が確定した後に生成する。
+        # これにより [imgN] 置換なども含めた最終形をキャッシュでき、
+        # 詳細表示（detail）ではこれをそのまま出力するだけになる。
+        body_html, toc_html = render_post_body(body, img_name_str, img_captions_str)
+
+        # --------------------------------------------------------------
         # STEP 5. Post オブジェクトを作成してセッションに追加
         # --------------------------------------------------------------
         # updated_at は新規投稿時 NULL のまま（「まだ更新されていない」を明示）
         post = Post(
             title         = title,
             body          = body,
+            body_html     = body_html,
+            toc_html      = toc_html,
             user_id       = current_user.id,
             img_name      = img_name_str,
             default_thumb = selected_default_thumb,
@@ -755,23 +580,16 @@ def create():
         # --------------------------------------------------------------
         # STEP 6. flush で ID を確定してハッシュタグを同期
         # --------------------------------------------------------------
-        # flush(): まだ commit せずに post.id だけを確定させる
-        # ハッシュタグの中間テーブルに post_id を設定するために必要
         db.session.flush()
 
-        # ハッシュタグの同期（入力文字列 → Hashtag オブジェクト → 中間テーブル登録）
+        # ハッシュタグの同期
         sync_hashtags(post, parse_hashtag_input(hashtag_input))
 
         # --------------------------------------------------------------
         # STEP 7. commit（失敗時は rollback + 保存済み画像を掃除）
         # --------------------------------------------------------------
-        # 【バグ修正】commit 失敗時に保存済みファイルを掃除する
-        # 画像ファイルは commit より先にディスク保存されるため、
-        # commit が失敗した場合はそのままだと孤立ファイルが残る。
-        # rollback 後に今回保存したファイル（本文画像・サムネイル）を
-        # 削除して整合性を保つ。
         try:
-            db.session.commit()  # ここで全変更を DB に書き込む
+            db.session.commit()
         except Exception:
             db.session.rollback()
             if img_name_str:
@@ -807,8 +625,8 @@ def update(id):
       STEP 4. [POST] ハッシュタグの同期 + 孤立タグの削除予約
       STEP 5. [POST] 本文画像の更新（3 パターン: A 差し替え / B 個別削除 / C キャプションのみ）
       STEP 5.5. [POST] サムネイル専用画像の更新（差し替え / 削除 / 維持）
+      STEP 5.7. [POST] 本文・画像の確定後に本文 HTML・目次 HTML を再生成
       STEP 6. [POST] 更新日時をセットして commit
-              （失敗時は rollback + 新規保存ファイルを掃除）
       STEP 7. [POST] commit 成功後に削除対象の旧ファイルを物理削除
       STEP 8. [POST] 記事詳細ページへリダイレクト
     """
@@ -878,20 +696,9 @@ def update(id):
     # 3 つのパターンを扱う:
     #   A) 新しい画像が選択された          → 全画像を新画像で差し替え
     #   B) 新画像なし + 個別削除フラグあり → 指定された既存画像だけを削除
-    #   C) 新画像なし + 削除フラグなし     → キャプションのみ更新（従来どおり）
-    #
-    # 【機能追加】パターン B: 既存画像の個別削除
-    # update.html の各既存画像カードに hidden フィールド
-    # keep_img_N（'1'=残す / '0'=削除予定）を持たせ、
-    # ここで '0' の画像を除外して img_name / img_captions を再構築する。
-    # 削除対象の実ファイルは old_img_name に積んでおき、
-    # 差し替え時（パターン A）と同じ「commit 成功後に物理削除」の
-    # 経路で処理する（DB とファイルの整合性ルールを一本化するため）。
-    #
-    # ※ パターン A（差し替え）が選ばれた場合、旧画像はどのみち
-    #    全削除されるため、個別削除フラグは無視される（差し替えが優先）。
+    #   C) 新画像なし + 削除フラグなし     → キャプションのみ更新
     files = request.files.getlist('img[]')
-    old_img_name  = None   # commit 成功後に物理削除する画像（差し替え時: 旧全画像 / 個別削除時: 削除対象のみ）
+    old_img_name  = None   # commit 成功後に物理削除する画像
     new_filenames = []     # commit 失敗時に掃除する新規保存ファイル
 
     if files and files[0].filename != '':
@@ -915,15 +722,14 @@ def update(id):
         # --------------------------------------------------------------
         existing_imgs = post.img_name.split(',')
         kept_imgs     = []   # 残す画像ファイル名
-        kept_captions = []   # 残す画像のキャプション（順番を kept_imgs と対応させる）
+        kept_captions = []   # 残す画像のキャプション
         removed_imgs  = []   # 削除予定の画像ファイル名
 
         for i, img in enumerate(existing_imgs, start=1):
             caption = request.form.get(f'img_caption_{i}', '').strip()
 
             # keep_img_N が '0' なら削除予定。
-            # フィールド自体が送られてこない場合（JS 無効・旧テンプレート）は
-            # デフォルト '1' として「残す」扱いにする（安全側・後方互換）。
+            # 送られてこない場合はデフォルト '1'（残す）扱い（安全側・後方互換）。
             if request.form.get(f'keep_img_{i}', '1') == '0':
                 removed_imgs.append(img)
             else:
@@ -935,22 +741,12 @@ def update(id):
             old_img_name = ','.join(removed_imgs)
 
         # 残った画像だけで DB 上の参照を再構築する。
-        # 全画像を削除した場合は None にして「画像なし記事」に戻す
-        # （一覧・詳細ではサムネイルは thumbnail_img / default_thumb に
-        #   自然にフォールバックする）。
         post.img_name     = ','.join(kept_imgs) if kept_imgs else None
         post.img_captions = '\t'.join(kept_captions) if kept_imgs else None
 
     # ------------------------------------------------------------------
     # STEP 5.5. サムネイル専用画像の更新
     # ------------------------------------------------------------------
-    # 3 パターン:
-    #   ・新しいサムネイルがアップロードされた → 差し替え（旧サムネイルは commit 後に削除）
-    #   ・keep_thumbnail == '0'（削除ボタン ON）→ 現在のサムネイルを削除
-    #   ・それ以外                               → 現状維持
-    #
-    # 新規サムネイルのアップロードが最優先。アップロードがあれば
-    # keep_thumbnail フラグ（削除指定）は無視される（差し替え優先）。
     old_thumbnail_name  = None   # commit 成功後に物理削除する旧サムネイル
     new_thumbnail_saved = None   # commit 失敗時に掃除する新規保存サムネイル
 
@@ -975,9 +771,18 @@ def update(id):
         post.thumbnail_img = None
 
     # ------------------------------------------------------------------
+    # STEP 5.7. 本文 HTML・目次 HTML の再生成
+    # ------------------------------------------------------------------
+    # 本文（post.body）と画像（post.img_name / post.img_captions）が
+    # すべて確定した後に再生成し、キャッシュ列を更新する。
+    # これにより次回以降の詳細表示は再変換なしで済む。
+    post.body_html, post.toc_html = render_post_body(
+        post.body, post.img_name, post.img_captions
+    )
+
+    # ------------------------------------------------------------------
     # STEP 6. 更新日時をセットして commit
     # ------------------------------------------------------------------
-    # 更新日時を現在時刻（日本時間）に更新
     post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
 
     try:
@@ -985,8 +790,6 @@ def update(id):
     except Exception:
         db.session.rollback()
         # commit 失敗 → 今回新規保存したファイルを掃除（DB は旧状態のまま無傷）
-        # 個別削除（パターン B）の場合、物理削除はまだ行っていないため
-        # rollback だけで完全に元の状態に戻る（掃除対象なし）。
         if new_filenames:
             _delete_images(','.join(new_filenames))
         if new_thumbnail_saved:
@@ -997,10 +800,8 @@ def update(id):
     # ------------------------------------------------------------------
     # STEP 7. commit 成功 → ここで初めて削除対象のファイルを物理削除する
     # ------------------------------------------------------------------
-    # （本文画像: 差し替え時は旧全画像、個別削除時は削除予定の画像のみ）
     if old_img_name:
         _delete_images(old_img_name)
-    # （サムネイル: 差し替え時 or 削除指定時の旧サムネイル）
     if old_thumbnail_name:
         _delete_images(old_thumbnail_name)
 
@@ -1019,10 +820,7 @@ def update(id):
 def delete(id):
     """
     記事を削除する（POST のみ受付）。
-
-    POST メソッドのみ受け付ける（GET でアクセスできないようにする）
-    → URL を直接叩いただけでは削除できない（CSRF トークンも必要）
-    （CSRF トークンも必要）
+    URL を直接叩いただけでは削除できない（CSRF トークンも必要）。
     """
     # ------------------------------------------------------------------
     # STEP 1. 管理者チェック + 記事の取得・権限チェック
@@ -1038,16 +836,7 @@ def delete(id):
     # ------------------------------------------------------------------
     # STEP 2. 削除対象の画像名を退避（本文画像 + サムネイル）
     # ------------------------------------------------------------------
-    # 【バグ修正】画像ファイルの物理削除を DB commit 成功後に移動
-    #
-    # 従来は commit 前に _delete_images() を呼んでいたため、
-    # commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
-    # という不整合が発生し得た。
-    # 削除対象の画像名を退避してから DB 削除を commit し、
-    # 成功した場合にのみ実ファイルを削除する。
-    #
-    # 本文画像（img_name）とサムネイル専用画像（thumbnail_img）は
-    # どちらも static/img/posts/ 配下にあるため、まとめて退避する。
+    # 物理削除は DB commit 成功後に行う（不整合防止）。
     files_to_delete = []
     if post.img_name:
         files_to_delete.append(post.img_name)
@@ -1058,13 +847,9 @@ def delete(id):
     # ------------------------------------------------------------------
     # STEP 3. ハッシュタグのリレーションをクリア + 孤立タグの削除予約
     # ------------------------------------------------------------------
-    # ハッシュタグのリレーションを先にクリアしてから記事を削除する。
-    # post.hashtags = [] にすることで中間テーブルの行が削除予約され、
-    # その後 delete_orphaned_hashtags() で孤立タグ本体も削除できる。
     post.hashtags = []
-    db.session.flush()  # 中間テーブルの削除をセッションに反映させてから孤立判定する
+    db.session.flush()  # 中間テーブルの削除を反映させてから孤立判定する
 
-    # 孤立ハッシュタグを削除（commit 前にまとめてセッションに乗せる）
     delete_orphaned_hashtags()
 
     # ------------------------------------------------------------------
@@ -1087,12 +872,6 @@ def delete(id):
     # ------------------------------------------------------------------
     # STEP 6. 削除後のリダイレクト先決定（Open Redirect 対策）
     # ------------------------------------------------------------------
-    # 単純に return redirect(request.referrer) とすると
-    # 攻撃者が referer ヘッダを偽造して外部サイトへリダイレクトさせる
-    # Open Redirect 攻撃が可能になる。
-    #
-    # 対策: scheme（http/https）と netloc（ドメイン名）が
-    #       リクエスト元と同じオリジンかどうかを検証してからリダイレクト。
     referrer = request.referrer
     if referrer:
         parsed_ref = urlparse(referrer)
@@ -1117,32 +896,9 @@ def mypage():
     """
     マイページの表示（GET）とニックネーム変更（POST）を行う。
 
-    【今回の改善: 全件一括ロード → サーバーサイドページネーションに統一】
-    従来この関数は自分の投稿を Post.query...all() で「全件」取得し、
-    テンプレート側で全カードを描画してから JavaScript で先頭 4 件以外を
-    display:none で隠す「もっと見る」方式だった。
-    しかしトップページ（views/blog.py の index）は既に paginate() による
-    サーバーサイドページネーションへ移行しており、マイページだけ旧方式が
-    残っていた。投稿数が増えるほど
-
-      ・DB から全 Post を取得する（メモリ肥大）
-      ・全カード分の HTML を描画して送信する（DOM 肥大・転送量増）
-
-    という無駄が大きくなる。そこで index と同じく paginate() に統一し、
-    1 ページ POSTS_PER_PAGE 件（= 4 件）だけを取得・描画するように変更した。
-
-    さらに、記事カード（_macros.html の post_card）はハッシュタグバッジ
-    （post.hashtags）を参照するため、index と同様に
-    selectinload(Post.hashtags) を付与して N+1 クエリを防ぐ。
-    （Post.hashtags はモデル定義で lazy='selectin' 済みだが、
-      呼び出し側でも明示して index とロード戦略をそろえる）
-
-    【総投稿数の表示について】
-    ページネーション後の posts は「現在ページ分」だけなので、
-    プロフィール欄の「これまでの総投稿数」は pagination.total（全件数）を
-    total_count としてテンプレートへ渡して表示する。
-    （旧テンプレートは posts|length で数えていたが、ページネーション後は
-      それだと 1 ページ分の件数になってしまうため total を使う）
+    自分の投稿は index と同じくサーバーサイドページネーション（1 ページ
+    POSTS_PER_PAGE 件）で取得し、selectinload(Post.hashtags) で N+1 を防ぐ。
+    総投稿数は pagination.total（全件数）を total_count として渡す。
 
     【処理の流れ】
       STEP 1. 管理者チェック
@@ -1171,12 +927,6 @@ def mypage():
     # ------------------------------------------------------------------
     # STEP 3. GET: 自分の記事をサーバーサイドページネーションで取得
     # ------------------------------------------------------------------
-    # index（views/blog.py）と同じ方式にそろえる:
-    #   ・?page= でページ番号を受け取る（未指定は 1）
-    #   ・options(db.selectinload(Post.hashtags)) でタグを一括ロードし N+1 を防止
-    #   ・created_at の降順（新しい記事が先頭）
-    #   ・per_page=POSTS_PER_PAGE、error_out=False
-    #     （範囲外のページ番号でも 404 にせず空リストを返す）
     page = request.args.get('page', 1, type=int)
     pagination = (
         Post.query
@@ -1190,13 +940,6 @@ def mypage():
     # ------------------------------------------------------------------
     # STEP 4. 使用ジャンル一覧の生成（サイドバー表示用）
     # ------------------------------------------------------------------
-    # DB クエリで DISTINCT なジャンル名を取得し、
-    # Python 側で set → sorted で整理する。
-    # '未分類' は特別扱いで末尾に移動する。
-    #
-    # ※ ここはページネーションとは独立に「自分の全記事」からジャンルを集計する。
-    #   現在ページの user_posts に依存させると、ページを移動するたびに
-    #   ジャンル一覧が変わってしまうため、専用クエリで全体から求めている。
     user_genres_raw = (
         db.session.query(Post.genre)
         .filter(Post.user_id == current_user.id,
