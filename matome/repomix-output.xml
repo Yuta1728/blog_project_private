@@ -127,6 +127,7 @@ constants.py
 deploy_pythonanywhere.md
 docker-compose.yml
 extensions.py
+improvement.md
 init_db.py
 models.py
 requirements-pythonanywhere.txt
@@ -4557,6 +4558,24 @@ a[role="button"]:hover {
     box-sizing: border-box;
 }
 
+/* ------------------------------------------------------------
+   【mypage.html】ページ送り後に投稿一覧の先頭へ戻すための目印（非表示要素）
+   ------------------------------------------------------------
+   ページ番号リンクの #mypage-articles-anchor フラグメントで
+   ここへスクロールする。固定ヘッダー（position: fixed）の下に
+   隠れないよう scroll-margin-top をヘッダーの高さ分だけ確保しておく。
+   （index.css の #index-articles-anchor と同じ考え方）
+   ------------------------------------------------------------ */
+#mypage-articles-anchor {
+    scroll-margin-top: 100px;
+}
+
+@media (max-width: 767px) {
+    #mypage-articles-anchor {
+        scroll-margin-top: 80px;
+    }
+}
+
 /* ============================================================
    【mypage.html】プロフィールカード（ニックネーム・投稿数・変更フォーム）
    ============================================================ */
@@ -7630,9 +7649,24 @@ function ytPlay(facadeEl) {
 {% from '_macros.html' import post_card with context %}
 {% block content %}
 
+{# ============================================================
+   マイページ
+
+   【今回の変更: JS「もっと見る」→ サーバーサイドページネーション】
+   従来はビュー側で自分の全投稿を渡し、ここで全カードを描画してから
+   JavaScript で先頭 4 件以外を display:none で隠す「もっと見る」方式だった。
+   ビュー（views/admin.py の mypage）を index と同じ paginate() に統一した
+   ため、テンプレートも index.html と同じページ番号ナビに置き換える。
+
+   これにより
+     ・受け取る posts は「現在ページ分（最大 POSTS_PER_PAGE 件）」だけ
+     ・全カードを隠すための JS と load_more.css が不要
+   になった。総投稿数は total_count（全件数）で表示する。
+   ============================================================ #}
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
+{# load_more.css はもっと見る方式の撤去に伴い読み込み不要になったため削除 #}
 
 
 <div class="mypage-container">
@@ -7642,8 +7676,9 @@ function ytPlay(facadeEl) {
             👤 {% if current_user.nickname %}{{ current_user.nickname }}{% endif %} さんのマイページ
         </h2>
 
+        {# 総投稿数はページ分ではなく全件数（total_count）を表示する #}
         <p class="profile-post-count">
-            これまでの総投稿数: <strong>{{ posts|length }}</strong> 件
+            これまでの総投稿数: <strong>{{ total_count }}</strong> 件
         </p>
 
         <div class="nickname-form-wrapper">
@@ -7677,6 +7712,13 @@ function ytPlay(facadeEl) {
 
     <h3 class="section-title-posts">📝 投稿一覧</h3>
 
+    {# ===== ページ送りのリンク先がここへ来るようにするための目印 =====
+       固定ヘッダーに隠れないよう scroll-margin-top を mypage.css で確保。
+       ページ番号リンクの #mypage-articles-anchor フラグメントで
+       投稿一覧の先頭へジャンプする（index.html と同じ仕組み）。 #}
+    <div id="mypage-articles-anchor"></div>
+    {# ========================================================= #}
+
     {# 記事カードは _macros.html の post_card マクロで描画（index.html と共通）。
        マイページは自分の記事のみ一覧するため、マクロ内の
        「ログイン中 かつ 自分の記事」条件は常に真となり、
@@ -7687,76 +7729,52 @@ function ytPlay(facadeEl) {
         <p class="empty-message">まだ投稿がありません。<br><a href="{{ url_for('admin.create') }}">最初の記事を書いてみましょう</a></p>
     {% endfor %}
 
-    {# ===== 「もっと見る」「表示を減らす」ボタン ===== #}
-    <div class="load-more-wrap" id="mypage-load-more-wrap">
-        <button class="load-less-btn" id="mypage-load-less-btn" type="button"
-                onclick="mypageLoadLess()">
-            ▲ 表示を減らす
-        </button>
-        <button class="load-more-btn" id="mypage-load-more-btn" type="button"
-                onclick="mypageLoadMore()">
-            もっと見る
-            <span class="load-more-count" id="mypage-load-more-count"></span>
-        </button>
-    </div>
+    {# ============================================================
+       ページ番号によるページ送り（サーバーサイドページネーション）
+       ------------------------------------------------------------
+       index.html と同じデザイン（index.css の .index-pagination /
+       .page-btn 系）を流用する（mypage.html は index.css を読み込み済み）。
+       リンク先は admin.mypage。#mypage-articles-anchor フラグメントで
+       ページ遷移後に投稿一覧の先頭へスクロールする。
+       ============================================================ #}
+    {% if pagination.pages > 1 %}
+        <nav class="index-pagination" aria-label="投稿一覧のページ送り">
+
+            {# --- 前へ --- #}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('admin.mypage', page=pagination.prev_num, _anchor='mypage-articles-anchor') }}"
+                   class="page-btn page-btn-arrow" aria-label="前のページ" rel="prev">‹</a>
+            {% else %}
+                <span class="page-btn page-btn-arrow page-btn-disabled" aria-hidden="true">‹</span>
+            {% endif %}
+
+            {# --- ページ番号（前後2ページ + 端を表示、間は … で省略） --- #}
+            {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                {% if p %}
+                    {% if p == pagination.page %}
+                        <span class="page-btn active" aria-current="page">{{ p }}</span>
+                    {% else %}
+                        <a href="{{ url_for('admin.mypage', page=p, _anchor='mypage-articles-anchor') }}"
+                           class="page-btn">{{ p }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="page-ellipsis" aria-hidden="true">…</span>
+                {% endif %}
+            {% endfor %}
+
+            {# --- 次へ --- #}
+            {% if pagination.has_next %}
+                <a href="{{ url_for('admin.mypage', page=pagination.next_num, _anchor='mypage-articles-anchor') }}"
+                   class="page-btn page-btn-arrow" aria-label="次のページ" rel="next">›</a>
+            {% else %}
+                <span class="page-btn page-btn-arrow page-btn-disabled" aria-hidden="true">›</span>
+            {% endif %}
+
+        </nav>
+    {% endif %}
     {# ================================================ #}
 
 </div>
-
-<script>
-(function () {
-    var INITIAL = 4;
-    var STEP    = 4;
-
-    var cards   = Array.from(document.querySelectorAll('.mypage-container > article.post-card'));
-    var total   = cards.length;
-    var shown   = 0;
-
-    var wrap    = document.getElementById('mypage-load-more-wrap');
-    var countEl = document.getElementById('mypage-load-more-count');
-    var lessBtn = document.getElementById('mypage-load-less-btn');
-    var moreBtn = document.getElementById('mypage-load-more-btn');
-
-    cards.forEach(function (c) { c.style.display = 'none'; });
-
-    function showCards(n) {
-        var end = Math.min(shown + n, total);
-        for (var i = shown; i < end; i++) {
-            cards[i].style.display = '';
-        }
-        shown = end;
-        updateBtn();
-    }
-
-    function hideCards(n) {
-        var end = Math.max(shown - n, INITIAL);
-        for (var i = end; i < shown; i++) {
-            cards[i].style.display = 'none';
-        }
-        shown = end;
-        updateBtn();
-    }
-
-    function updateBtn() {
-        var remaining = total - shown;
-
-        /* ラッパー：初期1件のみ表示中は非表示、それ以外は常に表示 */
-        wrap.style.display = (shown <= INITIAL && remaining <= 0) ? 'none' : 'flex';
-
-        /* もっと見るボタン：残件数0なら非表示 */
-        moreBtn.style.display = remaining > 0 ? 'inline-flex' : 'none';
-        countEl.textContent   = 'あと ' + remaining + ' 件';
-
-        /* 表示を減らすボタン：INITIAL件より多く表示中なら表示 */
-        lessBtn.style.display = shown > INITIAL ? 'inline-flex' : 'none';
-    }
-
-    window.mypageLoadMore = function () { showCards(STEP); };
-    window.mypageLoadLess = function () { hideCards(STEP); };
-
-    showCards(INITIAL);
-})();
-</script>
 
 {% endblock %}
 </file>
@@ -8298,6 +8316,14 @@ JPEG_QUALITY       = 85
 WEBP_QUALITY_BODY  = 82
 WEBP_QUALITY_THUMB = 80
 
+# ---- 一覧のページネーション設定 --------------------------------------
+# マイページ（mypage）の 1 ページあたりの表示件数。
+# トップページ（views/blog.py の index）は per_page=4 でページネーションして
+# いるため、体験をそろえる意味で同じ 4 件にしている。
+# （index 側は blog.py 内に直接 4 を書いているが、マイページは admin.py 内で
+#   完結するので定数として明示しておく）
+POSTS_PER_PAGE = 4
+
 
 # ======================================================================
 # [2] ファイル検証ヘルパー
@@ -8740,8 +8766,8 @@ def _delete_images(img_name_str: str) -> None:
 
     【バグ修正に伴う運用ルール】
     この関数は必ず「DB の commit が成功した後」に呼ぶこと。
-    従来は commit 前に物理削除していたため、commit が失敗すると
-    「DB には記事が残っているのに画像だけ消えている」
+    従来は commit 前に _delete_images() を呼んでいたため、
+    commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
     という復旧不能な不整合が発生し得た。
     commit 後の物理削除であれば、万一削除に失敗しても
     「孤立ファイルが残る」だけで済み、データは壊れない（安全側に倒す）。
@@ -9297,20 +9323,37 @@ def mypage():
     """
     マイページの表示（GET）とニックネーム変更（POST）を行う。
 
-    【修正の背景】
-    以前この関数は request.args の search / genre を読んで自分の記事を
-    絞り込み、selected_genre / search_word をテンプレートに渡していたが、
-    mypage.html には検索フォームが存在せず、それらの変数を使う箇所も
-    なかったため、UI からは一切トリガーできないデッドコードだった。
-    混乱と保守コストの原因になるため、到達不能な絞り込み処理を削除し、
-    「自分の投稿を新しい順に一覧表示する」というマイページ本来の役割に絞った。
-    （将来マイページ内検索を実装する場合は、mypage.html に検索フォームを
-      追加したうえで、この関数に絞り込みを再導入すること）
+    【今回の改善: 全件一括ロード → サーバーサイドページネーションに統一】
+    従来この関数は自分の投稿を Post.query...all() で「全件」取得し、
+    テンプレート側で全カードを描画してから JavaScript で先頭 4 件以外を
+    display:none で隠す「もっと見る」方式だった。
+    しかしトップページ（views/blog.py の index）は既に paginate() による
+    サーバーサイドページネーションへ移行しており、マイページだけ旧方式が
+    残っていた。投稿数が増えるほど
+
+      ・DB から全 Post を取得する（メモリ肥大）
+      ・全カード分の HTML を描画して送信する（DOM 肥大・転送量増）
+
+    という無駄が大きくなる。そこで index と同じく paginate() に統一し、
+    1 ページ POSTS_PER_PAGE 件（= 4 件）だけを取得・描画するように変更した。
+
+    さらに、記事カード（_macros.html の post_card）はハッシュタグバッジ
+    （post.hashtags）を参照するため、index と同様に
+    selectinload(Post.hashtags) を付与して N+1 クエリを防ぐ。
+    （Post.hashtags はモデル定義で lazy='selectin' 済みだが、
+      呼び出し側でも明示して index とロード戦略をそろえる）
+
+    【総投稿数の表示について】
+    ページネーション後の posts は「現在ページ分」だけなので、
+    プロフィール欄の「これまでの総投稿数」は pagination.total（全件数）を
+    total_count としてテンプレートへ渡して表示する。
+    （旧テンプレートは posts|length で数えていたが、ページネーション後は
+      それだと 1 ページ分の件数になってしまうため total を使う）
 
     【処理の流れ】
       STEP 1. 管理者チェック
       STEP 2. [POST] ニックネームを更新して commit → マイページへリダイレクト
-      STEP 3. [GET]  自分の記事を作成日時の降順で取得
+      STEP 3. [GET]  自分の記事をページネーションで取得（selectinload 付き）
       STEP 4. [GET]  使用ジャンル一覧を生成（'未分類' は末尾へ）
       STEP 5. [GET]  mypage.html をレンダリング
     """
@@ -9332,14 +9375,23 @@ def mypage():
         return redirect('/mypage')
 
     # ------------------------------------------------------------------
-    # STEP 3. GET: 自分の記事を作成日時の降順（新しい記事が先頭）で取得
+    # STEP 3. GET: 自分の記事をサーバーサイドページネーションで取得
     # ------------------------------------------------------------------
-    user_posts = (
+    # index（views/blog.py）と同じ方式にそろえる:
+    #   ・?page= でページ番号を受け取る（未指定は 1）
+    #   ・options(db.selectinload(Post.hashtags)) でタグを一括ロードし N+1 を防止
+    #   ・created_at の降順（新しい記事が先頭）
+    #   ・per_page=POSTS_PER_PAGE、error_out=False
+    #     （範囲外のページ番号でも 404 にせず空リストを返す）
+    page = request.args.get('page', 1, type=int)
+    pagination = (
         Post.query
         .filter(Post.user_id == current_user.id)
+        .options(db.selectinload(Post.hashtags))
         .order_by(Post.created_at.desc())
-        .all()
+        .paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     )
+    user_posts = pagination.items  # 現在ページ分の記事だけ
 
     # ------------------------------------------------------------------
     # STEP 4. 使用ジャンル一覧の生成（サイドバー表示用）
@@ -9347,6 +9399,10 @@ def mypage():
     # DB クエリで DISTINCT なジャンル名を取得し、
     # Python 側で set → sorted で整理する。
     # '未分類' は特別扱いで末尾に移動する。
+    #
+    # ※ ここはページネーションとは独立に「自分の全記事」からジャンルを集計する。
+    #   現在ページの user_posts に依存させると、ページを移動するたびに
+    #   ジャンル一覧が変わってしまうため、専用クエリで全体から求めている。
     user_genres_raw = (
         db.session.query(Post.genre)
         .filter(Post.user_id == current_user.id,
@@ -9366,7 +9422,9 @@ def mypage():
     # ------------------------------------------------------------------
     return render_template(
         'mypage.html',
-        posts       = user_posts,
+        posts       = user_posts,       # 現在ページ分の記事
+        pagination  = pagination,       # ページ送りナビ生成用
+        total_count = pagination.total, # 「総投稿数」表示用（全件数）
         user_genres = user_genres,
     )
 </file>
@@ -10974,7 +11032,7 @@ DEFAULT_GENRES = [genre for _group_name, genres in GENRE_GROUPS for genre in gen
 </file>
 
 <file path="deploy_pythonanywhere.md">
-# MIT Blog — PythonAnywhere デプロイ・運用仕様書
+# MITO Blog — PythonAnywhere デプロイ・運用仕様書
 
 Flask 製ブログアプリを **PythonAnywhere 無料枠**に **GitHub 経由**で公開し、公開後にコードを更新・反映していくための仕様書です。実際のデプロイで使用した設定値・遭遇したつまずきポイントも反映しています。
 
@@ -11450,6 +11508,88 @@ login_manager = LoginManager()
 #   flask db upgrade                → 実際の DB に変更を適用
 # というワークフローで使用する。
 migrate = Migrate()
+</file>
+
+<file path="improvement.md">
+# システム改善計画書 (improvement.md)
+
+## 優先度：高（効果が大きい／記事が増えると顕在化）
+
+### 1. DB インデックスの不足【済】
+`models.py` の `Post` には `created_at`・`genre`・`is_published`・`user_id` にインデックスがありません。トップの `ORDER BY created_at DESC`、ジャンル絞り込み、公開状態フィルタ、マイページの `user_id` 絞り込みはすべて全表スキャンになります。記事数が増えると一覧・検索・詳細ページが目に見えて遅くなります。
+* **対処方法:** `db.Column(..., index=True)` を付与し、マイグレーションを追加。特に `created_at`・`is_published`・`genre`。複合インデックス `(is_published, created_at)` も有効です。
+
+### 2. アップロード画像が未最適化のまま配信されている【済】
+`_save_images()` は原本を UUID 名で保存するだけで、リサイズや圧縮を行っていません。一覧のサムネイルは CSS 上 260×158px なのに、数 MB の原寸画像がそのまま読み込まれます。読み込み速度に最も直結する部分です。
+* **対処方法:** アップロード時に Pillow でサムネイル用の縮小版（例：幅 400px の WebP）を生成し、`thumbnail_img` はそれを指すようにする。本文画像も長辺を上限（例：1600px）で縮小。
+
+### 3. マイページが全投稿を一括ロードしている【修正中】
+`mypage()` は `Post.query...all()` で全件取得し、テンプレートで全カードを描画してから JS で隠す方式です。index はサーバーページネーション化済みなのに、ここだけ古い方式が残っています。投稿が増えるとメモリ・DOM が肥大します。
+* **対処方法:** index と同様に `paginate()` に統一。`selectinload(Post.hashtags)` も付与。
+
+---
+
+## 優先度：中
+
+### 4. ページ固有 CSS を `<body>` 内で読み込んでいる
+`index.html` などは `{% block content %}` の中（＝body 内）で `<link rel="stylesheet">` を読み込んでいます。レンダリング途中で読み込むためチラつき（FOUC）や再レイアウトの原因になります。
+* **対処方法:** `base.html` に CSS ブロックを設けて `<head>` 側で読み込む、または preload。
+
+### 5. Markdown を毎回パースしている
+`detail()` は本文（Markdown ＋独自タグ）をアクセスのたびに変換しています。本文は編集時しか変わらないので無駄が大きい。
+* **対処方法:** レンダリング結果を列（例：`body_html`）に保存して投稿・編集時にだけ生成、詳細表示はそれを出力。もしくはメモリキャッシュ。
+
+### 6. `User.query.get()` が非推奨 API
+`app.py` の `load_user` の `User.query.get()` は SQLAlchemy 2.0 で Legacy 扱いです。
+* **対処方法:** `db.session.get(User, int(user_id))` に置き換え。
+
+### 7. キーワード検索が前方ワイルドカードで全走査
+`Post.title.ilike('%word%')` は先頭 `%` のためインデックスが効かず全表スキャンです。小規模なら問題ありませんが規模拡大時のボトルネックになります。
+* **対処方法:** 将来的には PostgreSQL の全文検索（`pg_trgm`／`tsvector`）を検討。当面は index 化と併用。
+
+### 8. `<img>` に width/height がなくレイアウトシフトが起きる
+サムネイル等に intrinsic なサイズ指定がないため、読み込み時に CLS（表示のガタつき）が発生します。
+* **対処方法:** `_macros.html` などの `<img>` に `width`／`height` を明示。
+
+### 9. ログインのユーザー名入力が `type="password"`
+`login.html` でユーザー名欄が `type="password"` になっており、`autocomplete="username"` と不整合です（意図的な目隠しなら許容ですが、ブラウザ警告や自動入力の不具合の原因になります）。
+* **対処方法:** 意図がなければ `type="text"` に。目隠しが目的なら意図をコメントで明記。
+
+### 10. 認証まわりの軽微なハードニング
+ゲートキー／Cookie の比較が単純な `==`（非定数時間）で、ブルートフォース対策もセッション単位のため別ブラウザで回避可能です（コード内でも指摘済み）。
+* **対処方法:** `secrets.compare_digest()` での比較、IP ベースの制限（Flask-Limiter）。
+
+---
+
+## 優先度：低（規模が小さいうちは実害小）
+
+### 11. 静的アセットのバンドル／バージョニングがない
+CSS が毎ページ複数ファイルに分かれ、キャッシュバスティングもなし。更新時にキャッシュが残る懸念。
+* **対処方法:** クエリ文字列やハッシュ付きファイル名で対応。
+
+### 12. `<title>` が全ページ固定
+`base.html` が `Mycreate1.MITOblog.jp` 固定で、記事タイトルが反映されず SEO・共有時に不利。meta description もなし。
+* **対処方法:** per-page `<title>` ブロック化。
+
+### 13. ラベルの `for=""` が空・不一致
+`login.html` などで label とフォーム要素が関連付いておらずアクセシビリティ上の欠陥。
+* **対処方法:** `for` と `id` を対応。
+
+### 14. `sync_hashtags` の同名タグ同時作成レース
+「検索 → なければ作成」の間の競合。単一管理者運用なら実害は低い。
+* **対処方法:** commit 時の `IntegrityError` を捕捉して再取得。
+
+### 15. 関連記事の 4 連続クエリ・ジャンル一覧の重複クエリ
+`_get_related_posts` は最大 4 回、index はジャンル一覧を毎回問い合わせ。
+* **対処方法:** まとめ or 軽いキャッシュ。
+
+### 16. 本文中 Markdown 画像に `loading="lazy"` がない
+記事下部の画像も初期ロードされる。
+* **対処方法:** 遅延読み込み付与。
+
+### 17. DiceBear アバターへの外部依存
+ページごとに外部リクエスト。
+* **対処方法:** ローカル生成・キャッシュを検討。
 </file>
 
 <file path="init_db.py">
