@@ -110,6 +110,14 @@ JPEG_QUALITY       = 85
 WEBP_QUALITY_BODY  = 82
 WEBP_QUALITY_THUMB = 80
 
+# ---- 一覧のページネーション設定 --------------------------------------
+# マイページ（mypage）の 1 ページあたりの表示件数。
+# トップページ（views/blog.py の index）は per_page=4 でページネーションして
+# いるため、体験をそろえる意味で同じ 4 件にしている。
+# （index 側は blog.py 内に直接 4 を書いているが、マイページは admin.py 内で
+#   完結するので定数として明示しておく）
+POSTS_PER_PAGE = 4
+
 
 # ======================================================================
 # [2] ファイル検証ヘルパー
@@ -552,8 +560,8 @@ def _delete_images(img_name_str: str) -> None:
 
     【バグ修正に伴う運用ルール】
     この関数は必ず「DB の commit が成功した後」に呼ぶこと。
-    従来は commit 前に物理削除していたため、commit が失敗すると
-    「DB には記事が残っているのに画像だけ消えている」
+    従来は commit 前に _delete_images() を呼んでいたため、
+    commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
     という復旧不能な不整合が発生し得た。
     commit 後の物理削除であれば、万一削除に失敗しても
     「孤立ファイルが残る」だけで済み、データは壊れない（安全側に倒す）。
@@ -1109,20 +1117,37 @@ def mypage():
     """
     マイページの表示（GET）とニックネーム変更（POST）を行う。
 
-    【修正の背景】
-    以前この関数は request.args の search / genre を読んで自分の記事を
-    絞り込み、selected_genre / search_word をテンプレートに渡していたが、
-    mypage.html には検索フォームが存在せず、それらの変数を使う箇所も
-    なかったため、UI からは一切トリガーできないデッドコードだった。
-    混乱と保守コストの原因になるため、到達不能な絞り込み処理を削除し、
-    「自分の投稿を新しい順に一覧表示する」というマイページ本来の役割に絞った。
-    （将来マイページ内検索を実装する場合は、mypage.html に検索フォームを
-      追加したうえで、この関数に絞り込みを再導入すること）
+    【今回の改善: 全件一括ロード → サーバーサイドページネーションに統一】
+    従来この関数は自分の投稿を Post.query...all() で「全件」取得し、
+    テンプレート側で全カードを描画してから JavaScript で先頭 4 件以外を
+    display:none で隠す「もっと見る」方式だった。
+    しかしトップページ（views/blog.py の index）は既に paginate() による
+    サーバーサイドページネーションへ移行しており、マイページだけ旧方式が
+    残っていた。投稿数が増えるほど
+
+      ・DB から全 Post を取得する（メモリ肥大）
+      ・全カード分の HTML を描画して送信する（DOM 肥大・転送量増）
+
+    という無駄が大きくなる。そこで index と同じく paginate() に統一し、
+    1 ページ POSTS_PER_PAGE 件（= 4 件）だけを取得・描画するように変更した。
+
+    さらに、記事カード（_macros.html の post_card）はハッシュタグバッジ
+    （post.hashtags）を参照するため、index と同様に
+    selectinload(Post.hashtags) を付与して N+1 クエリを防ぐ。
+    （Post.hashtags はモデル定義で lazy='selectin' 済みだが、
+      呼び出し側でも明示して index とロード戦略をそろえる）
+
+    【総投稿数の表示について】
+    ページネーション後の posts は「現在ページ分」だけなので、
+    プロフィール欄の「これまでの総投稿数」は pagination.total（全件数）を
+    total_count としてテンプレートへ渡して表示する。
+    （旧テンプレートは posts|length で数えていたが、ページネーション後は
+      それだと 1 ページ分の件数になってしまうため total を使う）
 
     【処理の流れ】
       STEP 1. 管理者チェック
       STEP 2. [POST] ニックネームを更新して commit → マイページへリダイレクト
-      STEP 3. [GET]  自分の記事を作成日時の降順で取得
+      STEP 3. [GET]  自分の記事をページネーションで取得（selectinload 付き）
       STEP 4. [GET]  使用ジャンル一覧を生成（'未分類' は末尾へ）
       STEP 5. [GET]  mypage.html をレンダリング
     """
@@ -1144,14 +1169,23 @@ def mypage():
         return redirect('/mypage')
 
     # ------------------------------------------------------------------
-    # STEP 3. GET: 自分の記事を作成日時の降順（新しい記事が先頭）で取得
+    # STEP 3. GET: 自分の記事をサーバーサイドページネーションで取得
     # ------------------------------------------------------------------
-    user_posts = (
+    # index（views/blog.py）と同じ方式にそろえる:
+    #   ・?page= でページ番号を受け取る（未指定は 1）
+    #   ・options(db.selectinload(Post.hashtags)) でタグを一括ロードし N+1 を防止
+    #   ・created_at の降順（新しい記事が先頭）
+    #   ・per_page=POSTS_PER_PAGE、error_out=False
+    #     （範囲外のページ番号でも 404 にせず空リストを返す）
+    page = request.args.get('page', 1, type=int)
+    pagination = (
         Post.query
         .filter(Post.user_id == current_user.id)
+        .options(db.selectinload(Post.hashtags))
         .order_by(Post.created_at.desc())
-        .all()
+        .paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     )
+    user_posts = pagination.items  # 現在ページ分の記事だけ
 
     # ------------------------------------------------------------------
     # STEP 4. 使用ジャンル一覧の生成（サイドバー表示用）
@@ -1159,6 +1193,10 @@ def mypage():
     # DB クエリで DISTINCT なジャンル名を取得し、
     # Python 側で set → sorted で整理する。
     # '未分類' は特別扱いで末尾に移動する。
+    #
+    # ※ ここはページネーションとは独立に「自分の全記事」からジャンルを集計する。
+    #   現在ページの user_posts に依存させると、ページを移動するたびに
+    #   ジャンル一覧が変わってしまうため、専用クエリで全体から求めている。
     user_genres_raw = (
         db.session.query(Post.genre)
         .filter(Post.user_id == current_user.id,
@@ -1178,6 +1216,8 @@ def mypage():
     # ------------------------------------------------------------------
     return render_template(
         'mypage.html',
-        posts       = user_posts,
+        posts       = user_posts,       # 現在ページ分の記事
+        pagination  = pagination,       # ページ送りナビ生成用
+        total_count = pagination.total, # 「総投稿数」表示用（全件数）
         user_genres = user_genres,
     )

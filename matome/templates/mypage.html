@@ -2,9 +2,24 @@
 {% from '_macros.html' import post_card with context %}
 {% block content %}
 
+{# ============================================================
+   マイページ
+
+   【今回の変更: JS「もっと見る」→ サーバーサイドページネーション】
+   従来はビュー側で自分の全投稿を渡し、ここで全カードを描画してから
+   JavaScript で先頭 4 件以外を display:none で隠す「もっと見る」方式だった。
+   ビュー（views/admin.py の mypage）を index と同じ paginate() に統一した
+   ため、テンプレートも index.html と同じページ番号ナビに置き換える。
+
+   これにより
+     ・受け取る posts は「現在ページ分（最大 POSTS_PER_PAGE 件）」だけ
+     ・全カードを隠すための JS と load_more.css が不要
+   になった。総投稿数は total_count（全件数）で表示する。
+   ============================================================ #}
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/load_more.css') }}">
+{# load_more.css はもっと見る方式の撤去に伴い読み込み不要になったため削除 #}
 
 
 <div class="mypage-container">
@@ -14,8 +29,9 @@
             👤 {% if current_user.nickname %}{{ current_user.nickname }}{% endif %} さんのマイページ
         </h2>
 
+        {# 総投稿数はページ分ではなく全件数（total_count）を表示する #}
         <p class="profile-post-count">
-            これまでの総投稿数: <strong>{{ posts|length }}</strong> 件
+            これまでの総投稿数: <strong>{{ total_count }}</strong> 件
         </p>
 
         <div class="nickname-form-wrapper">
@@ -49,6 +65,13 @@
 
     <h3 class="section-title-posts">📝 投稿一覧</h3>
 
+    {# ===== ページ送りのリンク先がここへ来るようにするための目印 =====
+       固定ヘッダーに隠れないよう scroll-margin-top を mypage.css で確保。
+       ページ番号リンクの #mypage-articles-anchor フラグメントで
+       投稿一覧の先頭へジャンプする（index.html と同じ仕組み）。 #}
+    <div id="mypage-articles-anchor"></div>
+    {# ========================================================= #}
+
     {# 記事カードは _macros.html の post_card マクロで描画（index.html と共通）。
        マイページは自分の記事のみ一覧するため、マクロ内の
        「ログイン中 かつ 自分の記事」条件は常に真となり、
@@ -59,75 +82,51 @@
         <p class="empty-message">まだ投稿がありません。<br><a href="{{ url_for('admin.create') }}">最初の記事を書いてみましょう</a></p>
     {% endfor %}
 
-    {# ===== 「もっと見る」「表示を減らす」ボタン ===== #}
-    <div class="load-more-wrap" id="mypage-load-more-wrap">
-        <button class="load-less-btn" id="mypage-load-less-btn" type="button"
-                onclick="mypageLoadLess()">
-            ▲ 表示を減らす
-        </button>
-        <button class="load-more-btn" id="mypage-load-more-btn" type="button"
-                onclick="mypageLoadMore()">
-            もっと見る
-            <span class="load-more-count" id="mypage-load-more-count"></span>
-        </button>
-    </div>
+    {# ============================================================
+       ページ番号によるページ送り（サーバーサイドページネーション）
+       ------------------------------------------------------------
+       index.html と同じデザイン（index.css の .index-pagination /
+       .page-btn 系）を流用する（mypage.html は index.css を読み込み済み）。
+       リンク先は admin.mypage。#mypage-articles-anchor フラグメントで
+       ページ遷移後に投稿一覧の先頭へスクロールする。
+       ============================================================ #}
+    {% if pagination.pages > 1 %}
+        <nav class="index-pagination" aria-label="投稿一覧のページ送り">
+
+            {# --- 前へ --- #}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('admin.mypage', page=pagination.prev_num, _anchor='mypage-articles-anchor') }}"
+                   class="page-btn page-btn-arrow" aria-label="前のページ" rel="prev">‹</a>
+            {% else %}
+                <span class="page-btn page-btn-arrow page-btn-disabled" aria-hidden="true">‹</span>
+            {% endif %}
+
+            {# --- ページ番号（前後2ページ + 端を表示、間は … で省略） --- #}
+            {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                {% if p %}
+                    {% if p == pagination.page %}
+                        <span class="page-btn active" aria-current="page">{{ p }}</span>
+                    {% else %}
+                        <a href="{{ url_for('admin.mypage', page=p, _anchor='mypage-articles-anchor') }}"
+                           class="page-btn">{{ p }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="page-ellipsis" aria-hidden="true">…</span>
+                {% endif %}
+            {% endfor %}
+
+            {# --- 次へ --- #}
+            {% if pagination.has_next %}
+                <a href="{{ url_for('admin.mypage', page=pagination.next_num, _anchor='mypage-articles-anchor') }}"
+                   class="page-btn page-btn-arrow" aria-label="次のページ" rel="next">›</a>
+            {% else %}
+                <span class="page-btn page-btn-arrow page-btn-disabled" aria-hidden="true">›</span>
+            {% endif %}
+
+        </nav>
+    {% endif %}
     {# ================================================ #}
 
 </div>
-
-<script>
-(function () {
-    var INITIAL = 4;
-    var STEP    = 4;
-
-    var cards   = Array.from(document.querySelectorAll('.mypage-container > article.post-card'));
-    var total   = cards.length;
-    var shown   = 0;
-
-    var wrap    = document.getElementById('mypage-load-more-wrap');
-    var countEl = document.getElementById('mypage-load-more-count');
-    var lessBtn = document.getElementById('mypage-load-less-btn');
-    var moreBtn = document.getElementById('mypage-load-more-btn');
-
-    cards.forEach(function (c) { c.style.display = 'none'; });
-
-    function showCards(n) {
-        var end = Math.min(shown + n, total);
-        for (var i = shown; i < end; i++) {
-            cards[i].style.display = '';
-        }
-        shown = end;
-        updateBtn();
-    }
-
-    function hideCards(n) {
-        var end = Math.max(shown - n, INITIAL);
-        for (var i = end; i < shown; i++) {
-            cards[i].style.display = 'none';
-        }
-        shown = end;
-        updateBtn();
-    }
-
-    function updateBtn() {
-        var remaining = total - shown;
-
-        /* ラッパー：初期1件のみ表示中は非表示、それ以外は常に表示 */
-        wrap.style.display = (shown <= INITIAL && remaining <= 0) ? 'none' : 'flex';
-
-        /* もっと見るボタン：残件数0なら非表示 */
-        moreBtn.style.display = remaining > 0 ? 'inline-flex' : 'none';
-        countEl.textContent   = 'あと ' + remaining + ' 件';
-
-        /* 表示を減らすボタン：INITIAL件より多く表示中なら表示 */
-        lessBtn.style.display = shown > INITIAL ? 'inline-flex' : 'none';
-    }
-
-    window.mypageLoadMore = function () { showCards(STEP); };
-    window.mypageLoadLess = function () { hideCards(STEP); };
-
-    showCards(INITIAL);
-})();
-</script>
 
 {% endblock %}
