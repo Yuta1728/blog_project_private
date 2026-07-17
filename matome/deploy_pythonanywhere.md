@@ -1,4 +1,4 @@
-# MIT Blog — PythonAnywhere デプロイ・運用仕様書
+# MITO Blog — PythonAnywhere デプロイ・運用仕様書
 
 Flask 製ブログアプリを **PythonAnywhere 無料枠**に **GitHub 経由**で公開し、公開後にコードを更新・反映していくための仕様書です。実際のデプロイで使用した設定値・遭遇したつまずきポイントも反映しています。
 
