@@ -91,6 +91,21 @@ def index():
     # STEP 3. 検索・絞り込み条件の追加
     # ------------------------------------------------------------------
     # (3-1) キーワード検索: タイトル または ハッシュタグ名の部分一致（大文字小文字無視）
+    #
+    # 【インデックスについて（improvement.md 項目 7）】
+    # ここは Post.title.ilike('%word%') のように先頭 % を付けた部分一致のため、
+    # 通常の B-Tree インデックスは効かず、そのままだと全表スキャンになる。
+    # PostgreSQL では pg_trgm の GIN インデックス
+    #   （マイグレーション add_trgm_search_index で
+    #     post.title → ix_post_title_trgm / hashtag.name → ix_hashtag_name_trgm を
+    #     gin_trgm_ops で作成）
+    # により、この ILIKE '%word%' でもインデックスが利用され全表スキャンを
+    # 避けられる（検索語がトライグラムを構成できる 3 文字以上のとき）。
+    #
+    # クエリはこの ilike のまま変更しない：インデックスの有無に関わらず動作し、
+    # SQLite（pg_trgm 非対応）では従来どおりスキャン検索になる。
+    # より本格的な検索が必要になった場合は tsvector による全文検索の
+    # 導入が次の候補（項目 7）。
     if search_word:
         keyword = f'%{search_word.strip()}%'
         query = query.filter(

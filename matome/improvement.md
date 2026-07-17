@@ -30,13 +30,22 @@
 `app.py` の `load_user` の `User.query.get()` は SQLAlchemy 2.0 で Legacy 扱いです。
 * **対処方法:** `db.session.get(User, int(user_id))` に置き換え。
 
-### 7. キーワード検索が前方ワイルドカードで全走査
+### 7. キーワード検索が前方ワイルドカードで全走査【済】
 `Post.title.ilike('%word%')` は先頭 `%` のためインデックスが効かず全表スキャンです。小規模なら問題ありませんが規模拡大時のボトルネックになります。
-* **対処方法:** 将来的には PostgreSQL の全文検索（`pg_trgm`／`tsvector`）を検討。当面は index 化と併用。
+* **対処方法（当面の index 化）:** PostgreSQL の `pg_trgm` 拡張を有効化し、`post.title` / `hashtag.name` に GIN トリグラム索引（`gin_trgm_ops`）を張ることで、`ILIKE '%word%'` でも索引走査が効くようにした。
+  * マイグレーション `add_trgm_search_index.py` を追加。接続先の方言を判定し、**PostgreSQL のときだけ**拡張と索引を作成する（SQLite では no-op）。作成する索引は `ix_post_title_trgm` / `ix_hashtag_name_trgm`。
+  * これらは拡張依存の演算子クラスを使うため ORM メタデータ（`models.py`）には載せず、`migrations/env.py` の `include_object` で末尾 `_trgm` の索引を autogenerate 対象外にして、手動管理の索引が誤って DROP されないようにした。
+  * クエリ（`views/blog.py`）は `ilike` のまま変更していない（索引の有無に関わらず動作し、SQLite では従来どおりスキャン検索）。
+* **将来の課題:** スコア付き全文検索が必要になった場合は `tsvector` の導入を検討する。
 
-### 8. `<img>` に width/height がなくレイアウトシフトが起きる
+### 8. `<img>` に width/height がなくレイアウトシフトが起きる【済】
 サムネイル等に intrinsic なサイズ指定がないため、読み込み時に CLS（表示のガタつき）が発生します。
-* **対処方法:** `_macros.html` などの `<img>` に `width`／`height` を明示。
+* **対処方法:** `_macros.html` の `post_thumbnail` マクロに `width` / `height` 引数を追加し、`<img>` に出力するようにした（渡されたときのみ属性を付与）。呼び出し側で代表的な表示サイズを渡す。
+  * 記事カードのサムネイル（`post_card`）: `260 × 158`
+  * 関連記事カード（`detail.html`）: `120 × 85`
+  * 各アバター画像（`detail.html` 21×21 / `hero.html` 80×80 / `about.html` 72×72）にも `width` / `height` を明示。
+  * 実描画サイズは CSS が制御するため見た目は変わらず、CLS のみ改善される。
+* **残課題:** 本文中の Markdown 画像（`rendering.py` で生成）は intrinsic サイズが不明なため未対応。対応するにはアップロード時に画像の縦横を取得して保存する必要がある（別途検討）。
 
 ### 9. ログインのユーザー名入力が `type="password"`
 `login.html` でユーザー名欄が `type="password"` になっており、`autocomplete="username"` と不整合です（意図的な目隠しなら許容ですが、ブラウザ警告や自動入力の不具合の原因になります）。

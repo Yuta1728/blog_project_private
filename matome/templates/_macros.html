@@ -22,18 +22,32 @@
 
    @param post      : Post オブジェクト（index/mypage/detail の関連記事）
    @param css_class : 付与する class（例 'thumb-img'）。省略時は class なし
+   @param width     : <img> の width 属性（px）。省略時は付与しない
+   @param height    : <img> の height 属性（px）。省略時は付与しない
+
+   【width / height を明示する理由（improvement.md 項目 8）】
+   <img> に幅・高さを指定すると、ブラウザは画像の読み込み完了を待たずに
+   アスペクト比ぶんの表示領域を先に確保できる。これにより画像が届いた
+   瞬間に周囲の要素がずれる「レイアウトシフト（CLS＝表示のガタつき）」を
+   防げる。実際の描画サイズは CSS（object-fit: cover や width:100% 等）が
+   決めるため、ここで渡す数値は主に「アスペクト比のヒント」として働く
+   （＝ CSS 側の見た目は変わらず、CLS だけが改善される）。
+
+   呼び出し側は、その配置での代表的な表示サイズ（デスクトップ基準）を
+   渡すとよい:
+     - index / mypage の記事カード : 260 x 158
+     - detail の関連記事カード       : 120 x 85
    ------------------------------------------------------------ #}
-{% macro post_thumbnail(post, css_class='') %}
+{% macro post_thumbnail(post, css_class='', width=none, height=none) %}
+    {#- 表示するサムネイルの src を優先順位に従って決定する -#}
     {%- if post.thumbnail_img -%}
-        <img src="{{ url_for('static', filename='img/posts/' + post.thumbnail_img) }}"
-             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+        {%- set thumb_src = url_for('static', filename='img/posts/' + post.thumbnail_img) -%}
     {%- elif post.default_thumb -%}
-        <img src="{{ url_for('static', filename='img/thbnails/' + post.default_thumb) }}"
-             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+        {%- set thumb_src = url_for('static', filename='img/thbnails/' + post.default_thumb) -%}
     {%- else -%}
-        <img src="{{ url_for('static', filename='img/thbnails/system-default.jpg') }}"
-             alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %} loading="lazy">
+        {%- set thumb_src = url_for('static', filename='img/thbnails/system-default.jpg') -%}
     {%- endif -%}
+    <img src="{{ thumb_src }}" alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %}{% if width %} width="{{ width }}"{% endif %}{% if height %} height="{{ height }}"{% endif %} loading="lazy">
 {% endmacro %}
 
 
@@ -50,7 +64,9 @@
 {% macro post_card(post) %}
 <article class="post-card">
     <div class="post-thumbnail">
-        {{ post_thumbnail(post, 'thumb-img') }}
+        {# width/height を明示して読み込み時のレイアウトシフトを防ぐ（項目 8）。
+           記事カードのサムネイルはデスクトップ基準で 260 x 158。 #}
+        {{ post_thumbnail(post, 'thumb-img', width=260, height=158) }}
     </div>
 
     <div class="post-content">

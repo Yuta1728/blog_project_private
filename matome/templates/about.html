@@ -5,8 +5,10 @@
 
 <div class="info-page-container">
     <div class="info-page-header">
+        {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ（項目 8）。
+           CSS 上の表示サイズ（72x72）に合わせた値を指定する。 #}
         <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
-             alt="管理者アバター" class="info-page-avatar">
+             alt="管理者アバター" class="info-page-avatar" width="72" height="72">
         <h1 class="info-page-title">
             {{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} について
         </h1>
@@ -26,7 +28,7 @@
             <h2 class="info-section-title">💡 興味・関心</h2>
             <p>
                 今後、大学の研究で必要になるデータ分析やWebアプリ開発に関連する知識や技術習得のため、
-                AIの活用法をはじめ、機械学習、フロントエンドデザイン、セキュリティ対策について学習中です。
+                AIの活用法をはじめ、フロントエンドデザイン、セキュリティの強化、機械学習について学習中です。
             </p>
         </section>
 

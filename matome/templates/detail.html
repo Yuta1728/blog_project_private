@@ -28,8 +28,10 @@
             </div>
 
             <div class="post-user-info">
-                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}" 
-                    alt="avatar">
+                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ（項目 8）。
+                   CSS 上の表示サイズ（21x21）に合わせた値を指定する。 #}
+                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
+                    alt="avatar" width="21" height="21">
                 <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
             </div>
             
@@ -91,7 +93,9 @@
                     <li class="related-item">
                         <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
                             <div class="related-thumb">
-                                {{ post_thumbnail(rel) }}
+                                {# width/height を明示して読み込み時のレイアウトシフトを防ぐ（項目 8）。
+                                   関連記事サムネイルはデスクトップ基準で 120 x 85。 #}
+                                {{ post_thumbnail(rel, width=120, height=85) }}
                             </div>
                             <div class="related-body">
                                 <p class="related-title">{{ rel.title }}</p>

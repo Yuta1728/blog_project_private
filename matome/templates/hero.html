@@ -4,8 +4,10 @@
 
 <section class="hero-section">
     <div class="hero-avatar">
+        {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ（項目 8）。
+           CSS 上の表示サイズ（80x80）に合わせた値を指定する。 #}
         <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ admin_user.nickname if admin_user and admin_user.nickname else 'admin' }}"
-             alt="管理者アバター">
+             alt="管理者アバター" width="80" height="80">
     </div>
     <div class="hero-body">
         <h2 class="hero-name">

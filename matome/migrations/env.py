@@ -51,6 +51,27 @@ def get_metadata():
     return target_db.metadata
 
 
+# ----------------------------------------------------------------------
+# autogenerate の対象から除外するオブジェクトの判定
+# ----------------------------------------------------------------------
+def include_object(object, name, type_, reflected, compare_to):
+    """
+    autogenerate（flask db migrate）で差分検出の対象に含めるかを判定する。
+
+    pg_trgm の GIN トリグラム索引（末尾 '_trgm'）は方言依存のため
+    ORM のメタデータ（models.py の __table_args__）には載せず、
+    専用マイグレーション（add_trgm_search_index.py）で PostgreSQL のときだけ
+    手動管理している。
+
+    このままだと autogenerate が「メタデータに存在しない索引」とみなして
+    DROP を提案してしまうため、末尾 '_trgm' の索引は autogenerate の
+    対象外にして、手動管理の索引を勝手に削除されないようにする。
+    """
+    if type_ == 'index' and name and name.endswith('_trgm'):
+        return False
+    return True
+
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -65,7 +86,8 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=get_metadata(), literal_binds=True
+        url=url, target_metadata=get_metadata(), literal_binds=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -93,6 +115,9 @@ def run_migrations_online():
     conf_args = current_app.extensions['migrate'].configure_args
     if conf_args.get("process_revision_directives") is None:
         conf_args["process_revision_directives"] = process_revision_directives
+    # 手動管理のトリグラム索引を autogenerate の対象外にする
+    # （呼び出し側で明示指定されていない場合のみ設定）
+    conf_args.setdefault("include_object", include_object)
 
     connectable = get_engine()
 
