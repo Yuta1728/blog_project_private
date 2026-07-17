@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 {% from '_macros.html' import post_card with context %}
+
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
+   記事カードのデザインは index.css を共用し、マイページ固有の装飾は mypage.css。
+   load_more.css はもっと見る方式の撤去に伴い読み込み不要になったため削除。 #}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
+{% endblock %}
+
 {% block content %}
 
 {# ============================================================
@@ -16,10 +25,6 @@
      ・全カードを隠すための JS と load_more.css が不要
    になった。総投稿数は total_count（全件数）で表示する。
    ============================================================ #}
-
-<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
-{# load_more.css はもっと見る方式の撤去に伴い読み込み不要になったため削除 #}
 
 
 <div class="mypage-container">

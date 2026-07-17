@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% from '_macros.html' import post_thumbnail %}
-{% block content %}
+
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4） #}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+{% endblock %}
+
+{% block content %}
 
 <div class="detail-container">
     <article>

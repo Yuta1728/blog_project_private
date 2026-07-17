@@ -1,7 +1,11 @@
 {% extends "base.html" %}
-{% block content %}
 
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4） #}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/genre.css') }}">
+{% endblock %}
+
+{% block content %}
 
 {# ================================================================
    ジャンル一覧ページ

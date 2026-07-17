@@ -28,10 +28,34 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
 
+    {# ============================================================
+       全ページ共通の CSS（<head> で読み込む）
+       ============================================================ #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-editor.css') }}">
+
+    {# ============================================================
+       ページ固有 CSS の差し込み口（improvement.md 項目 4）
+       ------------------------------------------------------------
+       各ページテンプレート（index.html / detail.html など）は、
+       従来 {% block content %}（＝ <body> 内）で <link> を読み込んでいた。
+       body 内での読み込みはレンダリング途中にスタイルが届くため、
+       FOUC（一瞬スタイル未適用で表示されるちらつき）や再レイアウトの
+       原因になっていた。
+
+       そこで各テンプレートは {% block extra_css %} でページ固有の
+       <link> を宣言し、この位置（<head> 内・共通 CSS の直後）へ
+       差し込むようにする。これにより
+         ・スタイルが本文レンダリング前に評価され、ちらつきを抑えられる
+         ・「ページごとに必要な CSS だけ読む」構造はそのまま維持できる
+         ・共通 CSS → ページ固有 CSS という読み込み順も従来どおり保たれる
+           （dark-mode.css を先に読むため、ダークモードの上書きも不変）
+       なお CSS の中身は従来どおり各 .css ファイルにあり、
+       HTML へ直書きするわけではない（参照タグを移すだけ）。
+    ============================================================ #}
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
 
