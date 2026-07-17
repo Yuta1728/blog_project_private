@@ -18,7 +18,7 @@
 
 ## 優先度：中
 
-### 4. ページ固有 CSS を `<body>` 内で読み込んでいる
+### 4. ページ固有 CSS を `<body>` 内で読み込んでいる【済】
 `index.html` などは `{% block content %}` の中（＝body 内）で `<link rel="stylesheet">` を読み込んでいます。レンダリング途中で読み込むためチラつき（FOUC）や再レイアウトの原因になります。
 * **対処方法:** `base.html` に CSS ブロックを設けて `<head>` 側で読み込む、または preload。
 
