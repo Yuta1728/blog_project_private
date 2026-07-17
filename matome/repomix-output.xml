@@ -45,6 +45,7 @@ migrations/
     42dc0996903d_add_default_thumb_to_post.py
     Add_hashtag_tables.py
     add_img_captions_to_post.py
+    add_post_body_html.py
     add_post_indexs.py
     add_thumbnail_img_to_post.py
     change_img_name_to_text.py
@@ -130,6 +131,7 @@ extensions.py
 improvement.md
 init_db.py
 models.py
+rendering.py
 requirements-pythonanywhere.txt
 requirements.txt
 wsgi_pythonanywhere.py
@@ -243,6 +245,53 @@ def upgrade():
 def downgrade():
     with op.batch_alter_table('post', schema=None) as batch_op:
         batch_op.drop_column('img_captions')
+</file>
+
+<file path="migrations/versions/add_post_body_html.py">
+"""Add body_html / toc_html cache columns to Post
+
+【背景】
+detail() は記事本文（Markdown + 独自タグ）をアクセスのたびに
+markdown.convert() で HTML へ変換し、さらに [imgN]/[map:]/[youtube:] の
+置換を毎回行っていた。本文は投稿・編集時にしか変化しないため、
+閲覧のたびに同じ変換を繰り返すのは無駄が大きい（improvement.md 項目 5）。
+
+【この変更でやること】
+レンダリング済み HTML を保存するキャッシュ列を Post に追加する。
+  body_html : Markdown 変換 + 独自タグ置換まで済ませた本文 HTML
+  toc_html  : 記事冒頭に表示する目次 HTML（[toc] マーカー使用時は NULL）
+
+投稿・編集時に rendering.render_post_body() で生成して保存し、
+detail() は body_html をそのまま出力する。
+既存記事（body_html が NULL）は detail() 側でその場生成し、
+ベストエフォートで保存（遅延バックフィル）するため、
+両列とも nullable=True で追加する。
+
+Revision ID: add_post_body_html
+Revises: add_post_indexes
+Create Date: 2026-07-17 12:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+# revision identifiers, used by Alembic.
+revision = 'add_post_body_html'
+down_revision = 'add_post_indexes'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('body_html', sa.Text(), nullable=True))
+        batch_op.add_column(sa.Column('toc_html',  sa.Text(), nullable=True))
+
+
+def downgrade():
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.drop_column('toc_html')
+        batch_op.drop_column('body_html')
 </file>
 
 <file path="migrations/versions/add_post_indexs.py">
@@ -8240,34 +8289,13 @@ function ytPlay(facadeEl) {
 #   [9] delete()  : 記事削除ビュー
 #   [10] mypage() : マイページビュー
 #
-# 【画像最適化の方針（このリビジョンでの追加）】
-#   従来 _save_images() は原本を UUID 名で保存するだけで、リサイズも圧縮も
-#   行っていなかった。一覧サムネイルは CSS 上 260×158px 程度なのに、
-#   数 MB の原寸画像がそのまま配信され、読み込み速度を大きく損ねていた。
-#
-#   対策として Pillow でアップロード時に最適化する:
-#     ・本文画像       … 長辺を BODY_IMAGE_MAX_EDGE（既定 1600px）まで縮小し再圧縮。
-#                         形式は原則そのまま（JPEG/PNG/WebP/GIF）を尊重する。
-#                         アニメーション GIF は劣化・静止化を避けるため原本のまま保存。
-#     ・サムネイル画像 … 幅 THUMBNAIL_MAX_WIDTH（既定 400px）の WebP に変換して保存。
-#                         thumbnail_img はこの軽量版ファイルを指す。
-#   いずれも「上限を超える場合のみ縮小（拡大はしない）」で、EXIF の向き情報を
-#   反映してから縮小する（スマホ写真の回転ズレ対策）。
-#
-# 【処理フロー図（投稿・編集・削除に共通する整合性ルール）】
-#
-#   画像ファイル（本文画像 + サムネイル）を最適化して保存
-#        │        （全成功 or 全掃除のアトミック動作）
-#        ▼
-#   DB 変更をセッションに積む（add / 属性変更 / delete）
-#        │
-#        ▼
-#   db.session.commit()
-#        ├─ 失敗 → rollback + 今回保存した新ファイルを掃除
-#        │          （DB は旧状態のまま無傷。孤立ファイルも残らない）
-#        └─ 成功 → ここで初めて「削除対象の旧ファイル」を物理削除
-#                   （万一削除に失敗しても孤立ファイルが残るだけで
-#                     データは壊れない = 安全側に倒す）
+# 【本文 HTML の事前生成について（improvement.md 項目 5）】
+#   本文（Markdown + 独自タグ）の HTML 変換は閲覧のたびに行うと無駄なため、
+#   投稿・編集時に rendering.render_post_body() で
+#   (body_html, toc_html) を生成し、Post の同名カラムに保存する。
+#   詳細表示（views/blog.py の detail）は保存済み HTML をそのまま出力する。
+#   本文・画像（img_name / img_captions）が確定した後に生成することで、
+#   [imgN] 置換なども含めた最終形をキャッシュできる。
 #
 # ======================================================================
 
@@ -8283,6 +8311,7 @@ from PIL import Image, ImageOps  # アップロード画像の縮小・再圧縮
 from extensions import db
 from models import Post, Hashtag
 from constants import DEFAULT_GENRES
+from rendering import render_post_body  # 本文 → (body_html, toc_html) の事前生成に使用
 import config
 
 admin_bp = Blueprint('admin', __name__)
@@ -8320,8 +8349,6 @@ WEBP_QUALITY_THUMB = 80
 # マイページ（mypage）の 1 ページあたりの表示件数。
 # トップページ（views/blog.py の index）は per_page=4 でページネーションして
 # いるため、体験をそろえる意味で同じ 4 件にしている。
-# （index 側は blog.py 内に直接 4 を書いているが、マイページは admin.py 内で
-#   完結するので定数として明示しておく）
 POSTS_PER_PAGE = 4
 
 
@@ -8353,9 +8380,6 @@ def _validate_image(file) -> None:
 
     問題があれば ValueError を送出する。検証後はストリーム位置を先頭へ戻すので、
     続けて Pillow の Image.open() / file.save() が読み込める状態になる。
-
-    ※ 従来は _save_images() 内にインラインで書かれていた検証を、
-       本文画像・サムネイルの両方から使えるよう関数として切り出した（DRY）。
     """
     # 第 1 層: 拡張子
     if not allowed_file(file.filename):
@@ -8381,16 +8405,10 @@ def parse_hashtag_input(raw: str) -> list[str]:
     フォームから受け取ったハッシュタグ入力文字列を
     「# なしのタグ名リスト」に変換する。
 
-    対応する入力形式（ユーザーにとって入力しやすい形式を幅広く受け付ける）:
+    対応する入力形式:
       "#Flask #Python ブログ" → ['Flask', 'Python', 'ブログ']
       "Flask,Python,ブログ"   → ['Flask', 'Python', 'ブログ']
       "Flask　Python"         → ['Flask', 'Python']  （全角スペースも対応）
-
-    【処理の流れ】
-      STEP 1. 前後の空白を除去。空なら空リストを返す
-      STEP 2. 全角スペース・半角スペース・カンマ・読点 で分割
-      STEP 3. 各トークンの先頭の '#' を除去
-      STEP 4. 空文字列・50文字超・重複 を排除してリスト化
 
     @param raw: フォームの hashtag_input フィールドの値
     @return: タグ名文字列のリスト（'#' なし）
@@ -8422,34 +8440,22 @@ def parse_hashtag_input(raw: str) -> list[str]:
 def sync_hashtags(post: Post, tag_names: list[str]) -> None:
     """
     post.hashtags リレーションを tag_names リストと同期する。
-
-    【なぜ「同期」が必要か】
-    単純に post.hashtags = [new_tag1, new_tag2, ...] と上書きすると
-    編集前に付いていたタグが外れ、新しいタグが追加されるが、
-    すでに DB に存在する同名タグが重複登録されるリスクがある。
-    この関数では「既存タグがあれば再利用、なければ新規作成」を行う。
-
-    【処理の流れ】
-      STEP 1. tag_names の各タグ名を Hashtag テーブルで検索
-      STEP 2. 存在すれば既存の Hashtag オブジェクトを使う
-      STEP 3. 存在しなければ新規 Hashtag を作成して db.session.add()
-      STEP 4. post.hashtags を新しいリストで上書き
-              （SQLAlchemy が差分を検出して post_hashtags 中間テーブルを更新する）
+    「既存タグがあれば再利用、なければ新規作成」を行う。
 
     @param post: 同期対象の Post オブジェクト
     @param tag_names: 新しいタグ名リスト（'#' なし）
     """
     new_tags = []
     for name in tag_names:
-        # STEP 1〜2. 既存タグの検索・再利用
+        # 既存タグの検索・再利用
         tag = Hashtag.query.filter_by(name=name).first()
         if not tag:
-            # STEP 3. DB に存在しない新タグ → 新規作成
+            # DB に存在しない新タグ → 新規作成
             tag = Hashtag(name=name)
             db.session.add(tag)
         new_tags.append(tag)
 
-    # STEP 4. リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
+    # リレーションを上書き（中間テーブルの更新は SQLAlchemy が自動処理）
     post.hashtags = new_tags
 
 
@@ -8459,23 +8465,7 @@ def sync_hashtags(post: Post, tag_names: list[str]) -> None:
 def delete_orphaned_hashtags() -> None:
     """
     どの記事にも紐付いていない孤立ハッシュタグを一括削除する。
-
-    【呼び出しタイミング】
-    - 記事削除後（delete ビュー）
-    - 記事編集後（update ビュー）
-    どちらの操作でも「以前付いていたタグが外れる」可能性があるため、
-    commit 前にこの関数を呼んでセッションにまとめて乗せてから commit する。
-
-    【なぜ commit 前に呼ぶのか】
-    sync_hashtags() が post.hashtags を新しいリストで上書きした時点で
-    SQLAlchemy のセッション上では中間テーブルの削除が予約された状態になる。
-    この段階で Hashtag.posts.any() を評価すると、まだ DB には反映されていないが
-    セッション内の変更を考慮した結果が返るため、正確に孤立タグを検出できる。
-
-    【処理の流れ】
-      STEP 1. 「どの記事にも紐付いていない」タグを検索（~Hashtag.posts.any()）
-      STEP 2. 該当タグを db.session.delete() で削除予約
-              （実際の削除は呼び出し元の commit 時に実行される）
+    記事削除後・記事編集後に、commit 前に呼んでセッションに乗せてから commit する。
     """
     orphaned = Hashtag.query.filter(~Hashtag.posts.any()).all()
     for tag in orphaned:
@@ -8495,20 +8485,6 @@ def parse_img_captions(file_count: int, prefix: str = 'img_caption_') -> list[st
 
     フォームの入力フィールド名の命名規則:
       {prefix}1, {prefix}2, {prefix}3, ...
-    （create.html / update.html の JavaScript で動的に生成される）
-
-    【バグ修正】prefix 引数を追加
-    update.html では「既存画像のキャプション欄（img_caption_N）」と
-    「新規画像のキャプション欄」が同名だったため、画像を差し替えた際に
-    request.form.get() が先に現れる旧画像側の値を拾ってしまい、
-    新規画像のキャプションがずれるバグがあった。
-    新規画像側のフィールド名を new_img_caption_N に分離し、
-    呼び出し側で prefix を切り替えて取得する。
-
-    【処理の流れ】
-      STEP 1. 1 〜 file_count まで順番にフォーム値を取得
-      STEP 2. 前後の空白を除去してリストに追加
-              （インデックスが画像の順番と対応する）
 
     @param file_count: アップロードされた画像の枚数
     @param prefix: フォームフィールド名のプレフィックス
@@ -8534,21 +8510,14 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     """
     投稿フォームのジャンル選択肢リストを生成する。
 
-    【処理の流れ】
-      STEP 1. DEFAULT_GENRES（constants.py のプリセット）を取得
-      STEP 2. このユーザーが既存記事で使っているジャンルを DB から取得
-      STEP 3. STEP 1 + STEP 2 の和集合を取る（重複は除去）
-      STEP 4. 編集中の記事のジャンルが上記にない場合も必ず含める
-      STEP 5. '未分類' を除外（select の先頭に固定で置くため）
-      STEP 6. DEFAULT_GENRES の順番を優先して並べ替えて返す
+    プリセット（DEFAULT_GENRES）とユーザーが過去に使ったジャンルの和集合を作り、
+    プリセット順 → 独自ジャンル辞書順で安定して並べて返す。
 
     @param user_id: 現在ログイン中のユーザー ID
     @param current_genre: 編集中の記事のジャンル名（update 時のみ指定）
     @return: ジャンル名のソート済みリスト
     """
-    # ------------------------------------------------------------------
-    # STEP 2. ユーザーが過去に使ったジャンル名を DB から取得（重複なし）
-    # ------------------------------------------------------------------
+    # ユーザーが過去に使ったジャンル名を DB から取得（重複なし）
     existing = (
         db.session.query(Post.genre)
         .filter(Post.user_id == user_id,
@@ -8560,36 +8529,17 @@ def _get_genre_list(user_id: int, current_genre: str | None = None) -> list[str]
     )
     user_genres_list = [g[0] for g in existing]
 
-    # ------------------------------------------------------------------
-    # STEP 3. プリセット + ユーザー既存ジャンルの和集合を作成
-    # ------------------------------------------------------------------
+    # プリセット + ユーザー既存ジャンルの和集合を作成
     all_genres_set = set(DEFAULT_GENRES) | set(user_genres_list)
 
-    # ------------------------------------------------------------------
-    # STEP 4. 編集中の記事のジャンルが選択肢にない場合も追加（データの整合性を保つ）
-    # ------------------------------------------------------------------
+    # 編集中の記事のジャンルが選択肢にない場合も追加（データの整合性を保つ）
     if current_genre:
         all_genres_set.add(current_genre)
 
-    # ------------------------------------------------------------------
-    # STEP 5. '未分類' は select の先頭に固定で置くので除外
-    # ------------------------------------------------------------------
+    # '未分類' は select の先頭に固定で置くので除外
     all_genres_set.discard('未分類')
 
-    # ------------------------------------------------------------------
-    # STEP 6. 並べ替えて返す
-    # ------------------------------------------------------------------
-    # 【バグ修正】ソートキーを hash(x) からタプルキーに変更
-    #
-    # 従来は独自ジャンルのキーに len(DEFAULT_GENRES) + hash(x) を使っていたが、
-    # hash() は負値を返しうるため、独自ジャンルがプリセットより
-    # 前に並んでしまうことがあった（さらに実行のたびに順序が変わり不安定）。
-    #
-    # タプルキーによる 2 段階ソートに変更:
-    #   プリセットジャンル → (0, DEFAULT_GENRES 内のインデックス)
-    #   独自ジャンル       → (1, ジャンル名の辞書順)
-    # タプル比較では第 1 要素が優先されるため、
-    # 「プリセット順 → 独自ジャンル辞書順」の安定した並びが保証される。
+    # 並べ替えて返す（プリセット順 → 独自ジャンル辞書順）
     return sorted(
         list(all_genres_set),
         key=lambda x: (0, DEFAULT_GENRES.index(x)) if x in DEFAULT_GENRES else (1, x)
@@ -8610,18 +8560,8 @@ def _optimize_body_image_save(file, save_path: str, ext: str) -> None:
     最適化の内容:
       ・EXIF の向き情報を画素に反映（スマホ写真の回転ズレ対策）
       ・長辺が BODY_IMAGE_MAX_EDGE を超える場合のみ、その値まで縮小
-        （thumbnail() は縮小専用でアスペクト比を保ち、拡大はしない）
       ・元の形式を尊重して再エンコード（JPEG は品質指定、PNG/WebP は最適化）
       ・アニメーション GIF は劣化・静止化を避けるため原本をそのまま保存
-
-    【呼び出し前の前提】
-      file は _validate_image() で検証済みで、ストリーム位置は先頭にある。
-
-    【エラー方針】
-      Pillow の処理に失敗した場合は ValueError に変換して送出する。
-      これにより _save_images() の except（掃除 + 再送出）や、さらに
-      呼び出し元の create()/update()（ValueError を捕捉して flash）の
-      既存経路にそのまま乗せられる（未捕捉例外による 500 を避ける）。
 
     @param file:      werkzeug の FileStorage（検証済み）
     @param save_path: 保存先の絶対パス
@@ -8673,37 +8613,10 @@ def _save_images(files: list) -> list[str]:
     アップロードされた本文画像を検証・最適化・保存し、
     保存したファイル名のリストを返す。
 
-    【セキュリティの多層防御】
-    第 1 層: allowed_file() で拡張子チェック（_validate_image 内）
-    第 2 層: filetype.guess() で MIME タイプチェック（_validate_image 内）
-    第 3 層: UUID でファイル名を完全にランダム化
-    （第 4 層: app.py で 30MB の容量制限）
+    途中でエラーが出た場合はそれまでに保存したファイルを掃除してから
+    例外を再送出する（全成功のときだけファイルを残す）。
 
-    【最適化（このリビジョンの追加）】
-    検証を通過した各ファイルは、原本をそのまま保存するのではなく
-    _optimize_body_image_save() で縮小・再圧縮してから保存する。
-    これにより一覧・詳細の読み込みが軽くなる。
-
-    【アトミックな挙動（従来から維持）】
-    途中の検証・処理エラーで例外が発生した場合、この関数内でそれまでに
-    保存したファイルを _delete_images() で掃除してから例外を再送出する。
-    「全ファイルの保存に成功したときだけファイルを残す」ことを保証するため、
-    呼び出し側は従来どおり ValueError を捕捉するだけでよい。
-
-    保存対象のファイル名は「保存を試みる直前」に filename_list へ登録する。
-    こうすることで、_optimize_body_image_save() が途中まで書き込んで失敗した
-    場合でも、その半端なファイルが確実に掃除対象に含まれる
-    （_delete_images は存在チェック付きなので、未生成でも無害）。
-
-    【処理の流れ】
-      STEP 1. ファイルを 1 枚ずつ取り出す（未選択はスキップ）
-      STEP 2. _validate_image() で拡張子・MIME を検証
-      STEP 3. UUID + 元の拡張子でファイル名を生成し、掃除対象として登録
-      STEP 4. _optimize_body_image_save() で縮小・再圧縮して保存
-      STEP 5. 例外発生時 → 保存済みファイルを掃除してから例外を再送出
-      STEP 6. 全成功 → 保存したファイル名のリストを返す
-
-    @param files: request.files.getlist('img[]') で取得したファイルオブジェクトのリスト
+    @param files: request.files.getlist('img[]') のファイルオブジェクトのリスト
     @return: 保存したファイル名のリスト
     @raises ValueError: 検証エラー・画像処理エラー時
     """
@@ -8711,43 +8624,31 @@ def _save_images(files: list) -> list[str]:
 
     try:
         for file in files:
-            # --------------------------------------------------------
-            # STEP 1. ファイルが選択されていない場合はスキップ
-            # --------------------------------------------------------
+            # ファイルが選択されていない場合はスキップ
             if not file or file.filename == '':
                 continue
 
-            # --------------------------------------------------------
-            # STEP 2. 拡張子 + MIME 検証（失敗時は ValueError）
-            # --------------------------------------------------------
+            # 拡張子 + MIME 検証（失敗時は ValueError）
             _validate_image(file)
 
             # 拡張子は検証済みの元ファイル名から直接取得する
             ext = '.' + file.filename.rsplit('.', 1)[1].lower()
 
-            # --------------------------------------------------------
-            # STEP 3. UUID でファイル名をランダム化し、掃除対象へ先行登録
-            # --------------------------------------------------------
+            # UUID でファイル名をランダム化し、掃除対象へ先行登録
             filename  = f"{uuid.uuid4()}{ext}"
             filename_list.append(filename)
             save_path = os.path.join(current_app.static_folder, 'img', 'posts', filename)
 
-            # --------------------------------------------------------
-            # STEP 4. 縮小・再圧縮して保存
-            # --------------------------------------------------------
+            # 縮小・再圧縮して保存
             _optimize_body_image_save(file, save_path, ext)
 
     except Exception:
-        # ------------------------------------------------------------
-        # STEP 5. 途中まで保存したファイルをここで掃除する
-        # ------------------------------------------------------------
+        # 途中まで保存したファイルをここで掃除する
         if filename_list:
             _delete_images(','.join(filename_list))
         raise
 
-    # ------------------------------------------------------------------
-    # STEP 6. 全成功: 保存したファイル名のリストを返す
-    # ------------------------------------------------------------------
+    # 全成功: 保存したファイル名のリストを返す
     return filename_list
 
 
@@ -8756,34 +8657,14 @@ def _save_images(files: list) -> list[str]:
 # ----------------------------------------------------------------------
 def _delete_images(img_name_str: str) -> None:
     """
-    post.img_name カラムの値（カンマ区切りファイル名）をもとに
-    static/img/posts/ 以下の実ファイルを物理削除する。
-
-    記事削除・画像更新時に呼ばれ、サーバー上の孤立ファイルを防ぐ。
-    ファイルが存在しない場合はスキップする（エラーにしない）。
-    サムネイル専用画像（thumbnail_img）も同じ static/img/posts/ 配下に
-    保存されるため、この関数でそのまま削除できる。
-
-    【バグ修正に伴う運用ルール】
-    この関数は必ず「DB の commit が成功した後」に呼ぶこと。
-    従来は commit 前に _delete_images() を呼んでいたため、
-    commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
-    という復旧不能な不整合が発生し得た。
-    commit 後の物理削除であれば、万一削除に失敗しても
-    「孤立ファイルが残る」だけで済み、データは壊れない（安全側に倒す）。
-
-    【処理の流れ】
-      STEP 1. 引数が空なら何もしない
-      STEP 2. カンマ区切りをファイル名ごとに分割
-      STEP 3. 存在するファイルだけを os.remove() で削除
+    カンマ区切りファイル名をもとに static/img/posts/ 以下の実ファイルを物理削除する。
+    必ず「DB の commit が成功した後」に呼ぶこと。
 
     @param img_name_str: post.img_name の値（例: "uuid1.jpg,uuid2.png"）
     """
-    # STEP 1. 空チェック
     if not img_name_str:
         return
 
-    # STEP 2〜3. 分割して 1 件ずつ削除
     for img_file in img_name_str.split(','):
         img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file.strip())
         if os.path.exists(img_path):
@@ -8796,23 +8677,10 @@ def _delete_images(img_name_str: str) -> None:
 def _save_thumbnail(file) -> str | None:
     """
     サムネイル専用にアップロードされた 1 枚の画像を検証し、
-    幅 THUMBNAIL_MAX_WIDTH（既定 400px）の軽量な WebP に変換して保存する。
-    保存したファイル名（.webp）を返す。ファイル未選択なら None を返す。
+    幅 THUMBNAIL_MAX_WIDTH の軽量な WebP に変換して保存する。
+    保存したファイル名（.webp）を返す。ファイル未選択なら None。
 
-    【最適化の内容】
-      ・拡張子 + MIME を検証（_validate_image）
-      ・EXIF の向き情報を反映
-      ・幅が上限を超える場合のみ、アスペクト比を保って縮小（拡大はしない）
-      ・WebP へ変換して保存（透過は保持: RGB/RGBA のまま WebP 化）
-    元がどの形式でも保存名は常に UUID + '.webp' になる。
-    thumbnail_img カラムはこの軽量版ファイルを指す。
-
-    【エラー方針】
-      検証エラー・画像処理エラーはいずれも ValueError として送出する
-      （呼び出し元 create()/update() は ValueError を捕捉して flash する）。
-      途中まで書き込んだ WebP が残らないよう、失敗時は自分で掃除してから送出する。
-
-    @param file: request.files.get('thumbnail_img') で取得したファイルオブジェクト
+    @param file: request.files.get('thumbnail_img') のファイルオブジェクト
     @return: 保存したファイル名（.webp。未選択なら None）
     @raises ValueError: 検証エラー・画像処理エラー時
     """
@@ -8869,7 +8737,7 @@ def create():
       STEP 3. [POST] ジャンル・デフォルトサムネイルを決定
       STEP 4. [POST] 本文画像を検証・最適化保存（失敗時はフラッシュしてリダイレクト）
       STEP 4.5. [POST] サムネイル専用画像を検証・最適化保存
-                （失敗時は本文画像を掃除してからリダイレクト）
+      STEP 4.7. [POST] 本文 HTML・目次 HTML を事前生成（詳細表示の再変換を防ぐ）
       STEP 5. [POST] Post オブジェクトを作成してセッションに追加
       STEP 6. [POST] flush() で post.id を確定 → ハッシュタグを同期
       STEP 7. [POST] commit（失敗時は rollback + 保存済み画像を掃除）
@@ -8878,7 +8746,6 @@ def create():
     # ------------------------------------------------------------------
     # STEP 1. 管理者チェック
     # ------------------------------------------------------------------
-    # 管理者以外のユーザー（将来的なマルチユーザー対応時の保険）はトップへ
     if current_user.username != config.ADMIN_USERNAME:
         return redirect('/')
 
@@ -8902,7 +8769,7 @@ def create():
         # ジャンルの優先順位: 新規入力 > プリセット選択 > デフォルト（未分類）
         final_genre = new_genre if new_genre else (selected_genre or '未分類')
 
-        # デフォルトサムネイル: フォームで 'none' が選ばれた場合は NULL（デフォルトサムネイルなし）
+        # デフォルトサムネイル: フォームで 'none' が選ばれた場合は NULL
         selected_default_thumb = request.form.get('default_thumb_select')
         if selected_default_thumb == 'none':
             selected_default_thumb = None
@@ -8910,7 +8777,6 @@ def create():
         # --------------------------------------------------------------
         # STEP 4. 本文画像の保存（検証 + 最適化）
         # --------------------------------------------------------------
-        # _save_images() は検証・処理エラー時に ValueError を raise するので try/except で受ける
         try:
             filename_list = _save_images(request.files.getlist('img[]'))
         except ValueError as e:
@@ -8927,8 +8793,6 @@ def create():
         # --------------------------------------------------------------
         # STEP 4.5. サムネイル専用画像の保存（検証 + WebP 縮小）
         # --------------------------------------------------------------
-        # 本文画像とは独立した 1 枚のサムネイルをアップロードできる。
-        # 検証エラー時は、直前で保存した本文画像が孤立しないよう掃除してから戻る。
         try:
             thumbnail_name = _save_thumbnail(request.files.get('thumbnail_img'))
         except ValueError as e:
@@ -8941,12 +8805,22 @@ def create():
         is_published = request.form.get('is_published') == 'true'
 
         # --------------------------------------------------------------
+        # STEP 4.7. 本文 HTML・目次 HTML を事前生成
+        # --------------------------------------------------------------
+        # 本文・画像（img_name / img_captions）が確定した後に生成する。
+        # これにより [imgN] 置換なども含めた最終形をキャッシュでき、
+        # 詳細表示（detail）ではこれをそのまま出力するだけになる。
+        body_html, toc_html = render_post_body(body, img_name_str, img_captions_str)
+
+        # --------------------------------------------------------------
         # STEP 5. Post オブジェクトを作成してセッションに追加
         # --------------------------------------------------------------
         # updated_at は新規投稿時 NULL のまま（「まだ更新されていない」を明示）
         post = Post(
             title         = title,
             body          = body,
+            body_html     = body_html,
+            toc_html      = toc_html,
             user_id       = current_user.id,
             img_name      = img_name_str,
             default_thumb = selected_default_thumb,
@@ -8961,23 +8835,16 @@ def create():
         # --------------------------------------------------------------
         # STEP 6. flush で ID を確定してハッシュタグを同期
         # --------------------------------------------------------------
-        # flush(): まだ commit せずに post.id だけを確定させる
-        # ハッシュタグの中間テーブルに post_id を設定するために必要
         db.session.flush()
 
-        # ハッシュタグの同期（入力文字列 → Hashtag オブジェクト → 中間テーブル登録）
+        # ハッシュタグの同期
         sync_hashtags(post, parse_hashtag_input(hashtag_input))
 
         # --------------------------------------------------------------
         # STEP 7. commit（失敗時は rollback + 保存済み画像を掃除）
         # --------------------------------------------------------------
-        # 【バグ修正】commit 失敗時に保存済みファイルを掃除する
-        # 画像ファイルは commit より先にディスク保存されるため、
-        # commit が失敗した場合はそのままだと孤立ファイルが残る。
-        # rollback 後に今回保存したファイル（本文画像・サムネイル）を
-        # 削除して整合性を保つ。
         try:
-            db.session.commit()  # ここで全変更を DB に書き込む
+            db.session.commit()
         except Exception:
             db.session.rollback()
             if img_name_str:
@@ -9013,8 +8880,8 @@ def update(id):
       STEP 4. [POST] ハッシュタグの同期 + 孤立タグの削除予約
       STEP 5. [POST] 本文画像の更新（3 パターン: A 差し替え / B 個別削除 / C キャプションのみ）
       STEP 5.5. [POST] サムネイル専用画像の更新（差し替え / 削除 / 維持）
+      STEP 5.7. [POST] 本文・画像の確定後に本文 HTML・目次 HTML を再生成
       STEP 6. [POST] 更新日時をセットして commit
-              （失敗時は rollback + 新規保存ファイルを掃除）
       STEP 7. [POST] commit 成功後に削除対象の旧ファイルを物理削除
       STEP 8. [POST] 記事詳細ページへリダイレクト
     """
@@ -9084,20 +8951,9 @@ def update(id):
     # 3 つのパターンを扱う:
     #   A) 新しい画像が選択された          → 全画像を新画像で差し替え
     #   B) 新画像なし + 個別削除フラグあり → 指定された既存画像だけを削除
-    #   C) 新画像なし + 削除フラグなし     → キャプションのみ更新（従来どおり）
-    #
-    # 【機能追加】パターン B: 既存画像の個別削除
-    # update.html の各既存画像カードに hidden フィールド
-    # keep_img_N（'1'=残す / '0'=削除予定）を持たせ、
-    # ここで '0' の画像を除外して img_name / img_captions を再構築する。
-    # 削除対象の実ファイルは old_img_name に積んでおき、
-    # 差し替え時（パターン A）と同じ「commit 成功後に物理削除」の
-    # 経路で処理する（DB とファイルの整合性ルールを一本化するため）。
-    #
-    # ※ パターン A（差し替え）が選ばれた場合、旧画像はどのみち
-    #    全削除されるため、個別削除フラグは無視される（差し替えが優先）。
+    #   C) 新画像なし + 削除フラグなし     → キャプションのみ更新
     files = request.files.getlist('img[]')
-    old_img_name  = None   # commit 成功後に物理削除する画像（差し替え時: 旧全画像 / 個別削除時: 削除対象のみ）
+    old_img_name  = None   # commit 成功後に物理削除する画像
     new_filenames = []     # commit 失敗時に掃除する新規保存ファイル
 
     if files and files[0].filename != '':
@@ -9121,15 +8977,14 @@ def update(id):
         # --------------------------------------------------------------
         existing_imgs = post.img_name.split(',')
         kept_imgs     = []   # 残す画像ファイル名
-        kept_captions = []   # 残す画像のキャプション（順番を kept_imgs と対応させる）
+        kept_captions = []   # 残す画像のキャプション
         removed_imgs  = []   # 削除予定の画像ファイル名
 
         for i, img in enumerate(existing_imgs, start=1):
             caption = request.form.get(f'img_caption_{i}', '').strip()
 
             # keep_img_N が '0' なら削除予定。
-            # フィールド自体が送られてこない場合（JS 無効・旧テンプレート）は
-            # デフォルト '1' として「残す」扱いにする（安全側・後方互換）。
+            # 送られてこない場合はデフォルト '1'（残す）扱い（安全側・後方互換）。
             if request.form.get(f'keep_img_{i}', '1') == '0':
                 removed_imgs.append(img)
             else:
@@ -9141,22 +8996,12 @@ def update(id):
             old_img_name = ','.join(removed_imgs)
 
         # 残った画像だけで DB 上の参照を再構築する。
-        # 全画像を削除した場合は None にして「画像なし記事」に戻す
-        # （一覧・詳細ではサムネイルは thumbnail_img / default_thumb に
-        #   自然にフォールバックする）。
         post.img_name     = ','.join(kept_imgs) if kept_imgs else None
         post.img_captions = '\t'.join(kept_captions) if kept_imgs else None
 
     # ------------------------------------------------------------------
     # STEP 5.5. サムネイル専用画像の更新
     # ------------------------------------------------------------------
-    # 3 パターン:
-    #   ・新しいサムネイルがアップロードされた → 差し替え（旧サムネイルは commit 後に削除）
-    #   ・keep_thumbnail == '0'（削除ボタン ON）→ 現在のサムネイルを削除
-    #   ・それ以外                               → 現状維持
-    #
-    # 新規サムネイルのアップロードが最優先。アップロードがあれば
-    # keep_thumbnail フラグ（削除指定）は無視される（差し替え優先）。
     old_thumbnail_name  = None   # commit 成功後に物理削除する旧サムネイル
     new_thumbnail_saved = None   # commit 失敗時に掃除する新規保存サムネイル
 
@@ -9181,9 +9026,18 @@ def update(id):
         post.thumbnail_img = None
 
     # ------------------------------------------------------------------
+    # STEP 5.7. 本文 HTML・目次 HTML の再生成
+    # ------------------------------------------------------------------
+    # 本文（post.body）と画像（post.img_name / post.img_captions）が
+    # すべて確定した後に再生成し、キャッシュ列を更新する。
+    # これにより次回以降の詳細表示は再変換なしで済む。
+    post.body_html, post.toc_html = render_post_body(
+        post.body, post.img_name, post.img_captions
+    )
+
+    # ------------------------------------------------------------------
     # STEP 6. 更新日時をセットして commit
     # ------------------------------------------------------------------
-    # 更新日時を現在時刻（日本時間）に更新
     post.updated_at = datetime.now(pytz.timezone('Asia/Tokyo'))
 
     try:
@@ -9191,8 +9045,6 @@ def update(id):
     except Exception:
         db.session.rollback()
         # commit 失敗 → 今回新規保存したファイルを掃除（DB は旧状態のまま無傷）
-        # 個別削除（パターン B）の場合、物理削除はまだ行っていないため
-        # rollback だけで完全に元の状態に戻る（掃除対象なし）。
         if new_filenames:
             _delete_images(','.join(new_filenames))
         if new_thumbnail_saved:
@@ -9203,10 +9055,8 @@ def update(id):
     # ------------------------------------------------------------------
     # STEP 7. commit 成功 → ここで初めて削除対象のファイルを物理削除する
     # ------------------------------------------------------------------
-    # （本文画像: 差し替え時は旧全画像、個別削除時は削除予定の画像のみ）
     if old_img_name:
         _delete_images(old_img_name)
-    # （サムネイル: 差し替え時 or 削除指定時の旧サムネイル）
     if old_thumbnail_name:
         _delete_images(old_thumbnail_name)
 
@@ -9225,10 +9075,7 @@ def update(id):
 def delete(id):
     """
     記事を削除する（POST のみ受付）。
-
-    POST メソッドのみ受け付ける（GET でアクセスできないようにする）
-    → URL を直接叩いただけでは削除できない（CSRF トークンも必要）
-    （CSRF トークンも必要）
+    URL を直接叩いただけでは削除できない（CSRF トークンも必要）。
     """
     # ------------------------------------------------------------------
     # STEP 1. 管理者チェック + 記事の取得・権限チェック
@@ -9244,16 +9091,7 @@ def delete(id):
     # ------------------------------------------------------------------
     # STEP 2. 削除対象の画像名を退避（本文画像 + サムネイル）
     # ------------------------------------------------------------------
-    # 【バグ修正】画像ファイルの物理削除を DB commit 成功後に移動
-    #
-    # 従来は commit 前に _delete_images() を呼んでいたため、
-    # commit が失敗すると「DB には記事が残っているのに画像だけ消えている」
-    # という不整合が発生し得た。
-    # 削除対象の画像名を退避してから DB 削除を commit し、
-    # 成功した場合にのみ実ファイルを削除する。
-    #
-    # 本文画像（img_name）とサムネイル専用画像（thumbnail_img）は
-    # どちらも static/img/posts/ 配下にあるため、まとめて退避する。
+    # 物理削除は DB commit 成功後に行う（不整合防止）。
     files_to_delete = []
     if post.img_name:
         files_to_delete.append(post.img_name)
@@ -9264,13 +9102,9 @@ def delete(id):
     # ------------------------------------------------------------------
     # STEP 3. ハッシュタグのリレーションをクリア + 孤立タグの削除予約
     # ------------------------------------------------------------------
-    # ハッシュタグのリレーションを先にクリアしてから記事を削除する。
-    # post.hashtags = [] にすることで中間テーブルの行が削除予約され、
-    # その後 delete_orphaned_hashtags() で孤立タグ本体も削除できる。
     post.hashtags = []
-    db.session.flush()  # 中間テーブルの削除をセッションに反映させてから孤立判定する
+    db.session.flush()  # 中間テーブルの削除を反映させてから孤立判定する
 
-    # 孤立ハッシュタグを削除（commit 前にまとめてセッションに乗せる）
     delete_orphaned_hashtags()
 
     # ------------------------------------------------------------------
@@ -9293,12 +9127,6 @@ def delete(id):
     # ------------------------------------------------------------------
     # STEP 6. 削除後のリダイレクト先決定（Open Redirect 対策）
     # ------------------------------------------------------------------
-    # 単純に return redirect(request.referrer) とすると
-    # 攻撃者が referer ヘッダを偽造して外部サイトへリダイレクトさせる
-    # Open Redirect 攻撃が可能になる。
-    #
-    # 対策: scheme（http/https）と netloc（ドメイン名）が
-    #       リクエスト元と同じオリジンかどうかを検証してからリダイレクト。
     referrer = request.referrer
     if referrer:
         parsed_ref = urlparse(referrer)
@@ -9323,32 +9151,9 @@ def mypage():
     """
     マイページの表示（GET）とニックネーム変更（POST）を行う。
 
-    【今回の改善: 全件一括ロード → サーバーサイドページネーションに統一】
-    従来この関数は自分の投稿を Post.query...all() で「全件」取得し、
-    テンプレート側で全カードを描画してから JavaScript で先頭 4 件以外を
-    display:none で隠す「もっと見る」方式だった。
-    しかしトップページ（views/blog.py の index）は既に paginate() による
-    サーバーサイドページネーションへ移行しており、マイページだけ旧方式が
-    残っていた。投稿数が増えるほど
-
-      ・DB から全 Post を取得する（メモリ肥大）
-      ・全カード分の HTML を描画して送信する（DOM 肥大・転送量増）
-
-    という無駄が大きくなる。そこで index と同じく paginate() に統一し、
-    1 ページ POSTS_PER_PAGE 件（= 4 件）だけを取得・描画するように変更した。
-
-    さらに、記事カード（_macros.html の post_card）はハッシュタグバッジ
-    （post.hashtags）を参照するため、index と同様に
-    selectinload(Post.hashtags) を付与して N+1 クエリを防ぐ。
-    （Post.hashtags はモデル定義で lazy='selectin' 済みだが、
-      呼び出し側でも明示して index とロード戦略をそろえる）
-
-    【総投稿数の表示について】
-    ページネーション後の posts は「現在ページ分」だけなので、
-    プロフィール欄の「これまでの総投稿数」は pagination.total（全件数）を
-    total_count としてテンプレートへ渡して表示する。
-    （旧テンプレートは posts|length で数えていたが、ページネーション後は
-      それだと 1 ページ分の件数になってしまうため total を使う）
+    自分の投稿は index と同じくサーバーサイドページネーション（1 ページ
+    POSTS_PER_PAGE 件）で取得し、selectinload(Post.hashtags) で N+1 を防ぐ。
+    総投稿数は pagination.total（全件数）を total_count として渡す。
 
     【処理の流れ】
       STEP 1. 管理者チェック
@@ -9377,12 +9182,6 @@ def mypage():
     # ------------------------------------------------------------------
     # STEP 3. GET: 自分の記事をサーバーサイドページネーションで取得
     # ------------------------------------------------------------------
-    # index（views/blog.py）と同じ方式にそろえる:
-    #   ・?page= でページ番号を受け取る（未指定は 1）
-    #   ・options(db.selectinload(Post.hashtags)) でタグを一括ロードし N+1 を防止
-    #   ・created_at の降順（新しい記事が先頭）
-    #   ・per_page=POSTS_PER_PAGE、error_out=False
-    #     （範囲外のページ番号でも 404 にせず空リストを返す）
     page = request.args.get('page', 1, type=int)
     pagination = (
         Post.query
@@ -9396,13 +9195,6 @@ def mypage():
     # ------------------------------------------------------------------
     # STEP 4. 使用ジャンル一覧の生成（サイドバー表示用）
     # ------------------------------------------------------------------
-    # DB クエリで DISTINCT なジャンル名を取得し、
-    # Python 側で set → sorted で整理する。
-    # '未分類' は特別扱いで末尾に移動する。
-    #
-    # ※ ここはページネーションとは独立に「自分の全記事」からジャンルを集計する。
-    #   現在ページの user_posts に依存させると、ページを移動するたびに
-    #   ジャンル一覧が変わってしまうため、専用クエリで全体から求めている。
     user_genres_raw = (
         db.session.query(Post.genre)
         .filter(Post.user_id == current_user.id,
@@ -9798,49 +9590,31 @@ def logout():
 #   [2] about()              : 自己紹介ページ
 #   [3] howto()              : 使い方ページ
 #   [4] _get_related_posts() : 関連記事取得ヘルパー
-#   [5] detail()             : 記事詳細ページ（Markdown 変換・各種タグ埋め込み）
+#   [5] detail()             : 記事詳細ページ（キャッシュ済み本文 HTML を出力）
 #   [6] genre_list()         : ジャンル一覧ページ
-#   [7] 内部ヘルパー関数群
-#        (7-1) _is_structural_line()  : 構造行（見出し等）の判定
-#        (7-2) _expand_blank_lines()  : 連続空行の <br> 展開
-#        (7-3) _replace_map()         : [map:] タグ → Google マップ iframe
-#        (7-4) _extract_youtube_id()  : YouTube URL から動画 ID を抽出
-#        (7-5) _replace_youtube()     : [youtube:] タグ → ファサード埋め込み
 #
-# 【処理フロー図（記事詳細ページの本文レンダリング）】
+# 【本文レンダリングの方針変更（improvement.md 項目 5）】
+#   以前 detail() は本文（Markdown + [imgN]/[map:]/[youtube:] などの独自タグ）を
+#   アクセスのたびに変換していた。本文は投稿・編集時にしか変わらないため、
+#   変換ロジックは rendering.py の render_post_body() に切り出し、
+#     ・投稿時（views/admin.py の create）
+#     ・編集時（views/admin.py の update）
+#   に生成した結果を Post.body_html / Post.toc_html に保存する方式へ変更した。
+#   detail() は保存済み HTML をそのまま出力するだけになり、毎回の再変換が消える。
 #
-#   post.body（Markdown + 独自タグ）
-#        │
-#        ▼
-#   (7-2) _expand_blank_lines() ── 連続空行を <br> に展開
-#        │
-#        ▼
-#   markdown.convert() ── Markdown → HTML（toc / nl2br 拡張）
-#        │
-#        ▼
-#   [imgN] 置換 ── 画像 <img> / <figure>（キャプションは escape 済み）
-#        │
-#        ▼
-#   (7-3) [map:] 置換 ── Google マップ iframe（quote + escape 済み）
-#        │
-#        ▼
-#   (7-5) [youtube:] 置換 ── サムネイル + 再生ボタン（ファサード方式）
-#        │
-#        ▼
-#   display_body として detail.html に渡す（| safe で出力）
+#   この機能の導入前に作成された既存記事は body_html が NULL のため、
+#   detail() 側で「NULL ならその場で生成し、ベストエフォートで保存（バックフィル）」
+#   してからレンダリングする。
 #
 # ======================================================================
 
 from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import current_user
-import markdown    # マークダウン → HTML 変換ライブラリ
-import re          # 正規表現（[img1], [map:xxx], [youtube:xxx] の置換に使用）
-from urllib.parse import quote  # 【セキュリティ修正】地図 URL の正しいエンコードに使用
-from markupsafe import escape   # 【セキュリティ修正】HTML 直組み立て時のエスケープに使用
 from sqlalchemy import func
 from extensions import db
 from models import Post, Hashtag, User
 from constants import DEFAULT_GENRES, GENRE_GROUPS  # GENRE_GROUPS: ジャンル一覧のグループ描画に使用
+from rendering import render_post_body              # 本文 → (body_html, toc_html) 変換
 import config
 
 blog_bp = Blueprint('blog', __name__)
@@ -9979,17 +9753,9 @@ def index():
         )
 
         # (7-3) 最終更新日
-        # 【バグ修正】「最終更新日」の取得ロジックを修正
-        #
-        # 従来は ORDER BY updated_at DESC で先頭 1 件を取得していたが、
-        # PostgreSQL は DESC ソートで NULL を先頭に並べる（NULLS FIRST が既定）ため、
-        # updated_at が NULL の未更新記事が 1 件でもあると常に '---' 表示になっていた。
-        # また、新規投稿（created_at のみ更新される）がサイトの
-        # 「最終更新日」に反映されないという問題もあった。
-        #
-        # 対策: max(coalesce(updated_at, created_at)) で
-        #       「更新日時があればそれ、なければ投稿日時」の最大値を 1 クエリで取得する。
-        #       これにより NULL の影響を受けず、新規投稿も更新として扱われる。
+        # max(coalesce(updated_at, created_at)) で
+        # 「更新日時があればそれ、なければ投稿日時」の最大値を 1 クエリで取得する。
+        # これにより NULL の影響を受けず、新規投稿も更新として扱われる。
         last_activity = (
             db.session.query(
                 func.max(func.coalesce(Post.updated_at, Post.created_at))
@@ -10168,22 +9934,23 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
 @blog_bp.route('/<int:id>/detail', methods=['GET'])
 def detail(id):
     """
-    記事を取得し、マークダウン変換・画像埋め込み・地図埋め込み・
-    YouTube 埋め込みを行って表示する。
+    記事を取得し、キャッシュ済みの本文 HTML（body_html / toc_html）を表示する。
     非公開記事は管理者のみ閲覧可能。
+
+    【本文レンダリングの扱い】
+    本文 HTML は投稿・編集時に rendering.render_post_body() で生成され、
+    Post.body_html / Post.toc_html に保存されている。ここではそれを
+    そのまま出力するだけなので、アクセスのたびの再変換が発生しない。
+
+    ただしこの機能の導入前に作られた既存記事は body_html が NULL のため、
+    その場で生成し、ベストエフォートで保存（遅延バックフィル）してから表示する。
 
     【処理の流れ】
       STEP 1. 記事を取得。存在しなければトップへリダイレクト
       STEP 2. 非公開記事は投稿者本人以外を弾く
-      STEP 3. 本文の連続空行を <br> に展開（_expand_blank_lines）
-      STEP 4. Markdown → HTML 変換（toc / nl2br 拡張）
-      STEP 5. [toc] マーカーがなければ記事冒頭用の目次 HTML を用意
-      STEP 6. [imgN] タグを <img> / <figure> に置換（キャプションはエスケープ）
-      STEP 7. 未使用の [imgN] タグを除去
-      STEP 8. [map:] タグを Google マップ iframe に置換
-      STEP 9. [youtube:] タグをファサード埋め込みに置換
-      STEP 10. 関連記事とサブラベルを生成
-      STEP 11. detail.html をレンダリング
+      STEP 3. キャッシュ済み本文 HTML を取得（NULL なら生成 + 遅延保存）
+      STEP 4. 関連記事とサブラベルを生成
+      STEP 5. detail.html をレンダリング
     """
     # ------------------------------------------------------------------
     # STEP 1. 記事の取得
@@ -10203,92 +9970,31 @@ def detail(id):
             return redirect('/')
 
     # ------------------------------------------------------------------
-    # STEP 3. 本文の前処理（連続空行の展開）
+    # STEP 3. 本文 HTML・目次 HTML の取得
     # ------------------------------------------------------------------
-    body_content   = post.body
-    has_toc_marker = '[toc]' in body_content
-
-    body_content = _expand_blank_lines(body_content)
-
-    # ------------------------------------------------------------------
-    # STEP 4. Markdown → HTML 変換
-    # ------------------------------------------------------------------
-    md = markdown.Markdown(
-        extensions=['toc', 'nl2br'],
-        extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
-    )
-
-    display_body = md.convert(body_content)
-
-    # ------------------------------------------------------------------
-    # STEP 5. 目次の扱い
-    # ------------------------------------------------------------------
-    # 本文中に [toc] があれば変換時にその位置へ展開済みなので None、
-    # なければ記事冒頭に表示するための目次 HTML を渡す。
-    toc_html = None if has_toc_marker else md.toc
+    # body_html が保存済み（非 NULL）ならそのまま使う。
+    # 未生成（既存記事など）の場合のみ、その場で生成する。
+    if post.body_html is not None:
+        display_body = post.body_html
+        toc_html     = post.toc_html
+    else:
+        display_body, toc_html = render_post_body(
+            post.body, post.img_name, post.img_captions
+        )
+        # 遅延バックフィル: 生成結果を保存して次回以降の再変換を無くす。
+        # GET 中の書き込みだが、キャッシュのウォームアップとして許容する。
+        # 失敗しても表示は継続させたいので、例外は握りつぶして rollback する。
+        try:
+            post.body_html = display_body
+            post.toc_html  = toc_html
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # ------------------------------------------------------------------
-    # STEP 6. 画像タグの埋め込み（[img1], [img2] → <img> タグ or <figure> タグ）
+    # STEP 4. 関連記事の取得とサブラベル生成
     # ------------------------------------------------------------------
-    # 【セキュリティ修正】キャプションを markupsafe.escape() でエスケープ
-    # キャプションは display_body（| safe で出力される HTML）に
-    # 直接文字列連結されるため、" や < を含む入力があると
-    # alt 属性を突き破って任意の HTML/属性を注入できてしまっていた。
-    # 単一管理者運用でも、自己 XSS・アカウント奪取時の被害拡大防止として
-    # 出力時エスケープを徹底する（防御的プログラミング）。
-    if post.img_name:
-        images   = post.img_name.split(',')
-        captions = post.img_captions.split('\t') if post.img_captions else []
-
-        for index, img_file in enumerate(images):
-            img_file = re.sub(r'[/\\]', '', img_file.strip())
-            raw_caption = captions[index].strip() if index < len(captions) else ''
-            caption     = escape(raw_caption)  # HTML 特殊文字（< > & " '）を無害化
-
-            if caption:
-                # キャプションあり → <figure> + <figcaption>
-                img_tag = (
-                    f'<figure class="post-figure">'
-                    f'<img src="/static/img/posts/{img_file}" alt="{caption}" style="max-width:100%; height:auto;">'
-                    f'<figcaption class="post-figcaption">{caption}</figcaption>'
-                    f'</figure>'
-                )
-            else:
-                # キャプションなし → 中央寄せの <img> のみ
-                img_tag = (
-                    f'<span style="display:block; text-align:center; margin: 15px 0;">'
-                    f'<img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;">'
-                    f'</span>'
-                )
-
-            display_body = display_body.replace(f'[img{index+1}]', img_tag)
-
-    # ------------------------------------------------------------------
-    # STEP 7. 未使用の [imgN] タグを除去
-    # ------------------------------------------------------------------
-    # マークダウン変換後は [img1] が <p>[img1]</p> になっている場合があるため
-    # <p> タグごと除去してから、念のため素の [imgN] タグも除去する。
-    display_body = re.sub(r'<p>\[img\d+\]</p>\n?', '', display_body)
-    display_body = re.sub(r'\[img\d+\]', '', display_body)
-
-    # ------------------------------------------------------------------
-    # STEP 8. 地図タグの変換（[map:場所名] → Google Maps iframe）
-    # ------------------------------------------------------------------
-    display_body = re.sub(r'\[map:([^\]]+)\]', _replace_map, display_body)
-
-    # ------------------------------------------------------------------
-    # STEP 9. YouTube タグの変換
-    # ------------------------------------------------------------------
-    display_body = re.sub(
-        r'(?:<p>)?\[youtube:([^\]]+)\](?:</p>)?',
-        _replace_youtube,
-        display_body
-    )
-
-    # ------------------------------------------------------------------
-    # STEP 10. 関連記事の取得とサブラベル生成
-    # ------------------------------------------------------------------
-    # (10-1) 公開状態の絞り込み条件（ログイン中は自分の非公開記事も対象）
+    # (4-1) 公開状態の絞り込み条件（ログイン中は自分の非公開記事も対象）
     if current_user.is_authenticated:
         pub_filter = (Post.is_published == True) | (Post.user_id == current_user.id)
     else:
@@ -10296,7 +10002,7 @@ def detail(id):
 
     related_posts = _get_related_posts(post, pub_filter, max_count=4)
 
-    # (10-2) 関連記事セクションのサブラベル生成
+    # (4-2) 関連記事セクションのサブラベル生成
     #        「何を基準に関連付けたか」をユーザーに示す表示用テキスト
     tag_names = [t.name for t in post.hashtags]
     if post.genre and post.genre != '未分類' and tag_names:
@@ -10309,7 +10015,7 @@ def detail(id):
         related_sub_label = '最新記事を表示中'
 
     # ------------------------------------------------------------------
-    # STEP 11. テンプレートのレンダリング
+    # STEP 5. テンプレートのレンダリング
     # ------------------------------------------------------------------
     return render_template(
         'detail.html',
@@ -10330,15 +10036,8 @@ def genre_list():
     """
     ジャンル一覧ページを表示する。
 
-    【修正の背景】
-    以前はジャンルのグループ分けと各ジャンルを genre.html にベタ書きし、
-    このビューは sorted(DEFAULT_GENRES) を渡すだけだった。
-    そのため constants.py にジャンルを足しても genre.html を手で直さない限り
-    一覧に反映されず、ユーザーが独自作成したジャンルも永遠に表示されなかった。
-
-    【この修正でやること】
-    グループ構造を constants.GENRE_GROUPS に一元化し、そのまま genre.html に渡す。
-    さらに「DB に実在するがプリセットに無いジャンル（＝ユーザー独自作成分）」を
+    グループ構造は constants.GENRE_GROUPS に一元化し、そのまま genre.html に渡す。
+    「DB に実在するがプリセットに無いジャンル（＝ユーザー独自作成分）」は
     extra_genres として集約し、テンプレート側の「その他」グループに表示する。
 
     【処理の流れ】
@@ -10378,226 +10077,6 @@ def genre_list():
         'genre.html',
         genre_groups = GENRE_GROUPS,   # プリセットのグループ定義（唯一の情報源）
         extra_genres = extra_genres,   # ユーザーが独自作成した実在ジャンル
-    )
-
-
-# ======================================================================
-# [7] 内部ヘルパー関数群
-# ======================================================================
-
-# ----------------------------------------------------------------------
-# (7-1) 構造行の判定
-# ----------------------------------------------------------------------
-def _is_structural_line(s: str) -> bool:
-    """
-    Markdown の「構造行」（空行展開の対象外にすべき行）かどうかを判定する。
-
-    構造行 = 見出し（#）・コードブロック（```）・目次マーカー（[toc]）。
-    これらの直前直後の空行は Markdown の構文上の意味を持つため、
-    _expand_blank_lines() で <br> に置き換えてはいけない。
-    """
-    stripped = s.strip()
-    return (
-        stripped.startswith('#') or
-        stripped.startswith('```') or
-        stripped == '[toc]'
-    )
-
-
-# ----------------------------------------------------------------------
-# (7-2) 連続空行の <br> 展開
-# ----------------------------------------------------------------------
-def _expand_blank_lines(text: str) -> str:
-    """
-    本文中の「2 行以上の連続空行」を <br> に展開する。
-
-    通常の Markdown では空行を何行連ねても段落区切り 1 つに潰されるが、
-    ブログでは「意図的に行間を空ける」表現ができるようにしたい。
-    そこで連続空行の 2 行目以降を <br> に置き換えて行間を保持する。
-
-    【処理の流れ】
-      STEP 1. 本文を行単位に分割し、先頭から走査
-      STEP 2. 空行の連続をまとめてカウント
-      STEP 3. 前後が構造行（見出し等）or 空行 1 行だけなら、そのまま維持
-              （Markdown の構文を壊さないため）
-      STEP 4. それ以外は「空行 1 行 + <br> ×（連続数 - 1）」に変換
-      STEP 5. 行を結合して返す
-    """
-    lines  = text.split('\n')
-    result = []
-    i      = 0
-
-    # STEP 1. 先頭から走査
-    while i < len(lines):
-        line = lines[i]
-
-        if line.strip() == '':
-            # STEP 2. 空行の連続をカウント
-            blank_count = 0
-            while i < len(lines) and lines[i].strip() == '':
-                blank_count += 1
-                i += 1
-
-            prev_line = result[-1] if result else ''
-            next_line = lines[i] if i < len(lines) else ''
-
-            if (_is_structural_line(prev_line) or
-                    _is_structural_line(next_line) or
-                    blank_count == 1):
-                # STEP 3. 構文上意味のある空行はそのまま維持
-                result.extend([''] * blank_count)
-            else:
-                # STEP 4. 2 行目以降の空行を <br> に変換して行間を保持
-                result.append('')
-                result.extend(['<br>'] * (blank_count - 1))
-        else:
-            result.append(line)
-            i += 1
-
-    # STEP 5. 行を結合して返す
-    return '\n'.join(result)
-
-
-# ----------------------------------------------------------------------
-# (7-3) 地図タグの変換
-# ----------------------------------------------------------------------
-def _replace_map(m: re.Match) -> str:
-    """
-    [map:場所名] を Google Maps の iframe 埋め込みに変換する。
-
-    【セキュリティ修正】
-    1. ラベル表示用の場所名を markupsafe.escape() でエスケープ。
-       従来は入力がそのまま HTML に埋め込まれていたため、
-       [map:"><script>...] のような入力で div を突き破れた。
-    2. iframe の src に埋め込む URL エンコードを
-       place.replace(' ', '+') から urllib.parse.quote() に変更。
-       replace 方式では " や & などが未エンコードのまま残り、
-       属性値の突き破りや意図しないクエリパラメータ注入が可能だった。
-       quote() は URL 上安全な文字以外を %XX 形式に正しく変換する。
-
-    【処理の流れ】
-      STEP 1. 正規表現マッチから場所名を取り出す
-      STEP 2. HTML 出力用（escape）と URL 用（quote）に別々にエンコード
-      STEP 3. ラベル + iframe を組み立てた HTML を返す
-    """
-    # STEP 1. 場所名の取り出し
-    place = m.group(1).strip()
-
-    # STEP 2. 用途別エンコード
-    place_label = escape(place)          # HTML 出力用（ラベル・表示テキスト）
-    encoded     = quote(place, safe='')  # URL クエリ用（すべての予約文字をエンコード）
-
-    # STEP 3. HTML の組み立て
-    return (
-        f'<div class="post-map-wrapper">'
-        f'<div class="post-map-label">📍 {place_label}</div>'
-        f'<iframe class="post-map-iframe"'
-        f' src="https://maps.google.com/maps?q={encoded}&output=embed&hl=ja"'
-        f' loading="lazy" allowfullscreen></iframe>'
-        f'</div>'
-    )
-
-
-# ----------------------------------------------------------------------
-# (7-4) YouTube 動画 ID の抽出
-# ----------------------------------------------------------------------
-def _extract_youtube_id(raw: str) -> str | None:
-    """
-    YouTube の URL / 動画 ID 文字列から 11 文字の動画 ID を抽出する。
-
-    対応形式（STEP 順に判定し、最初にマッチしたものを返す）:
-      STEP 1. 通常 URL      : ...watch?v=XXXXXXXXXXX
-      STEP 2. 短縮 URL      : youtu.be/XXXXXXXXXXX
-      STEP 3. ショート動画  : /shorts/XXXXXXXXXXX
-      STEP 4. 埋め込み URL  : /embed/XXXXXXXXXXX
-      STEP 5. 動画 ID のみ  : XXXXXXXXXXX（11 文字ちょうど）
-      STEP 6. どれにも該当しなければ None
-    """
-    raw = raw.strip()
-
-    # STEP 1. 通常 URL（?v= または &v=）
-    m = re.search(r'[?&]v=([A-Za-z0-9_-]{11})', raw)
-    if m:
-        return m.group(1)
-
-    # STEP 2. 短縮 URL
-    m = re.search(r'youtu\.be/([A-Za-z0-9_-]{11})', raw)
-    if m:
-        return m.group(1)
-
-    # STEP 3. ショート動画
-    m = re.search(r'/shorts/([A-Za-z0-9_-]{11})', raw)
-    if m:
-        return m.group(1)
-
-    # STEP 4. 埋め込み URL
-    m = re.search(r'/embed/([A-Za-z0-9_-]{11})', raw)
-    if m:
-        return m.group(1)
-
-    # STEP 5. 動画 ID 単体
-    m = re.fullmatch(r'[A-Za-z0-9_-]{11}', raw)
-    if m:
-        return raw
-
-    # STEP 6. 認識不可
-    return None
-
-
-# ----------------------------------------------------------------------
-# (7-5) YouTube タグの変換
-# ----------------------------------------------------------------------
-def _replace_youtube(m: re.Match) -> str:
-    """
-    [youtube:URL] をファサード形式の埋め込みに変換する。
-
-    ファサード形式 = 最初はサムネイル画像 + 再生ボタンだけを表示し、
-    クリックされたときに初めて iframe を生成する軽量な埋め込み方式。
-    （実際の iframe 生成は detail.html の ytPlay() が行う）
-
-    【セキュリティ修正】
-    動画 ID を認識できなかった場合のエラーメッセージに
-    ユーザー入力（raw）をそのまま埋め込んでいたため、
-    [youtube:<script>...] のような入力がそのまま HTML として
-    出力される経路になっていた。escape() を適用して無害化する。
-
-    ※ 正常系の video_id は正規表現 [A-Za-z0-9_-]{11} で
-       抽出済みのため HTML/URL 上安全な文字しか含まない。
-
-    【処理の流れ】
-      STEP 1. 正規表現マッチから URL / ID 文字列を取り出す
-      STEP 2. _extract_youtube_id() で動画 ID を抽出
-      STEP 3. 抽出失敗 → エスケープ済みエラーメッセージを返す
-      STEP 4. 抽出成功 → サムネイル URL / 埋め込み URL を組み立てて
-              ファサード HTML を返す
-    """
-    # STEP 1〜2. 動画 ID の抽出
-    raw      = m.group(1)
-    video_id = _extract_youtube_id(raw)
-
-    # STEP 3. 抽出失敗時はエスケープ済みメッセージを返す
-    if not video_id:
-        return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {escape(raw)}]</p>'
-
-    # STEP 4. ファサード HTML の組み立て
-    thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
-    embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
-
-    return (
-        f'<div class="post-youtube-wrapper" data-embed-url="{embed_url}">'
-        f'  <div class="post-youtube-facade" onclick="ytPlay(this)">'
-        f'    <img class="post-youtube-thumb"'
-        f'         src="{thumb_url}"'
-        f'         alt="YouTube動画のサムネイル"'
-        f'         loading="lazy">'
-        f'    <button class="post-youtube-play-btn" aria-label="動画を再生">'
-        f'      <svg viewBox="0 0 68 48" width="68" height="48">'
-        f'        <path class="yt-btn-bg" d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.8.3 34 .3 34 .3S12.2.3 7.5 1.7a8.5 8.5 0 0 0-6 6C.1 11.4 0 24 0 24s.1 12.6 1.5 16.3a8.5 8.5 0 0 0 6 6C12.2 47.7 34 47.7 34 47.7s21.8 0 26.5-1.4a8.5 8.5 0 0 0 6-6C67.9 36.6 68 24 68 24s-.1-12.6-1.5-16.3z"/>'
-        f'        <path class="yt-btn-icon" d="M45 24 27 14v20"/>'
-        f'      </svg>'
-        f'    </button>'
-        f'  </div>'
-        f'</div>'
     )
 </file>
 
@@ -10826,7 +10305,11 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        # 【非推奨 API の置き換え（improvement.md 項目 6）】
+        # 従来の User.query.get() は SQLAlchemy 2.0 で Legacy 扱いのため、
+        # 主キー取得の推奨 API である db.session.get() に変更する。
+        # 挙動（主キーで 1 件取得。無ければ None）は従来と同じ。
+        return db.session.get(User, int(user_id))
 
     # ------------------------------------------------------------------
     # STEP 10. 【セキュリティ修正】セキュリティヘッダーの付与
@@ -11523,7 +11006,7 @@ migrate = Migrate()
 `_save_images()` は原本を UUID 名で保存するだけで、リサイズや圧縮を行っていません。一覧のサムネイルは CSS 上 260×158px なのに、数 MB の原寸画像がそのまま読み込まれます。読み込み速度に最も直結する部分です。
 * **対処方法:** アップロード時に Pillow でサムネイル用の縮小版（例：幅 400px の WebP）を生成し、`thumbnail_img` はそれを指すようにする。本文画像も長辺を上限（例：1600px）で縮小。
 
-### 3. マイページが全投稿を一括ロードしている【修正中】
+### 3. マイページが全投稿を一括ロードしている【済】
 `mypage()` は `Post.query...all()` で全件取得し、テンプレートで全カードを描画してから JS で隠す方式です。index はサーバーページネーション化済みなのに、ここだけ古い方式が残っています。投稿が増えるとメモリ・DOM が肥大します。
 * **対処方法:** index と同様に `paginate()` に統一。`selectinload(Post.hashtags)` も付与。
 
@@ -11535,11 +11018,11 @@ migrate = Migrate()
 `index.html` などは `{% block content %}` の中（＝body 内）で `<link rel="stylesheet">` を読み込んでいます。レンダリング途中で読み込むためチラつき（FOUC）や再レイアウトの原因になります。
 * **対処方法:** `base.html` に CSS ブロックを設けて `<head>` 側で読み込む、または preload。
 
-### 5. Markdown を毎回パースしている
+### 5. Markdown を毎回パースしている【済】
 `detail()` は本文（Markdown ＋独自タグ）をアクセスのたびに変換しています。本文は編集時しか変わらないので無駄が大きい。
 * **対処方法:** レンダリング結果を列（例：`body_html`）に保存して投稿・編集時にだけ生成、詳細表示はそれを出力。もしくはメモリキャッシュ。
 
-### 6. `User.query.get()` が非推奨 API
+### 6. `User.query.get()` が非推奨 API【済】
 `app.py` の `load_user` の `User.query.get()` は SQLAlchemy 2.0 で Legacy 扱いです。
 * **対処方法:** `db.session.get(User, int(user_id))` に置き換え。
 
@@ -11914,6 +11397,30 @@ class Post(db.Model):
     img_captions  = db.Column(db.Text, nullable=True)
 
     # ------------------------------------------------------------------
+    # (3-4.5) レンダリング済み本文のキャッシュカラム
+    # ------------------------------------------------------------------
+    # 【パフォーマンス改善（improvement.md 項目 5）】
+    # 従来 detail() は本文（Markdown + [imgN]/[map:]/[youtube:] などの独自タグ）を
+    # アクセスのたびに変換していた。本文は投稿・編集時にしか変わらないため、
+    # 変換結果をここにキャッシュしておき、詳細表示ではそのまま出力する。
+    #
+    #   body_html : Markdown 変換 + 独自タグ置換まで済ませた本文 HTML。
+    #               投稿時（admin.create）・編集時（admin.update）に
+    #               rendering.render_post_body() で生成して保存する。
+    #   toc_html  : 記事冒頭に表示する目次 HTML。
+    #               本文中に [toc] マーカーがある場合は None
+    #               （その位置に目次が展開済みのため冒頭には表示しない）。
+    #
+    # どちらも nullable=True。
+    #   ・新規投稿・編集では必ず埋まる。
+    #   ・この機能の導入前に作成された既存記事は body_html が NULL のため、
+    #     detail() 側で「NULL ならその場で生成 + 遅延保存（バックフィル）」する。
+    #     この判定は body_html の NULL/非 NULL で行うため、
+    #     toc_html が NULL（＝目次なし）でも影響しない。
+    body_html = db.Column(db.Text, nullable=True)
+    toc_html  = db.Column(db.Text, nullable=True)
+
+    # ------------------------------------------------------------------
     # (3-5) 公開設定
     # ------------------------------------------------------------------
     # True = 全体公開 / False = 非公開（管理者だけ閲覧可）
@@ -11965,6 +11472,333 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(30), unique=True)   # ログイン時に使うユーザー名（重複不可）
     password = db.Column(db.String(200))               # Werkzeug でハッシュ化したパスワード
     nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
+</file>
+
+<file path="rendering.py">
+# ======================================================================
+# rendering.py — 記事本文（Markdown + 独自タグ）→ HTML 変換の共通モジュール
+# ======================================================================
+#
+# 【役割・追加の背景】
+#   従来 views/blog.py の detail() は、記事本文（Markdown + 独自タグ）を
+#   「アクセスのたびに」markdown.convert() で変換し、さらに
+#   [imgN] / [map:] / [youtube:] の置換を毎回行っていた。
+#   本文は投稿・編集時にしか変化しないため、閲覧ごとに同じ変換を
+#   繰り返すのは無駄が大きい（improvement.md の項目 5）。
+#
+#   そこで「変換ロジック」をこのモジュールに切り出し、
+#     ・投稿時（views/admin.py の create）
+#     ・編集時（views/admin.py の update）
+#   にだけ render_post_body() を呼んで結果を Post.body_html / Post.toc_html に
+#   保存し、詳細表示（detail）は保存済み HTML をそのまま出力する。
+#
+#   変換に必要な入力は body / img_name / img_captions のみで、
+#   リクエストやログイン状態に依存しないため、事前生成しても
+#   detail() の出力は従来とまったく同じになる。
+#
+# 【このファイルの構成（目次）】
+#   [1] render_post_body()       : 本文 → (body_html, toc_html) を生成（公開 API）
+#   [2] 内部ヘルパー関数群
+#        (2-1) _is_structural_line()  : 構造行（見出し等）の判定
+#        (2-2) _expand_blank_lines()  : 連続空行の <br> 展開
+#        (2-3) _replace_map()         : [map:] タグ → Google マップ iframe
+#        (2-4) _extract_youtube_id()  : YouTube URL から動画 ID を抽出
+#        (2-5) _replace_youtube()     : [youtube:] タグ → ファサード埋め込み
+#
+#   ※ (2-1)〜(2-5) は元々 views/blog.py に定義されていたものを、
+#     ロジックを変えずにそのまま移設したもの。blog.py はこのモジュールを
+#     import して利用する。
+# ======================================================================
+
+import re
+import markdown
+from urllib.parse import quote  # 地図 URL の正しいエンコードに使用
+from markupsafe import escape   # HTML 直組み立て時のエスケープに使用
+
+
+# ======================================================================
+# [1] 公開 API: 本文 → (body_html, toc_html) を生成
+# ======================================================================
+
+def render_post_body(body: str, img_name: str | None = None,
+                     img_captions: str | None = None) -> tuple[str, str | None]:
+    """
+    記事本文（Markdown + 独自タグ）を HTML へ変換し、
+    (本文 HTML, 目次 HTML) のタプルを返す。
+
+    返り値:
+      body_html : Markdown 変換 + [imgN]/[map:]/[youtube:] 置換まで済ませた本文 HTML
+      toc_html  : 記事冒頭に表示する目次 HTML。
+                  本文中に [toc] マーカーがある場合は None
+                  （その位置に目次が展開済みのため、冒頭には表示しない）。
+
+    【この関数の入力は body / img_name / img_captions のみ】
+    リクエストや current_user に依存しないため、投稿・編集時に一度だけ
+    呼び出して結果を保存しておけば、詳細表示のたびに再変換する必要がない。
+
+    【処理の流れ】
+      STEP 1. 本文の連続空行を <br> に展開（_expand_blank_lines）
+      STEP 2. Markdown → HTML 変換（toc / nl2br 拡張）
+      STEP 3. [toc] マーカーがなければ記事冒頭用の目次 HTML を用意
+      STEP 4. [imgN] タグを <img> / <figure> に置換（キャプションはエスケープ）
+      STEP 5. 未使用の [imgN] タグを除去
+      STEP 6. [map:] タグを Google マップ iframe に置換
+      STEP 7. [youtube:] タグをファサード埋め込みに置換
+      STEP 8. (body_html, toc_html) を返す
+    """
+    # ------------------------------------------------------------------
+    # STEP 1. 本文の前処理（連続空行の展開）
+    # ------------------------------------------------------------------
+    body_content   = body or ''
+    has_toc_marker = '[toc]' in body_content
+    body_content   = _expand_blank_lines(body_content)
+
+    # ------------------------------------------------------------------
+    # STEP 2. Markdown → HTML 変換
+    # ------------------------------------------------------------------
+    md = markdown.Markdown(
+        extensions=['toc', 'nl2br'],
+        extension_configs={'toc': {'toc_depth': '2-3', 'marker': '[toc]'}}
+    )
+    display_body = md.convert(body_content)
+
+    # ------------------------------------------------------------------
+    # STEP 3. 目次の扱い
+    # ------------------------------------------------------------------
+    # 本文中に [toc] があれば変換時にその位置へ展開済みなので None、
+    # なければ記事冒頭に表示するための目次 HTML を返す。
+    toc_html = None if has_toc_marker else md.toc
+
+    # ------------------------------------------------------------------
+    # STEP 4. 画像タグの埋め込み（[img1], [img2] → <img> / <figure>）
+    # ------------------------------------------------------------------
+    # キャプションは display_body（| safe で出力される HTML）に直接連結される
+    # ため、markupsafe.escape() で HTML 特殊文字を無害化してから埋め込む。
+    if img_name:
+        images   = img_name.split(',')
+        captions = img_captions.split('\t') if img_captions else []
+
+        for index, img_file in enumerate(images):
+            img_file    = re.sub(r'[/\\]', '', img_file.strip())
+            raw_caption = captions[index].strip() if index < len(captions) else ''
+            caption     = escape(raw_caption)  # HTML 特殊文字（< > & " '）を無害化
+
+            if caption:
+                # キャプションあり → <figure> + <figcaption>
+                img_tag = (
+                    f'<figure class="post-figure">'
+                    f'<img src="/static/img/posts/{img_file}" alt="{caption}" style="max-width:100%; height:auto;">'
+                    f'<figcaption class="post-figcaption">{caption}</figcaption>'
+                    f'</figure>'
+                )
+            else:
+                # キャプションなし → 中央寄せの <img> のみ
+                img_tag = (
+                    f'<span style="display:block; text-align:center; margin: 15px 0;">'
+                    f'<img src="/static/img/posts/{img_file}" style="max-width:100%; height:auto;">'
+                    f'</span>'
+                )
+
+            display_body = display_body.replace(f'[img{index+1}]', img_tag)
+
+    # ------------------------------------------------------------------
+    # STEP 5. 未使用の [imgN] タグを除去
+    # ------------------------------------------------------------------
+    display_body = re.sub(r'<p>\[img\d+\]</p>\n?', '', display_body)
+    display_body = re.sub(r'\[img\d+\]', '', display_body)
+
+    # ------------------------------------------------------------------
+    # STEP 6. 地図タグの変換（[map:場所名] → Google Maps iframe）
+    # ------------------------------------------------------------------
+    display_body = re.sub(r'\[map:([^\]]+)\]', _replace_map, display_body)
+
+    # ------------------------------------------------------------------
+    # STEP 7. YouTube タグの変換
+    # ------------------------------------------------------------------
+    display_body = re.sub(
+        r'(?:<p>)?\[youtube:([^\]]+)\](?:</p>)?',
+        _replace_youtube,
+        display_body
+    )
+
+    # ------------------------------------------------------------------
+    # STEP 8. 生成結果を返す
+    # ------------------------------------------------------------------
+    return display_body, toc_html
+
+
+# ======================================================================
+# [2] 内部ヘルパー関数群（views/blog.py から移設・ロジック不変）
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# (2-1) 構造行の判定
+# ----------------------------------------------------------------------
+def _is_structural_line(s: str) -> bool:
+    """
+    Markdown の「構造行」（空行展開の対象外にすべき行）かどうかを判定する。
+
+    構造行 = 見出し（#）・コードブロック（```）・目次マーカー（[toc]）。
+    これらの直前直後の空行は Markdown の構文上の意味を持つため、
+    _expand_blank_lines() で <br> に置き換えてはいけない。
+    """
+    stripped = s.strip()
+    return (
+        stripped.startswith('#') or
+        stripped.startswith('```') or
+        stripped == '[toc]'
+    )
+
+
+# ----------------------------------------------------------------------
+# (2-2) 連続空行の <br> 展開
+# ----------------------------------------------------------------------
+def _expand_blank_lines(text: str) -> str:
+    """
+    本文中の「2 行以上の連続空行」を <br> に展開する。
+
+    通常の Markdown では空行を何行連ねても段落区切り 1 つに潰されるが、
+    ブログでは「意図的に行間を空ける」表現ができるようにしたい。
+    そこで連続空行の 2 行目以降を <br> に置き換えて行間を保持する。
+
+    【処理の流れ】
+      STEP 1. 本文を行単位に分割し、先頭から走査
+      STEP 2. 空行の連続をまとめてカウント
+      STEP 3. 前後が構造行（見出し等）or 空行 1 行だけなら、そのまま維持
+      STEP 4. それ以外は「空行 1 行 + <br> ×（連続数 - 1）」に変換
+      STEP 5. 行を結合して返す
+    """
+    lines  = text.split('\n')
+    result = []
+    i      = 0
+
+    while i < len(lines):
+        line = lines[i]
+
+        if line.strip() == '':
+            blank_count = 0
+            while i < len(lines) and lines[i].strip() == '':
+                blank_count += 1
+                i += 1
+
+            prev_line = result[-1] if result else ''
+            next_line = lines[i] if i < len(lines) else ''
+
+            if (_is_structural_line(prev_line) or
+                    _is_structural_line(next_line) or
+                    blank_count == 1):
+                result.extend([''] * blank_count)
+            else:
+                result.append('')
+                result.extend(['<br>'] * (blank_count - 1))
+        else:
+            result.append(line)
+            i += 1
+
+    return '\n'.join(result)
+
+
+# ----------------------------------------------------------------------
+# (2-3) 地図タグの変換
+# ----------------------------------------------------------------------
+def _replace_map(m: re.Match) -> str:
+    """
+    [map:場所名] を Google Maps の iframe 埋め込みに変換する。
+
+    ラベル表示用の場所名は escape()、iframe の src に埋め込む URL は
+    quote() でそれぞれ用途別にエンコードし、属性値の突き破りや
+    クエリパラメータ注入を防ぐ。
+    """
+    place = m.group(1).strip()
+
+    place_label = escape(place)          # HTML 出力用（ラベル・表示テキスト）
+    encoded     = quote(place, safe='')  # URL クエリ用（すべての予約文字をエンコード）
+
+    return (
+        f'<div class="post-map-wrapper">'
+        f'<div class="post-map-label">📍 {place_label}</div>'
+        f'<iframe class="post-map-iframe"'
+        f' src="https://maps.google.com/maps?q={encoded}&output=embed&hl=ja"'
+        f' loading="lazy" allowfullscreen></iframe>'
+        f'</div>'
+    )
+
+
+# ----------------------------------------------------------------------
+# (2-4) YouTube 動画 ID の抽出
+# ----------------------------------------------------------------------
+def _extract_youtube_id(raw: str) -> str | None:
+    """
+    YouTube の URL / 動画 ID 文字列から 11 文字の動画 ID を抽出する。
+
+    対応形式（順に判定し、最初にマッチしたものを返す）:
+      通常 URL / 短縮 URL / ショート / 埋め込み URL / 動画 ID 単体
+    どれにも該当しなければ None。
+    """
+    raw = raw.strip()
+
+    m = re.search(r'[?&]v=([A-Za-z0-9_-]{11})', raw)
+    if m:
+        return m.group(1)
+
+    m = re.search(r'youtu\.be/([A-Za-z0-9_-]{11})', raw)
+    if m:
+        return m.group(1)
+
+    m = re.search(r'/shorts/([A-Za-z0-9_-]{11})', raw)
+    if m:
+        return m.group(1)
+
+    m = re.search(r'/embed/([A-Za-z0-9_-]{11})', raw)
+    if m:
+        return m.group(1)
+
+    m = re.fullmatch(r'[A-Za-z0-9_-]{11}', raw)
+    if m:
+        return raw
+
+    return None
+
+
+# ----------------------------------------------------------------------
+# (2-5) YouTube タグの変換
+# ----------------------------------------------------------------------
+def _replace_youtube(m: re.Match) -> str:
+    """
+    [youtube:URL] をファサード形式の埋め込みに変換する。
+
+    ファサード形式 = 最初はサムネイル + 再生ボタンだけを表示し、
+    クリック時に初めて iframe を生成する軽量な埋め込み方式
+    （実際の iframe 生成は detail.html の ytPlay() が行う）。
+
+    動画 ID を認識できなかった場合のエラーメッセージ内のユーザー入力は
+    escape() で無害化する。
+    """
+    raw      = m.group(1)
+    video_id = _extract_youtube_id(raw)
+
+    if not video_id:
+        return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {escape(raw)}]</p>'
+
+    thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
+    embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
+
+    return (
+        f'<div class="post-youtube-wrapper" data-embed-url="{embed_url}">'
+        f'  <div class="post-youtube-facade" onclick="ytPlay(this)">'
+        f'    <img class="post-youtube-thumb"'
+        f'         src="{thumb_url}"'
+        f'         alt="YouTube動画のサムネイル"'
+        f'         loading="lazy">'
+        f'    <button class="post-youtube-play-btn" aria-label="動画を再生">'
+        f'      <svg viewBox="0 0 68 48" width="68" height="48">'
+        f'        <path class="yt-btn-bg" d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.8.3 34 .3 34 .3S12.2.3 7.5 1.7a8.5 8.5 0 0 0-6 6C.1 11.4 0 24 0 24s.1 12.6 1.5 16.3a8.5 8.5 0 0 0 6 6C12.2 47.7 34 47.7 34 47.7s21.8 0 26.5-1.4a8.5 8.5 0 0 0 6-6C67.9 36.6 68 24 68 24s-.1-12.6-1.5-16.3z"/>'
+        f'        <path class="yt-btn-icon" d="M45 24 27 14v20"/>'
+        f'      </svg>'
+        f'    </button>'
+        f'  </div>'
+        f'</div>'
+    )
 </file>
 
 <file path="requirements-pythonanywhere.txt">
