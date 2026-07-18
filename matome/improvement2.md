@@ -20,7 +20,7 @@
 
 # 優先度：高
 
-## A-1. 中間テーブル `post_hashtags` に `hashtag_id` 単体の索引がない
+## A-1. 中間テーブル `post_hashtags` に `hashtag_id` 単体の索引がない【済】
 
 **現状**
 `models.py` の `post_hashtags` は `(post_id, hashtag_id)` の複合主キーのみを持つ。複合索引は**先頭カラム（post_id）からしか使えない**ため、`hashtag_id` を起点にした検索では索引が効かない。
@@ -48,9 +48,13 @@ post_hashtags = db.Table(
 
 > 一般に多対多の中間テーブルは「両方向から引かれる」ため、複合主キーの逆順（`hashtag_id, post_id`）の索引を張るのが定石。上記の単体索引でも実用上は十分効く。
 
+**対応内容**
+- `models.py` の `post_hashtags` に `db.Index('ix_post_hashtags_hashtag_id', 'hashtag_id')` を追加。
+- マイグレーション `migrations/versions/add_post_hashtags_index.py` を追加（`down_revision = 'add_trgm_search_index'`）。`CREATE INDEX` はテーブル再構築を伴わないため `batch_alter_table` は使わず `op.create_index` を直接使用（SQLite / PostgreSQL とも動作）。
+
 ---
 
-## A-2. 2 ページ目以降でも統計クエリを実行している（完全な無駄）
+## A-2. 2 ページ目以降でも統計クエリを実行している（完全な無駄）【済】
 
 **現状**
 `views/blog.py` の `index()` STEP 7 は、絞り込みがなければ**ページ番号に関係なく**統計 3 クエリ＋管理者取得 1 クエリを実行している。
@@ -82,8 +86,15 @@ if is_top_first_page:
     ...
 ```
 
-**さらに（任意）**
-統計は「秒単位の正確さ」を必要としない。`flask-caching` などで 5〜10 分キャッシュすれば、トップページのクエリ本数をさらに削減できる。
+**対応内容**
+- `views/blog.py` の `index()` で、ページ番号の取得を他のクエリパラメータと同じ STEP 1 へ移動。
+- 表示判定を `show_top_sections = (not has_filter) and pagination.page == 1` の 1 つのフラグに集約し、統計 3 クエリ＋管理者取得 1 クエリをこのフラグ配下に移動。
+- 判定に `request.args` の生値ではなく `pagination.page` を使用（`paginate(error_out=False)` は 0 や負数を 1 に丸めるため、テンプレートの `pagination.page == 1` と確実に一致する）。
+- `show_top_sections` をテンプレートにも渡し、`index.html` が 3 か所で重複していた条件式を差し替え。ビューがクエリを打つ条件と画面表示が構造的にずれないようにした。
+- あわせて 1 ページあたりの件数を `POSTS_PER_PAGE = 4` として定数化（`views/admin.py` と同じ扱い）。
+
+**さらに（任意・未実施）**
+統計は「秒単位の正確さ」を必要としない。`flask-caching` などで 5〜10 分キャッシュすれば、トップページ 1 ページ目のクエリ本数もさらに削減できる。
 
 ---
 

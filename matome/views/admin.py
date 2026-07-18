@@ -42,6 +42,23 @@
 #   本文・画像（img_name / img_captions）が確定した後に生成することで、
 #   [imgN] 置換なども含めた最終形をキャッシュできる。
 #
+# 【例外時のログ出力について（improvement.md 第2版 項目 A-5）】
+#   このファイルは commit 失敗や画像処理エラーを except で捕まえ、
+#   ユーザーには flash で「エラーが発生しました」と伝える設計になっている。
+#   これはユーザー体験としては正しいが、従来は例外を捨てていたため
+#   サーバー側に原因（トレースバック）が一切残らなかった。
+#   本番で「投稿できない」「画像が保存できない」といった障害が起きても
+#   何が起きたのか調べる手段がない状態だった。
+#
+#   そこで各 except に current_app.logger を追加した。
+#     ・logger.exception() … 想定外の失敗。トレースバックまで自動で記録する
+#     ・logger.warning()   … 想定内だが記録しておきたい事象（後始末など）
+#   出力先とフォーマットは app.py の _configure_logging() が設定しており、
+#   PythonAnywhere では Web タブの「Error log」から確認できる。
+#
+#   なお flash / redirect などユーザー向けの挙動は一切変えていない。
+#   「記録を足しただけ」なので、画面の見た目や操作感は従来どおり。
+#
 # ======================================================================
 
 from flask import Blueprint, render_template, request, redirect, flash, current_app
@@ -92,8 +109,7 @@ WEBP_QUALITY_THUMB = 80
 
 # ---- 一覧のページネーション設定 --------------------------------------
 # マイページ（mypage）の 1 ページあたりの表示件数。
-# トップページ（views/blog.py の index）は per_page=4 でページネーションして
-# いるため、体験をそろえる意味で同じ 4 件にしている。
+# トップページ（views/blog.py の POSTS_PER_PAGE）と同じ 4 件にそろえている。
 POSTS_PER_PAGE = 4
 
 
@@ -125,9 +141,17 @@ def _validate_image(file) -> None:
 
     問題があれば ValueError を送出する。検証後はストリーム位置を先頭へ戻すので、
     続けて Pillow の Image.open() / file.save() が読み込める状態になる。
+
+    【A-5】検証で弾いた事実は warning として記録する。
+    ユーザーの操作ミス（対応外の形式を選んだ）であることがほとんどだが、
+    偽装ファイルのアップロードが繰り返されている場合は
+    攻撃の兆候として検知できるようにしておく。
     """
     # 第 1 層: 拡張子
     if not allowed_file(file.filename):
+        current_app.logger.warning(
+            '許可されていない拡張子のアップロードを拒否しました (filename=%r)', file.filename
+        )
         raise ValueError('許可されていない拡張子が含まれています。(PNG, JPG, GIF, WebP のみ)')
 
     # 第 2 層: 先頭バイトから MIME タイプを判定
@@ -135,6 +159,11 @@ def _validate_image(file) -> None:
     file.stream.seek(0)  # ストリーム位置をリセット（後続の読み込みに備える）
     kind = filetype.guess(header)
     if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+        current_app.logger.warning(
+            '内容が画像でないファイルのアップロードを拒否しました '
+            '(filename=%r, detected_mime=%s)',
+            file.filename, kind.mime if kind else 'unknown'
+        )
         raise ValueError('ファイルの内容が不正です。画像偽装の可能性があります。')
 
 
@@ -211,6 +240,9 @@ def delete_orphaned_hashtags() -> None:
     """
     どの記事にも紐付いていない孤立ハッシュタグを一括削除する。
     記事削除後・記事編集後に、commit 前に呼んでセッションに乗せてから commit する。
+
+    ~Hashtag.posts.any() は中間テーブルを「タグ側から」参照する NOT EXISTS で、
+    ix_post_hashtags_hashtag_id（項目 A-1）が効く経路のひとつ。
     """
     orphaned = Hashtag.query.filter(~Hashtag.posts.any()).all()
     for tag in orphaned:
@@ -346,7 +378,16 @@ def _optimize_body_image_save(file, save_path: str, ext: str) -> None:
         raise
     except Exception:
         # Pillow 由来の各種例外（壊れた画像・巨大画像など）は
-        # ユーザー向けの ValueError に正規化する
+        # ユーザー向けの ValueError に正規化する。
+        #
+        # 【A-5】この正規化こそが、原因調査を最も難しくしていた箇所。
+        # ユーザーには「別の画像でお試しください」としか出ないため、
+        # 「どの形式のどんな画像で、Pillow が何の例外を投げたのか」が
+        # サーバー側にも残らなかった。ここでトレースバックを記録する。
+        current_app.logger.exception(
+            '本文画像の変換に失敗しました (filename=%r, ext=%s, save_path=%s)',
+            getattr(file, 'filename', None), ext, save_path
+        )
         raise ValueError('画像の処理中にエラーが発生しました。別の画像でお試しください。')
 
 
@@ -388,8 +429,16 @@ def _save_images(files: list) -> list[str]:
             _optimize_body_image_save(file, save_path, ext)
 
     except Exception:
-        # 途中まで保存したファイルをここで掃除する
+        # 途中まで保存したファイルをここで掃除する。
+        # 【A-5】「何枚保存した時点で中断し、何を消したか」を記録しておくと、
+        # ディスク上のファイルと DB の食い違いを追うときの手がかりになる。
+        # 例外そのものの詳細は送出元（_validate_image / _optimize_body_image_save）で
+        # 既に記録済みのため、ここでは後始末の事実だけを warning で残す。
         if filename_list:
+            current_app.logger.warning(
+                '本文画像の保存が中断されたため、保存済みの %d 件を削除します: %s',
+                len(filename_list), ','.join(filename_list)
+            )
             _delete_images(','.join(filename_list))
         raise
 
@@ -405,6 +454,22 @@ def _delete_images(img_name_str: str) -> None:
     カンマ区切りファイル名をもとに static/img/posts/ 以下の実ファイルを物理削除する。
     必ず「DB の commit が成功した後」に呼ぶこと。
 
+    【A-5】1 ファイルの削除失敗で全体を止めない
+    この関数は「DB の更新が成功した後の後片付け」として呼ばれる。
+    そのため削除に失敗しても、DB 側の変更（記事の保存・削除）は
+    既に確定しており、巻き戻すべきではない。
+
+    ところが従来は os.remove() を素で呼んでいたため、権限エラーや
+    ファイルロック（Windows で別プロセスが掴んでいる等）が起きると
+    例外がそのまま上位へ伝わり、「保存は成功しているのに 500 エラー画面が出る」
+    という分かりにくい挙動になりうる。
+    さらに複数ファイルを消す場合、1 件目で失敗すると 2 件目以降が
+    処理されず、消し残しも発生する。
+
+    そこで 1 ファイルずつ try で囲み、失敗はログに残して次へ進む。
+    消し残したファイルはディスクを少し消費するだけで表示には影響しない
+    （孤児ファイルの一括掃除は improvement.md 第2版 項目 B-6 の課題）。
+
     @param img_name_str: post.img_name の値（例: "uuid1.jpg,uuid2.png"）
     """
     if not img_name_str:
@@ -412,8 +477,15 @@ def _delete_images(img_name_str: str) -> None:
 
     for img_file in img_name_str.split(','):
         img_path = os.path.join(current_app.static_folder, 'img', 'posts', img_file.strip())
-        if os.path.exists(img_path):
-            os.remove(img_path)
+        try:
+            if os.path.exists(img_path):
+                os.remove(img_path)
+        except OSError:
+            # 削除できなくても処理は続行する（DB の状態は既に確定しているため）
+            current_app.logger.exception(
+                '画像ファイルの削除に失敗しました。孤児ファイルとして残ります (path=%s)',
+                img_path
+            )
 
 
 # ----------------------------------------------------------------------
@@ -460,6 +532,12 @@ def _save_thumbnail(file) -> str | None:
         _delete_images(filename)  # 半端なファイルがあれば掃除
         raise
     except Exception:
+        # 【A-5】本文画像と同じく、Pillow の例外を ValueError に丸める前に
+        # トレースバックを残しておく。
+        current_app.logger.exception(
+            'サムネイル画像の変換に失敗しました (filename=%r, save_path=%s)',
+            getattr(file, 'filename', None), save_path
+        )
         _delete_images(filename)
         raise ValueError('サムネイル画像の処理中にエラーが発生しました。別の画像でお試しください。')
 
@@ -485,7 +563,7 @@ def create():
       STEP 4.7. [POST] 本文 HTML・目次 HTML を事前生成（詳細表示の再変換を防ぐ）
       STEP 5. [POST] Post オブジェクトを作成してセッションに追加
       STEP 6. [POST] flush() で post.id を確定 → ハッシュタグを同期
-      STEP 7. [POST] commit（失敗時は rollback + 保存済み画像を掃除）
+      STEP 7. [POST] commit（失敗時は rollback + 保存済み画像を掃除 + ログ記録）
       STEP 8. [GET]  ジャンル選択肢を生成して投稿フォームを表示
     """
     # ------------------------------------------------------------------
@@ -525,6 +603,8 @@ def create():
         try:
             filename_list = _save_images(request.files.getlist('img[]'))
         except ValueError as e:
+            # 検証エラーの詳細は _validate_image / _optimize_body_image_save が
+            # 記録済みのため、ここでは再度ログを出さずユーザーへ通知するだけにする。
             flash(str(e), 'danger')
             return redirect('/create')
 
@@ -592,6 +672,15 @@ def create():
             db.session.commit()
         except Exception:
             db.session.rollback()
+            # 【A-5】ここが握り潰されていた最たる箇所。
+            # 制約違反・接続断・カラム長超過など原因は多岐にわたるが、
+            # 従来はユーザーに「エラーが発生しました」と出るだけで
+            # サーバー側に何も残らなかった。
+            # 記事を特定できるようタイトルとユーザー ID も添える。
+            current_app.logger.exception(
+                '記事の保存に失敗しました (user_id=%s, title=%r, images=%s)',
+                current_user.id, title, img_name_str
+            )
             if img_name_str:
                 _delete_images(img_name_str)
             if thumbnail_name:
@@ -599,6 +688,10 @@ def create():
             flash('投稿の保存中にエラーが発生しました。もう一度お試しください。', 'danger')
             return redirect('/create')
 
+        current_app.logger.info(
+            '記事を新規投稿しました (post_id=%s, user_id=%s, published=%s)',
+            post.id, current_user.id, is_published
+        )
         return redirect('/')
 
     # ------------------------------------------------------------------
@@ -626,7 +719,7 @@ def update(id):
       STEP 5. [POST] 本文画像の更新（3 パターン: A 差し替え / B 個別削除 / C キャプションのみ）
       STEP 5.5. [POST] サムネイル専用画像の更新（差し替え / 削除 / 維持）
       STEP 5.7. [POST] 本文・画像の確定後に本文 HTML・目次 HTML を再生成
-      STEP 6. [POST] 更新日時をセットして commit
+      STEP 6. [POST] 更新日時をセットして commit（失敗時はログ記録 + 掃除）
       STEP 7. [POST] commit 成功後に削除対象の旧ファイルを物理削除
       STEP 8. [POST] 記事詳細ページへリダイレクト
     """
@@ -789,6 +882,12 @@ def update(id):
         db.session.commit()
     except Exception:
         db.session.rollback()
+        # 【A-5】更新失敗の記録。どの記事の更新が落ちたかを追えるよう
+        # post_id を必ず含める。
+        current_app.logger.exception(
+            '記事の更新に失敗しました (post_id=%s, user_id=%s, title=%r)',
+            id, current_user.id, title
+        )
         # commit 失敗 → 今回新規保存したファイルを掃除（DB は旧状態のまま無傷）
         if new_filenames:
             _delete_images(','.join(new_filenames))
@@ -804,6 +903,10 @@ def update(id):
         _delete_images(old_img_name)
     if old_thumbnail_name:
         _delete_images(old_thumbnail_name)
+
+    current_app.logger.info(
+        '記事を更新しました (post_id=%s, user_id=%s)', id, current_user.id
+    )
 
     # ------------------------------------------------------------------
     # STEP 8. 記事詳細ページへリダイレクト
@@ -844,6 +947,9 @@ def delete(id):
         files_to_delete.append(post.thumbnail_img)
     img_name_to_delete = ','.join(files_to_delete) if files_to_delete else None
 
+    # 削除後はログに出せなくなるので、タイトルをここで控えておく
+    deleted_title = post.title
+
     # ------------------------------------------------------------------
     # STEP 3. ハッシュタグのリレーションをクリア + 孤立タグの削除予約
     # ------------------------------------------------------------------
@@ -861,6 +967,11 @@ def delete(id):
         db.session.commit()
     except Exception:
         db.session.rollback()
+        # 【A-5】削除失敗の記録。外部キー制約などで落ちた場合の調査に必要。
+        current_app.logger.exception(
+            '記事の削除に失敗しました (post_id=%s, user_id=%s, title=%r)',
+            id, current_user.id, deleted_title
+        )
         flash('削除中にエラーが発生しました。もう一度お試しください。', 'danger')
         return redirect('/')
 
@@ -868,6 +979,11 @@ def delete(id):
     # STEP 5. commit 成功 → ここで初めて関連画像ファイルを物理削除する
     # ------------------------------------------------------------------
     _delete_images(img_name_to_delete)
+
+    current_app.logger.info(
+        '記事を削除しました (post_id=%s, user_id=%s, title=%r)',
+        id, current_user.id, deleted_title
+    )
 
     # ------------------------------------------------------------------
     # STEP 6. 削除後のリダイレクト先決定（Open Redirect 対策）
@@ -920,8 +1036,23 @@ def mypage():
         new_nickname = request.form.get('nickname', '').strip()
         # 空欄の場合は None にして「ニックネームなし」に戻す
         current_user.nickname = new_nickname or None
+
+        # 【A-5】ここは従来 try/except を持たず、commit が失敗すれば
+        # 例外がそのまま送出される（＝ Flask が 500 として記録する）。
+        # 「握り潰し」ではないため挙動は変えないが、他のビューと同じく
+        # 原因を追えるようにログを残し、ユーザーには他と同じ体裁で通知する。
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception(
+                'ニックネームの更新に失敗しました (user_id=%s, nickname=%r)',
+                current_user.id, new_nickname
+            )
+            flash('ニックネームの更新中にエラーが発生しました。もう一度お試しください。', 'danger')
+            return redirect('/mypage')
+
         flash('ニックネームを更新しました！' if new_nickname else 'ニックネームを解除しました。', 'info')
-        db.session.commit()
         return redirect('/mypage')
 
     # ------------------------------------------------------------------

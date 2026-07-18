@@ -33,11 +33,49 @@
 #   detail() 側で「NULL ならその場で生成し、ベストエフォートで保存（バックフィル）」
 #   してからレンダリングする。
 #
+# 【統計・hero の取得条件の修正（improvement.md 第2版 項目 A-2）】
+#   従来 index() は「絞り込みが無ければ」統計 3 クエリ＋管理者取得 1 クエリを
+#   実行していたが、テンプレート（index.html）側は
+#   「絞り込みが無く、かつ 1 ページ目」のときしか統計・hero を描画しない。
+#   そのため 2 ページ目以降のトップページでは、画面に出ないデータのために
+#   毎回 4 本の追加クエリが走っていた。
+#
+#   本ファイルでは判定を show_top_sections という 1 つのフラグに集約し、
+#   「テンプレートが描画する条件」と「ビューがクエリを打つ条件」を
+#   完全に一致させている。
+#
+# 【真偽値リテラルの排除（improvement.md 第2版 項目 A-3）】
+#   従来このファイルには Python の True / False をそのまま
+#   SQLAlchemy の filter() へ渡している箇所が 2 つあった。
+#
+#     index() STEP 7:
+#         pub_condition = (Post.is_published == True) if ... else True
+#         ... .filter(pub_condition, ...)
+#     _get_related_posts() STEP 1:
+#         Post.hashtags.any(...) if tag_names else False
+#
+#   SQLAlchemy 1.4 以降、Python の真偽値を SQL 式として渡すのは
+#   非推奨（将来のバージョンで ArgumentError になりうる）であり、
+#   SQL 式としての「常に真 / 常に偽」は sqlalchemy.true() / false() で
+#   表現するのが正しい書き方。
+#
+#   加えて filter(False) は「常に 0 件」を意味するため、
+#   タグを持たない記事の関連記事 STEP 1 では
+#   「結果が必ず空と分かっているクエリ」を 1 本発行していた。
+#   これは条件分岐で実行そのものを避けられる無駄なので、
+#   本ファイルでは true() の採用とあわせて分岐も修正している。
+#
+# 【例外時のログ出力（improvement.md 第2版 項目 A-5）】
+#   detail() の遅延バックフィルは失敗しても表示を続ける設計だが、
+#   従来は例外を完全に握り潰していたため、書き込みが失敗し続けていても
+#   誰も気づけなかった（毎回その場で再変換され、遅いままになる）。
+#   current_app.logger で記録を残すよう変更した。
+#
 # ======================================================================
 
-from flask import Blueprint, render_template, request, redirect, flash
+from flask import Blueprint, render_template, request, redirect, flash, current_app
 from flask_login import current_user
-from sqlalchemy import func
+from sqlalchemy import func, true          # true(): SQL 式としての「常に真」
 from extensions import db
 from models import Post, Hashtag, User
 from constants import DEFAULT_GENRES, GENRE_GROUPS  # GENRE_GROUPS: ジャンル一覧のグループ描画に使用
@@ -45,6 +83,14 @@ from rendering import render_post_body              # 本文 → (body_html, toc
 import config
 
 blog_bp = Blueprint('blog', __name__)
+
+
+# ======================================================================
+# [0] ページネーション設定
+# ======================================================================
+# 1 ページあたりの表示件数。
+# マイページ（views/admin.py の POSTS_PER_PAGE）と同じ 4 件に揃えている。
+POSTS_PER_PAGE = 4
 
 
 # ======================================================================
@@ -58,15 +104,16 @@ def index():
     キーワード検索・ジャンル絞り込み・ハッシュタグ絞り込みに対応。
 
     【処理の流れ】
-      STEP 1. URL クエリパラメータを取得（genre / search / hashtag）
+      STEP 1. URL クエリパラメータを取得（genre / search / hashtag / page）
       STEP 2. 公開状態でベースクエリを構築
               （ログイン中は自分の非公開記事も含める）
       STEP 3. キーワード・ジャンル・ハッシュタグで絞り込み
-      STEP 4. 作成日時の降順で記事リストを取得
-      STEP 5. ジャンル選択中なら、そのジャンル内のハッシュタグ一覧を取得
-      STEP 6. 検索エリア用のジャンル選択肢リストを生成
-      STEP 7. 絞り込みなし（トップ表示）のときだけ統計情報と管理者情報を取得
-      STEP 8. index.html をレンダリング
+      STEP 4. 作成日時の降順でページネーション取得
+      STEP 5. トップセクション（統計・hero）を出すかどうかを判定
+      STEP 6. ジャンル選択中なら、そのジャンル内のハッシュタグ一覧を取得
+      STEP 7. 検索エリア用のジャンル選択肢リストを生成
+      STEP 8. トップセクションを出すときだけ統計情報と管理者情報を取得
+      STEP 9. index.html をレンダリング
     """
     # ------------------------------------------------------------------
     # STEP 1. URL クエリパラメータの取得
@@ -74,6 +121,14 @@ def index():
     selected_genre   = request.args.get('genre')
     search_word      = request.args.get('search')
     selected_hashtag = request.args.get('hashtag')
+
+    # ページ番号もここでまとめて取得する。
+    # 【A-2】「何ページ目か」は統計クエリを打つかどうかの判定材料でもあるため、
+    # 他のクエリパラメータと一緒に先頭で取得する形に整理している。
+    page = request.args.get('page', 1, type=int)
+
+    # 絞り込み条件が 1 つでも指定されているか（複数箇所で使うのでここで確定）
+    has_filter = bool(selected_genre or search_word or selected_hashtag)
 
     # ------------------------------------------------------------------
     # STEP 2. 公開状態でベースクエリを構築
@@ -102,10 +157,9 @@ def index():
     # により、この ILIKE '%word%' でもインデックスが利用され全表スキャンを
     # 避けられる（検索語がトライグラムを構成できる 3 文字以上のとき）。
     #
-    # クエリはこの ilike のまま変更しない：インデックスの有無に関わらず動作し、
-    # SQLite（pg_trgm 非対応）では従来どおりスキャン検索になる。
-    # より本格的な検索が必要になった場合は tsvector による全文検索の
-    # 導入が次の候補（項目 7）。
+    # なお Post.hashtags.any(...) は中間テーブル post_hashtags を経由する
+    # EXISTS サブクエリになる。この「タグ側から記事を引く」経路は
+    # ix_post_hashtags_hashtag_id（項目 A-1 で追加）が効く。
     if search_word:
         keyword = f'%{search_word.strip()}%'
         query = query.filter(
@@ -126,18 +180,34 @@ def index():
     # ------------------------------------------------------------------
     # N+1問題を避けるため、ハッシュタグを selectinload で一括取得し、
     # サーバーサイドページネーションを適用する。
-    page = request.args.get('page', 1, type=int)
     pagination = (
         query.options(db.selectinload(Post.hashtags))
         .order_by(Post.created_at.desc())
-        .paginate(page=page, per_page=4, error_out=False)
+        .paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     )
     posts = pagination.items
 
     # ------------------------------------------------------------------
-    # STEP 5. ジャンル選択中: そのジャンル内で使われているハッシュタグ一覧
+    # STEP 5. トップセクション（統計・hero・「最新の記事」見出し）の表示判定
+    # ------------------------------------------------------------------
+    # 【A-2】条件は「絞り込みなし かつ 1 ページ目」。これは index.html が
+    # stats.html / hero.html / 「📋 最新の記事」見出しを描画する条件と
+    # まったく同じもので、このフラグをテンプレートにも渡すことで
+    #   ・ビューが無駄なクエリを打たない
+    #   ・ビューとテンプレートの条件がずれない
+    # の両方を担保する。
+    #
+    # ページ番号は request.args の生値ではなく pagination.page を使う。
+    # paginate(error_out=False) は不正な値（0 や負数）を 1 に丸めるため、
+    # テンプレート側の pagination.page == 1 と確実に一致させられる。
+    show_top_sections = (not has_filter) and pagination.page == 1
+
+    # ------------------------------------------------------------------
+    # STEP 6. ジャンル選択中: そのジャンル内で使われているハッシュタグ一覧
     #         （タグ絞り込みバーの表示用）
     # ------------------------------------------------------------------
+    # このクエリは Hashtag → post_hashtags → Post の JOIN であり、
+    # 「タグ側から記事を引く」代表例。ix_post_hashtags_hashtag_id（項目 A-1）が効く。
     hashtags_in_genre = []
     if selected_genre:
         pub_filter = [] if current_user.is_authenticated else [Post.is_published == True]
@@ -151,7 +221,7 @@ def index():
         )
 
     # ------------------------------------------------------------------
-    # STEP 6. インページ検索エリア用ジャンルリストの生成
+    # STEP 7. インページ検索エリア用ジャンルリストの生成
     # ------------------------------------------------------------------
     # search_area.html の <select> に渡す選択肢。
     # DEFAULT_GENRES をベースに、実際に記事が存在するジャンルだけを残す。
@@ -159,7 +229,17 @@ def index():
     #
     # 表示順: DEFAULT_GENRES の並び順を優先し、
     #         それ以外（管理者が独自追加したジャンル）は末尾に辞書順で追加。
-    pub_condition = (Post.is_published == True) if not current_user.is_authenticated else True
+    #
+    # ※ 検索エリアは絞り込みの有無やページ番号に関わらず常に表示されるため、
+    #   このクエリは STEP 8 の統計とは異なり毎回実行する必要がある。
+    #
+    # 【A-3】ログイン中は「公開状態で絞らない」＝ WHERE 句に何も足さない、
+    # という意味の条件になる。従来はここに Python の True をそのまま
+    # 渡していたが、SQLAlchemy 1.4 以降は非推奨のため、
+    # SQL 式としての「常に真」を表す sqlalchemy.true() を使う。
+    # true() は方言に応じて適切な SQL（PostgreSQL なら true、
+    # SQLite なら 1）へ変換されるため、両 DB でそのまま動作する。
+    pub_condition = (Post.is_published == True) if not current_user.is_authenticated else true()
     used_genres_raw = (
         db.session.query(Post.genre)
         .filter(pub_condition, Post.genre != None, Post.genre != '', Post.genre != '未分類')
@@ -178,15 +258,19 @@ def index():
         genre_list_all.append('未分類')
 
     # ------------------------------------------------------------------
-    # STEP 7. 絞り込みなし（トップ表示）のときだけ統計情報・管理者情報を取得
+    # STEP 8. トップセクションを表示するときだけ統計情報・管理者情報を取得
     # ------------------------------------------------------------------
+    # 【A-2】show_top_sections（＝絞り込みなし かつ 1 ページ目）に条件を絞り、
+    # 2 ページ目以降のトップページから 4 本のクエリを丸ごと削減している。
     stats      = None
     admin_user = None
-    if not selected_genre and not search_word and not selected_hashtag:
-        # (7-1) 公開記事の総数
+    if show_top_sections:
+        # (8-1) 公開記事の総数
         post_count = Post.query.filter(Post.is_published == True).count()
 
-        # (7-2) 公開記事に付いているハッシュタグの種類数
+        # (8-2) 公開記事に付いているハッシュタグの種類数
+        #        JOIN + COUNT DISTINCT でこの中では最も重いクエリ。
+        #        中間テーブルの走査には ix_post_hashtags_hashtag_id が効く。
         hashtag_count = (
             db.session.query(func.count(func.distinct(Hashtag.id)))
             .join(Hashtag.posts)
@@ -194,7 +278,7 @@ def index():
             .scalar()
         )
 
-        # (7-3) 最終更新日
+        # (8-3) 最終更新日
         # max(coalesce(updated_at, created_at)) で
         # 「更新日時があればそれ、なければ投稿日時」の最大値を 1 クエリで取得する。
         # これにより NULL の影響を受けず、新規投稿も更新として扱われる。
@@ -212,11 +296,11 @@ def index():
             'hashtag_count': hashtag_count,
             'last_updated':  last_updated,
         }
-        # (7-4) hero セクション表示用の管理者情報
+        # (8-4) hero セクション表示用の管理者情報
         admin_user = User.query.filter_by(username=config.ADMIN_USERNAME).first()
 
     # ------------------------------------------------------------------
-    # STEP 8. テンプレートのレンダリング
+    # STEP 9. テンプレートのレンダリング
     # ------------------------------------------------------------------
     return render_template(
         'index.html',
@@ -229,6 +313,11 @@ def index():
         genre_list_all    = genre_list_all,   # インページ検索エリア用
         stats             = stats,
         admin_user        = admin_user,
+        # 【A-2】統計・hero・「最新の記事」見出しの表示可否。
+        # ビューがクエリを打った条件そのものを渡すことで、
+        # 「クエリは打っていないのにテンプレートが描画しようとする」
+        # というずれを構造的に防ぐ。
+        show_top_sections = show_top_sections,
     )
 
 
@@ -279,6 +368,9 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
     各 STEP 内では created_at DESC（新しい順）で取得する。
     前の STEP で取得済みの記事は次の STEP 以降の候補から除外する（重複排除）。
 
+    STEP 1 / STEP 2 の Post.hashtags.any(...) は中間テーブルを経由する
+    EXISTS サブクエリであり、ix_post_hashtags_hashtag_id（項目 A-1）が効く。
+
     @param post:       現在閲覧中の Post オブジェクト
     @param pub_filter: 公開状態の絞り込み条件（SQLAlchemy フィルター式）
     @param max_count:  最大取得件数（デフォルト 4）
@@ -295,14 +387,25 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
     # ------------------------------------------------------------------
     # STEP 1: 同じジャンル × 同じタグあり
     # ------------------------------------------------------------------
-    if remaining > 0:
+    # 【A-3】従来はここが
+    #     Post.hashtags.any(...) if tag_names else False
+    # となっており、タグを持たない記事では filter(False)＝「常に 0 件」の
+    # クエリを DB へ発行していた（結果が必ず空と分かっているのに 1 往復する）。
+    #
+    # 「タグが 1 つも無ければ、そもそも “同じタグを持つ記事” は存在しない」
+    # のだから、実行条件（if）の側で tag_names をチェックすれば
+    #   ・非推奨の真偽値リテラルを filter() に渡さずに済む
+    #   ・無駄なクエリ 1 本を丸ごと省ける
+    # の両方が同時に解決する。STEP 2 は元々この形になっていたので、
+    # STEP 1 の書き方をそれに揃える形になる。
+    if remaining > 0 and tag_names:
         step1 = (
             Post.query
             .filter(
                 pub_filter,
                 Post.id.notin_(seen_ids),
                 Post.genre == post.genre,
-                Post.hashtags.any(Hashtag.name.in_(tag_names)) if tag_names else False,
+                Post.hashtags.any(Hashtag.name.in_(tag_names)),
             )
             .order_by(Post.created_at.desc())
             .limit(remaining)
@@ -425,13 +528,30 @@ def detail(id):
         )
         # 遅延バックフィル: 生成結果を保存して次回以降の再変換を無くす。
         # GET 中の書き込みだが、キャッシュのウォームアップとして許容する。
-        # 失敗しても表示は継続させたいので、例外は握りつぶして rollback する。
+        # 失敗しても「表示は続ける」方針は変えない（本文はすでに手元にある）。
+        #
+        # 【A-5】ただし従来は例外を完全に握り潰していたため、
+        # 書き込みが失敗し続けていても誰も気づけなかった。
+        # 保存できないと毎回その場で再変換が走り、
+        # 「なぜか詳細ページだけ遅い」状態が延々と続いてしまう。
+        # ここでログを残しておけば、Error log を見るだけで
+        # 「バックフィルに失敗している」と分かる。
+        #
+        # exception() はトレースバックまで自動で出力するため、
+        # 例外オブジェクトを自分でフォーマットする必要はない。
         try:
             post.body_html = display_body
             post.toc_html  = toc_html
             db.session.commit()
+            current_app.logger.info(
+                '本文 HTML の遅延バックフィルを保存しました (post_id=%s)', post.id
+            )
         except Exception:
             db.session.rollback()
+            current_app.logger.exception(
+                '本文 HTML の遅延バックフィルに失敗しました (post_id=%s)。'
+                '表示は継続しますが、次回以降も毎回変換が発生します。', post.id
+            )
 
     # ------------------------------------------------------------------
     # STEP 4. 関連記事の取得とサブラベル生成
@@ -493,6 +613,10 @@ def genre_list():
     # ------------------------------------------------------------------
     # 未ログイン: 公開記事のジャンルのみ
     # ログイン中: 公開記事 + 自分の記事のジャンル
+    #
+    # ※ こちらは index() STEP 7 と違い、ログイン時も
+    #   「公開記事 OR 自分の記事」という SQL 式になるため、
+    #   真偽値リテラルは登場しない（A-3 の対象外）。
     if current_user.is_authenticated:
         pub_condition = (Post.is_published == True) | (Post.user_id == current_user.id)
     else:

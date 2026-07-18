@@ -48,13 +48,52 @@ import pytz                        # タイムゾーン指定（Asia/Tokyo）に
 # db.Table() で定義すると「モデルクラスを持たない純粋な関連テーブル」になる。
 # Post モデルの hashtags リレーションが secondary=post_hashtags を参照することで
 # Post ↔ Hashtag 間の JOIN が自動で行われる。
+#
+# ----------------------------------------------------------------------
+# 【パフォーマンス改善（improvement.md 第2版 項目 A-1）】
+#   hashtag_id 単体のインデックスを追加した理由
+# ----------------------------------------------------------------------
+# 従来この中間テーブルは (post_id, hashtag_id) の複合主キーしか持っていなかった。
+# 複合インデックスは「先頭カラムから順に使う」性質があるため、
+# post_id を起点にした検索（＝記事からタグを引く方向）には効くが、
+# hashtag_id を起点にした検索（＝タグから記事を引く方向）には効かない。
+#
+# その結果、以下の「タグ側から記事を引く」経路がすべて
+# 中間テーブルの全表スキャンになっていた。
+#
+#   - index() のハッシュタグ絞り込み
+#       query.join(Post.hashtags).filter(Hashtag.name == ...)
+#   - index() のジャンル内タグ一覧
+#       db.session.query(Hashtag).join(Hashtag.posts)
+#   - 統計のハッシュタグ数カウント
+#       count(distinct Hashtag.id) ... join(Hashtag.posts)
+#   - _get_related_posts() の STEP 1 / STEP 2
+#       Post.hashtags.any(Hashtag.name.in_(...))
+#   - delete_orphaned_hashtags() の孤立タグ判定
+#       ~Hashtag.posts.any()
+#
+# これらは「記事数 × タグ数」に比例して重くなるため、
+# hashtag_id 単体のインデックス ix_post_hashtags_hashtag_id を張り、
+# 逆方向の検索でもインデックス走査で済むようにする。
+#
+# なお多対多の中間テーブルでは、複合主キーの逆順
+# （hashtag_id, post_id）の複合インデックスを張るのが定石だが、
+# 単体インデックスでも「hashtag_id で該当行を絞り込む」目的は十分果たせる
+# （絞り込んだ後に post_id を主キー経由で引く形になる）ため、
+# ここではシンプルな単体インデックスを採用している。
+#
+# ※ DB 側への反映はマイグレーション
+#    migrations/versions/add_post_hashtags_index.py が行う。
 post_hashtags = db.Table(
     'post_hashtags',
     # post_id: post テーブルの id を外部キーとして参照
     db.Column('post_id',    db.Integer, db.ForeignKey('post.id'),    primary_key=True),
     # hashtag_id: hashtag テーブルの id を外部キーとして参照
-    db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True)
+    db.Column('hashtag_id', db.Integer, db.ForeignKey('hashtag.id'), primary_key=True),
     # 2カラムの組み合わせが主キー → 同じ (post_id, hashtag_id) の重複を防ぐ
+    #
+    # 「タグ → 記事」方向の検索用インデックス（上記コメント参照）
+    db.Index('ix_post_hashtags_hashtag_id', 'hashtag_id'),
 )
 
 
