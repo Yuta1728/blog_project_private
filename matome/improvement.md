@@ -98,7 +98,7 @@ if is_top_first_page:
 
 ---
 
-## A-3. 真偽値リテラルを `filter()` に渡している（SQLAlchemy 2.0 で非推奨）
+## A-3. 真偽値リテラルを `filter()` に渡している（SQLAlchemy 2.0 で非推奨）【済】
 
 **現状**
 
@@ -158,7 +158,7 @@ def _guard_image_size(img):
 
 ---
 
-## A-5. 例外を握り潰していてログが残らない
+## A-5. 例外を握り潰していてログが残らない【済】
 
 **現状**
 以下の箇所が `except Exception:` で例外を捨てている。
