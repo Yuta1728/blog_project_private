@@ -20,7 +20,7 @@
 
 ---
 
-### ステージ 1：不要な CSS/JS の配信整理（A-6）
+### ステージ 1：不要な CSS/JS の配信整理（A-6）【済】
 
 1. `base.html` で全ページ読み込みになっている `mobile-editor.css` を、`create.html` / `update.html` の `{% block extra_css %}` へ移動する。
 2. `base.html` に約 250 行インラインで埋め込まれている「スマホ編集ツールバー用 JS」（`#bodyTextarea` / `#md-toolbar` を対象とする IIFE）を `static/js/mobile-editor.js` として切り出し、`create.html` / `update.html` の末尾でのみ `editor.js` と同じ方法で読み込む。
@@ -28,7 +28,7 @@
 4. **例外**：`<head>` のダークモード初期化スクリプトは FOUC 防止のためインラインのまま残すこと。
 5. 完了条件：記事一覧・詳細ページの HTML に編集ツールバー用 JS が含まれないこと。create/update ページでツールバーのドッキング・カーソル追従が従来どおり動くこと。
 
-### ステージ 2：静的ファイルのキャッシュバスティング（A-7）
+### ステージ 2：静的ファイルのキャッシュバスティング（A-7）【済】
 
 1. `app.py` に、ファイルの mtime をクエリパラメータとして付与するテンプレートグローバル `static_url(filename)` を追加する（`improvement.md` A-7 のコード例に準拠）。
 2. `app.config['SEND_FILE_MAX_AGE_DEFAULT']` を 1 年に設定する。
