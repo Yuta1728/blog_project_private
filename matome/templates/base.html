@@ -7,6 +7,13 @@
 
     {# ============================================================
        ダークモード初期化スクリプト
+       ------------------------------------------------------------
+       【A-6 の対象外としてインラインのまま残す理由】
+       data-theme の初期設定は「ページ描画前」に実行しないと、
+       ライト → ダークへ一瞬で切り替わるチラつき（FOUC）が起きる。
+       外部ファイルにするとダウンロード完了まで実行が遅れるため、
+       この数行だけは意図的にインラインで維持する。
+       （切り替えボタンなど描画後でよい JS は static/js/base.js へ外部化済み）
     ============================================================ #}
     <script>
         (function () {
@@ -22,19 +29,29 @@
         })();
     </script>
 
-    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" sizes="any">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon/favicon.svg') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+    {# favicon も static_url で配信し、長期キャッシュ + 更新時の即時反映を両立する（項目 A-7） #}
+    <link rel="icon" href="{{ static_url('favicon/favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="{{ static_url('favicon/favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ static_url('favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ static_url('favicon/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" href="{{ static_url('favicon/apple-touch-icon.png') }}">
 
     {# ============================================================
        全ページ共通の CSS（<head> で読み込む）
+       ------------------------------------------------------------
+       【A-7】url_for('static', ...) → static_url(...) に変更。
+       static_url はファイルの mtime を ?v= として付与するため、
+       1 年の長期キャッシュ（SEND_FILE_MAX_AGE_DEFAULT）を効かせつつ、
+       CSS を更新すれば URL が変わって即座に反映される。
+
+       【A-6】mobile-editor.css はここから削除した。
+       対象要素（#md-toolbar / #bodyTextarea）は create / update に
+       しか存在しないため、両テンプレートの {% block extra_css %} で
+       読み込むよう移動し、閲覧系ページの転送量を削減している。
        ============================================================ #}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/hashtag.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-editor.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/hashtag.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/dark-mode.css') }}">
 
     {# ============================================================
        ページ固有 CSS の差し込み口（improvement.md 項目 4）
@@ -134,406 +151,26 @@
 
     {% block content %}{% endblock %}
 
-    <script>
-        /* ============================================================
-           ダークモード切り替え
-           ============================================================
-           - クリックで <html> の data-theme を light / dark で切り替える
-           - 選択内容は localStorage に保存し、次回訪問時も維持する
-           - ボタンのアイコン（🌙 / ☀️）と aria-label を状態に合わせて更新
-           ※ 初期テーマ自体は <head> のインラインスクリプトで
-             描画前に設定済み（チラつき防止）。ここではその後の
-             切り替え操作とアイコン同期のみを担当する。
-           ============================================================ */
-        (function () {
-            const toggleBtn = document.getElementById('themeToggleBtn');
-            if (!toggleBtn) return;
-            const icon = toggleBtn.querySelector('.theme-toggle-icon');
+    {# ============================================================
+       全ページ共通 JS（improvement.md 第2版 項目 A-6）
+       ------------------------------------------------------------
+       従来ここには
+         ・テーマ切り替え / ドロワー開閉 / スクロール連動ヘッダー
+         ・スマホ編集ツールバー用 JS（約250行。create/update 以外では
+           冒頭の早期 return で即終了するだけの無駄なコード）
+       が合計 300 行超インラインで直書きされていた。
+       インライン JS はブラウザキャッシュが効かず、全ページの HTML に
+       毎回まるごと含まれるため、一覧・詳細ページの転送量を
+       常時押し上げていた。
 
-            function syncButton() {
-                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                // ライト時は「これから暗くする」意味で🌙、ダーク時は☀️を表示
-                if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-                toggleBtn.setAttribute('aria-label', isDark ? 'ライトモードに切り替え' : 'ダークモードに切り替え');
-                toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-            }
+       前者は static/js/base.js（このすぐ下・全ページで読み込み）へ、
+       後者は static/js/mobile-editor.js（create.html / update.html の
+       末尾でのみ読み込み）へ外部ファイル化した。
+       ロジックは一切変えずに移設しただけで、挙動は従来どおり。
 
-            // ページ表示時点の状態にアイコンを合わせる
-            syncButton();
-
-            toggleBtn.addEventListener('click', function () {
-                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                const next = isDark ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', next);
-                try { localStorage.setItem('theme', next); } catch (e) {}
-                syncButton();
-            });
-        })();
-
-
-        /* ============================================================
-           スマホの記事編集ツールバー改善（create / update ページ用）
-           ------------------------------------------------------------
-           ※ #bodyTextarea と #md-toolbar があるページ（create/update）でのみ動作する。
-              それ以外のページ・PC 表示では何もしない。
-           ============================================================ */
-        (function () {
-            var textarea = document.getElementById('bodyTextarea');
-            var toolbar  = document.getElementById('md-toolbar');
-            if (!textarea || !toolbar) return;   
-
-            var wrapper = toolbar.closest('.md-toolbar-wrapper');
-            var mq = window.matchMedia('(max-width: 767px)');
-            var vv = window.visualViewport;
-            var docked = false;
-            var spacer = null;
-            var mirror = null;
-
-            var CARET_GAP = 16;   
-
-            /* --------------------------------------------------------
-               キーボード関連の寸法計算
-               -------------------------------------------------------- */
-            // キーボードの高さ（レイアウトビューポート − 表示ビューポート）
-            function keyboardHeight() {
-                if (!vv) return 0;
-                return Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-            }
-            // キーボードが開いていると判定できるか（iOS 判定用のしきい値）
-            function keyboardOpen() {
-                return keyboardHeight() > 80;
-            }
-            function toolbarHeight() {
-                return toolbar.offsetHeight || 48;
-            }
-            // ツールバー上端の「画面（viewport）上での Y 座標」を返す
-            function toolbarTopY() {
-                var h = toolbarHeight();
-                if (vv && keyboardOpen()) {
-                    // iOS 等：レイアウトが縮まないので visualViewport 下端基準
-                    return vv.offsetTop + vv.height - h;
-                }
-                // Android 等：レイアウト自体が縮むので innerHeight 下端基準
-                return window.innerHeight - keyboardHeight() - h;
-            }
-
-            /* --------------------------------------------------------
-               ツールバーの固定位置を計算して設定
-               -------------------------------------------------------- */
-            function positionToolbar() {
-                var h = toolbarHeight();
-                if (vv && keyboardOpen()) {
-                    // iOS 等：キーボード上端に合わせて top を指定
-                    toolbar.style.bottom = 'auto';
-                    toolbar.style.top = Math.max(vv.offsetTop + vv.height - h, 0) + 'px';
-                } else {
-                    // Android 等：レイアウトが縮むため bottom:0 が直上になる
-                    toolbar.style.top = 'auto';
-                    toolbar.style.bottom = '0px';
-                }
-            }
-
-            // 本文欄下部の余白（最終行がツールバーに潜り込まないように）
-            function applyPadding() {
-                textarea.style.setProperty('padding-bottom', (toolbarHeight() + 48) + 'px', 'important');
-            }
-
-            /* --------------------------------------------------------
-               スクロール余地を確保するスペーサー
-               -------------------------------------------------------- */
-            function ensureSpacer() {
-                if (!spacer) {
-                    spacer = document.createElement('div');
-                    spacer.className = 'md-editing-spacer';
-                    spacer.setAttribute('aria-hidden', 'true');
-                    document.body.appendChild(spacer);
-                }
-                spacer.style.height = (keyboardHeight() + toolbarHeight() + 80) + 'px';
-            }
-            function removeSpacer() {
-                if (spacer && spacer.parentNode) spacer.parentNode.removeChild(spacer);
-                spacer = null;
-            }
-
-            /* --------------------------------------------------------
-               カーソル位置の計測（ミラー要素方式）
-               --------------------------------------------------------
-               textarea 内のカーソル位置は直接取得できないため、
-               同じフォント・幅・padding を持つ隠し div（ミラー）に
-               「カーソルまでのテキスト」を流し込み、末尾へ置いた
-               マーカー要素の offsetTop を測ることでカーソルの
-               縦オフセット（textarea 内の px 位置）を求める。
-               -------------------------------------------------------- */
-            var MIRROR_PROPS = [
-                'boxSizing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-                'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
-                'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
-                'lineHeight', 'letterSpacing', 'textTransform', 'textIndent',
-                'wordSpacing', 'tabSize', 'whiteSpace'
-            ];
-            function caretOffsetTop() {
-                if (!mirror) {
-                    mirror = document.createElement('div');
-                    mirror.style.position   = 'absolute';
-                    mirror.style.top         = '0';
-                    mirror.style.left        = '-9999px';
-                    mirror.style.visibility  = 'hidden';
-                    mirror.style.whiteSpace  = 'pre-wrap';
-                    mirror.style.wordWrap    = 'break-word';
-                    mirror.style.overflowWrap = 'break-word';
-                    document.body.appendChild(mirror);
-                }
-                var cs = window.getComputedStyle(textarea);
-                MIRROR_PROPS.forEach(function (p) { mirror.style[p] = cs[p]; });
-                // 折り返し幅を textarea に合わせる（getComputedStyle の width を使用）
-                mirror.style.width  = cs.width;
-                mirror.style.height = 'auto';
-
-                mirror.textContent = textarea.value.substring(0, textarea.selectionEnd);
-                var marker = document.createElement('span');
-                marker.textContent = '\u200b';  
-                mirror.appendChild(marker);
-                return marker.offsetTop;
-            }
-
-            /* --------------------------------------------------------
-               カーソルをツールバーより上に見えるようスクロール
-               -------------------------------------------------------- */
-            function ensureCaretVisible() {
-                if (!docked) return;
-                var cs = window.getComputedStyle(textarea);
-                var lineHeight = parseFloat(cs.lineHeight);
-                if (isNaN(lineHeight)) lineHeight = parseFloat(cs.fontSize) * 1.6;
-
-                var caretTop = caretOffsetTop();
-                var taRect   = textarea.getBoundingClientRect();
-                // カーソルの画面上での上端・下端の Y 座標
-                var caretViewTop    = taRect.top - textarea.scrollTop + caretTop;
-                var caretViewBottom = caretViewTop + lineHeight;
-
-                var lowerLimit = toolbarTopY() - CARET_GAP;   
-                if (caretViewBottom > lowerLimit) {
-                    // 下に隠れている → ページを下方向へスクロールして持ち上げる
-                    window.scrollBy(0, Math.ceil(caretViewBottom - lowerLimit));
-                    return;
-                }
-
-                // 上（ヘッダー等）に隠れている場合の保険
-                var upperLimit = (vv ? vv.offsetTop : 0) + 12;
-                if (caretViewTop < upperLimit) {
-                    window.scrollBy(0, Math.floor(caretViewTop - upperLimit));
-                }
-            }
-
-            // 描画・キーボード追従が落ち着いてから測るため 2 段階で実行
-            function scheduleCaret() {
-                if (!docked) return;
-                requestAnimationFrame(ensureCaretVisible);
-                setTimeout(ensureCaretVisible, 130);
-            }
-
-            /* --------------------------------------------------------
-               ドッキング / 解除
-               -------------------------------------------------------- */
-            function dock() {
-                if (!docked) {
-                    docked = true;
-                    if (wrapper) {
-                        wrapper.style.setProperty('--docked-toolbar-h', toolbarHeight() + 'px');
-                        wrapper.classList.add('is-toolbar-docked');
-                    }
-                    toolbar.classList.add('md-toolbar--docked');
-                }
-                positionToolbar();
-                applyPadding();
-                ensureSpacer();
-            }
-
-            function undock() {
-                if (!docked) return;
-                docked = false;
-                toolbar.classList.remove('md-toolbar--docked');
-                toolbar.style.top = '';
-                toolbar.style.bottom = '';
-                textarea.style.removeProperty('padding-bottom');
-                if (wrapper) {
-                    wrapper.classList.remove('is-toolbar-docked');
-                    wrapper.style.removeProperty('--docked-toolbar-h');
-                }
-                removeSpacer();
-            }
-
-            function update() {
-                if (mq.matches && document.activeElement === textarea) {
-                    dock();
-                } else {
-                    undock();
-                }
-            }
-
-            /* --------------------------------------------------------
-               位置決めを数回リトライ（キーボードのアニメーション待ち）
-               --------------------------------------------------------
-               端末やアニメーション速度によってキーボードが開く
-               タイミングがまちまちなため、フォーカス直後に複数回
-               update() を走らせて確実にキーボード直上へ固定する。
-               -------------------------------------------------------- */
-            var retryTimers = [];
-            function clearRetries() {
-                retryTimers.forEach(clearTimeout);
-                retryTimers = [];
-            }
-            function scheduleUpdates() {
-                clearRetries();
-                [60, 150, 280, 450, 650].forEach(function (ms) {
-                    retryTimers.push(setTimeout(function () {
-                        if (document.activeElement === textarea) {
-                            update();
-                            scheduleCaret();
-                        }
-                    }, ms));
-                });
-            }
-
-            /* --------------------------------------------------------
-               イベント登録
-               -------------------------------------------------------- */
-            textarea.addEventListener('focus', function () {
-                textarea.classList.add('is-md-editing');
-                scheduleUpdates();   
-            });
-
-            textarea.addEventListener('blur', function () {
-                clearRetries();
-                // ツールバー操作でのブラーはボタン側で抑止しているが、念のため少し待つ
-                setTimeout(function () {
-                    if (document.activeElement !== textarea) {
-                        textarea.classList.remove('is-md-editing');
-                        undock();
-                    }
-                }, 100);
-            });
-
-            // タップ位置・カーソル移動・入力に追従してカーソルを可視化
-            textarea.addEventListener('click',  scheduleCaret);
-            textarea.addEventListener('keyup',  scheduleCaret);
-            textarea.addEventListener('input', function () {
-                if (docked) { applyPadding(); ensureSpacer(); }
-                scheduleCaret();
-            });
-            document.addEventListener('selectionchange', function () {
-                if (docked && document.activeElement === textarea) scheduleCaret();
-            });
-
-            // キーボードの開閉・スクロールに追従して位置とカーソルを更新
-            if (vv) {
-                vv.addEventListener('resize', function () {
-                    update();
-                    if (docked) { ensureSpacer(); scheduleCaret(); }
-                });
-                vv.addEventListener('scroll', function () {
-                    if (docked) positionToolbar();
-                });
-            }
-
-            // ツールバーのボタンはフォーカスを奪わない
-            // → 本文欄のフォーカス（＝キーボードと固定表示）を保ったまま連続操作できる
-            toolbar.addEventListener('mousedown', function (e) {
-                if (mq.matches && document.activeElement === textarea) {
-                    e.preventDefault();
-                }
-            });
-        })();
-
-
-        /* ============================================================
-           ドロワーナビ（スマホ）の開閉
-           ============================================================ */
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const navOverlay   = document.getElementById('navOverlay');
-        const navDrawer    = document.getElementById('navDrawer');
-        const navCloseBtn  = document.getElementById('navCloseBtn');
-
-        function openDrawer() {
-            navDrawer.classList.add('open');
-            navOverlay.classList.add('open');
-            navDrawer.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeDrawer() {
-            navDrawer.classList.remove('open');
-            navOverlay.classList.remove('open');
-            navDrawer.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
-        }
-
-        hamburgerBtn.addEventListener('click', openDrawer);
-        navCloseBtn.addEventListener('click', closeDrawer);
-        navOverlay.addEventListener('click', closeDrawer);
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeDrawer();
-        });
-
-        /* ============================================================
-           スクロール連動ヘッダー表示 / 非表示
-           ============================================================
-           動作仕様:
-             - ページ最上部付近（scrollY < THRESHOLD）: 常に表示
-             - 下スクロール: ヘッダーを画面外（上方向）へスライドアウト
-             - 上スクロール: ヘッダーをスライドインして再表示
-
-           実装のポイント:
-             1. requestAnimationFrame でバッチ処理し、scroll イベントの
-                連続発火による過剰な DOM 操作（リフロー）を防ぐ。
-             2. ドロワーが開いているときは非表示にしない
-                （メニュー操作中にヘッダーが消えると UX が悪い）。
-             3. THRESHOLD を設けることで、ページ最上部で微妙に
-                上下した際にヘッダーが点滅するのを防ぐ。
-           ============================================================ */
-        (function () {
-            const header    = document.getElementById('mainHeader');
-            const THRESHOLD = 80;   
-            const DELTA     = 5;    
-
-            let lastScrollY  = window.scrollY;  
-            let ticking      = false;            
-
-            function updateHeader() {
-                const currentScrollY = window.scrollY;
-                const diff           = currentScrollY - lastScrollY;
-
-                if (currentScrollY <= THRESHOLD) {
-                    // ページ最上部付近 → 必ず表示
-                    header.classList.remove('header-hidden');
-                } else if (Math.abs(diff) >= DELTA) {
-                    // DELTA 以上の変化があったときだけ方向を判定する
-                    if (diff > 0) {
-                        // 下スクロール → 非表示
-                        // ただしドロワーが開いているときは操作を邪魔しないよう維持
-                        if (!navDrawer.classList.contains('open')) {
-                            header.classList.add('header-hidden');
-                        }
-                    } else {
-                        // 上スクロール → 再表示
-                        header.classList.remove('header-hidden');
-                    }
-                }
-
-                lastScrollY = currentScrollY;
-                ticking     = false;
-            }
-
-            window.addEventListener('scroll', function () {
-                // rAF がまだ予約されていなければ新たに予約する
-                // これにより 1 フレームに最大 1 回だけ updateHeader() が走る
-                if (!ticking) {
-                    requestAnimationFrame(updateHeader);
-                    ticking = true;
-                }
-            }, { passive: true });  
-        })();
-    </script>
+       ※ <head> のダークモード初期化だけは FOUC（チラつき）防止のため
+         インラインのまま残している（head 側のコメント参照）。
+    ============================================================ #}
+    <script src="{{ static_url('js/base.js') }}"></script>
 </body>
 </html>

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
-{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4） #}
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
+   【A-7】url_for('static', ...) → static_url(...) でキャッシュバスティング対応。 #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/top_sections.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/top_sections.css') }}">
 {% endblock %}
 
 {% block content %}

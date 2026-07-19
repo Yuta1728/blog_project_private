@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% from '_macros.html' import post_thumbnail %}
 
-{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4） #}
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
+   【A-7】url_for('static', ...) → static_url(...) に変更。
+   ※ 記事画像・サムネイル（img/posts/ 等）の参照は対象外
+     （UUID 名で不変のためバスティング不要。app.py の static_url 参照）。 #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
 {% endblock %}
 
 {% block content %}

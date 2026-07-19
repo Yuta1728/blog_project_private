@@ -1,8 +1,17 @@
 {% extends "base.html" %}
 
-{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4） #}
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
+   【A-6】mobile-editor.css は従来 base.html で全ページ読み込みだったが、
+   対象要素（#md-toolbar / #bodyTextarea）はこのページと create.html に
+   しか存在しないため、両ページの extra_css へ移動した（順序の考え方は
+   create.html 側のコメント参照。ダークモードの上書き関係は従来と不変）。
+   【A-7】url_for('static', ...) → static_url(...) でキャッシュバスティング対応。
+   ※ 記事画像（img/posts/）・サムネイル（img/thbnails/）の参照は従来どおり
+     url_for のまま。ファイル名が UUID で内容が変わらない（変わるときは
+     ファイル名ごと変わる）ため、バスティングは不要（app.py の static_url 参照）。 #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/create_update.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/create_update.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/mobile-editor.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -274,10 +283,18 @@
    編集時の新規画像キャプションは、既存画像のキャプション欄
    （img_caption_N）と衝突しないよう input name 接頭辞を
    'new_img_caption_' にする（サーバー側 update() も対応済み）。
+
+   【A-6】mobile-editor.js を追加。
+   従来 base.html にインラインで全ページ埋め込みされていた
+   スマホ編集ツールバー用 JS（約250行）を外部ファイル化し、
+   対象要素が存在するこのページと create.html でのみ読み込む。
+   editor.js とは互いに独立した IIFE のため読み込み順に依存はない。
+   【A-7】JS も static_url で読み込み、キャッシュバスティングを効かせる。
    ============================================================ #}
 <script>
     window.EDITOR_CONFIG = { newImageCaptionPrefix: 'new_img_caption_' };
 </script>
-<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+<script src="{{ static_url('js/editor.js') }}"></script>
+<script src="{{ static_url('js/mobile-editor.js') }}"></script>
 
 {% endblock %}

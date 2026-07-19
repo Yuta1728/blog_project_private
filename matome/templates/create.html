@@ -1,8 +1,16 @@
 {% extends "base.html" %}
 
-{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4） #}
+{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
+   【A-6】mobile-editor.css は従来 base.html で全ページ読み込みだったが、
+   対象要素（#md-toolbar / #bodyTextarea）はこのページと update.html に
+   しか存在しないため、両ページの extra_css へ移動した。
+   読み込み順は base.html の共通 CSS（dark-mode.css 含む）→ ここ、なので
+   従来（base.css → hashtag.css → dark-mode.css → mobile-editor.css）と
+   同じく dark-mode.css より後になり、ダークモードの上書き関係は変わらない。
+   【A-7】url_for('static', ...) → static_url(...) でキャッシュバスティング対応。 #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/create_update.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/create_update.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/mobile-editor.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -194,10 +202,18 @@
    共通エディタスクリプト（create/update 共有）
    ページ固有の差異のみ EDITOR_CONFIG で渡す。
    新規投稿では画像キャプションの input name 接頭辞は 'img_caption_'。
+
+   【A-6】mobile-editor.js を追加。
+   従来 base.html にインラインで全ページ埋め込みされていた
+   スマホ編集ツールバー用 JS（約250行）を外部ファイル化し、
+   対象要素が存在するこのページと update.html でのみ読み込む。
+   editor.js とは互いに独立した IIFE のため読み込み順に依存はない。
+   【A-7】JS も static_url で読み込み、キャッシュバスティングを効かせる。
    ============================================================ #}
 <script>
     window.EDITOR_CONFIG = { newImageCaptionPrefix: 'img_caption_' };
 </script>
-<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+<script src="{{ static_url('js/editor.js') }}"></script>
+<script src="{{ static_url('js/mobile-editor.js') }}"></script>
 
 {% endblock %}

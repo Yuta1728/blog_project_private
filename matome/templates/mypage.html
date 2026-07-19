@@ -3,10 +3,11 @@
 
 {# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
    記事カードのデザインは index.css を共用し、マイページ固有の装飾は mypage.css。
-   load_more.css はもっと見る方式の撤去に伴い読み込み不要になったため削除。 #}
+   load_more.css はもっと見る方式の撤去に伴い読み込み不要になったため削除。
+   【A-7】url_for('static', ...) → static_url(...) でキャッシュバスティング対応。 #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/index.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/mypage.css') }}">
 {% endblock %}
 
 {% block content %}
