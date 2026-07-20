@@ -239,7 +239,7 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365   # 1年
 
 # 優先度：中
 
-## B-1. 記事詳細で `post.user` の N+1（追加 1 クエリ）
+## B-1. 記事詳細で `post.user` の N+1（追加 1 クエリ）【済】
 
 **現状**
 `detail.html` が `post.user.nickname` を参照するが、`detail()` は `db.session.get(Post, id)` で取得するだけで `user` を eager load していない。
@@ -260,7 +260,7 @@ post = (
 
 ---
 
-## B-2. `selectinload` の指定が冗長
+## B-2. `selectinload` の指定が冗長【済】
 
 **現状**
 `models.py` の `Post.hashtags` は既に `lazy='selectin'` が指定されている。にもかかわらず `index()` と `mypage()` で `.options(db.selectinload(Post.hashtags))` を重ねている。
@@ -273,7 +273,7 @@ post = (
 
 ---
 
-## B-3. キャッシュ済み本文 HTML の無効化手段がない
+## B-3. キャッシュ済み本文 HTML の無効化手段がない【済】
 
 **現状**
 `Post.body_html` に変換結果を保存する仕組みは導入済みだが、**再生成のトリガーが「記事の編集」しかない**。
@@ -300,7 +300,7 @@ if post.body_html is None or post.render_version != RENDER_VERSION:
 
 ---
 
-## B-4. 本文画像がスマートフォンに対して過大
+## B-4. 本文画像がスマートフォンに対して過大【済】
 
 **現状**
 本文画像は長辺 1600px に縮小されるが、配信されるのは**その 1 サイズのみ**。スマホの表示幅は実質 350〜400px 程度で、`width: 100%` で縮めて表示している。
