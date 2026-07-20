@@ -14,22 +14,25 @@
 #   [1] import / Blueprint の読み込み
 #   [2] _is_production()      : 本番環境かどうかの判定ヘルパー
 #   [3] _configure_logging()  : アプリケーションログの設定（improvement.md 第2版 項目 A-5）
-#   [4] create_app()          : アプリ生成ファクトリ関数
-#        (4-1) 本番判定
-#        (4-2) ログ設定
-#        (4-3) ProxyFix の適用（リバースプロキシ対応）
-#        (4-4) SECRET_KEY の設定
-#        (4-5) セッション Cookie の属性設定
-#        (4-6) アップロードサイズ制限
-#        (4-6b) 静的ファイル配信の最適化（キャッシュバスティング / 長期キャッシュ）
-#        (4-7) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
-#        (4-8) 拡張機能の初期化（db / migrate / login_manager）
-#        (4-9) CSRF 保護の適用
-#        (4-10) Flask-Login の詳細設定（unauthorized_handler / user_loader）
-#        (4-11) セキュリティヘッダーの付与
-#        (4-12) カスタムエラーハンドラー（413）
-#        (4-13) Blueprint の登録
-#   [5] 直接実行時のエントリポイント（python app.py）
+#   [3.5] _register_static_url_helper(): static_url の登録（improvement.md 第2版 項目 A-7）
+#   [4] _register_cli_commands(): 管理コマンドの登録（improvement.md 第2版 項目 B-3）
+#   [5] create_app()          : アプリ生成ファクトリ関数
+#        (5-1) 本番判定
+#        (5-2) ログ設定
+#        (5-3) ProxyFix の適用（リバースプロキシ対応）
+#        (5-4) SECRET_KEY の設定
+#        (5-5) セッション Cookie の属性設定
+#        (5-6) アップロードサイズ制限
+#        (5-7) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
+#        (5-7.5) static_url の登録（A-7）
+#        (5-8) 拡張機能の初期化（db / migrate / login_manager）
+#        (5-9) CSRF 保護の適用
+#        (5-10) Flask-Login の詳細設定（unauthorized_handler / user_loader）
+#        (5-11) セキュリティヘッダーの付与
+#        (5-12) カスタムエラーハンドラー（413）
+#        (5-13) Blueprint の登録
+#        (5-14) 管理コマンドの登録
+#   [6] 直接実行時のエントリポイント（python app.py）
 #
 # 【処理フロー図】
 #
@@ -38,11 +41,12 @@
 #        ▼
 #   create_app() ──► Flask インスタンス生成
 #        │              │
-#        │              ├─ (4-1)〜(4-2) 本番判定・ログ設定（最優先で有効化）
-#        │              ├─ (4-3)〜(4-7) 各種設定（プロキシ・鍵・Cookie・DB）
-#        │              ├─ (4-8)〜(4-9) 拡張機能を app に紐付け
-#        │              ├─ (4-10)〜(4-12) 認証まわり・ヘッダー・エラー処理
-#        │              └─ (4-13) Blueprint 登録（auth / blog / admin）
+#        │              ├─ (5-1)〜(5-2) 本番判定・ログ設定（最優先で有効化）
+#        │              ├─ (5-3)〜(5-7) 各種設定（プロキシ・鍵・Cookie・DB）
+#        │              ├─ (5-8)〜(5-9) 拡張機能を app に紐付け
+#        │              ├─ (5-10)〜(5-12) 認証まわり・ヘッダー・エラー処理
+#        │              ├─ (5-13) Blueprint 登録（auth / blog / admin）
+#        │              └─ (5-14) CLI コマンド登録（rerender-posts）
 #        ▼
 #   app.run() ──► リクエスト待ち受け開始
 #
@@ -56,12 +60,14 @@
 import os
 import sys
 import logging
+import click                                       # CLI コマンドのオプション定義に使用
 from flask import Flask, flash, redirect, url_for, abort
 from flask.logging import default_handler          # Flask が既定で付ける StreamHandler
 from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
 from werkzeug.middleware.proxy_fix import ProxyFix  # リバースプロキシ配下での HTTPS 判定補正
 from extensions import db, login_manager, migrate
-from models import User
+from models import User, Post
+from rendering import render_post_body, RENDER_VERSION
 import config
 
 # Blueprint: 機能ごとにルートをまとめたモジュール（views/ 配下で定義）
@@ -185,7 +191,162 @@ def _configure_logging(app: Flask, is_production: bool) -> None:
 
 
 # ======================================================================
-# [4] create_app() : アプリ生成ファクトリ関数
+# [3.5] 静的ファイルのキャッシュバスティング（improvement.md 第2版 項目 A-7）
+# ======================================================================
+
+def _register_static_url_helper(app: Flask) -> None:
+    """
+    テンプレートから使う static_url() を登録し、静的ファイルのキャッシュ期間を延ばす。
+
+    【背景・なぜ必要か（項目 A-7）】
+    各テンプレートは A-7 の対応で、静的ファイルの参照を
+        url_for('static', filename='css/index.css')
+    から
+        static_url('css/index.css')
+    へ書き換えている。しかし呼び出される側の static_url は Flask/Jinja の
+    標準関数ではなく「このアプリが自分で用意する関数」であり、
+    ここで @app.template_global として登録して初めてテンプレートから使える。
+
+    登録し忘れると、テンプレートは未定義の関数を呼ぶことになり
+        jinja2.exceptions.UndefinedError: 'static_url' is undefined
+    になる（＝テンプレートだけ A-7 化して app.py が未対応の状態で起きる）。
+
+    【static_url が何をするか】
+    ファイルの更新時刻（mtime）を ?v=... というクエリとして URL に付ける。
+        /static/css/index.css?v=1721500000
+    ファイルを更新すると mtime が変わり URL も変わるため、
+    ブラウザは「別ファイル」とみなして新しい内容を取得する。
+    これにより、静的ファイルを長期間キャッシュさせても
+    「更新したのに古い CSS が残る」問題が起きない
+    （＝Ctrl+Shift+R での強制リロードが不要になる）。
+
+    あわせて SEND_FILE_MAX_AGE_DEFAULT を 1 年に設定し、
+    静的ファイルに長期キャッシュを効かせる（?v= が付くので安全）。
+
+    @param app: 対象の Flask アプリ
+    """
+    # 静的ファイルのブラウザキャッシュ期間を 1 年に延ばす。
+    # URL に ?v=mtime が付くため、更新時は URL が変わって即反映される。
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365  # 1 年（秒）
+
+    @app.template_global()
+    def static_url(filename: str) -> str:
+        """
+        テンプレート用ヘルパー。url_for('static', ...) に ?v=mtime を付けて返す。
+
+        使い方（テンプレート側）:
+            href="{{ static_url('css/index.css') }}"
+
+        - ファイルが存在すれば mtime（更新時刻の整数秒）を v として付与する。
+        - 何らかの理由でファイルが見つからない場合は v=0 とし、
+          少なくとも url_for と同等の URL を返して 500 を避ける
+          （存在しないパスは元々 404 になるだけで、ここでは落とさない）。
+        """
+        try:
+            path = os.path.join(app.static_folder, filename)
+            version = int(os.path.getmtime(path)) if os.path.exists(path) else 0
+        except OSError:
+            # 稀な I/O エラーでもテンプレート描画を止めない
+            version = 0
+        return url_for('static', filename=filename, v=version)
+
+
+# ======================================================================
+# [4] 管理コマンドの登録（improvement.md 第2版 項目 B-3）
+# ======================================================================
+
+def _register_cli_commands(app: Flask) -> None:
+    """
+    `flask <コマンド名>` で実行できる管理コマンドを登録する。
+
+    【なぜ必要か】
+    記事本文の HTML は Post.body_html にキャッシュされており、
+    rendering.py を修正しただけでは既存記事に反映されない。
+    detail() 側の「バージョン不一致なら再生成」で自動的に追従はするが、
+    それはあくまで「その記事にアクセスがあったとき」なので、
+
+      ・記事数が多く、アクセスの少ない記事がいつまでも古いままになる
+      ・最初の 1 人だけ変換待ちが発生する（ウォームアップ）
+      ・そもそも本当に全記事が更新できるのか事前に確認したい
+
+    といった場面では、まとめて作り直せるコマンドがあると安心できる。
+
+    【使い方】
+        flask rerender-posts           … 未生成 or 旧バージョンの記事だけ再生成
+        flask rerender-posts --all     … バージョンに関係なく全記事を再生成
+        flask rerender-posts --dry-run … 対象件数を数えるだけで保存しない
+
+    ※ Flask の CLI はアプリを見つける必要があるため、実行前に
+      環境変数 FLASK_APP=app.py を設定するか、
+      プロジェクト直下（app.py のある場所）で実行すること。
+    """
+
+    @app.cli.command('rerender-posts')
+    @click.option('--all', 'rerender_all', is_flag=True, default=False,
+                  help='バージョンに関係なく全記事を再生成する。')
+    @click.option('--dry-run', 'dry_run', is_flag=True, default=False,
+                  help='対象を表示するだけで DB には保存しない。')
+    def rerender_posts(rerender_all: bool, dry_run: bool):
+        """記事本文のキャッシュ HTML（body_html / toc_html）を再生成する。"""
+
+        # --------------------------------------------------------------
+        # STEP 1. 全記事を取得して対象を絞り込む
+        # --------------------------------------------------------------
+        # 「render_version != RENDER_VERSION」を SQL で書くと、
+        # NULL との比較結果が NULL になり NULL 行が対象から漏れる。
+        # 記事数が数千件規模になるまでは全件走査で十分なので、
+        # 判定は Python 側で明示的に行う（NULL の扱いを間違えない）。
+        posts = Post.query.order_by(Post.id).all()
+
+        targets = [
+            p for p in posts
+            if rerender_all
+            or p.body_html is None
+            or p.render_version != RENDER_VERSION
+        ]
+
+        click.echo(f'全記事: {len(posts)} 件 / 再生成の対象: {len(targets)} 件 '
+                   f'(RENDER_VERSION = {RENDER_VERSION})')
+
+        if not targets:
+            click.echo('再生成が必要な記事はありません。')
+            return
+
+        if dry_run:
+            for p in targets:
+                click.echo(f'  [dry-run] post_id={p.id} '
+                           f'version={p.render_version} title={p.title[:30]!r}')
+            click.echo('--dry-run のため保存は行いませんでした。')
+            return
+
+        # --------------------------------------------------------------
+        # STEP 2. 1 件ずつ再生成して render_version を更新
+        # --------------------------------------------------------------
+        for p in targets:
+            p.body_html, p.toc_html = render_post_body(
+                p.body, p.img_name, p.img_captions
+            )
+            p.render_version = RENDER_VERSION
+            # updated_at は「記事内容の更新日時」なので、
+            # 表示上の HTML を作り直しただけのここでは触らない。
+
+        # --------------------------------------------------------------
+        # STEP 3. まとめて commit
+        # --------------------------------------------------------------
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('本文 HTML の一括再生成に失敗しました。')
+            raise click.ClickException(
+                '再生成の保存に失敗しました。詳細はログを確認してください。'
+            )
+
+        click.echo(f'{len(targets)} 件の記事を再生成しました。')
+
+
+# ======================================================================
+# [5] create_app() : アプリ生成ファクトリ関数
 # ======================================================================
 
 def create_app():
@@ -245,55 +406,6 @@ def create_app():
     app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 30MB
 
     # ------------------------------------------------------------------
-    # STEP 7.5. 静的ファイル配信の最適化（improvement.md 第2版 項目 A-7）
-    # ------------------------------------------------------------------
-    # 【背景】
-    # 従来、CSS / JS はすべて url_for('static', ...) で出力されており、
-    # URL にバージョン情報が付かなかった。そのため
-    #   ・キャッシュを長くする → 更新しても古い CSS がブラウザに残る
-    #   ・キャッシュを短くする → 毎回再取得になり表示が遅い
-    # というトレードオフから抜け出せなかった
-    # （デプロイ手順書にも「CSS は Ctrl+Shift+R」と書かざるを得なかった）。
-    #
-    # 【この設定でやること：キャッシュバスティング】
-    # (1) 静的ファイルのキャッシュ期間を 1 年に延ばす。
-    # (2) テンプレートから使うヘルパー static_url() を用意し、
-    #     ファイルの最終更新時刻（mtime）を ?v= クエリとして URL に付与する。
-    #     ファイルを更新すれば mtime が変わり URL 自体が変わるため、
-    #     長期キャッシュしたままでも変更が即座に反映される。
-    #
-    # テンプレート側は
-    #     href="{{ url_for('static', filename='css/index.css') }}"
-    # を
-    #     href="{{ static_url('css/index.css') }}"
-    # に置き換えるだけでよい。
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365   # 1年
-
-    @app.template_global()
-    def static_url(filename: str) -> str:
-        """
-        静的ファイルの URL に、ファイルの mtime を ?v= として付与して返す。
-
-        例: static_url('css/index.css')
-            → /static/css/index.css?v=1752800000
-
-        【対象は CSS / JS / favicon のみ】
-        記事画像（static/img/posts/）とサムネイル画像は対象外とし、
-        テンプレート側では従来どおり url_for を使う。
-        これらは UUID でファイル名がランダム化されており、
-        「内容が変わるときはファイル名ごと変わる」運用のため、
-        URL 自体が既にバージョン情報を兼ねている（バスティング不要）。
-        毎リクエストの os.path.getmtime() 呼び出しを画像の枚数分
-        増やさないためにも、対象を絞っている。
-
-        ファイルが存在しない場合は v=0 を付けて返す（リンク切れは
-        ブラウザの 404 で気づけるため、ここでは例外にしない）。
-        """
-        path = os.path.join(app.static_folder, filename)
-        v = int(os.path.getmtime(path)) if os.path.exists(path) else 0
-        return url_for('static', filename=filename, v=v)
-
-    # ------------------------------------------------------------------
     # STEP 8. データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
     # ------------------------------------------------------------------
     # 優先順位:
@@ -334,6 +446,15 @@ def create_app():
 
     # モデル変更のたびにイベントを発行する機能（使わないのでオフにしてメモリ節約）
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # ------------------------------------------------------------------
+    # STEP 8.5. 【A-7】静的ファイルのキャッシュバスティング（static_url 登録）
+    # ------------------------------------------------------------------
+    # テンプレートが static_url('...') を呼べるようにする。
+    # これを登録しないと base.html などで
+    #   UndefinedError: 'static_url' is undefined
+    # になる（テンプレートだけ A-7 化して app.py が未対応の状態）。
+    _register_static_url_helper(app)
 
     # ------------------------------------------------------------------
     # STEP 9. 拡張機能の初期化（extensions.py で作ったインスタンスを app に紐付け）
@@ -394,13 +515,18 @@ def create_app():
     app.register_blueprint(blog_bp)   # /, /about, /howto, /genre, /<id>/detail 系
     app.register_blueprint(admin_bp)  # /create, /<id>/update, /<id>/delete, /mypage 系
 
+    # ------------------------------------------------------------------
+    # STEP 15. 【B-3】管理コマンドの登録（flask rerender-posts）
+    # ------------------------------------------------------------------
+    _register_cli_commands(app)
+
     app.logger.info('アプリケーションの初期化が完了しました。')
 
     return app
 
 
 # ======================================================================
-# [5] 直接実行時のエントリポイント（python app.py で起動）
+# [6] 直接実行時のエントリポイント（python app.py で起動）
 # ======================================================================
 #
 # 【重要】PythonAnywhere では app.run() は使われない。

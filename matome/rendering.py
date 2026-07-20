@@ -20,6 +20,7 @@
 #   detail() の出力は従来とまったく同じになる。
 #
 # 【このファイルの構成（目次）】
+#   [0] RENDER_VERSION           : レンダラのバージョン（キャッシュ無効化用）
 #   [1] render_post_body()       : 本文 → (body_html, toc_html) を生成（公開 API）
 #   [2] 内部ヘルパー関数群
 #        (2-1) _is_structural_line()  : 構造行（見出し等）の判定
@@ -37,6 +38,40 @@ import re
 import markdown
 from urllib.parse import quote  # 地図 URL の正しいエンコードに使用
 from markupsafe import escape   # HTML 直組み立て時のエスケープに使用
+
+
+# ======================================================================
+# [0] RENDER_VERSION — レンダラのバージョン（improvement.md 第2版 項目 B-3）
+# ======================================================================
+#
+# 【この定数が必要な理由】
+# body_html / toc_html にレンダリング結果をキャッシュする仕組みは導入済みだが、
+# 従来は「キャッシュを捨てる（無効化する）手段」が無かった。
+# 再生成のきっかけが記事の編集しかなかったため、このファイルを修正しても
+#   ・地図の枠デザインを変えた
+#   ・YouTube 埋め込みを改修した
+#   ・画像に loading="lazy" を付けた
+# といった変更が既存記事に反映されず、全記事を手で開いて再保存する
+# 必要があった。
+#
+# 【使い方 — ここが運用上いちばん大事】
+#   このファイル（render_post_body が出力する HTML）を変更したら、
+#   必ず下の数値を +1 すること。
+#
+# 各記事は「生成に使ったバージョン」を Post.render_version に持っており、
+# views/blog.py の detail() が
+#     post.body_html is None or post.render_version != RENDER_VERSION
+# を判定する。不一致なら生成し直して保存するため、
+# 数値を上げるだけで既存記事も「次にアクセスされたとき」に自動更新される。
+#
+# アクセスを待たずに全記事をまとめて作り直したい場合は、
+# 管理コマンド（app.py に定義）を使う。
+#     flask rerender-posts            … 古いバージョンの記事だけ再生成
+#     flask rerender-posts --all      … 全記事を強制的に再生成
+#
+# 【変更履歴】
+#   1 : 初版（body_html / toc_html キャッシュ導入時の出力と同一）
+RENDER_VERSION = 1
 
 
 # ======================================================================
@@ -58,6 +93,10 @@ def render_post_body(body: str, img_name: str | None = None,
     【この関数の入力は body / img_name / img_captions のみ】
     リクエストや current_user に依存しないため、投稿・編集時に一度だけ
     呼び出して結果を保存しておけば、詳細表示のたびに再変換する必要がない。
+
+    【出力を変更したら RENDER_VERSION を +1 すること】
+    保存済みキャッシュを持つ既存記事は、バージョンが一致している限り
+    再生成されない（＝古い HTML のまま表示される）。
 
     【処理の流れ】
       STEP 1. 本文の連続空行を <br> に展開（_expand_blank_lines）

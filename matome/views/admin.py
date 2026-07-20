@@ -42,6 +42,12 @@
 #   本文・画像（img_name / img_captions）が確定した後に生成することで、
 #   [imgN] 置換なども含めた最終形をキャッシュできる。
 #
+# 【レンダラのバージョン記録（improvement.md 第2版 項目 B-3）】
+#   生成した HTML には「どのバージョンの rendering.py で作ったか」を
+#   Post.render_version として一緒に保存する。
+#   これにより rendering.py を変更して RENDER_VERSION を +1 すれば、
+#   既存記事も detail() 側で自動的に作り直される（キャッシュの無効化）。
+#
 # 【例外時のログ出力について（improvement.md 第2版 項目 A-5）】
 #   このファイルは commit 失敗や画像処理エラーを except で捕まえ、
 #   ユーザーには flash で「エラーが発生しました」と伝える設計になっている。
@@ -73,7 +79,8 @@ from PIL import Image, ImageOps  # アップロード画像の縮小・再圧縮
 from extensions import db
 from models import Post, Hashtag
 from constants import DEFAULT_GENRES
-from rendering import render_post_body  # 本文 → (body_html, toc_html) の事前生成に使用
+# 本文 → (body_html, toc_html) の事前生成と、そのレンダラのバージョン
+from rendering import render_post_body, RENDER_VERSION
 import config
 
 admin_bp = Blueprint('admin', __name__)
@@ -99,7 +106,25 @@ ALLOWED_MIME_TYPES  = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
 
 # ---- 画像最適化パラメータ --------------------------------------------
 # 本文画像: 長辺がこの値（px）を超える場合のみ、この値まで縮小する（拡大はしない）
-BODY_IMAGE_MAX_EDGE = 1600
+#
+# 【1600 → 1200 に引き下げた理由（improvement.md 第2版 項目 B-4）】
+# 本文画像は 1 サイズしか配信していないため、スマートフォン（表示幅は実質
+# 350〜400px 程度）でも同じ画像をダウンロードすることになり、
+# モバイル回線では転送量が体感速度に直結していた。
+#
+# 本来の解決策は「640 / 1280 / 1600px を生成して srcset で出し分ける」ことだが
+# 実装コストが高い。一方この記事本文の最大表示幅は detail.css の
+# .detail-container（max-width: 860px）と article の左右パディングから
+# 実質 740px 程度であり、高精細ディスプレイ（2 倍解像度）を考慮しても
+# 1200px あれば足りる。
+#
+# そのため、まずは上限を 1200px に下げるだけの簡易対応とする。
+# これだけでも面積比で約 44%（1200² / 1600²）まで減り、
+# JPEG/WebP の転送量はおおむね半分前後になる。
+#
+# ※ この値を変えても、既にアップロード済みの画像は縮小し直されない
+#   （次回アップロードする画像から適用される）。
+BODY_IMAGE_MAX_EDGE = 1200
 # サムネイル専用画像: 幅がこの値（px）を超える場合のみ、この幅まで縮小して WebP 化する
 THUMBNAIL_MAX_WIDTH = 400
 # 再エンコード時の品質（0〜100。大きいほど高画質・大サイズ）
@@ -337,6 +362,7 @@ def _optimize_body_image_save(file, save_path: str, ext: str) -> None:
     最適化の内容:
       ・EXIF の向き情報を画素に反映（スマホ写真の回転ズレ対策）
       ・長辺が BODY_IMAGE_MAX_EDGE を超える場合のみ、その値まで縮小
+        （項目 B-4 により上限は 1600px → 1200px へ引き下げ済み）
       ・元の形式を尊重して再エンコード（JPEG は品質指定、PNG/WebP は最適化）
       ・アニメーション GIF は劣化・静止化を避けるため原本をそのまま保存
 
@@ -641,19 +667,24 @@ def create():
         # STEP 5. Post オブジェクトを作成してセッションに追加
         # --------------------------------------------------------------
         # updated_at は新規投稿時 NULL のまま（「まだ更新されていない」を明示）
+        #
+        # 【B-3】render_version には「この HTML を生成したレンダラのバージョン」を
+        # 記録する。rendering.py を変更して RENDER_VERSION を +1 すると、
+        # この記事は detail() 側で自動的に再生成される。
         post = Post(
-            title         = title,
-            body          = body,
-            body_html     = body_html,
-            toc_html      = toc_html,
-            user_id       = current_user.id,
-            img_name      = img_name_str,
-            default_thumb = selected_default_thumb,
-            thumbnail_img = thumbnail_name,
-            genre         = final_genre,
-            is_published  = is_published,
-            img_captions  = img_captions_str,
-            updated_at    = None,
+            title          = title,
+            body           = body,
+            body_html      = body_html,
+            toc_html       = toc_html,
+            render_version = RENDER_VERSION,
+            user_id        = current_user.id,
+            img_name       = img_name_str,
+            default_thumb  = selected_default_thumb,
+            thumbnail_img  = thumbnail_name,
+            genre          = final_genre,
+            is_published   = is_published,
+            img_captions   = img_captions_str,
+            updated_at     = None,
         )
         db.session.add(post)
 
@@ -869,9 +900,13 @@ def update(id):
     # 本文（post.body）と画像（post.img_name / post.img_captions）が
     # すべて確定した後に再生成し、キャッシュ列を更新する。
     # これにより次回以降の詳細表示は再変換なしで済む。
+    #
+    # 【B-3】生成に使ったレンダラのバージョンも一緒に更新する。
+    # （古いバージョンで作られた記事を編集した場合、ここで最新版に揃う）
     post.body_html, post.toc_html = render_post_body(
         post.body, post.img_name, post.img_captions
     )
+    post.render_version = RENDER_VERSION
 
     # ------------------------------------------------------------------
     # STEP 6. 更新日時をセットして commit
@@ -1058,6 +1093,10 @@ def mypage():
     # ------------------------------------------------------------------
     # STEP 3. GET: 自分の記事をサーバーサイドページネーションで取得
     # ------------------------------------------------------------------
+    # 【B-2】記事カードがハッシュタグバッジを表示するため、ここで
+    # selectinload により一括先読みして N+1 を防ぐ。
+    # models.py 側の lazy='selectin' は撤去したので、
+    # この options が「唯一の先読み指定」になる。
     page = request.args.get('page', 1, type=int)
     pagination = (
         Post.query

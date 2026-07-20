@@ -248,10 +248,37 @@ class Post(db.Model):
     #   ・新規投稿・編集では必ず埋まる。
     #   ・この機能の導入前に作成された既存記事は body_html が NULL のため、
     #     detail() 側で「NULL ならその場で生成 + 遅延保存（バックフィル）」する。
-    #     この判定は body_html の NULL/非 NULL で行うため、
-    #     toc_html が NULL（＝目次なし）でも影響しない。
     body_html = db.Column(db.Text, nullable=True)
     toc_html  = db.Column(db.Text, nullable=True)
+
+    # ------------------------------------------------------------------
+    # (3-4.6) レンダラのバージョン（improvement.md 第2版 項目 B-3）
+    # ------------------------------------------------------------------
+    # 【背景】
+    # body_html / toc_html を導入したことで再変換は消えたが、
+    # 「キャッシュを捨てる（無効化する）手段」が無かった。
+    # 再生成のきっかけが「記事の編集」しかないため、rendering.py を修正しても
+    # （例：地図の枠デザイン変更、YouTube 埋め込みの改修、loading="lazy" の追加）
+    # 既存記事は古い HTML のまま表示され続け、全記事を手で開いて
+    # 再保存しない限り新しい出力に切り替わらなかった。
+    #
+    # 【この列の役割】
+    # 「その HTML を生成したときの rendering.py のバージョン」を記録する。
+    # 詳細表示（views/blog.py の detail）は
+    #     post.body_html is None or post.render_version != RENDER_VERSION
+    # を判定し、不一致なら生成し直して保存する。
+    # つまり rendering.py を変更したら rendering.RENDER_VERSION を +1 するだけで、
+    # 既存記事も「次にアクセスされたとき」に自動で作り直される。
+    #
+    # nullable=True にしている理由:
+    #   この列を追加する前に作られた既存レコードは NULL になる。
+    #   NULL は「どのバージョンで作ったか不明」＝ RENDER_VERSION と必ず不一致
+    #   になるため、そのまま再生成の対象として扱える（移行時の初期値設定が不要）。
+    #
+    # 一括で作り直したい場合は管理コマンド
+    #     flask rerender-posts
+    # を使う（app.py に定義）。
+    render_version = db.Column(db.Integer, nullable=True)
 
     # ------------------------------------------------------------------
     # (3-5) 公開設定
@@ -274,19 +301,38 @@ class Post(db.Model):
     # user: Post → User への多対一リレーション
     #   backref='posts' により User インスタンスから user.posts で
     #   その管理者の全記事リストが取得できる
+    #
+    #   【N+1 対策（項目 B-1）】
+    #   detail.html は post.user.nickname を参照するため、
+    #   何もしないと記事表示のたびに user を取りに行く追加クエリが 1 本走る。
+    #   views/blog.py の detail() 側で joinedload(Post.user) を指定し、
+    #   記事本体と同じ 1 クエリ（JOIN）で取得するようにしている。
+    #   ここでは lazy を既定のままにして「どこで先読みするか」は
+    #   クエリ側に委ねる方針（下の hashtags と同じ考え方）。
     user = db.relationship('User', backref=db.backref('posts', lazy=True))
 
     # hashtags: Post ↔ Hashtag の多対多リレーション
     #   secondary=post_hashtags → 中間テーブルを経由して結合
-    #   lazy='selectin' → Post の id リストを IN 句で一括取得するロード戦略。
-    #                      一覧ページで複数の Post をまとめてロードする際に
-    #                      N+1 問題（記事ごとに個別クエリが走る問題）を防ぐ。
     #   backref → Hashtag インスタンスから hashtag.posts で
     #             そのタグが付いた全記事リストが取得できる
+    #
+    #   【ロード戦略の指定場所を一本化した（項目 B-2）】
+    #   従来ここに lazy='selectin' を指定しつつ、index() と mypage() でも
+    #   .options(db.selectinload(Post.hashtags)) を重ねて指定していた。
+    #   動作上の実害はないものの「どちらが効いているのか」が読み取れず、
+    #   後から lazy を変えたときの挙動が予測しにくい状態だった。
+    #
+    #   そこで指定を「クエリ側（options）」に一本化し、
+    #   モデル側は既定の lazy='select'（＝アクセスされたときに初めて取得）に戻す。
+    #   こうすると
+    #     ・タグを表示する一覧（index / mypage）では options で一括先読みされ、
+    #       N+1 は従来どおり発生しない
+    #     ・タグを一切使わない取得（関連記事の 4 件など）では
+    #       不要な IN クエリが走らなくなる
+    #   というメリットが得られる。
     hashtags = db.relationship(
         'Hashtag',
         secondary=post_hashtags,
-        lazy='selectin',
         backref=db.backref('posts', lazy=True)
     )
 
