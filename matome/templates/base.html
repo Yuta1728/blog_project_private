@@ -3,7 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mycreate1.MITOblog.jp</title>
+
+    {# ============================================================
+       ページタイトル（improvement.md 項目 C-1）
+       ------------------------------------------------------------
+       従来は <title>Mycreate1.MITOblog.jp</title> の固定値で、
+       記事タイトルなどページ内容が一切反映されなかった。
+       {% block title %} を設け、各ページが上書きできるようにする。
+       上書きしないページ（login / mypage など）はこの既定値になる。
+    ============================================================ #}
+    <title>{% block title %}MITO Blog｜日々の記録と学習メモ{% endblock %}</title>
+
+    {# ============================================================
+       メタ情報・OGP（improvement.md 項目 C-1）
+       ------------------------------------------------------------
+       description / og:* / twitter:* をここに既定として置く。
+       記事詳細（detail.html）のように内容ごとに変えたいページは
+       {% block meta %} を丸ごと差し替える。
+       og:url の既定は request.url（現在ページの絶対 URL）。
+    ============================================================ #}
+    {% block meta %}
+    <meta name="description" content="日々の出来事や趣味・技術メモ、開発記録などを気ままに発信する個人ブログです。">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MITO Blog">
+    <meta property="og:title" content="MITO Blog">
+    <meta property="og:description" content="日々の出来事や趣味・技術メモ、開発記録などを気ままに発信する個人ブログです。">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="twitter:card" content="summary">
+    {% endblock %}
 
     {# ============================================================
        ダークモード初期化スクリプト

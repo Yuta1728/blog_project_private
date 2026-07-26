@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% from '_macros.html' import post_card with context %}
 
+{# ============================================================
+   ページタイトル（improvement.md 項目 C-1）
+   絞り込み条件（タグ / ジャンル / キーワード）に応じてタイトルを変える。
+   絞り込みなしのトップは既定のサイト名タイトル。
+============================================================ #}
+{% block title %}
+    {%- if selected_hashtag %}#{{ selected_hashtag }} の記事｜MITO Blog
+    {%- elif selected_genre %}{{ selected_genre }} の記事｜MITO Blog
+    {%- elif search_word %}「{{ search_word }}」の検索結果｜MITO Blog
+    {%- else %}MITO Blog｜日々の記録と学習メモ
+    {%- endif -%}
+{% endblock %}
+
 {# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
    【A-7】url_for('static', ...) → static_url(...) に変更。
    mtime を ?v= として付与することで、1 年の長期キャッシュと

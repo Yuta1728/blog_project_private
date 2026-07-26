@@ -1,5 +1,42 @@
 {% extends "base.html" %}
-{% from '_macros.html' import post_thumbnail %}
+{% from '_macros.html' import post_thumbnail, thumbnail_url %}
+
+{# ============================================================
+   ページタイトル（improvement.md 項目 C-1）
+   記事タイトルを反映する。base.html の固定タイトルを上書きする。
+============================================================ #}
+{% block title %}{{ post.title }}｜MITO Blog{% endblock %}
+
+{# ============================================================
+   メタ情報・OGP（improvement.md 項目 C-1）
+   ------------------------------------------------------------
+   SNS シェア時にタイトル・説明・画像が出るよう、記事ごとの
+   og:* / twitter:* を出力して base.html の既定メタを丸ごと差し替える。
+
+   - 説明文（description）は本文 HTML（display_body）からタグを除いた冒頭を使う。
+     striptags は「隣接する空白を 1 つにまとめる」ため、改行や <br> も
+     きれいに 1 行化される。truncate で 110 文字に丸める。
+     content="..." の中では Jinja が自動エスケープするため、本文中の
+     引用符や < > が属性を突き破ることはない。
+   - og:image は thumbnail_url マクロで絶対 URL を取得する
+     （OGP 画像は絶対 URL 必須のため external=True）。
+     サムネイル優先順位（専用→デフォルト→システム既定）はマクロ側に一元化。
+============================================================ #}
+{% block meta %}
+    {%- set meta_description = display_body | striptags | truncate(110, True, '…') -%}
+    {%- set og_image = thumbnail_url(post, external=True) -%}
+    <meta name="description" content="{{ meta_description }}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="MITO Blog">
+    <meta property="og:title" content="{{ post.title }}">
+    <meta property="og:description" content="{{ meta_description }}">
+    <meta property="og:image" content="{{ og_image }}">
+    <meta property="og:url" content="{{ url_for('blog.detail', id=post.id, _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ post.title }}">
+    <meta name="twitter:description" content="{{ meta_description }}">
+    <meta name="twitter:image" content="{{ og_image }}">
+{% endblock %}
 
 {# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
    【A-7】url_for('static', ...) → static_url(...) に変更。

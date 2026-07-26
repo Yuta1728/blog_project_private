@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{# ページタイトル（improvement.md 項目 C-1）。管理者名を反映する。 #}
+{% block title %}{{ admin_user.nickname if admin_user and admin_user.nickname else '管理者' }} について｜MITO Blog{% endblock %}
+
 {# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
    【A-7】url_for('static', ...) → static_url(...) でキャッシュバスティング対応。 #}
 {% block extra_css %}

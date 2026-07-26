@@ -4,6 +4,7 @@
    ============================================================
    使い方（呼び出し側で import する）:
      {% from '_macros.html' import post_thumbnail %}
+     {% from '_macros.html' import thumbnail_url %}
      {% from '_macros.html' import post_card with context %}
 
    ※ post_card は current_user / csrf_token を参照するため、
@@ -13,12 +14,39 @@
 
 
 {# ------------------------------------------------------------
-   post_thumbnail : 記事サムネイルを表示する
+   thumbnail_url : サムネイル画像の URL 文字列だけを返す（improvement.md 項目 C-1）
 
    サムネイル表示の優先順位:
      1. thumbnail_img（アップロードされた専用サムネイル）
      2. default_thumb（プリセットから選択したデフォルトサムネイル）
      3. system-default.jpg（システム共通のデフォルト）
+
+   従来この優先順位ロジックは post_thumbnail の中だけにあり、<img> タグを
+   組み立てる用途に限られていた。OGP の og:image では「タグ」ではなく
+   「絶対 URL の文字列」だけが必要になるため、URL を返す部分を独立した
+   マクロに切り出して両方から使えるようにする。
+
+   @param post     : Post オブジェクト
+   @param external : True にすると絶対 URL（scheme + host 付き）を返す。
+                     OGP / Twitter Card の画像 URL は絶対 URL が必須のため、
+                     detail.html の og:image では external=True を指定する。
+                     既定（False）は従来どおり相対 URL。
+   ------------------------------------------------------------ #}
+{% macro thumbnail_url(post, external=False) -%}
+    {%- if post.thumbnail_img -%}
+        {{- url_for('static', filename='img/posts/' + post.thumbnail_img, _external=external) -}}
+    {%- elif post.default_thumb -%}
+        {{- url_for('static', filename='img/thbnails/' + post.default_thumb, _external=external) -}}
+    {%- else -%}
+        {{- url_for('static', filename='img/thbnails/system-default.jpg', _external=external) -}}
+    {%- endif -%}
+{%- endmacro %}
+
+
+{# ------------------------------------------------------------
+   post_thumbnail : 記事サムネイルを表示する
+
+   src の決定は thumbnail_url マクロに委譲する（優先順位ロジックの一元化）。
 
    @param post      : Post オブジェクト（index/mypage/detail の関連記事）
    @param css_class : 付与する class（例 'thumb-img'）。省略時は class なし
@@ -39,14 +67,8 @@
      - detail の関連記事カード       : 120 x 85
    ------------------------------------------------------------ #}
 {% macro post_thumbnail(post, css_class='', width=none, height=none) %}
-    {#- 表示するサムネイルの src を優先順位に従って決定する -#}
-    {%- if post.thumbnail_img -%}
-        {%- set thumb_src = url_for('static', filename='img/posts/' + post.thumbnail_img) -%}
-    {%- elif post.default_thumb -%}
-        {%- set thumb_src = url_for('static', filename='img/thbnails/' + post.default_thumb) -%}
-    {%- else -%}
-        {%- set thumb_src = url_for('static', filename='img/thbnails/system-default.jpg') -%}
-    {%- endif -%}
+    {#- 表示するサムネイルの src は thumbnail_url マクロで決定する -#}
+    {%- set thumb_src = thumbnail_url(post) -%}
     <img src="{{ thumb_src }}" alt="{{ post.title }}"{% if css_class %} class="{{ css_class }}"{% endif %}{% if width %} width="{{ width }}"{% endif %}{% if height %} height="{{ height }}"{% endif %} loading="lazy">
 {% endmacro %}
 

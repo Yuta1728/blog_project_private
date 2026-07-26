@@ -11,6 +11,8 @@
 #     /howto       → このブログの使い方ページ
 #     /<id>/detail → 記事詳細ページ
 #     /genre       → ジャンル一覧ページ
+#     /robots.txt  → クローラ向け robots（improvement.md 項目 C-1）
+#     /sitemap.xml → 公開記事のサイトマップ（improvement.md 項目 C-1）
 #
 # 【このファイルの構成（目次）】
 #   [1] index()              : トップページ（記事一覧・検索・絞り込み・統計）
@@ -19,6 +21,7 @@
 #   [4] _get_related_posts() : 関連記事取得ヘルパー
 #   [5] detail()             : 記事詳細ページ（キャッシュ済み本文 HTML を出力）
 #   [6] genre_list()         : ジャンル一覧ページ
+#   [7] robots_txt() / sitemap_xml() : SEO 用の robots.txt / sitemap.xml
 #
 # 【本文レンダリングの方針変更（improvement.md 項目 5）】
 #   以前 detail() は本文（Markdown + [imgN]/[map:]/[youtube:] などの独自タグ）を
@@ -66,11 +69,19 @@
 #   誰も気づけなかった（毎回その場で再変換され、遅いままになる）。
 #   current_app.logger で記録を残すよう変更した。
 #
+# 【SEO 対応（improvement.md 項目 C-1）】
+#   SNS シェア時のタイトル・説明・画像（OGP）はテンプレート側で対応した。
+#   本ファイルでは、検索エンジン向けの robots.txt と sitemap.xml を
+#   [7] として追加する。sitemap には公開記事と主要な静的ページを列挙し、
+#   robots からその sitemap を指し示す。
+#
 # ======================================================================
 
-from flask import Blueprint, render_template, request, redirect, flash, current_app
+from flask import (Blueprint, render_template, request, redirect, flash,
+                   current_app, url_for, Response)
 from flask_login import current_user
 from sqlalchemy import func, true          # true(): SQL 式としての「常に真」
+from xml.sax.saxutils import escape as xml_escape  # sitemap.xml の URL を XML エスケープ
 from extensions import db
 from models import Post, Hashtag, User
 from constants import DEFAULT_GENRES, GENRE_GROUPS  # GENRE_GROUPS: ジャンル一覧のグループ描画に使用
@@ -671,3 +682,93 @@ def genre_list():
         genre_groups = GENRE_GROUPS,   # プリセットのグループ定義（唯一の情報源）
         extra_genres = extra_genres,   # ユーザーが独自作成した実在ジャンル
     )
+
+
+# ======================================================================
+# [7] SEO: robots.txt / sitemap.xml（improvement.md 項目 C-1）
+# ======================================================================
+#
+# 【役割】
+#   OGP（SNS シェア時のタイトル・説明・画像）はテンプレート側で対応した。
+#   ここでは検索エンジンのクローラ向けに、次の 2 つを配信する。
+#
+#     /robots.txt  … クロールを許可し、sitemap の場所を伝える
+#     /sitemap.xml … 公開記事と主要な静的ページの URL 一覧
+#
+# 【セキュリティ上の注意】
+#   ・robots.txt には「秘密のログイン URL（ADMIN_LOGIN_PATH）」を絶対に
+#     書かない。Disallow に書くこと自体がその存在を晒すことになるため。
+#     管理系ページ（/create・/mypage 等）は未ログインだと 404 になり、
+#     sitemap にも載せないので、クローラに拾われる心配はない。
+#   ・sitemap には「公開記事のみ」を載せる。非公開記事は URL を出さない。
+
+@blog_bp.route('/robots.txt')
+def robots_txt():
+    """
+    クローラ向けの robots.txt を返す。
+
+    全クローラにサイト全体のクロールを許可し、末尾で sitemap.xml の
+    絶対 URL を伝えるだけのシンプルな内容。秘密の管理 URL には触れない。
+    """
+    lines = [
+        'User-agent: *',
+        'Allow: /',
+        f'Sitemap: {url_for("blog.sitemap_xml", _external=True)}',
+    ]
+    body = '\n'.join(lines) + '\n'
+    return Response(body, mimetype='text/plain')
+
+
+@blog_bp.route('/sitemap.xml')
+def sitemap_xml():
+    """
+    公開記事と主要な静的ページを列挙したサイトマップ（XML）を返す。
+
+    【処理の流れ】
+      STEP 1. 主要な静的ページ（トップ / 自己紹介 / 使い方 / ジャンル一覧）を追加
+      STEP 2. 公開記事を新着順に取得し、各記事の URL と最終更新日を追加
+      STEP 3. sitemaps.org のスキーマに沿った XML を組み立てて返す
+
+    lastmod は W3C 形式（YYYY-MM-DD）。更新日時があればそれを、なければ
+    投稿日時を使う。URL は url_for(..., _external=True) で絶対 URL にし、
+    XML の特殊文字（& など）は xml_escape でエスケープする。
+    """
+    # ------------------------------------------------------------------
+    # STEP 1. 静的ページ（lastmod は付けない）
+    # ------------------------------------------------------------------
+    entries = []  # (loc, lastmod|None) のタプルを積む
+    for endpoint in ('blog.index', 'blog.about', 'blog.howto', 'blog.genre_list'):
+        entries.append((url_for(endpoint, _external=True), None))
+
+    # ------------------------------------------------------------------
+    # STEP 2. 公開記事（新着順）
+    # ------------------------------------------------------------------
+    posts = (
+        Post.query
+        .filter(Post.is_published == True)
+        .order_by(Post.created_at.desc())
+        .all()
+    )
+    for post in posts:
+        loc = url_for('blog.detail', id=post.id, _external=True)
+        last_dt = post.updated_at or post.created_at
+        lastmod = last_dt.strftime('%Y-%m-%d') if last_dt else None
+        entries.append((loc, lastmod))
+
+    # ------------------------------------------------------------------
+    # STEP 3. XML の組み立て
+    # ------------------------------------------------------------------
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for loc, lastmod in entries:
+        parts.append('  <url>')
+        parts.append(f'    <loc>{xml_escape(loc)}</loc>')
+        if lastmod:
+            parts.append(f'    <lastmod>{lastmod}</lastmod>')
+        parts.append('  </url>')
+    parts.append('</urlset>')
+
+    xml = '\n'.join(parts) + '\n'
+    return Response(xml, mimetype='application/xml')
