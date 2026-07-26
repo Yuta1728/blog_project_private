@@ -451,7 +451,7 @@ caption = request.form.get(f'{prefix}{i}', '').replace('\t', ' ').strip()
 
 `deploy_pythonanywhere.md` は `wsgi_pythonanywhere_sample.py` を追加したと記載しているが、リポジトリの実ファイル名は `wsgi_pythonanywhere.py`。
 
-**対処方法**：どちらかに統一する。
+**対処方法**：`wsgi_pythonanywhere.py`に統一する。
 
 ---
 
