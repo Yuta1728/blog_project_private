@@ -296,7 +296,7 @@ def parse_img_captions(file_count: int, prefix: str = 'img_caption_') -> list[st
     """
     captions = []
     for i in range(1, file_count + 1):
-        caption = request.form.get(f'{prefix}{i}', '').strip()
+        caption = request.form.get(f'{prefix}{i}', '').replace('\t', ' ').strip()
         captions.append(caption)
     return captions
 
@@ -850,7 +850,7 @@ def update(id):
         removed_imgs  = []   # 削除予定の画像ファイル名
 
         for i, img in enumerate(existing_imgs, start=1):
-            caption = request.form.get(f'img_caption_{i}', '').strip()
+            caption = request.form.get(f'img_caption_{i}', '').replace('\t', ' ').strip()
 
             # keep_img_N が '0' なら削除予定。
             # 送られてこない場合はデフォルト '1'（残す）扱い（安全側・後方互換）。

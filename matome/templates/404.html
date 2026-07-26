@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{# ============================================================
+   404 Not Found（improvement.md 第2版 項目 B-9）
+   ------------------------------------------------------------
+   カード枠・戻るボタンは既存の .info-page-* 系を流用（ダークモード対応済み）。
+   エラー固有の見た目は error.css が担当する。
+   ※ このアプリは「認証の存在隠蔽」で 404 を多用するため、
+     ここでは原因を詳しく書かず、素っ気なくならない程度の案内に留める。
+   ============================================================ #}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/top_sections.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/error.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="info-page-container">
+    <div class="info-page-body error-page-body">
+        <p class="error-code">404</p>
+        <h1 class="error-title">ページが見つかりません</h1>
+        <p class="error-message">
+            お探しのページは存在しないか、移動または削除された可能性があります。<br>
+            URL をご確認のうえ、トップページからお探しください。
+        </p>
+        <div class="info-page-footer error-actions">
+            <a href="{{ url_for('blog.index') }}" class="info-back-btn">← トップに戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

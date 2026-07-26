@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{# ============================================================
+   500 Internal Server Error（improvement.md 第2版 項目 B-9）
+   ------------------------------------------------------------
+   ハンドラ側（app.py）で db.session.rollback() 済みなので、
+   このテンプレートは DB を触らない範囲（base.html の描画のみ）で安全に表示される。
+   原因の詳細はサーバーログ（app.logger.exception）に記録される。
+   ============================================================ #}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/top_sections.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/error.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="info-page-container">
+    <div class="info-page-body error-page-body">
+        <p class="error-code">500</p>
+        <h1 class="error-title">サーバーでエラーが発生しました</h1>
+        <p class="error-message">
+            一時的な問題が発生した可能性があります。<br>
+            お手数ですが、しばらく時間をおいてから再度お試しください。
+        </p>
+        <div class="info-page-footer error-actions">
+            <a href="{{ url_for('blog.index') }}" class="info-back-btn">← トップに戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

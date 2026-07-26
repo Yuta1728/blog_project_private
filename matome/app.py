@@ -15,7 +15,9 @@
 #   [2] _is_production()      : 本番環境かどうかの判定ヘルパー
 #   [3] _configure_logging()  : アプリケーションログの設定（improvement.md 第2版 項目 A-5）
 #   [3.5] _register_static_url_helper(): static_url の登録（improvement.md 第2版 項目 A-7）
-#   [4] _register_cli_commands(): 管理コマンドの登録（improvement.md 第2版 項目 B-3）
+#   [4] _register_cli_commands(): 管理コマンドの登録
+#        (4-1) rerender-posts        : 本文 HTML の再生成（項目 B-3）
+#        (4-2) clean-orphan-images   : 孤児画像ファイルの掃除（項目 B-6）
 #   [5] create_app()          : アプリ生成ファクトリ関数
 #        (5-1) 本番判定
 #        (5-2) ログ設定
@@ -29,26 +31,10 @@
 #        (5-9) CSRF 保護の適用
 #        (5-10) Flask-Login の詳細設定（unauthorized_handler / user_loader）
 #        (5-11) セキュリティヘッダーの付与
-#        (5-12) カスタムエラーハンドラー（413）
+#        (5-12) カスタムエラーハンドラー（404 / 500 / 413）（項目 B-9）
 #        (5-13) Blueprint の登録
 #        (5-14) 管理コマンドの登録
 #   [6] 直接実行時のエントリポイント（python app.py）
-#
-# 【処理フロー図】
-#
-#   python app.py 実行
-#        │
-#        ▼
-#   create_app() ──► Flask インスタンス生成
-#        │              │
-#        │              ├─ (5-1)〜(5-2) 本番判定・ログ設定（最優先で有効化）
-#        │              ├─ (5-3)〜(5-7) 各種設定（プロキシ・鍵・Cookie・DB）
-#        │              ├─ (5-8)〜(5-9) 拡張機能を app に紐付け
-#        │              ├─ (5-10)〜(5-12) 認証まわり・ヘッダー・エラー処理
-#        │              ├─ (5-13) Blueprint 登録（auth / blog / admin）
-#        │              └─ (5-14) CLI コマンド登録（rerender-posts）
-#        ▼
-#   app.run() ──► リクエスト待ち受け開始
 #
 # ======================================================================
 
@@ -61,8 +47,11 @@ import os
 import sys
 import logging
 import click                                       # CLI コマンドのオプション定義に使用
-from flask import Flask, flash, redirect, url_for, abort
+from urllib.parse import urlparse                  # 413 の遷移先判定（Open Redirect 対策）に使用
+from flask import (Flask, flash, redirect, url_for, abort,
+                   render_template, request)
 from flask.logging import default_handler          # Flask が既定で付ける StreamHandler
+from flask_login import current_user               # 413 の遷移先をログイン状態で分岐（項目 B-9）
 from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
 from werkzeug.middleware.proxy_fix import ProxyFix  # リバースプロキシ配下での HTTPS 判定補正
 from extensions import db, login_manager, migrate
@@ -252,35 +241,21 @@ def _register_static_url_helper(app: Flask) -> None:
 
 
 # ======================================================================
-# [4] 管理コマンドの登録（improvement.md 第2版 項目 B-3）
+# [4] 管理コマンドの登録
 # ======================================================================
 
 def _register_cli_commands(app: Flask) -> None:
     """
     `flask <コマンド名>` で実行できる管理コマンドを登録する。
 
-    【なぜ必要か】
-    記事本文の HTML は Post.body_html にキャッシュされており、
-    rendering.py を修正しただけでは既存記事に反映されない。
-    detail() 側の「バージョン不一致なら再生成」で自動的に追従はするが、
-    それはあくまで「その記事にアクセスがあったとき」なので、
-
-      ・記事数が多く、アクセスの少ない記事がいつまでも古いままになる
-      ・最初の 1 人だけ変換待ちが発生する（ウォームアップ）
-      ・そもそも本当に全記事が更新できるのか事前に確認したい
-
-    といった場面では、まとめて作り直せるコマンドがあると安心できる。
-
-    【使い方】
-        flask rerender-posts           … 未生成 or 旧バージョンの記事だけ再生成
-        flask rerender-posts --all     … バージョンに関係なく全記事を再生成
-        flask rerender-posts --dry-run … 対象件数を数えるだけで保存しない
-
-    ※ Flask の CLI はアプリを見つける必要があるため、実行前に
-      環境変数 FLASK_APP=app.py を設定するか、
-      プロジェクト直下（app.py のある場所）で実行すること。
+    登録するコマンド:
+      (4-1) rerender-posts       … 本文 HTML の再生成（項目 B-3）
+      (4-2) clean-orphan-images  … 孤児画像ファイルの掃除（項目 B-6）
     """
 
+    # ------------------------------------------------------------------
+    # (4-1) 本文 HTML の再生成（improvement.md 第2版 項目 B-3）
+    # ------------------------------------------------------------------
     @app.cli.command('rerender-posts')
     @click.option('--all', 'rerender_all', is_flag=True, default=False,
                   help='バージョンに関係なく全記事を再生成する。')
@@ -289,13 +264,9 @@ def _register_cli_commands(app: Flask) -> None:
     def rerender_posts(rerender_all: bool, dry_run: bool):
         """記事本文のキャッシュ HTML（body_html / toc_html）を再生成する。"""
 
-        # --------------------------------------------------------------
         # STEP 1. 全記事を取得して対象を絞り込む
-        # --------------------------------------------------------------
-        # 「render_version != RENDER_VERSION」を SQL で書くと、
-        # NULL との比較結果が NULL になり NULL 行が対象から漏れる。
-        # 記事数が数千件規模になるまでは全件走査で十分なので、
-        # 判定は Python 側で明示的に行う（NULL の扱いを間違えない）。
+        # 「render_version != RENDER_VERSION」を SQL で書くと NULL 行が漏れるため、
+        # 判定は Python 側で明示的に行う。
         posts = Post.query.order_by(Post.id).all()
 
         targets = [
@@ -319,9 +290,7 @@ def _register_cli_commands(app: Flask) -> None:
             click.echo('--dry-run のため保存は行いませんでした。')
             return
 
-        # --------------------------------------------------------------
         # STEP 2. 1 件ずつ再生成して render_version を更新
-        # --------------------------------------------------------------
         for p in targets:
             p.body_html, p.toc_html = render_post_body(
                 p.body, p.img_name, p.img_captions
@@ -330,9 +299,7 @@ def _register_cli_commands(app: Flask) -> None:
             # updated_at は「記事内容の更新日時」なので、
             # 表示上の HTML を作り直しただけのここでは触らない。
 
-        # --------------------------------------------------------------
         # STEP 3. まとめて commit
-        # --------------------------------------------------------------
         try:
             db.session.commit()
         except Exception:
@@ -343,6 +310,91 @@ def _register_cli_commands(app: Flask) -> None:
             )
 
         click.echo(f'{len(targets)} 件の記事を再生成しました。')
+
+    # ------------------------------------------------------------------
+    # (4-2) 孤児画像ファイルの掃除（improvement.md 第2版 項目 B-6）
+    # ------------------------------------------------------------------
+    @app.cli.command('clean-orphan-images')
+    @click.option('--delete', 'do_delete', is_flag=True, default=False,
+                  help='実際にファイルを削除する（付けないと一覧表示のみ）。')
+    def clean_orphan_images(do_delete: bool):
+        """
+        static/img/posts/ 内の「どの記事からも参照されていない」孤児画像を掃除する。
+
+        【なぜ必要か（項目 B-6）】
+        DB commit 失敗時の後片付けは実装済みだが、次のケースでは
+        参照されない画像ファイルがディスク上に残り続ける。
+          ・commit と _delete_images() の間でプロセスが異常終了した
+          ・過去のバグ・手動操作で img_name から参照が外れた
+          ・static/img/posts/ に手動配置した旧ファイル
+            （日本語名のスクリーンショット等）
+        無料枠の限られたディスクをじわじわ食い潰すため、
+        参照の無いファイルを列挙・削除できるようにする。
+
+        【対象ディレクトリについて】
+        本文画像（img_name）とサムネイル専用画像（thumbnail_img）は
+        いずれも static/img/posts/ に保存される。
+        一方、プリセットのデフォルトサムネイル（default_thumb）は
+        static/img/thbnails/ にあり、このコマンドの対象外
+        （＝誤って消さない）。
+
+        【安全設計】
+        既定は「一覧表示のみ（ドライラン）」。--delete を付けたときだけ
+        実際に削除する。削除に失敗しても 1 件ずつログに残して続行する。
+
+        使い方:
+            flask clean-orphan-images            … 孤児を一覧表示するだけ
+            flask clean-orphan-images --delete   … 実際に削除する
+        """
+        posts_dir = os.path.join(app.static_folder, 'img', 'posts')
+        if not os.path.isdir(posts_dir):
+            click.echo(f'ディレクトリが見つかりません: {posts_dir}')
+            return
+
+        # STEP 1. DB が参照しているファイル名を集める
+        #   img_name（カンマ区切り）と thumbnail_img の両方を対象にする。
+        #   with_entities で必要な 2 カラムだけを取得して軽量化する。
+        referenced: set[str] = set()
+        rows = Post.query.with_entities(Post.img_name, Post.thumbnail_img).all()
+        for img_name, thumbnail_img in rows:
+            if img_name:
+                referenced.update(x.strip() for x in img_name.split(',') if x.strip())
+            if thumbnail_img and thumbnail_img.strip():
+                referenced.add(thumbnail_img.strip())
+
+        # STEP 2. 実ファイルを走査して孤児を判定
+        orphans = []
+        for entry in os.listdir(posts_dir):
+            full = os.path.join(posts_dir, entry)
+            if not os.path.isfile(full):
+                continue          # サブディレクトリ等はスキップ
+            if entry not in referenced:
+                orphans.append(entry)
+
+        # STEP 3. 結果表示 / 削除
+        if not orphans:
+            click.echo(f'孤児画像はありません（DB 参照 {len(referenced)} 件）。')
+            return
+
+        click.echo(f'孤児画像: {len(orphans)} 件（DB 参照 {len(referenced)} 件）')
+        for f in orphans:
+            click.echo(f'  orphan: {f}')
+
+        if not do_delete:
+            click.echo('--delete を付けると実際に削除します。')
+            return
+
+        deleted = 0
+        for f in orphans:
+            try:
+                os.remove(os.path.join(posts_dir, f))
+                deleted += 1
+            except OSError:
+                app.logger.exception('孤児画像の削除に失敗しました (file=%s)', f)
+
+        click.echo(f'{deleted} / {len(orphans)} 件を削除しました。')
+        app.logger.info('孤児画像を掃除しました (deleted=%d, total=%d)',
+                        deleted, len(orphans))
 
 
 # ======================================================================
@@ -499,14 +551,60 @@ def create_app():
         return response
 
     # ------------------------------------------------------------------
-    # STEP 13. カスタムエラーハンドラー: 413 Request Entity Too Large
+    # STEP 13. カスタムエラーハンドラー（improvement.md 第2版 項目 B-9）
     # ------------------------------------------------------------------
+    # 【背景】
+    #   ・カスタムの 404 / 500 ページが無く、Flask 標準の素っ気ない画面が
+    #     出ていた。このアプリは「認証の存在隠蔽」で 404 を多用するため、
+    #     その 404 がデフォルト画面のままなのは体裁が悪い。
+    #   ・413（サイズ超過）ハンドラが常に admin.mypage へリダイレクトして
+    #     いたが、未ログイン状態では unauthorized_handler により 404 に
+    #     化けてしまっていた。
+    #
+    # 対応:
+    #   ・404 / 500 に専用テンプレートを用意して返す。
+    #   ・413 はログイン状態を見て遷移先を分岐する。
+
+    # (13-1) 404 Not Found
+    @app.errorhandler(404)
+    def page_not_found(error):
+        # 未ログインでの @login_required アクセス（unauthorized_handler → abort(404)）も
+        # ここに来る。存在隠蔽の意図を保ったまま、見た目だけ整える。
+        return render_template('404.html'), 404
+
+    # (13-2) 500 Internal Server Error
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        # 例外発生時はセッションが中途半端な状態のことがあるため、必ず戻す。
+        # （after this, テンプレート描画で DB を触っても安全にしておく）
+        db.session.rollback()
+        # errorhandler の中では例外情報がまだ有効なので、
+        # exception() でトレースバックまで記録できる。
+        app.logger.exception('500 Internal Server Error が発生しました。')
+        return render_template('500.html'), 500
+
+    # (13-3) 413 Request Entity Too Large
     @app.errorhandler(413)
     def request_entity_too_large(error):
         app.logger.warning('アップロードサイズ超過を検出しました (limit=%s bytes)',
                            app.config.get('MAX_CONTENT_LENGTH'))
         flash("アップロードされたファイルの合計サイズが30MBを超えています。", "danger")
-        return redirect(url_for('admin.mypage'))
+
+        # 【B-9】ログイン済みなら従来どおりマイページへ。
+        # 未ログインだと admin.mypage は login_required により 404 になるため、
+        # 直前ページ（同一オリジンのみ）かトップへ戻す。
+        if current_user.is_authenticated:
+            return redirect(url_for('admin.mypage'))
+
+        referrer = request.referrer
+        if referrer:
+            ref = urlparse(referrer)
+            req = urlparse(request.url)
+            same_origin = (ref.scheme == req.scheme and ref.netloc == req.netloc)
+            if same_origin:
+                return redirect(referrer)
+
+        return redirect(url_for('blog.index'))
 
     # ------------------------------------------------------------------
     # STEP 14. Blueprint の登録
@@ -516,7 +614,7 @@ def create_app():
     app.register_blueprint(admin_bp)  # /create, /<id>/update, /<id>/delete, /mypage 系
 
     # ------------------------------------------------------------------
-    # STEP 15. 【B-3】管理コマンドの登録（flask rerender-posts）
+    # STEP 15. 管理コマンドの登録（flask rerender-posts / clean-orphan-images）
     # ------------------------------------------------------------------
     _register_cli_commands(app)
 
