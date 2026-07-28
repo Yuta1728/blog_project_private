@@ -13,11 +13,11 @@
 # 【このファイルの構成（目次）】
 #   [1] import / Blueprint の読み込み
 #   [2] _is_production()      : 本番環境かどうかの判定ヘルパー
-#   [3] _configure_logging()  : アプリケーションログの設定（improvement.md 第2版 項目 A-5）
-#   [3.5] _register_static_url_helper(): static_url の登録（improvement.md 第2版 項目 A-7）
+#   [3] _configure_logging()  : アプリケーションログの設定
+#   [3.5] _register_static_url_helper(): static_url（キャッシュバスティング）の登録
 #   [4] _register_cli_commands(): 管理コマンドの登録
-#        (4-1) rerender-posts        : 本文 HTML の再生成（項目 B-3）
-#        (4-2) clean-orphan-images   : 孤児画像ファイルの掃除（項目 B-6）
+#        (4-1) rerender-posts        : 本文 HTML の再生成
+#        (4-2) clean-orphan-images   : 孤児画像ファイルの掃除
 #   [5] create_app()          : アプリ生成ファクトリ関数
 #        (5-1) 本番判定
 #        (5-2) ログ設定
@@ -26,12 +26,12 @@
 #        (5-5) セッション Cookie の属性設定
 #        (5-6) アップロードサイズ制限
 #        (5-7) データベース接続 URL の設定（PostgreSQL / SQLite 両対応）
-#        (5-7.5) static_url の登録（A-7）
+#        (5-7.5) static_url の登録
 #        (5-8) 拡張機能の初期化（db / migrate / login_manager）
 #        (5-9) CSRF 保護の適用
 #        (5-10) Flask-Login の詳細設定（unauthorized_handler / user_loader）
 #        (5-11) セキュリティヘッダーの付与
-#        (5-12) カスタムエラーハンドラー（404 / 500 / 413）（項目 B-9）
+#        (5-12) カスタムエラーハンドラー（404 / 500 / 413）
 #        (5-13) Blueprint の登録
 #        (5-14) 管理コマンドの登録
 #   [6] 直接実行時のエントリポイント（python app.py）
@@ -51,7 +51,7 @@ from urllib.parse import urlparse                  # 413 の遷移先判定（Op
 from flask import (Flask, flash, redirect, url_for, abort,
                    render_template, request)
 from flask.logging import default_handler          # Flask が既定で付ける StreamHandler
-from flask_login import current_user               # 413 の遷移先をログイン状態で分岐（項目 B-9）
+from flask_login import current_user               # 413 の遷移先をログイン状態で分岐
 from flask_wtf.csrf import CSRFProtect  # 全フォームへの CSRF トークン強制適用
 from werkzeug.middleware.proxy_fix import ProxyFix  # リバースプロキシ配下での HTTPS 判定補正
 from extensions import db, login_manager, migrate
@@ -72,6 +72,8 @@ from views.admin import admin_bp  # 管理者専用ページ（投稿・編集�
 def _is_production() -> bool:
     """
     現在の実行環境が「本番」かどうかを判定する。
+    create_app() の各設定と __main__ ブロックの両方から参照するため、
+    判定式をこの 1 か所に集約している。
 
     判定条件:
       - DATABASE_URL が設定されている（PaaS の PostgreSQL 等）か
@@ -82,11 +84,6 @@ def _is_production() -> bool:
       SQLite 運用（USE_SQLITE=1）では DATABASE_URL を設定しないため、
       必ず環境変数に FLASK_ENV=production を設定して本番扱いにすること。
       これにより SECRET_KEY の必須化・Secure Cookie が有効になる。
-
-    【関数化した理由】
-      従来この判定式は create_app() の中と __main__ ブロックの 2 か所に
-      同じ内容で書かれていた。条件を変更する際の修正漏れを防ぐため、
-      1 か所に集約する。
     """
     return (
         os.getenv("DATABASE_URL") is not None
@@ -95,36 +92,24 @@ def _is_production() -> bool:
 
 
 # ======================================================================
-# [3] ログ設定（improvement.md 第2版 項目 A-5）
+# [3] ログ設定
 # ======================================================================
 
 def _configure_logging(app: Flask, is_production: bool) -> None:
     """
     アプリケーションログ（app.logger）の出力先とフォーマットを設定する。
 
-    【背景】
-    従来このアプリはログ設定を一切持たず、各ビューの
-        except Exception:
-            db.session.rollback()
-            flash('エラーが発生しました', 'danger')
-    のような箇所で例外を握り潰していた。
-    ユーザーには「エラーが発生しました」と表示されるが、
-    サーバー側には原因（トレースバック）が一切残らないため、
-    「投稿できない」「画像が保存できない」といった障害が起きても
-    何が起きたのか調べる手段がなかった。
-
-    【この設定でやること】
-    標準エラー出力（stderr）へ、時刻・レベル・発生場所つきで出力する
-    ハンドラを 1 つ登録する。各ビューは
+    各ビューは
         current_app.logger.exception('...')
-    を呼ぶだけで、メッセージとトレースバックがここへ流れる。
+    を呼ぶだけで、メッセージとトレースバックがこの設定先へ流れる。
+    例外を捕捉して flash で通知する箇所でも、サーバー側に原因
+    （トレースバック）を残せるようにするのが目的。
 
-    【なぜ stderr なのか】
-    PythonAnywhere は WSGI プロセスの stderr をそのまま
-    「Error log」に書き出す。ローカル開発でもコンソールに出るため、
-    追加の設定なしに本番・開発の双方でログを確認できる。
-    ファイル出力が必要になった場合は、ここに
-    RotatingFileHandler を追加すればよい（呼び出し側は変更不要）。
+    【出力先を stderr にしている理由】
+    PythonAnywhere は WSGI プロセスの stderr をそのまま「Error log」に
+    書き出す。ローカル開発でもコンソールに出るため、追加設定なしに
+    本番・開発の双方でログを確認できる。ファイル出力が必要になった場合は、
+    ここに RotatingFileHandler を追加すればよい（呼び出し側は変更不要）。
 
     【ログレベル】
       環境変数 LOG_LEVEL があればそれを優先。
@@ -180,33 +165,24 @@ def _configure_logging(app: Flask, is_production: bool) -> None:
 
 
 # ======================================================================
-# [3.5] 静的ファイルのキャッシュバスティング（improvement.md 第2版 項目 A-7）
+# [3.5] 静的ファイルのキャッシュバスティング
 # ======================================================================
 
 def _register_static_url_helper(app: Flask) -> None:
     """
     テンプレートから使う static_url() を登録し、静的ファイルのキャッシュ期間を延ばす。
 
-    【背景・なぜ必要か（項目 A-7）】
-    各テンプレートは A-7 の対応で、静的ファイルの参照を
-        url_for('static', filename='css/index.css')
-    から
-        static_url('css/index.css')
-    へ書き換えている。しかし呼び出される側の static_url は Flask/Jinja の
-    標準関数ではなく「このアプリが自分で用意する関数」であり、
-    ここで @app.template_global として登録して初めてテンプレートから使える。
-
-    登録し忘れると、テンプレートは未定義の関数を呼ぶことになり
-        jinja2.exceptions.UndefinedError: 'static_url' is undefined
-    になる（＝テンプレートだけ A-7 化して app.py が未対応の状態で起きる）。
+    テンプレートは静的ファイルを static_url('css/index.css') の形で参照する。
+    static_url は Flask/Jinja の標準関数ではなくこのアプリ独自の関数のため、
+    ここで @app.template_global として登録して初めてテンプレートから使える
+    （登録しないと 'static_url' is undefined というエラーになる）。
 
     【static_url が何をするか】
     ファイルの更新時刻（mtime）を ?v=... というクエリとして URL に付ける。
         /static/css/index.css?v=1721500000
-    ファイルを更新すると mtime が変わり URL も変わるため、
-    ブラウザは「別ファイル」とみなして新しい内容を取得する。
-    これにより、静的ファイルを長期間キャッシュさせても
-    「更新したのに古い CSS が残る」問題が起きない
+    ファイルを更新すると mtime が変わって URL も変わるため、ブラウザは
+    「別ファイル」とみなして新しい内容を取得する。これにより静的ファイルを
+    長期間キャッシュさせても「更新したのに古い CSS が残る」問題が起きない
     （＝Ctrl+Shift+R での強制リロードが不要になる）。
 
     あわせて SEND_FILE_MAX_AGE_DEFAULT を 1 年に設定し、
@@ -249,13 +225,15 @@ def _register_cli_commands(app: Flask) -> None:
     `flask <コマンド名>` で実行できる管理コマンドを登録する。
 
     登録するコマンド:
-      (4-1) rerender-posts       … 本文 HTML の再生成（項目 B-3）
-      (4-2) clean-orphan-images  … 孤児画像ファイルの掃除（項目 B-6）
+      (4-1) rerender-posts       … 本文 HTML の再生成
+      (4-2) clean-orphan-images  … 孤児画像ファイルの掃除
     """
 
     # ------------------------------------------------------------------
-    # (4-1) 本文 HTML の再生成（improvement.md 第2版 項目 B-3）
+    # (4-1) 本文 HTML の再生成
     # ------------------------------------------------------------------
+    # rendering.py を変更して RENDER_VERSION を上げた後、既存記事の
+    # キャッシュ HTML（body_html / toc_html）をまとめて作り直すためのコマンド。
     @app.cli.command('rerender-posts')
     @click.option('--all', 'rerender_all', is_flag=True, default=False,
                   help='バージョンに関係なく全記事を再生成する。')
@@ -312,7 +290,7 @@ def _register_cli_commands(app: Flask) -> None:
         click.echo(f'{len(targets)} 件の記事を再生成しました。')
 
     # ------------------------------------------------------------------
-    # (4-2) 孤児画像ファイルの掃除（improvement.md 第2版 項目 B-6）
+    # (4-2) 孤児画像ファイルの掃除
     # ------------------------------------------------------------------
     @app.cli.command('clean-orphan-images')
     @click.option('--delete', 'do_delete', is_flag=True, default=False,
@@ -321,11 +299,11 @@ def _register_cli_commands(app: Flask) -> None:
         """
         static/img/posts/ 内の「どの記事からも参照されていない」孤児画像を掃除する。
 
-        【なぜ必要か（項目 B-6）】
+        【孤児画像が発生するケース】
         DB commit 失敗時の後片付けは実装済みだが、次のケースでは
         参照されない画像ファイルがディスク上に残り続ける。
           ・commit と _delete_images() の間でプロセスが異常終了した
-          ・過去のバグ・手動操作で img_name から参照が外れた
+          ・バグや手動操作で img_name から参照が外れた
           ・static/img/posts/ に手動配置した旧ファイル
             （日本語名のスクリーンショット等）
         無料枠の限られたディスクをじわじわ食い潰すため、
@@ -417,14 +395,14 @@ def create_app():
     is_production = _is_production()
 
     # ------------------------------------------------------------------
-    # STEP 3. 【A-5】ログ設定（できるだけ早い段階で有効化する）
+    # STEP 3. ログ設定（できるだけ早い段階で有効化する）
     # ------------------------------------------------------------------
     # 以降の初期化処理（DB 接続設定など）で問題が起きたときも
     # ログに残るよう、他の設定より先に済ませておく。
     _configure_logging(app, is_production)
 
     # ------------------------------------------------------------------
-    # STEP 4. 【セキュリティ改善①】ProxyFix の適用（リバースプロキシ対応）
+    # STEP 4. ProxyFix の適用（リバースプロキシ配下での HTTPS 判定）
     # ------------------------------------------------------------------
     # Render / Heroku / PythonAnywhere などでは、HTTPS はリバースプロキシで
     # 終端され、Flask アプリ自体には HTTP で届く。そのままだと
@@ -435,6 +413,8 @@ def create_app():
     # ------------------------------------------------------------------
     # STEP 5. SECRET_KEY の設定（セッション・CSRF トークンの署名に使用）
     # ------------------------------------------------------------------
+    # 本番では未設定を許さない（起動時に停止させる）。開発ではローカル用の
+    # 固定値でフォールバックする。
     secret_key = os.getenv("SECRET_KEY")
 
     if not secret_key:
@@ -446,8 +426,10 @@ def create_app():
     app.config['SECRET_KEY'] = secret_key
 
     # ------------------------------------------------------------------
-    # STEP 6. 【セキュリティ修正】セッション Cookie の属性を明示的に設定
+    # STEP 6. セッション Cookie の属性を明示的に設定（セキュリティ）
     # ------------------------------------------------------------------
+    # HttpOnly で JS からの読み取りを防ぎ、SameSite=Lax で外部サイトからの
+    # 送信を制限する。Secure は本番（HTTPS）でのみ有効にする。
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_SECURE']   = is_production
@@ -500,12 +482,12 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # ------------------------------------------------------------------
-    # STEP 8.5. 【A-7】静的ファイルのキャッシュバスティング（static_url 登録）
+    # STEP 8.5. 静的ファイルのキャッシュバスティング（static_url 登録）
     # ------------------------------------------------------------------
     # テンプレートが static_url('...') を呼べるようにする。
     # これを登録しないと base.html などで
     #   UndefinedError: 'static_url' is undefined
-    # になる（テンプレートだけ A-7 化して app.py が未対応の状態）。
+    # になる。
     _register_static_url_helper(app)
 
     # ------------------------------------------------------------------
@@ -534,15 +516,15 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        # 【非推奨 API の置き換え（improvement.md 項目 6）】
-        # 従来の User.query.get() は SQLAlchemy 2.0 で Legacy 扱いのため、
-        # 主キー取得の推奨 API である db.session.get() に変更する。
-        # 挙動（主キーで 1 件取得。無ければ None）は従来と同じ。
+        # セッションに保存された user_id から User を 1 件取得する（無ければ None）。
+        # db.session.get() は主キー取得の推奨 API。
         return db.session.get(User, int(user_id))
 
     # ------------------------------------------------------------------
-    # STEP 12. 【セキュリティ修正】セキュリティヘッダーの付与
+    # STEP 12. セキュリティヘッダーの付与
     # ------------------------------------------------------------------
+    # レスポンスごとに、MIME スニッフィング防止・クリックジャッキング防止・
+    # リファラ制限のヘッダーを付ける（既に付いていれば上書きしない）。
     @app.after_request
     def set_security_headers(response):
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
@@ -551,19 +533,12 @@ def create_app():
         return response
 
     # ------------------------------------------------------------------
-    # STEP 13. カスタムエラーハンドラー（improvement.md 第2版 項目 B-9）
+    # STEP 13. カスタムエラーハンドラー（404 / 500 / 413）
     # ------------------------------------------------------------------
-    # 【背景】
-    #   ・カスタムの 404 / 500 ページが無く、Flask 標準の素っ気ない画面が
-    #     出ていた。このアプリは「認証の存在隠蔽」で 404 を多用するため、
-    #     その 404 がデフォルト画面のままなのは体裁が悪い。
-    #   ・413（サイズ超過）ハンドラが常に admin.mypage へリダイレクトして
-    #     いたが、未ログイン状態では unauthorized_handler により 404 に
-    #     化けてしまっていた。
-    #
-    # 対応:
-    #   ・404 / 500 に専用テンプレートを用意して返す。
-    #   ・413 はログイン状態を見て遷移先を分岐する。
+    # 404 / 500 は専用テンプレートを返す。このアプリは「認証の存在隠蔽」で
+    # 404 を多用するため、その 404 も見た目を整えたページで返す。
+    # 413（アップロードのサイズ超過）は、ログイン状態を見て遷移先を分岐する
+    # （未ログインだと admin.mypage は login_required により 404 になるため）。
 
     # (13-1) 404 Not Found
     @app.errorhandler(404)
@@ -576,7 +551,7 @@ def create_app():
     @app.errorhandler(500)
     def internal_server_error(error):
         # 例外発生時はセッションが中途半端な状態のことがあるため、必ず戻す。
-        # （after this, テンプレート描画で DB を触っても安全にしておく）
+        # これ以降テンプレート描画で DB を触っても安全にしておく。
         db.session.rollback()
         # errorhandler の中では例外情報がまだ有効なので、
         # exception() でトレースバックまで記録できる。
@@ -590,7 +565,7 @@ def create_app():
                            app.config.get('MAX_CONTENT_LENGTH'))
         flash("アップロードされたファイルの合計サイズが30MBを超えています。", "danger")
 
-        # 【B-9】ログイン済みなら従来どおりマイページへ。
+        # ログイン済みならマイページへ戻す。
         # 未ログインだと admin.mypage は login_required により 404 になるため、
         # 直前ページ（同一オリジンのみ）かトップへ戻す。
         if current_user.is_authenticated:
@@ -635,7 +610,7 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
 
-    # 本番判定は _is_production() に一本化した（従来はここに同じ式を再掲していた）
+    # デバッグモードは「本番でない」かつ FLASK_DEBUG=1/true のときだけ有効にする。
     debug_mode = (
         not _is_production()
         and os.getenv("FLASK_DEBUG", "").lower() in ("1", "true")

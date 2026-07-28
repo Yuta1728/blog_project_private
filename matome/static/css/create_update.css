@@ -2,9 +2,10 @@
    static/css/create_update.css - Coastal Dawn v2
    【対象ページ】 create.html（新規投稿）／ update.html（記事編集）
    ============================================================
-   このファイルは投稿作成・編集フォーム専用のスタイルをまとめている。
-   機能・パーツ単位で見出しコメントを付け、どのUI要素の
-   デザインかが一目でわかるように整理している。
+   投稿作成・編集フォーム専用のスタイルをまとめたファイル。
+   フォーム本体・Markdown ツールバー・画像プレビュー・
+   地図/YouTube 挿入モーダルなど、投稿フォームの各パーツを
+   機能単位で見出しコメントを付けて整理している。
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -225,8 +226,7 @@ h1 {
 
 .preview-item img { width: 150px; height: 112px; object-fit: cover; display: block; }
 
-/* 【update.html】既存画像カード（新規プレビューよりひと回り大きい 200px 幅）
-   ※ （旧インライン style="width: 200px;" と同じ優先度関係を維持） */
+/* 【update.html】既存画像カード（新規プレビューよりひと回り大きい 200px 幅） */
 .preview-item.existing-img-item {
     width: 200px;
 }
@@ -314,7 +314,7 @@ h1 {
     display: block;
 }
 
-/* プレビュー画像本体（旧: style="width:100%; border-radius:6px;" から移設） */
+/* プレビュー画像本体 */
 #default-thumb-preview-img {
     width: 100%;
     border-radius: 6px;
@@ -546,8 +546,7 @@ h1 {
     justify-content: center;
 }
 
-/* YouTube挿入モーダルのプレビュー枠（サムネイル映えする黒背景）
-   （旧: style="background:#111;" から移設） */
+/* YouTube挿入モーダルのプレビュー枠（サムネイルが映える黒背景） */
 .map-preview-area--dark {
     background: #111;
 }
@@ -628,10 +627,9 @@ h1 {
     .post-form input[type="text"], .post-form select { font-size: 16px !important; padding: 12px !important; border-radius: 6px; margin-bottom: 16px; }
     .post-form textarea { font-size: 16px !important; line-height: 1.75 !important; padding: 14px !important; min-height: 320px !important; border-radius: 6px !important; margin-bottom: 16px !important; }
     .post-form input[type="submit"] { padding: 14px; font-size: 15px; border-radius: 8px; min-height: 48px; }
-    /* プレビューリスト・アップロードボタン行の間隔調整
-       （旧: .post-form div[style*="display: flex"] で「style 属性を持つ div」を
-         対象にしていたが、インラインスタイル廃止に伴い
-         移設後のID・クラスを直接指定する形に変更） */
+    /* プレビューリスト・アップロードボタン行の間隔調整（スマホ）
+       #preview-list（新規画像）/ #existing-img-list（既存画像）/
+       .img-upload-btn-row（ボタン行）をまとめて対象にする。 */
     #preview-list, #existing-img-list, .img-upload-btn-row { gap: 12px !important; justify-content: flex-start; }
     .preview-item { width: calc(50% - 6px); box-sizing: border-box; margin-bottom: 12px; }
     .preview-item img { width: 100%; height: 110px; }
