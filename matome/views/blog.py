@@ -11,8 +11,8 @@
 #     /howto       → このブログの使い方ページ
 #     /<id>/detail → 記事詳細ページ
 #     /genre       → ジャンル一覧ページ
-#     /robots.txt  → クローラ向け robots（improvement.md 項目 C-1）
-#     /sitemap.xml → 公開記事のサイトマップ（improvement.md 項目 C-1）
+#     /robots.txt  → クローラ向け robots
+#     /sitemap.xml → 公開記事のサイトマップ
 #
 # 【このファイルの構成（目次）】
 #   [1] index()              : トップページ（記事一覧・検索・絞り込み・統計）
@@ -23,57 +23,29 @@
 #   [6] genre_list()         : ジャンル一覧ページ
 #   [7] robots_txt() / sitemap_xml() : SEO 用の robots.txt / sitemap.xml
 #
-# 【本文レンダリングの方針変更（improvement.md 項目 5）】
-#   以前 detail() は本文（Markdown + [imgN]/[map:]/[youtube:] などの独自タグ）を
-#   アクセスのたびに変換していた。本文は投稿・編集時にしか変わらないため、
-#   変換ロジックは rendering.py の render_post_body() に切り出し、
-#     ・投稿時（views/admin.py の create）
-#     ・編集時（views/admin.py の update）
-#   に生成した結果を Post.body_html / Post.toc_html に保存する方式へ変更した。
-#   detail() は保存済み HTML をそのまま出力するだけになり、毎回の再変換が消える。
-#
-# 【キャッシュの無効化（improvement.md 第2版 項目 B-3）】
-#   上記のキャッシュには「捨てる手段」が無く、rendering.py を修正しても
-#   既存記事は古い HTML のまま表示され続けるという弱点があった。
-#   そこで rendering.RENDER_VERSION（レンダラのバージョン）を導入し、
-#   各記事は生成時のバージョンを Post.render_version に保持する。
-#   detail() は
-#       body_html が NULL、または render_version が現在値と不一致
-#   のときに再生成して保存するため、rendering.py 変更時は
-#   RENDER_VERSION を +1 するだけで既存記事も自動で更新される。
-#
-# 【N+1 の解消（improvement.md 第2版 項目 B-1）】
-#   detail.html は post.user.nickname を参照するが、従来の
-#   db.session.get(Post, id) は user を先読みしないため、
-#   記事表示のたびに user を取りに行くクエリが 1 本増えていた。
-#   joinedload(Post.user) で記事本体と同じ 1 クエリ（JOIN）にまとめる。
-#
-# 【統計・hero の取得条件の修正（improvement.md 第2版 項目 A-2）】
-#   従来 index() は「絞り込みが無ければ」統計 3 クエリ＋管理者取得 1 クエリを
-#   実行していたが、テンプレート（index.html）側は
-#   「絞り込みが無く、かつ 1 ページ目」のときしか統計・hero を描画しない。
-#   そのため 2 ページ目以降のトップページでは、画面に出ないデータのために
-#   毎回 4 本の追加クエリが走っていた。
-#
-#   本ファイルでは判定を show_top_sections という 1 つのフラグに集約し、
-#   「テンプレートが描画する条件」と「ビューがクエリを打つ条件」を
-#   完全に一致させている。
-#
-# 【真偽値リテラルの排除（improvement.md 第2版 項目 A-3）】
-#   SQLAlchemy 1.4 以降、Python の True / False をそのまま SQL 式として
-#   filter() へ渡すのは非推奨のため、sqlalchemy.true() を使う。
-#
-# 【例外時のログ出力（improvement.md 第2版 項目 A-5）】
-#   detail() の遅延バックフィルは失敗しても表示を続ける設計だが、
-#   従来は例外を完全に握り潰していたため、書き込みが失敗し続けていても
-#   誰も気づけなかった（毎回その場で再変換され、遅いままになる）。
-#   current_app.logger で記録を残すよう変更した。
-#
-# 【SEO 対応（improvement.md 項目 C-1）】
-#   SNS シェア時のタイトル・説明・画像（OGP）はテンプレート側で対応した。
-#   本ファイルでは、検索エンジン向けの robots.txt と sitemap.xml を
-#   [7] として追加する。sitemap には公開記事と主要な静的ページを列挙し、
-#   robots からその sitemap を指し示す。
+# 【設計上のポイント】
+#   ・本文 HTML のキャッシュ:
+#     記事本文（Markdown + [imgN]/[map:]/[youtube:] などの独自タグ）の
+#     HTML 変換は rendering.render_post_body() に集約している。投稿・編集時に
+#     生成した結果を Post.body_html / Post.toc_html へ保存しておき、
+#     detail() は保存済み HTML をそのまま出力する。これにより閲覧のたびの
+#     再変換が発生しない。
+#   ・キャッシュの無効化:
+#     各記事は生成時のレンダラのバージョンを Post.render_version に持つ。
+#     detail() は body_html が NULL か render_version が現在値と不一致のとき
+#     生成し直して保存する。rendering.RENDER_VERSION を +1 すれば、既存記事も
+#     次のアクセス時に自動で作り直される。
+#   ・N+1 の回避:
+#     detail() は joinedload(Post.user) / selectinload(Post.hashtags) で
+#     関連データをまとめて取得する。一覧系も selectinload でタグを先読みする。
+#   ・統計・hero の取得:
+#     絞り込みなしのトップ 1 ページ目のときだけ取得する（show_top_sections）。
+#     テンプレートの描画条件とそろえ、表示されないデータのためのクエリを避ける。
+#   ・SQL 条件:
+#     「常に真」を SQL 式で表すときは Python の True ではなく
+#     sqlalchemy.true() を使う。
+#   ・SEO:
+#     robots.txt / sitemap.xml を配信する（[7]）。OGP はテンプレート側で対応。
 #
 # ======================================================================
 
@@ -129,8 +101,8 @@ def index():
     selected_hashtag = request.args.get('hashtag')
 
     # ページ番号もここでまとめて取得する。
-    # 【A-2】「何ページ目か」は統計クエリを打つかどうかの判定材料でもあるため、
-    # 他のクエリパラメータと一緒に先頭で取得する形に整理している。
+    # 「何ページ目か」は統計クエリを打つか（＝1 ページ目か）の判定にも使うため、
+    # 他のクエリパラメータと一緒に先頭で取得している。
     page = request.args.get('page', 1, type=int)
 
     # 絞り込み条件が 1 つでも指定されているか（複数箇所で使うのでここで確定）
@@ -153,7 +125,7 @@ def index():
     # ------------------------------------------------------------------
     # (3-1) キーワード検索: タイトル または ハッシュタグ名の部分一致（大文字小文字無視）
     #
-    # 【インデックスについて（improvement.md 項目 7）】
+    # 【インデックスについて】
     # ここは Post.title.ilike('%word%') のように先頭 % を付けた部分一致のため、
     # 通常の B-Tree インデックスは効かず、そのままだと全表スキャンになる。
     # PostgreSQL では pg_trgm の GIN インデックス
@@ -165,7 +137,7 @@ def index():
     #
     # なお Post.hashtags.any(...) は中間テーブル post_hashtags を経由する
     # EXISTS サブクエリになる。この「タグ側から記事を引く」経路は
-    # ix_post_hashtags_hashtag_id（項目 A-1 で追加）が効く。
+    # ix_post_hashtags_hashtag_id が効く。
     if search_word:
         keyword = f'%{search_word.strip()}%'
         query = query.filter(
@@ -184,13 +156,10 @@ def index():
     # ------------------------------------------------------------------
     # STEP 4. 作成日時の降順（新しい記事が先頭）で取得
     # ------------------------------------------------------------------
-    # 【B-2】記事カードはハッシュタグバッジを表示するため、ここで
-    # selectinload によりタグを一括先読みして N+1 を防ぐ。
-    #
-    # なお models.py 側の lazy='selectin' は撤去し、
-    # 「どこで先読みするか」の指定はクエリ側（この options）に一本化した。
-    # 従来は両方に指定があり、どちらが効いているのか分かりにくかったうえ、
-    # タグを使わない取得（関連記事など）でも無駄な IN クエリが走っていた。
+    # 記事カードはハッシュタグバッジを表示するため、selectinload により
+    # タグを一括先読みして N+1 を防ぐ。
+    # 「どこで先読みするか」の指定はクエリ側（この options）に置いており、
+    # タグを使わない取得（関連記事など）では余計な IN クエリが走らない。
     pagination = (
         query.options(db.selectinload(Post.hashtags))
         .order_by(Post.created_at.desc())
@@ -201,11 +170,11 @@ def index():
     # ------------------------------------------------------------------
     # STEP 5. トップセクション（統計・hero・「最新の記事」見出し）の表示判定
     # ------------------------------------------------------------------
-    # 【A-2】条件は「絞り込みなし かつ 1 ページ目」。これは index.html が
+    # 条件は「絞り込みなし かつ 1 ページ目」。これは index.html が
     # stats.html / hero.html / 「📋 最新の記事」見出しを描画する条件と
-    # まったく同じもので、このフラグをテンプレートにも渡すことで
-    #   ・ビューが無駄なクエリを打たない
-    #   ・ビューとテンプレートの条件がずれない
+    # 同一で、このフラグをテンプレートにも渡すことで
+    #   ・ビューが表示されないデータのためのクエリを打たない
+    #   ・ビューとテンプレートの表示条件がずれない
     # の両方を担保する。
     #
     # ページ番号は request.args の生値ではなく pagination.page を使う。
@@ -218,7 +187,7 @@ def index():
     #         （タグ絞り込みバーの表示用）
     # ------------------------------------------------------------------
     # このクエリは Hashtag → post_hashtags → Post の JOIN であり、
-    # 「タグ側から記事を引く」代表例。ix_post_hashtags_hashtag_id（項目 A-1）が効く。
+    # 「タグ側から記事を引く」代表例。ix_post_hashtags_hashtag_id が効く。
     hashtags_in_genre = []
     if selected_genre:
         pub_filter = [] if current_user.is_authenticated else [Post.is_published == True]
@@ -244,10 +213,8 @@ def index():
     # ※ 検索エリアは絞り込みの有無やページ番号に関わらず常に表示されるため、
     #   このクエリは STEP 8 の統計とは異なり毎回実行する必要がある。
     #
-    # 【A-3】ログイン中は「公開状態で絞らない」＝ WHERE 句に何も足さない、
-    # という意味の条件になる。従来はここに Python の True をそのまま
-    # 渡していたが、SQLAlchemy 1.4 以降は非推奨のため、
-    # SQL 式としての「常に真」を表す sqlalchemy.true() を使う。
+    # ログイン中は「公開状態で絞らない」＝ WHERE 句に何も足さない、という条件。
+    # SQL 式で「常に真」を表すため、Python の True ではなく sqlalchemy.true() を使う。
     pub_condition = (Post.is_published == True) if not current_user.is_authenticated else true()
     used_genres_raw = (
         db.session.query(Post.genre)
@@ -269,8 +236,8 @@ def index():
     # ------------------------------------------------------------------
     # STEP 8. トップセクションを表示するときだけ統計情報・管理者情報を取得
     # ------------------------------------------------------------------
-    # 【A-2】show_top_sections（＝絞り込みなし かつ 1 ページ目）に条件を絞り、
-    # 2 ページ目以降のトップページから 4 本のクエリを丸ごと削減している。
+    # show_top_sections（＝絞り込みなし かつ 1 ページ目）のときだけ実行し、
+    # 2 ページ目以降や絞り込み時には統計 3 クエリ＋管理者取得 1 クエリを打たない。
     stats      = None
     admin_user = None
     if show_top_sections:
@@ -322,10 +289,9 @@ def index():
         genre_list_all    = genre_list_all,   # インページ検索エリア用
         stats             = stats,
         admin_user        = admin_user,
-        # 【A-2】統計・hero・「最新の記事」見出しの表示可否。
-        # ビューがクエリを打った条件そのものを渡すことで、
-        # 「クエリは打っていないのにテンプレートが描画しようとする」
-        # というずれを構造的に防ぐ。
+        # 統計・hero・「最新の記事」見出しの表示可否。
+        # ビューがクエリを打った条件そのものを渡し、テンプレートの描画条件と
+        # 一致させることで「クエリは打っていないのに描画しようとする」ずれを防ぐ。
         show_top_sections = show_top_sections,
     )
 
@@ -378,13 +344,12 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
     前の STEP で取得済みの記事は次の STEP 以降の候補から除外する（重複排除）。
 
     STEP 1 / STEP 2 の Post.hashtags.any(...) は中間テーブルを経由する
-    EXISTS サブクエリであり、ix_post_hashtags_hashtag_id（項目 A-1）が効く。
+    EXISTS サブクエリであり、ix_post_hashtags_hashtag_id が効く。
 
-    【B-2 の副次効果】
     関連記事カード（detail.html の .related-card）はタイトル・日付・
-    サムネイルしか表示せず、ハッシュタグを使わない。
-    models.py の lazy='selectin' を外したことで、ここで取得した記事に対する
-    「タグ先読みの IN クエリ」が発行されなくなった（最大 4 本の削減）。
+    サムネイルしか表示せず、ハッシュタグを使わない。そのため、ここで取得した
+    記事に対するタグ先読みのクエリは発行されない（一覧系のように
+    selectinload を指定していないため）。
 
     @param post:       現在閲覧中の Post オブジェクト
     @param pub_filter: 公開状態の絞り込み条件（SQLAlchemy フィルター式）
@@ -402,10 +367,9 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
     # ------------------------------------------------------------------
     # STEP 1: 同じジャンル × 同じタグあり
     # ------------------------------------------------------------------
-    # 【A-3】「タグが 1 つも無ければ、そもそも “同じタグを持つ記事” は存在しない」
-    # ため、tag_names のチェックを実行条件（if）側に置く。
-    # これにより非推奨の真偽値リテラルを filter() に渡さずに済み、
-    # 結果が必ず空と分かっているクエリ 1 本も省ける。
+    # タグが 1 つも無ければ「同じタグを持つ記事」は存在しないため、
+    # tag_names のチェックを実行条件（if）側に置く。
+    # これにより、結果が必ず空と分かっているクエリを発行せずに済む。
     if remaining > 0 and tag_names:
         step1 = (
             Post.query
@@ -511,15 +475,10 @@ def detail(id):
     # ------------------------------------------------------------------
     # STEP 1. 記事の取得
     # ------------------------------------------------------------------
-    # 【B-1】detail.html は post.user.nickname を参照するため、
-    # 従来の db.session.get(Post, id) では user 取得のクエリが 1 本増えていた。
-    # joinedload(Post.user) を指定して記事本体と同じ 1 クエリ（LEFT JOIN）に
-    # まとめる。
-    #
+    # detail.html は post.user.nickname を参照するため、joinedload(Post.user) で
+    # 記事本体と同じ 1 クエリ（LEFT JOIN）にまとめて N+1 を避ける。
     # あわせて post.hashtags（メタ情報のタグバッジ・関連記事の判定に使う）も
-    # selectinload で先読みしておく。
-    # models.py 側の lazy='selectin' を外した（B-2）ため、
-    # ここで明示しないとタグ参照時に追加クエリが走る点に注意。
+    # selectinload で先読みしておく（先読みしないとタグ参照時に追加クエリが走る）。
     post = (
         Post.query
         .options(
@@ -545,12 +504,12 @@ def detail(id):
     # ------------------------------------------------------------------
     # STEP 3. 本文 HTML・目次 HTML の取得
     # ------------------------------------------------------------------
-    # 【B-3】キャッシュが「使える」条件は次の 2 つを同時に満たすこと。
+    # キャッシュが使える条件は次の 2 つを同時に満たすこと。
     #   (1) body_html が保存済み（非 NULL）である
-    #   (2) その HTML を生成したレンダラのバージョンが現在値と一致する
+    #   (2) その HTML を生成したレンダラのバージョンが現在の RENDER_VERSION と一致する
     #
-    # (2) を加えたことで、rendering.py を修正して RENDER_VERSION を上げれば、
-    # 既存記事も次のアクセス時に自動で作り直される。
+    # rendering.py を更新して RENDER_VERSION を上げると (2) が崩れるため、
+    # 既存記事も次のアクセス時に作り直される。
     # render_version が NULL のレコード（この仕組みの導入前に作られた記事）は
     # 必ず不一致になるため、そのまま再生成の対象になる。
     is_cache_valid = (
@@ -567,18 +526,14 @@ def detail(id):
         )
         # 遅延バックフィル: 生成結果を保存して次回以降の再変換を無くす。
         # GET 中の書き込みだが、キャッシュのウォームアップとして許容する。
-        # 失敗しても「表示は続ける」方針は変えない（本文はすでに手元にある）。
+        # 失敗しても表示は続ける（本文はすでに手元にあるため）。
         #
-        # 【A-5】従来は例外を完全に握り潰していたため、
-        # 書き込みが失敗し続けていても誰も気づけなかった。
-        # 保存できないと毎回その場で再変換が走り、
-        # 「なぜか詳細ページだけ遅い」状態が延々と続いてしまう。
-        # ここでログを残しておけば、Error log を見るだけで
-        # 「バックフィルに失敗している」と分かる。
+        # 保存に失敗すると毎回その場で再変換が走り、「詳細ページだけ遅い」
+        # 状態になる。原因に気づけるよう、失敗はログに残す。
         try:
             post.body_html      = display_body
             post.toc_html       = toc_html
-            post.render_version = RENDER_VERSION   # 【B-3】生成に使ったバージョンを記録
+            post.render_version = RENDER_VERSION   # 生成に使ったバージョンを記録
             db.session.commit()
             current_app.logger.info(
                 '本文 HTML を再生成して保存しました (post_id=%s, render_version=%s)',
@@ -652,9 +607,8 @@ def genre_list():
     # 未ログイン: 公開記事のジャンルのみ
     # ログイン中: 公開記事 + 自分の記事のジャンル
     #
-    # ※ こちらは index() STEP 7 と違い、ログイン時も
-    #   「公開記事 OR 自分の記事」という SQL 式になるため、
-    #   真偽値リテラルは登場しない（A-3 の対象外）。
+    # ※ index() STEP 7 と違い、ログイン時も「公開記事 OR 自分の記事」という
+    #   SQL 式になるため、「常に真」の条件は登場しない。
     if current_user.is_authenticated:
         pub_condition = (Post.is_published == True) | (Post.user_id == current_user.id)
     else:
@@ -685,13 +639,11 @@ def genre_list():
 
 
 # ======================================================================
-# [7] SEO: robots.txt / sitemap.xml（improvement.md 項目 C-1）
+# [7] SEO: robots.txt / sitemap.xml
 # ======================================================================
 #
 # 【役割】
-#   OGP（SNS シェア時のタイトル・説明・画像）はテンプレート側で対応した。
-#   ここでは検索エンジンのクローラ向けに、次の 2 つを配信する。
-#
+#   検索エンジンのクローラ向けに、次の 2 つを配信する。
 #     /robots.txt  … クロールを許可し、sitemap の場所を伝える
 #     /sitemap.xml … 公開記事と主要な静的ページの URL 一覧
 #
