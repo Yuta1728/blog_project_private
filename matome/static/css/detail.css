@@ -36,7 +36,7 @@ article {
    【detail.html】記事タイトル
    ------------------------------------------------------------ */
 h1 {
-    font-size: 25px;
+    font-size: 24px;
     font-weight: 700;
     color: #0c1f35;
     margin: 0 0 20px;
@@ -202,13 +202,28 @@ h1 {
     display: block !important;
 }
 
+/* ------------------------------------------------------------
+   目次サブ項目（H3 相当）1 行分
+   ------------------------------------------------------------
+   【ぶら下げインデント対応（折り返しが「•」の下に入り込む問題の修正）】
+   従来は display: block とし、箇条書き記号「•」を ::before で行頭に
+   インライン挿入していた。この場合、目次テキストが 1 行に収まらず
+   折り返すと、2 行目がブロックの左端（＝ • の真下）に戻ってしまい、
+   「・の下に目次文が入り込む」見た目になっていた。
+
+   そこで項目自体を display: flex にして「記号」と「テキスト（<a>）」を
+   別々のフレックスアイテムとして横並びにする。テキスト側は自分の左端
+   （記号の右）を基準に折り返すため、2 行目以降も 1 行目のテキストに
+   きれいに揃う（＝ぶら下げインデント）。
+   align-items: baseline で記号と文字のベースラインを合わせている。
+   ------------------------------------------------------------ */
 .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
     font-size: 14px !important;
     font-weight: normal !important;
     padding: 4px 0 !important;
     border-bottom: none !important;
-    position: relative !important;
-    display: block !important;
+    display: flex !important;
+    align-items: baseline !important;
     color: #2a4a5e !important;
 }
 
@@ -217,6 +232,7 @@ h1 {
     color: #38bdf8 !important;
     margin-right: 6px !important;
     font-size: 13px !important;
+    flex: 0 0 auto !important;   /* 記号は縮まない固定項目にする */
 }
 
 .post-toc > ul > li:last-child, .post-toc .toc > ul > li:last-child, .detail-article-body .toc > ul > li:last-child {
@@ -502,7 +518,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .detail-article-body h3 { font-size: 16px; margin: 24px 0 0; padding-left: 8px; }
     .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
     .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 14px !important; padding: 10px 0 !important; }
-    .post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
+    .post-toc ul ul, .post-toc .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
     .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 13px !important; padding: 5px 0 !important; }
     .post-map-iframe { height: 260px; }
     .post-youtube-wrapper { border-radius: 6px; margin: 16px 0; }
