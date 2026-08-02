@@ -412,8 +412,34 @@ function rebuildImgBtns(count) {
 
 /* =========================================================
    箇条書きリスト挿入
+   =========================================================
+   【箇条書きマーカーに使う空白について（重要）】
+   マーカーは「● + 空白1つ」。ここで使う空白は通常の半角スペース
+   （U+0020）ではなく、ノーブレークスペース（U+00A0）を採用している。
+
+   理由:
+   通常の半角スペースを使うと、記事詳細ページ（detail.css の
+   .detail-article-body { white-space: normal }）でブラウザが
+   連続空白を 1 つに圧縮し、しかも非常に狭く描画するため、
+   「● と文字がくっついて見える（半角スペースが反映されない）」
+   状態になる。
+   ノーブレークスペース（U+00A0）はブラウザが圧縮せず、半角幅のまま
+   維持されるため、詳細ページでも ● のあとの空白が意図どおり表示される。
+   Markdown 変換でも U+00A0 はそのまま保持されることを確認済み。
+
+   BULLET_MARKER : 箇条書き記号（● 単体）
+   BULLET_NBSP   : ● の直後に置く半角幅の空白（折り返さない）
+   LIST_PREFIXES : mdInsertList / 自動継続で挿入する接頭辞
    ========================================================= */
-var LIST_PREFIXES = { bullet: '●  ' };
+var BULLET_MARKER = '●';
+var BULLET_NBSP   = '\u00A0';                       // ノーブレークスペース（U+00A0）
+var LIST_PREFIXES = { bullet: BULLET_MARKER + BULLET_NBSP };
+
+// 行頭が「箇条書き行」かどうかを判定する正規表現。
+// 「● + 空白（半角スペース / 全角スペース / タブ / ノーブレークスペース）」で始まる行を
+// 箇条書きとみなす。旧記事の「● + 半角スペース」も、新しい「● + U+00A0」も、
+// どちらもここでヒットするようにしておく（自動継続で両対応にするため）。
+var BULLET_LINE_RE = /^●[ \u3000\t\u00A0]*/;
 
 function mdInsertList(type) {
     var ta     = document.getElementById('bodyTextarea');
@@ -456,6 +482,78 @@ function _mdListWrapSelection(ta, prefix, start, end) {
     ta.value = val.substring(0, start) + converted + val.substring(end);
     ta.setSelectionRange(start, start + converted.length);
     ta.focus();
+}
+
+/* ---------------------------------------------------------
+   箇条書きの自動継続（Word の箇条書きのような挙動）
+   ---------------------------------------------------------
+   本文欄で「● 空白 …文字…」の行を書いて Enter を押すと、
+   自動で次の行に「● 空白」を挿入してそのまま入力を続けられる。
+   中身のない箇条書き行（「● 空白」だけの行）で Enter を押すと、
+   マーカーを消して箇条書きを終了する（Word と同じ挙動）。
+
+   【処理の流れ】
+     STEP 1. Enter 以外・IME 変換確定中・範囲選択中は何もしない
+             （通常の改行や日本語変換の確定を邪魔しないため）
+     STEP 2. カーソルがある「現在行」を取り出す
+     STEP 3. 現在行が箇条書き行（●＋空白で始まる）でなければ何もしない
+     STEP 4. 箇条書き記号の後ろに中身があるか判定して分岐
+             ・中身が空  → マーカーを削除して箇条書きを終了
+             ・中身あり  → 改行 + 「●＋空白」を自動挿入
+   --------------------------------------------------------- */
+function handleBulletContinuation(e) {
+    // STEP 1. Enter 以外は対象外。
+    //   e.isComposing / keyCode 229 は日本語 IME の変換確定中の Enter を表す。
+    //   このときはマーカー挿入せず、変換確定を優先する。
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) {
+        return;
+    }
+
+    var ta    = e.target;
+    var start = ta.selectionStart;
+    var end   = ta.selectionEnd;
+
+    // 範囲選択中は通常の改行（選択範囲の置換）に任せる
+    if (start !== end) return;
+
+    // STEP 2. カーソルがある現在行を取り出す
+    var val        = ta.value;
+    var lineStart  = val.lastIndexOf('\n', start - 1) + 1;
+    var lineEndIdx = val.indexOf('\n', start);
+    var lineEnd    = (lineEndIdx === -1) ? val.length : lineEndIdx;
+    var currentLine = val.substring(lineStart, lineEnd);
+
+    // STEP 3. 箇条書き行（●＋空白で始まる）でなければ通常の改行に任せる
+    var marker = currentLine.match(BULLET_LINE_RE);
+    if (!marker) return;
+
+    // ここからは自動継続を行うので、ブラウザ既定の改行は止める
+    e.preventDefault();
+
+    // マーカー（●＋空白）より後ろの「中身」
+    var contentAfterMarker = currentLine.slice(marker[0].length);
+
+    // 新しく挿入する接頭辞は、常に現行のマーカー（● + U+00A0）に統一する
+    var bulletPrefix = LIST_PREFIXES.bullet;
+
+    if (contentAfterMarker.trim() === '') {
+        // STEP 4-a. 中身が空の箇条書き行で Enter → 箇条書きを終了
+        //   現在行のマーカーを丸ごと削除し、空行にしてカーソルを行頭へ置く。
+        ta.value = val.substring(0, lineStart) + val.substring(lineEnd);
+        ta.setSelectionRange(lineStart, lineStart);
+    } else {
+        // STEP 4-b. 中身がある → 改行して次の「●＋空白」を自動挿入
+        //   カーソル位置で分割するため、カーソル以降の文字は
+        //   新しい箇条書き行に送られる（Word と同じ分割挙動）。
+        var insert = '\n' + bulletPrefix;
+        ta.value = val.substring(0, start) + insert + val.substring(end);
+        var newPos = start + insert.length;
+        ta.setSelectionRange(newPos, newPos);
+    }
+
+    // 値を書き換えたので input イベントを発火させ、
+    // 他のリスナー（もしあれば）へ変更を伝える。
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 
@@ -644,6 +742,16 @@ function insertYoutubeTag() {
             mdInsertImg(parseInt(btn.dataset.imgIndex, 10));
         }
     });
+})();
+
+/* 箇条書きの自動継続（本文欄で Enter を押したときの挙動を拡張）
+   「● 空白 …文字…」の行で Enter → 次行に「● 空白」を自動挿入。
+   空の箇条書き行で Enter → 箇条書きを終了。詳しくは handleBulletContinuation 参照。 */
+(function () {
+    var ta = document.getElementById('bodyTextarea');
+    if (ta) {
+        ta.addEventListener('keydown', handleBulletContinuation);
+    }
 })();
 
 /* Escape キーでモーダルを閉じる */
