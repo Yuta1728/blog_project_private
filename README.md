@@ -1,8 +1,8 @@
 # MITO Blog
 
-Flask 製の個人用ブログアプリケーションです。Markdown で記事を書き、画像・地図・YouTube 動画を埋め込みながら、ジャンルやハッシュタグで整理・検索できます。管理画面は秘密の URL とゲートキーで保護され、閲覧側はダークモード対応・レスポンシブ・SEO 対応済みです。
+Flask 製の個人ブログアプリケーションです。Markdown での記事投稿、画像・地図・YouTube の埋め込み、ハッシュタグ検索、ダークモードなどを備え、**単一管理者による運用**を前提に設計されています。学習用に作られており、認証まわりのセキュリティ設計・DB のインデックス設計・レンダリングのキャッシュなど、実運用を意識した工夫が随所に入っています。
 
-Application Factory パターン（`create_app()`）で構成されており、本番／ローカルの PostgreSQL と、無料ホスティング向けの SQLite の両方で動作します。
+Application Factory パターン（`create_app()`）を採用し、PostgreSQL（本番・ローカル）と SQLite（無料ホスティング）の両方で動作します。
 
 ---
 
@@ -11,92 +11,64 @@ Application Factory パターン（`create_app()`）で構成されており、�
 - [MITO Blog](#mito-blog)
   - [目次](#目次)
   - [主な機能](#主な機能)
-    - [閲覧者向けの機能](#閲覧者向けの機能)
-    - [管理者向けの機能](#管理者向けの機能)
+    - [閲覧者向け（誰でも利用可能）](#閲覧者向け誰でも利用可能)
+    - [管理者向け（ログイン必須）](#管理者向けログイン必須)
+  - [パフォーマンス最適化](#パフォーマンス最適化)
   - [技術スタック](#技術スタック)
   - [ディレクトリ構成](#ディレクトリ構成)
   - [セットアップ（ローカル開発）](#セットアップローカル開発)
-  - [環境変数](#環境変数)
-  - [データベースの初期化・マイグレーション](#データベースの初期化マイグレーション)
-  - [管理コマンド](#管理コマンド)
+    - [1. リポジトリの取得と依存インストール](#1-リポジトリの取得と依存インストール)
+    - [2. 環境変数（`.env`）の作成](#2-環境変数envの作成)
+    - [3. データベースの用意](#3-データベースの用意)
+    - [4. 起動](#4-起動)
+    - [5. 管理者ログイン](#5-管理者ログイン)
+  - [環境変数一覧](#環境変数一覧)
+  - [管理コマンド（Flask CLI）](#管理コマンドflask-cli)
   - [デプロイ](#デプロイ)
-  - [セキュリティ設計](#セキュリティ設計)
   - [ライセンス](#ライセンス)
 
 ---
 
 ## 主な機能
 
-機能を「誰でも使える閲覧者向け」と「ログインした管理者だけが使える管理者向け」に分けて整理します。
+### 閲覧者向け（誰でも利用可能）
 
-### 閲覧者向けの機能
+- **記事一覧（トップページ）**: 公開記事を新着順に表示。1 ページ 4 件のページ送り（ページ番号ナビ付き）。
+- **キーワード検索 × ジャンル絞り込み**: タイトル・ハッシュタグ名の部分一致検索と、ジャンル選択を組み合わせて絞り込み可能。
+- **ハッシュタグ絞り込み**: ジャンル選択中に、そのジャンル内で使われているタグでさらに細かく絞り込み。
+- **記事詳細ページ**: Markdown 本文を HTML 表示。以下の独自機能をサポート。
+  - `[toc]` による目次の自動生成
+  - `[imgN]` による本文中への画像埋め込み（キャプション対応）
+  - `[map:場所名]` による Google マップの埋め込み
+  - `[youtube:URL]` による YouTube 動画の埋め込み（サムネイルをクリックすると再生が始まる軽量な「ファサード」方式）
+- **関連記事の表示**: 記事末尾に最大 4 件。「同ジャンル×同タグ → 同タグ → 同ジャンル → 最新」の優先順位で自動選定。
+- **ジャンル一覧ページ**: カテゴリごとのアコーディオン表示。
+- **自己紹介・使い方ページ**: 静的な案内ページ。
+- **サイト統計**: 総投稿数・ハッシュタグ数・最終更新日をトップに表示。
+- **ダークモード**: ワンタップで切り替え、選択は次回訪問時も保持（localStorage）。
+- **レスポンシブ対応**: スマホではドロワーメニュー、スクロール連動でのヘッダー表示／非表示に対応。
+- **SEO 対応**: `robots.txt` / `sitemap.xml` の配信、記事ごとの OGP・Twitter Card メタタグ出力。
 
-ログイン不要で、サイトを訪れた誰もが利用できる機能です。
+### 管理者向け（ログイン必須）
 
-**記事の閲覧・回遊**
-- トップページの記事一覧（サーバーサイドのページ番号ページ送り、1 ページ 4 件）
-- 記事詳細ページ（本文・目次・投稿者・投稿／更新日時を表示）
-- 記事末尾の関連記事表示（同ジャンル × 同タグ → 同タグ → 同ジャンル → 最新、の優先順で最大 4 件）
-- 記事本文の目次（`[toc]`）を記事冒頭または任意の位置に自動生成
+- **記事の投稿・編集・削除**: Markdown 用のツールバー（見出し・太字・目次・リスト・地図・YouTube・画像挿入）付きエディタ。
+- **公開設定の切り替え**: 記事ごとに「全体公開／非公開」をトグル。非公開記事は管理者本人のみ閲覧可能。
+- **画像アップロード**: 複数枚の一括／個別追加に対応。アップロード時に自動で最適化（EXIF 回転補正・長辺 1200px までの縮小・再圧縮）。
+- **サムネイル管理**: 専用サムネイルのアップロード、またはプリセットからのデフォルトサムネイル選択。専用サムネイルは軽量な WebP に自動変換。
+- **ハッシュタグ入力**: スペース・カンマ区切りで複数入力（`#` は省略可）。入力中のリアルタイムプレビュー付き。使われなくなったタグは自動で掃除。
+- **マイページ**: 自分の投稿一覧（ページ送り付き）、総投稿数、使用ジャンル一覧の確認、ニックネーム変更。
+- **ジャンルの新規作成**: 投稿・編集フォームから独自ジャンルを追加可能。
 
-**検索・絞り込み**
-- キーワード検索（記事タイトル・ハッシュタグ名の部分一致）
-- ジャンルによる絞り込み
-- ハッシュタグによる絞り込み（ジャンル選択中は、そのジャンル内のタグが絞り込みバーに並ぶ）
-- キーワード × ジャンルの組み合わせ検索
-- ジャンル一覧ページ（カテゴリごとのアコーディオン表示）
+---
 
-**記事内の埋め込みコンテンツ**
-- 記事本文中の画像表示（キャプション付き）
-- Google マップの埋め込み表示
-- YouTube 動画の埋め込み（初期はサムネイル表示、クリックで再生が始まる軽量なファサード方式）
+## パフォーマンス最適化
 
-**表示・使い勝手**
-- ダークモード切り替え（選択は次回訪問時も維持）
-- スマートフォン対応のレスポンシブレイアウト（ハンバーガーメニュー／ドロワーナビ）
-- スクロール連動で開閉するヘッダー
-- サイト統計の表示（総投稿数・ハッシュタグ数・最終更新日）
-- 自己紹介ページ・使い方ページ
-
-**SEO・シェア**
-- ページごとの `<title>`／`description`／OGP・Twitter Card（SNS シェア時にタイトル・説明・画像が出る）
-- `robots.txt` と `sitemap.xml`（公開記事と主要ページを自動列挙）
-
-### 管理者向けの機能
-
-秘密の URL からログインした管理者だけが利用できる機能です。
-
-**記事の作成・編集・削除**
-- Markdown による記事作成・編集
-- 記事の削除
-- 公開／非公開の切り替え（非公開記事は管理者本人のみ閲覧可能）
-- ジャンルの選択、およびその場での新規ジャンル作成
-
-**Markdown 編集ツールバー**
-- H2／H3 見出し、太字、箇条書きリストのワンタッチ挿入
-- 目次マーカー `[toc]` の挿入
-- 地図挿入モーダル（場所名を入力するとプレビューを表示して挿入）
-- YouTube 挿入モーダル（URL／動画 ID を入力するとサムネイルをプレビュー）
-- 挿入済み画像に対応した `[imgN]` ボタンの動的生成
-- スマートフォンではツールバーをキーボード直上に固定するモバイル最適化
-
-**画像管理**
-- 本文画像の複数アップロード（一括選択・1 枚ずつ追加）と、画像ごとのキャプション入力
-- アップロード画像は自動で最適化（EXIF の回転補正・長辺の縮小・再圧縮）
-- サムネイル専用画像のアップロード（本文画像とは独立、WebP に自動変換）
-- プリセットのデフォルトサムネイル（趣味・旅行・スポーツなど）からの選択
-- 編集時の既存画像の個別削除・キャプション編集
-
-サムネイルの表示優先順位は「専用サムネイル → デフォルトサムネイル → システム共通のデフォルト画像」です。
-
-**ハッシュタグ**
-- スペース・カンマ区切りでのハッシュタグ入力（`#` は省略可）と入力中のリアルタイムプレビュー
-- どの記事からも使われなくなったタグの自動削除
-
-**マイページ**
-- 自分の投稿一覧（ページ送り付き）と総投稿数の確認
-- ニックネームの変更
-- 自分が作成・使用したジャンルの一覧
+- **本文 HTML のキャッシュ**: 記事本文の Markdown 変換結果を `body_html` / `toc_html` に保存し、閲覧のたびの再変換を回避。レンダラのバージョン（`RENDER_VERSION`）による一括再生成の仕組み付き。
+- **DB インデックス**: 一覧・検索・詳細の主要クエリに合わせた単体・複合インデックスを整備。PostgreSQL では `pg_trgm` の GIN インデックスで部分一致検索を高速化。
+- **N+1 の回避**: `joinedload` / `selectinload` による関連データの先読み。
+- **静的ファイルのキャッシュバスティング**: `static_url()` が更新時刻（mtime）をクエリに付与し、長期キャッシュと即時反映を両立。
+- **画像の遅延読み込み**: `loading="lazy"` の付与と、レイアウトシフト（CLS）防止のための幅・高さ指定。
+- **重いライブラリの遅延 import**: Pillow などをリクエスト時にのみ読み込み、起動時間とベースメモリを節約。
 
 ---
 
@@ -105,15 +77,14 @@ Application Factory パターン（`create_app()`）で構成されており、�
 | 分類 | 使用技術 |
 | --- | --- |
 | 言語 | Python 3.10 |
-| フレームワーク | Flask 3（Application Factory パターン） |
-| ORM | SQLAlchemy 2 / Flask-SQLAlchemy |
+| フレームワーク | Flask 3.x（Application Factory パターン） |
+| ORM / DB | SQLAlchemy 2.0 / PostgreSQL・SQLite |
 | マイグレーション | Flask-Migrate（Alembic） |
 | 認証 | Flask-Login |
-| フォーム保護 | Flask-WTF（CSRF） |
-| データベース | PostgreSQL（本番・ローカル）／ SQLite（無料ホスティング） |
-| 画像処理 | Pillow |
-| Markdown | Markdown（toc / nl2br 拡張） |
-| フロントエンド | 素の HTML / CSS / JavaScript（フレームワーク不使用） |
+| CSRF | Flask-WTF |
+| 画像処理 | Pillow / filetype |
+| 本文変換 | Markdown |
+| フロントエンド | Jinja2 テンプレート・素の CSS / JavaScript |
 
 ---
 
@@ -121,173 +92,149 @@ Application Factory パターン（`create_app()`）で構成されており、�
 
 ```
 .
-├── app.py                  アプリ生成の起点（create_app）・ログ設定・CLI・エラーハンドラ
-├── config.py               .env の読み込みと設定値の提供
-├── constants.py            ジャンル定義（唯一の情報源）
-├── extensions.py           db / login_manager / migrate インスタンスの置き場
-├── models.py               テーブル定義（User / Post / Hashtag / 中間テーブル）
-├── rendering.py            本文 Markdown + 独自タグ → HTML 変換の共通モジュール
-├── init_db.py              マイグレーション不要の DB 初期化スクリプト（SQLite 向け）
-├── views/
-│   ├── auth.py             ログイン・ログアウト（秘密 URL・ゲートキー・ロックアウト）
-│   ├── blog.py             公開ページ（一覧・検索・詳細・ジャンル・SEO）
-│   └── admin.py            管理ページ（投稿・編集・削除・マイページ・画像処理）
-├── templates/              Jinja2 テンプレート（base / 各ページ / 共通マクロ・モーダル）
-├── static/
-│   ├── css/                ページ別 CSS・ダークモード CSS
-│   ├── js/                 base.js / editor.js / mobile-editor.js
-│   ├── img/                投稿画像（posts/）・デフォルトサムネイル（thbnails/）
-│   └── favicon/
-├── migrations/             Alembic マイグレーション
-├── docker-compose.yml      ローカル開発用 PostgreSQL
-├── requirements.txt                  依存パッケージ（PostgreSQL 含む）
-└── requirements-pythonanywhere.txt   依存パッケージ（SQLite 運用・psycopg 除外）
+├── app.py               # エントリーポイント（create_app・ログ・CLI・エラーハンドラ）
+├── config.py            # .env の読み込み・設定値の提供
+├── constants.py         # ジャンル定義（唯一の情報源）
+├── extensions.py        # db / login_manager / migrate インスタンス
+├── models.py            # User / Post / Hashtag のテーブル定義
+├── rendering.py         # 本文（Markdown + 独自タグ）→ HTML 変換
+├── init_db.py           # SQLite 向けのDB初期化スクリプト
+├── views/               # ルート（Blueprint）
+│   ├── auth.py          #   ログイン・ログアウト
+│   ├── blog.py          #   公開ページ（一覧・詳細・ジャンル・SEO）
+│   └── admin.py         #   管理者ページ（投稿・編集・削除・マイページ）
+├── services/            # ドメインロジック層
+│   ├── images.py        #   画像の検証・最適化・保存・削除
+│   ├── hashtags.py      #   ハッシュタグの解析・同期・掃除
+│   └── captions.py      #   画像キャプションの取得
+├── templates/           # Jinja2 テンプレート
+├── static/              # CSS / JS / 画像
+├── migrations/          # Alembic マイグレーション
+├── docker-compose.yml   # ローカル開発用 PostgreSQL
+└── requirements.txt     # 依存パッケージ
 ```
 
 ---
 
 ## セットアップ（ローカル開発）
 
-PostgreSQL を Docker で起動して開発する例です。
+### 1. リポジトリの取得と依存インストール
 
-1. リポジトリを取得し、仮想環境を用意して依存をインストールします。
+```bash
+git clone <このリポジトリのURL>
+cd <プロジェクトディレクトリ>
+python -m venv .venv
+source .venv/bin/activate      # Windows は .venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate    # Windows は .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+### 2. 環境変数（`.env`）の作成
 
-2. プロジェクト直下に `.env` を作成します（[環境変数](#環境変数)を参照）。
+プロジェクト直下に `.env` を作成します。
 
-3. ローカル用 PostgreSQL を起動します。
+```bash
+# 認証（必須）
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=ここにパスワード（平文またはハッシュ）
+ADMIN_LOGIN_PATH=secret-login-xxxxxxxx
+ADMIN_GATE_KEY=ランダムな長い文字列
 
-   ```bash
-   docker compose up -d
-   ```
+# セッション署名
+SECRET_KEY=別のランダムな長い文字列
 
-   `docker-compose.yml` はホストの `15432` 番ポートでコンテナの PostgreSQL を公開します。`app.py` は `DATABASE_URL` も `USE_SQLITE` も無い場合、`localhost:15432` の PostgreSQL に接続します。
+# ローカル PostgreSQL（docker-compose 利用時）
+POSTGRES_USER=bloguser
+POSTGRES_PASSWORD=blogpass
+POSTGRES_DB=blogdb
+```
 
-4. データベースを構築します（[データベースの初期化・マイグレーション](#データベースの初期化マイグレーション)を参照）。
-
-5. 開発サーバーを起動します。
-
-   ```bash
-   python app.py
-   ```
-
-   デバッグモードは、本番判定に該当せず、かつ `FLASK_DEBUG=1`（または `true`）のときのみ有効になります。
-
----
-
-## 環境変数
-
-`.env` に設定します。`config.py` が自身の場所を基準に `.env` を読み込むため、どこから起動しても確実に読み込まれます。
-
-| 変数名 | 必須 | 説明 |
-| --- | --- | --- |
-| `ADMIN_LOGIN_PATH` | ○ | ログインページの URL パス（推測されにくいランダム文字列）。未設定だと起動時にエラー |
-| `ADMIN_GATE_KEY` | ○（管理ログイン利用時） | ログイン画面を表示するための合言葉。未設定だとログイン画面は常に 404 |
-| `ADMIN_USERNAME` | ○ | 管理者ログインのユーザー名 |
-| `ADMIN_PASSWORD` | ○ | 管理者パスワード（平文・ハッシュ済みのどちらも可。`init_db.py` が適切に処理） |
-| `SECRET_KEY` | 本番で必須 | セッション・CSRF トークンの署名に使う秘密鍵。本番で未設定だと起動を中止 |
-| `FLASK_ENV` | 任意 | `production` を設定すると本番扱い（Secure Cookie 有効化・`SECRET_KEY` 必須化） |
-| `USE_SQLITE` | 任意 | `1` にすると `instance/blog.db` を SQLite として使用（無料ホスティング向け） |
-| `DATABASE_URL` | 任意 | 明示指定する接続 URL。設定されていれば最優先 |
-| `LOG_LEVEL` | 任意 | ログレベル。未設定時は本番 `INFO`／開発 `DEBUG` |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | 任意 | ローカルの PostgreSQL 接続情報（`docker-compose.yml` と共用） |
-
-**接続先の優先順位:** `DATABASE_URL` → `USE_SQLITE=1`（SQLite）→ ローカル PostgreSQL。
-
-ランダム文字列の生成例:
+ランダム文字列は次のコマンドで生成できます（`SECRET_KEY` と `ADMIN_GATE_KEY` には別々の値を使ってください）。
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
+### 3. データベースの用意
+
+**PostgreSQL（Docker）を使う場合:**
+
+```bash
+docker compose up -d          # localhost:15432 で PostgreSQL が起動
+flask db upgrade              # マイグレーションを適用
+```
+
+**SQLite で手軽に試す場合:**
+
+`.env` に `USE_SQLITE=1` を追加してから、
+
+```bash
+python init_db.py             # テーブル作成＋管理者ユーザー作成を一括実行
+```
+
+### 4. 起動
+
+```bash
+python app.py
+```
+
+ブラウザで `http://localhost:5000` を開きます。
+
+### 5. 管理者ログイン
+
+隠蔽されたログイン URL に、合言葉付きでアクセスします。
+
+```
+http://localhost:5000/<ADMIN_LOGIN_PATH>?key=<ADMIN_GATE_KEY>
+```
+
+合言葉が正しければ Cookie が発行され、`?key=` なしの URL にリダイレクトされます。以降は `ADMIN_USERNAME` / `ADMIN_PASSWORD` でログインできます。
+
 ---
 
-## データベースの初期化・マイグレーション
+## 環境変数一覧
 
-用途に応じて 2 通りの方法があります。
-
-**マイグレーション運用（PostgreSQL 推奨）**
-
-```bash
-flask db upgrade        # 既存のマイグレーションを適用
-```
-
-`models.py` を変更したときは、差分を検出して適用します。
-
-```bash
-flask db migrate -m "変更内容"
-flask db upgrade
-```
-
-**初期化スクリプト（SQLite・マイグレーション不要）**
-
-無料ホスティングなどでマイグレーションを使わない場合は、テーブル作成と管理者ユーザーの登録を一括で行います。
-
-```bash
-python init_db.py
-```
-
-このスクリプトは、テーブル作成後に Alembic の履歴を最新（head）へスタンプするため、後からマイグレーション運用へ移行しても履歴の食い違いが起きません。何度実行しても安全です。
+| キー | 必須 | 説明 |
+| --- | --- | --- |
+| `ADMIN_USERNAME` | ○ | 管理者ログインのユーザー名 |
+| `ADMIN_PASSWORD` | ○ | ログインパスワード（平文可。初期化時にハッシュ化） |
+| `ADMIN_LOGIN_PATH` | ○ | ログイン画面の URL パス（推測されにくい文字列） |
+| `ADMIN_GATE_KEY` | ○ | ログイン画面を表示するための合言葉 |
+| `SECRET_KEY` | 本番必須 | セッション・CSRF 署名用の秘密鍵（本番では未設定だと起動停止） |
+| `DATABASE_URL` | 任意 | DB 接続 URL（指定時は最優先） |
+| `USE_SQLITE` | 任意 | `1` で SQLite（`instance/blog.db`）を使用 |
+| `FLASK_ENV` | 任意 | `production` で本番モード（Secure Cookie 等が有効） |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | 任意 | ローカル PostgreSQL 接続情報 |
+| `LOG_LEVEL` | 任意 | ログ出力レベル（既定: 本番 INFO / 開発 DEBUG） |
+| `FLASK_DEBUG` | 任意 | `1` でデバッグモード（本番では無効） |
 
 ---
 
-## 管理コマンド
-
-`flask <コマンド名>` で実行できる運用コマンドです。
-
-**本文 HTML の再生成**
-
-記事本文は投稿・編集時に HTML へ変換してキャッシュしています。`rendering.py` を変更した際は、`RENDER_VERSION` を +1 したうえで既存記事を作り直せます（未指定でもアクセス時に自動再生成されます）。
+## 管理コマンド（Flask CLI）
 
 ```bash
-flask rerender-posts            # 古いバージョンの記事だけ再生成
-flask rerender-posts --all      # 全記事を強制的に再生成
-flask rerender-posts --dry-run  # 対象を表示するだけ（保存しない）
-```
+# 本文キャッシュ HTML の再生成（rendering.py 変更後に使用）
+flask rerender-posts           # 古いバージョンの記事だけ再生成
+flask rerender-posts --all     # 全記事を強制再生成
+flask rerender-posts --dry-run # 対象を表示するだけ（保存しない）
 
-**孤児画像の掃除**
+# どの記事からも参照されていない孤児画像ファイルの掃除
+flask clean-orphan-images           # 一覧表示のみ
+flask clean-orphan-images --delete  # 実際に削除
 
-どの記事からも参照されていない画像ファイルを一覧・削除します。
-
-```bash
-flask clean-orphan-images           # 孤児画像を一覧表示するだけ
-flask clean-orphan-images --delete  # 実際に削除する
+# マイグレーション
+flask db migrate -m "変更内容"   # モデル変更から差分を検出
+flask db upgrade                 # DB に適用
 ```
 
 ---
 
 ## デプロイ
 
-PythonAnywhere 無料枠（SQLite 運用、GitHub 経由）での公開手順は `deploy_pythonanywhere.md` に詳しくまとめています。要点は次のとおりです。
-
-- 依存は `requirements-pythonanywhere.txt`（PostgreSQL ドライバを除外）を使用
-- `.env` に `USE_SQLITE=1` と `FLASK_ENV=production` を設定
-- `python init_db.py` でテーブルと管理者ユーザーを作成
-- Web タブは Manual configuration（Python 3.10）で構成し、WSGI から `create_app()` を呼び出す（`wsgi_pythonanywhere.py` が貼り付け用サンプル）
-- コード更新は「PC で修正 → GitHub に push → サーバーで pull → Web タブで Reload」
-
-なお、リバースプロキシ配下でも HTTPS を正しく判定できるよう `ProxyFix` を適用し、静的ファイルには更新時刻ベースのキャッシュバスティング（`static_url`）を効かせています。
-
----
-
-## セキュリティ設計
-
-- **秘密の URL:** ログインページの URL は `ADMIN_LOGIN_PATH` で隠蔽
-- **ゲートキー方式:** 合言葉（`ADMIN_GATE_KEY`）の Cookie を持たない訪問者にはログイン画面の存在自体を 404 で隠す（ゲートキー未設定時は安全側に倒して常に 404）
-- **ブルートフォース対策:** ログインの連続失敗でセッションを一定時間ロックアウト
-- **CSRF 保護:** 全フォームに CSRF トークンを強制
-- **アップロード検証:** 拡張子 + 実バイトの MIME 判定による多層チェック、サイズ上限（30MB）
-- **セキュリティヘッダー:** `X-Content-Type-Options` / `X-Frame-Options` / `Referrer-Policy` を付与
-- **Cookie 属性:** `HttpOnly` / `SameSite=Lax` を設定し、本番では `Secure` を有効化
-- **エラー時の情報漏洩防止:** 未ログインでの管理ページアクセスはログイン画面へ誘導せず 404 を返す
+PythonAnywhere 無料枠（SQLite 運用）への GitHub 経由でのデプロイ手順は、`deploy_pythonanywhere.md` に詳しくまとめてあります。初回セットアップから公開後の更新フロー、トラブルシューティングまで記載しています。
 
 ---
 
 ## ライセンス
 
-個人利用・学習目的のプロジェクトです。
+学習・個人利用を目的としたプロジェクトです。
+
