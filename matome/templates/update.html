@@ -99,8 +99,7 @@
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
             <label for="hashtag_input">ハッシュタグ</label>
-            ※スペース・カンマ区切りで複数入力できます。「#」は省略しても OK<br>
-            　例：<code>#Flask Python ブログ開発</code>
+            ※スペース区切りで複数入力できます。「#」は省略しても OK
         </p>
         <div class="hashtag-input-wrapper">
             <span class="hashtag-prefix">#</span>
@@ -124,9 +123,8 @@
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
             <p class="img-edit-note">
-                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
-                ※<strong>「更新」ボタンを押すまで確定しません</strong>。<br>
-                ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
+                ※画像キャプションの編集。空欄のままは非表示になります。<br>
+                ※<strong>画像を削除すると残りの画像番号（[imgN]）が繰り上がります</strong>。
             </p>
             <div id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
@@ -157,10 +155,9 @@
 
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
-            <label>画像を変更する（本文中に載せる画像）</label>
+            <label>画像の変更（本文中に載せる画像）</label>
             <p class="img-change-note">
-                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。<br>
-                　「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
+                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。
             </p>
 
             <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
@@ -187,7 +184,7 @@
                  初期非表示（create_update.css の #preview-area）。JSが表示を切り替える -->
             <div id="preview-area" class="preview-area--spaced">
                 <p class="preview-area-title">
-                    📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
+                    📸 新規画像のプレビュー（更新後はこちらに差し替え）
                 </p>
                 <div id="preview-list"></div>
             </div>
@@ -200,9 +197,7 @@
                ============================================================ #}
             <p>
                 <label>サムネイル画像（任意）</label>
-                ※記事一覧などで表示されるサムネイルを個別にアップロードできます。<br>
-                　新しく選択すると現在のサムネイルは置き換えられます。<br>
-                　サムネイルがない場合は、下で選択したデフォルトサムネイルが使用されます。
+                ※新しく選択すると現在のサムネイルは置き換えられます。<br>
             </p>
 
             {# 現在のサムネイル（既存）— 存在するときのみ表示 #}
@@ -244,7 +239,7 @@
             </div>
 
             <p>
-                <label for="default_thumb_select">デフォルトサムネイル画像を選択（サムネイル画像がない場合）</label>
+                <label for="default_thumb_select">デフォルトサムネイル画像の選択</label>
                 <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                     <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
                     <option value="thumb_option1.jpg"  {% if post.default_thumb == 'thumb_option1.jpg'  %}selected{% endif %}>選択肢1：趣味</option>
