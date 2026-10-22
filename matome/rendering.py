@@ -2,22 +2,14 @@
 # rendering.py — 記事本文（Markdown + 独自タグ）→ HTML 変換の共通モジュール
 # ======================================================================
 #
-# 【役割・追加の背景】
-#   従来 views/blog.py の detail() は、記事本文（Markdown + 独自タグ）を
-#   「アクセスのたびに」markdown.convert() で変換し、さらに
-#   [imgN] / [map:] / [youtube:] の置換を毎回行っていた。
-#   本文は投稿・編集時にしか変化しないため、閲覧ごとに同じ変換を
-#   繰り返すのは無駄が大きい（improvement.md の項目 5）。
-#
-#   そこで「変換ロジック」をこのモジュールに切り出し、
-#     ・投稿時（views/admin.py の create）
-#     ・編集時（views/admin.py の update）
-#   にだけ render_post_body() を呼んで結果を Post.body_html / Post.toc_html に
-#   保存し、詳細表示（detail）は保存済み HTML をそのまま出力する。
+# 【役割】
+#   記事本文（Markdown + [imgN] / [map:] / [youtube:] などの独自タグ）を
+#   HTML に変換するモジュール。投稿・編集時に render_post_body() を呼び、
+#   結果を Post.body_html / Post.toc_html に保存する。詳細表示（detail）は
+#   保存済み HTML をそのまま出力するため、閲覧のたびの再変換は発生しない。
 #
 #   変換に必要な入力は body / img_name / img_captions のみで、
-#   リクエストやログイン状態に依存しないため、事前生成しても
-#   detail() の出力は従来とまったく同じになる。
+#   リクエストやログイン状態には依存しない。
 #
 # 【このファイルの構成（目次）】
 #   [0] RENDER_VERSION           : レンダラのバージョン（キャッシュ無効化用）
@@ -28,10 +20,6 @@
 #        (2-3) _replace_map()         : [map:] タグ → Google マップ iframe
 #        (2-4) _extract_youtube_id()  : YouTube URL から動画 ID を抽出
 #        (2-5) _replace_youtube()     : [youtube:] タグ → ファサード埋め込み
-#
-#   ※ (2-1)〜(2-5) は元々 views/blog.py に定義されていたものを、
-#     ロジックを変えずにそのまま移設したもの。blog.py はこのモジュールを
-#     import して利用する。
 # ======================================================================
 
 import re
@@ -41,37 +29,26 @@ from markupsafe import escape   # HTML 直組み立て時のエスケープに�
 
 
 # ======================================================================
-# [0] RENDER_VERSION — レンダラのバージョン（improvement.md 第2版 項目 B-3）
+# [0] RENDER_VERSION — レンダラのバージョン
 # ======================================================================
 #
-# 【この定数が必要な理由】
-# body_html / toc_html にレンダリング結果をキャッシュする仕組みは導入済みだが、
-# 従来は「キャッシュを捨てる（無効化する）手段」が無かった。
-# 再生成のきっかけが記事の編集しかなかったため、このファイルを修正しても
-#   ・地図の枠デザインを変えた
-#   ・YouTube 埋め込みを改修した
-#   ・画像に loading="lazy" を付けた
-# といった変更が既存記事に反映されず、全記事を手で開いて再保存する
-# 必要があった。
-#
-# 【使い方 — ここが運用上いちばん大事】
-#   このファイル（render_post_body が出力する HTML）を変更したら、
-#   必ず下の数値を +1 すること。
+# body_html / toc_html はキャッシュとして保存されるため、このファイルの
+# 出力 HTML を変更したら、必ず下の数値を +1 すること。
 #
 # 各記事は「生成に使ったバージョン」を Post.render_version に持っており、
 # views/blog.py の detail() が
 #     post.body_html is None or post.render_version != RENDER_VERSION
-# を判定する。不一致なら生成し直して保存するため、
-# 数値を上げるだけで既存記事も「次にアクセスされたとき」に自動更新される。
+# を判定する。不一致なら生成し直して保存するため、数値を上げるだけで
+# 既存記事も「次にアクセスされたとき」に自動更新される。
 #
-# アクセスを待たずに全記事をまとめて作り直したい場合は、
-# 管理コマンド（app.py に定義）を使う。
+# アクセスを待たずにまとめて作り直したい場合は管理コマンドを使う。
 #     flask rerender-posts            … 古いバージョンの記事だけ再生成
 #     flask rerender-posts --all      … 全記事を強制的に再生成
 #
-# 【変更履歴】
-#   1 : 初版（body_html / toc_html キャッシュ導入時の出力と同一）
-RENDER_VERSION = 1
+# 【バージョン履歴】
+#   1 : 初版
+#   2 : YouTube サムネイルを高解像度（maxresdefault）に変更
+RENDER_VERSION = 2
 
 
 # ======================================================================
@@ -90,13 +67,7 @@ def render_post_body(body: str, img_name: str | None = None,
                   本文中に [toc] マーカーがある場合は None
                   （その位置に目次が展開済みのため、冒頭には表示しない）。
 
-    【この関数の入力は body / img_name / img_captions のみ】
-    リクエストや current_user に依存しないため、投稿・編集時に一度だけ
-    呼び出して結果を保存しておけば、詳細表示のたびに再変換する必要がない。
-
-    【出力を変更したら RENDER_VERSION を +1 すること】
-    保存済みキャッシュを持つ既存記事は、バージョンが一致している限り
-    再生成されない（＝古い HTML のまま表示される）。
+    出力を変更したら RENDER_VERSION を +1 すること。
 
     【処理の流れ】
       STEP 1. 本文の連続空行を <br> に展開（_expand_blank_lines）
@@ -190,7 +161,7 @@ def render_post_body(body: str, img_name: str | None = None,
 
 
 # ======================================================================
-# [2] 内部ヘルパー関数群（views/blog.py から移設・ロジック不変）
+# [2] 内部ヘルパー関数群
 # ======================================================================
 
 # ----------------------------------------------------------------------
@@ -296,6 +267,9 @@ def _extract_youtube_id(raw: str) -> str | None:
     対応形式（順に判定し、最初にマッチしたものを返す）:
       通常 URL / 短縮 URL / ショート / 埋め込み URL / 動画 ID 単体
     どれにも該当しなければ None。
+
+    ※ static/js/editor.js の extractYoutubeId() と同じ判定ロジック。
+       片方を変更したらもう片方も合わせること。
     """
     raw = raw.strip()
 
@@ -333,6 +307,16 @@ def _replace_youtube(m: re.Match) -> str:
     クリック時に初めて iframe を生成する軽量な埋め込み方式
     （実際の iframe 生成は detail.html の ytPlay() が行う）。
 
+    【サムネイルの画質について】
+    YouTube のサムネイルには解像度の異なる複数のサイズがある。
+      maxresdefault.jpg : 1280x720（16:9・高画質。ただし動画によっては存在しない）
+      hqdefault.jpg     :  480x360（4:3。16:9 の動画は上下に黒帯が入る）
+    表示枠は 16:9 で幅いっぱいに拡大されるため、hqdefault.jpg だと
+    黒帯の切り取りと拡大でぼやけて見える。そこで最初に maxresdefault.jpg を
+    読み込み、存在しない場合（404、または 120x90 の代替画像が返る場合）は
+    detail.html の ytThumbFallback() が hqdefault.jpg に差し替える。
+    差し替え先は data-fallback 属性で渡す。
+
     動画 ID を認識できなかった場合のエラーメッセージ内のユーザー入力は
     escape() で無害化する。
     """
@@ -342,16 +326,21 @@ def _replace_youtube(m: re.Match) -> str:
     if not video_id:
         return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {escape(raw)}]</p>'
 
-    thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
-    embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
+    thumb_url    = f'https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg'  # 高画質（優先）
+    fallback_url = f'https://i.ytimg.com/vi/{video_id}/hqdefault.jpg'      # 代替（必ず存在する）
+    embed_url    = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
 
     return (
         f'<div class="post-youtube-wrapper" data-embed-url="{embed_url}">'
         f'  <div class="post-youtube-facade" onclick="ytPlay(this)">'
         f'    <img class="post-youtube-thumb"'
         f'         src="{thumb_url}"'
+        f'         data-fallback="{fallback_url}"'
+        f'         onerror="ytThumbFallback(this)"'
+        f'         onload="ytThumbFallback(this, true)"'
         f'         alt="YouTube動画のサムネイル"'
-        f'         loading="lazy">'
+        f'         loading="lazy"'
+        f'         decoding="async">'
         f'    <button class="post-youtube-play-btn" aria-label="動画を再生">'
         f'      <svg viewBox="0 0 68 48" width="68" height="48">'
         f'        <path class="yt-btn-bg" d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.8.3 34 .3 34 .3S12.2.3 7.5 1.7a8.5 8.5 0 0 0-6 6C.1 11.4 0 24 0 24s.1 12.6 1.5 16.3a8.5 8.5 0 0 0 6 6C12.2 47.7 34 47.7 34 47.7s21.8 0 26.5-1.4a8.5 8.5 0 0 0 6-6C67.9 36.6 68 24 68 24s-.1-12.6-1.5-16.3z"/>'

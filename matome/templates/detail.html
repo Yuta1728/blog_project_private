@@ -1,26 +1,19 @@
 {% extends "base.html" %}
 {% from '_macros.html' import post_thumbnail, thumbnail_url %}
 
-{# ============================================================
-   ページタイトル（improvement.md 項目 C-1）
-   記事タイトルを反映する。base.html の固定タイトルを上書きする。
-============================================================ #}
+{# ページタイトル: 記事タイトルを反映する。 #}
 {% block title %}{{ post.title }}｜MITO Blog{% endblock %}
 
 {# ============================================================
-   メタ情報・OGP（improvement.md 項目 C-1）
+   メタ情報・OGP
    ------------------------------------------------------------
    SNS シェア時にタイトル・説明・画像が出るよう、記事ごとの
    og:* / twitter:* を出力して base.html の既定メタを丸ごと差し替える。
 
-   - 説明文（description）は本文 HTML（display_body）からタグを除いた冒頭を使う。
-     striptags は「隣接する空白を 1 つにまとめる」ため、改行や <br> も
-     きれいに 1 行化される。truncate で 110 文字に丸める。
-     content="..." の中では Jinja が自動エスケープするため、本文中の
-     引用符や < > が属性を突き破ることはない。
+   - 説明文は本文 HTML（display_body）からタグを除いた冒頭 110 文字。
+     content="..." の中は Jinja が自動エスケープする。
    - og:image は thumbnail_url マクロで絶対 URL を取得する
      （OGP 画像は絶対 URL 必須のため external=True）。
-     サムネイル優先順位（専用→デフォルト→システム既定）はマクロ側に一元化。
 ============================================================ #}
 {% block meta %}
     {%- set meta_description = display_body | striptags | truncate(110, True, '…') -%}
@@ -38,10 +31,8 @@
     <meta name="twitter:image" content="{{ og_image }}">
 {% endblock %}
 
-{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
-   【A-7】url_for('static', ...) → static_url(...) に変更。
-   ※ 記事画像・サムネイル（img/posts/ 等）の参照は対象外
-     （UUID 名で不変のためバスティング不要。app.py の static_url 参照）。 #}
+{# ページ固有 CSS は <head> の extra_css ブロックで読み込む。
+   static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。 #}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
 {% endblock %}
@@ -73,8 +64,7 @@
             </div>
 
             <div class="post-user-info">
-                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ（項目 8）。
-                   CSS 上の表示サイズ（21x21）に合わせた値を指定する。 #}
+                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ #}
                 <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
                     alt="avatar" width="21" height="21">
                 <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
@@ -138,8 +128,7 @@
                     <li class="related-item">
                         <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
                             <div class="related-thumb">
-                                {# width/height を明示して読み込み時のレイアウトシフトを防ぐ（項目 8）。
-                                   関連記事サムネイルはデスクトップ基準で 120 x 85。 #}
+                                {# 関連記事サムネイルはデスクトップ基準で 120 x 85 #}
                                 {{ post_thumbnail(rel, width=120, height=85) }}
                             </div>
                             <div class="related-body">
@@ -186,6 +175,27 @@ function ytPlay(facadeEl) {
 
     wrapper.appendChild(iframe);
     facadeEl.style.display = 'none';
+}
+
+/* ============================================================
+   YouTube サムネイルの高画質 → 通常画質フォールバック
+
+   サムネイルは最初に高画質版（maxresdefault.jpg・1280x720）を読み込む。
+   ただし動画によっては高画質版が存在しない。その場合は次の 2 通りになる。
+     (1) 404 を返す                → onerror で検知
+     (2) 120x90 の小さな代替画像を返す → onload で画像の幅を見て検知
+   どちらの場合も、data-fallback に入っている通常画質版
+   （hqdefault.jpg・必ず存在する）へ差し替える。
+
+   @param img    : サムネイルの <img> 要素
+   @param isLoad : onload から呼ばれたとき true（画像サイズの検査を行う）
+   ============================================================ */
+function ytThumbFallback(img, isLoad) {
+    const fallback = img.dataset.fallback;
+    if (!fallback) return;                           // 差し替え済み（または不要）
+    if (isLoad && img.naturalWidth >= 320) return;   // 高画質版が正常に読めた
+    img.removeAttribute('data-fallback');            // 差し替えは 1 回だけ（無限ループ防止）
+    img.src = fallback;
 }
 </script>
 
