@@ -137,7 +137,6 @@ extensions.py
 improvement.md
 init_db.py
 models.py
-pronpt.md
 rendering.py
 requirements-pythonanywhere.txt
 requirements.txt
@@ -7670,7 +7669,7 @@ document.addEventListener('keydown', function(e) {
             <p>
                 はじめまして!「MITO Blog」管理者の MITO です。<br>
                 普段は旅行や野球観戦、ゲーム、映画・作品鑑賞など、多趣味に楽しんでいます。<br>
-                最近は特にAIを活用したWebアプリ開発に挑戦中です。
+                最近はAIを活用したWebアプリ開発に挑戦中です。
             </p>
         </section>
 
@@ -7678,7 +7677,7 @@ document.addEventListener('keydown', function(e) {
             <h2 class="info-section-title">💡 興味・関心</h2>
             <p>
                 今後、大学の研究で必要になるデータ分析やWebアプリ開発に関連する知識や技術習得のため、
-                AIの活用法をはじめ、フロントエンドデザイン、セキュリティの強化、機械学習について学習中です。
+                AIの活用法をはじめ、フロントエンドデザイン、セキュリティ設計、機械学習について勉強中です。
             </p>
         </section>
 
@@ -7998,8 +7997,7 @@ document.addEventListener('keydown', function(e) {
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
             <label for="hashtag_input">ハッシュタグ</label>
-            ※スペース・カンマ区切りで複数入力できます。「#」は省略しても OK<br>
-            　例：<code>#Flask Python ブログ開発</code>
+            ※スペース区切りで複数入力できます。「#」は省略しても OK
         </p>
         <div class="hashtag-input-wrapper">
             <span class="hashtag-prefix">#</span>
@@ -8011,8 +8009,8 @@ document.addEventListener('keydown', function(e) {
                    autocomplete="off"
                    oninput="renderHashtagPreview(this.value)">
         </div>
-        <div id="hashtag-preview" class="hashtag-preview-area"></div>
 
+        <div id="hashtag-preview" class="hashtag-preview-area"></div>
         <!-- ===== 画像アップロード（本文中に載せる画像） ===== -->
         <p>
             <label>画像（本文中に [imgN] で挿入されます）</label>
@@ -8053,8 +8051,7 @@ document.addEventListener('keydown', function(e) {
            ============================================================ #}
         <p>
             <label>サムネイル画像（任意）</label>
-            ※記事一覧などで表示されるサムネイルを個別にアップロードできます。<br>
-            　アップロードしない場合は、下で選択したデフォルトサムネイルが使用されます。
+            ※アップロードしない場合、下で選択したデフォルトサムネイルが使用されます。
         </p>
 
         <!-- サムネイル選択用の隠し input（ボタンから .click() で起動） -->
@@ -8078,7 +8075,7 @@ document.addEventListener('keydown', function(e) {
         </div>
 
         <p>
-            <label for="default_thumb_select">デフォルトサムネイル画像を選択（サムネイル画像をアップロードしない場合）</label>
+            <label for="default_thumb_select">デフォルトサムネイル画像の選択</label>
             <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                 <option value="none" selected>-- 選択なし（システム共通のデフォルトになります） --</option>
                 <option value="thumb_option1.jpg">選択肢1：趣味（thumb_option1.jpg）</option>
@@ -8131,26 +8128,19 @@ document.addEventListener('keydown', function(e) {
 {% extends "base.html" %}
 {% from '_macros.html' import post_thumbnail, thumbnail_url %}
 
-{# ============================================================
-   ページタイトル（improvement.md 項目 C-1）
-   記事タイトルを反映する。base.html の固定タイトルを上書きする。
-============================================================ #}
+{# ページタイトル: 記事タイトルを反映する。 #}
 {% block title %}{{ post.title }}｜MITO Blog{% endblock %}
 
 {# ============================================================
-   メタ情報・OGP（improvement.md 項目 C-1）
+   メタ情報・OGP
    ------------------------------------------------------------
    SNS シェア時にタイトル・説明・画像が出るよう、記事ごとの
    og:* / twitter:* を出力して base.html の既定メタを丸ごと差し替える。
 
-   - 説明文（description）は本文 HTML（display_body）からタグを除いた冒頭を使う。
-     striptags は「隣接する空白を 1 つにまとめる」ため、改行や <br> も
-     きれいに 1 行化される。truncate で 110 文字に丸める。
-     content="..." の中では Jinja が自動エスケープするため、本文中の
-     引用符や < > が属性を突き破ることはない。
+   - 説明文は本文 HTML（display_body）からタグを除いた冒頭 110 文字。
+     content="..." の中は Jinja が自動エスケープする。
    - og:image は thumbnail_url マクロで絶対 URL を取得する
      （OGP 画像は絶対 URL 必須のため external=True）。
-     サムネイル優先順位（専用→デフォルト→システム既定）はマクロ側に一元化。
 ============================================================ #}
 {% block meta %}
     {%- set meta_description = display_body | striptags | truncate(110, True, '…') -%}
@@ -8168,10 +8158,8 @@ document.addEventListener('keydown', function(e) {
     <meta name="twitter:image" content="{{ og_image }}">
 {% endblock %}
 
-{# ページ固有 CSS は <head> の {% block extra_css %} 経由で読み込む（項目 4）。
-   【A-7】url_for('static', ...) → static_url(...) に変更。
-   ※ 記事画像・サムネイル（img/posts/ 等）の参照は対象外
-     （UUID 名で不変のためバスティング不要。app.py の static_url 参照）。 #}
+{# ページ固有 CSS は <head> の extra_css ブロックで読み込む。
+   static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。 #}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
 {% endblock %}
@@ -8203,8 +8191,7 @@ document.addEventListener('keydown', function(e) {
             </div>
 
             <div class="post-user-info">
-                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ（項目 8）。
-                   CSS 上の表示サイズ（21x21）に合わせた値を指定する。 #}
+                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ #}
                 <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
                     alt="avatar" width="21" height="21">
                 <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
@@ -8268,8 +8255,7 @@ document.addEventListener('keydown', function(e) {
                     <li class="related-item">
                         <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
                             <div class="related-thumb">
-                                {# width/height を明示して読み込み時のレイアウトシフトを防ぐ（項目 8）。
-                                   関連記事サムネイルはデスクトップ基準で 120 x 85。 #}
+                                {# 関連記事サムネイルはデスクトップ基準で 120 x 85 #}
                                 {{ post_thumbnail(rel, width=120, height=85) }}
                             </div>
                             <div class="related-body">
@@ -8316,6 +8302,27 @@ function ytPlay(facadeEl) {
 
     wrapper.appendChild(iframe);
     facadeEl.style.display = 'none';
+}
+
+/* ============================================================
+   YouTube サムネイルの高画質 → 通常画質フォールバック
+
+   サムネイルは最初に高画質版（maxresdefault.jpg・1280x720）を読み込む。
+   ただし動画によっては高画質版が存在しない。その場合は次の 2 通りになる。
+     (1) 404 を返す                → onerror で検知
+     (2) 120x90 の小さな代替画像を返す → onload で画像の幅を見て検知
+   どちらの場合も、data-fallback に入っている通常画質版
+   （hqdefault.jpg・必ず存在する）へ差し替える。
+
+   @param img    : サムネイルの <img> 要素
+   @param isLoad : onload から呼ばれたとき true（画像サイズの検査を行う）
+   ============================================================ */
+function ytThumbFallback(img, isLoad) {
+    const fallback = img.dataset.fallback;
+    if (!fallback) return;                           // 差し替え済み（または不要）
+    if (isLoad && img.naturalWidth >= 320) return;   // 高画質版が正常に読めた
+    img.removeAttribute('data-fallback');            // 差し替えは 1 回だけ（無限ループ防止）
+    img.src = fallback;
 }
 </script>
 
@@ -9091,8 +9098,7 @@ function ytPlay(facadeEl) {
         <!-- ===== ハッシュタグ入力 ===== -->
         <p>
             <label for="hashtag_input">ハッシュタグ</label>
-            ※スペース・カンマ区切りで複数入力できます。「#」は省略しても OK<br>
-            　例：<code>#Flask Python ブログ開発</code>
+            ※スペース区切りで複数入力できます。「#」は省略しても OK
         </p>
         <div class="hashtag-input-wrapper">
             <span class="hashtag-prefix">#</span>
@@ -9116,9 +9122,8 @@ function ytPlay(facadeEl) {
         {% if post.img_name %}
             <label>現在の画像・キャプション</label>
             <p class="img-edit-note">
-                ※画像の説明（キャプション）を編集できます。空欄のままにすると非表示になります。<br>
-                ※<strong>「更新」ボタンを押すまで確定しません</strong>。<br>
-                ※画像を削除すると残りの画像の番号（[imgN]）が繰り上がります。
+                ※画像キャプションの編集。空欄のままは非表示になります。<br>
+                ※<strong>画像を削除すると残りの画像番号（[imgN]）が繰り上がります</strong>。
             </p>
             <div id="existing-img-list">
                 {% for img in post.img_name.split(',') %}
@@ -9149,10 +9154,9 @@ function ytPlay(facadeEl) {
 
         <!-- ===== 新しい画像の追加エリア ===== -->
         <div>
-            <label>画像を変更する（本文中に載せる画像）</label>
+            <label>画像の変更（本文中に載せる画像）</label>
             <p class="img-change-note">
-                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。<br>
-                　「複数まとめて選択」で一括追加、「1枚追加」で1枚ずつ追加できます。
+                ※新しい画像を選択した場合、現在の画像はすべて置き換えられます。
             </p>
 
             <!-- 既存：複数一括選択 input（img-input-hidden で非表示にして JS から参照） -->
@@ -9179,7 +9183,7 @@ function ytPlay(facadeEl) {
                  初期非表示（create_update.css の #preview-area）。JSが表示を切り替える -->
             <div id="preview-area" class="preview-area--spaced">
                 <p class="preview-area-title">
-                    📸 新しい画像のプレビュー（更新後はこちらに差し替えられます）
+                    📸 新規画像のプレビュー（更新後はこちらに差し替え）
                 </p>
                 <div id="preview-list"></div>
             </div>
@@ -9192,9 +9196,7 @@ function ytPlay(facadeEl) {
                ============================================================ #}
             <p>
                 <label>サムネイル画像（任意）</label>
-                ※記事一覧などで表示されるサムネイルを個別にアップロードできます。<br>
-                　新しく選択すると現在のサムネイルは置き換えられます。<br>
-                　サムネイルがない場合は、下で選択したデフォルトサムネイルが使用されます。
+                ※新しく選択すると現在のサムネイルは置き換えられます。<br>
             </p>
 
             {# 現在のサムネイル（既存）— 存在するときのみ表示 #}
@@ -9236,7 +9238,7 @@ function ytPlay(facadeEl) {
             </div>
 
             <p>
-                <label for="default_thumb_select">デフォルトサムネイル画像を選択（サムネイル画像がない場合）</label>
+                <label for="default_thumb_select">デフォルトサムネイル画像の選択</label>
                 <select name="default_thumb_select" id="default_thumb_select" onchange="previewDefaultThumb(this)">
                     <option value="none" {% if not post.default_thumb %}selected{% endif %}>-- 選択なし（システム共通のデフォルトになります） --</option>
                     <option value="thumb_option1.jpg"  {% if post.default_thumb == 'thumb_option1.jpg'  %}selected{% endif %}>選択肢1：趣味</option>
@@ -13478,81 +13480,19 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(60), nullable=True) # 表示名（省略可）。マイページから変更可能
 </file>
 
-<file path="pronpt.md">
-以下の内容を基にコメントアウト説明文を修正したものをファイル形式で作成してください。
----
-
-## プロンプト本文
-
-あなたは、学習用に作られた Flask 製の個人用ブログアプリのコードをレビューし、コメントを整理する役割です。
-
-このアプリのコードには、開発の過程で書かれた「変更履歴メモ」的なコメントが数多く残っています。これらは開発中は役立ちましたが、**後からコードを見返して学習し直すには読みにくい**状態です。あなたのゴールは、これらを整理して「その処理が何をしていて、どう流れるのか」が一目で分かる、学習向けの読みやすいコメントに書き直すことです。
-
-### 背景・目的
-
-- このブログアプリは**学習用**であり、**後から自分でコードを見返すこと**を前提にしている。
-- そのため、コメントは「なぜ変更したか（変更の経緯）」ではなく「**このコードは何をしているのか・どういう順序で処理が進むのか**」を説明するものであってほしい。
-- 初学者が読んでも処理の流れを追える、丁寧で読みやすいコーディングにしたい。
-
-### 整理の対象となるコメント（減らす・書き換える）
-
-次のような「変更履歴メモ」的なコメントを見つけたら、整理・書き換えの対象とする。
-
-- `improvement.md 項目 X` や `第2版 項目 A-1` など、外部の改善計画書の項番を参照しているもの
-- `【背景】`『従来は〜だった』『この修正でやること』のように、**変更前と変更後を対比して説明している**もの
-- `【修正の背景】`『以前は〜』『〜に変更した』のような改修の経緯説明
-- マイグレーションの経緯や、過去の実装との差分だけを述べているもの
-- 「なぜこう直したか」の言い訳・釈明に紙面の大半を割いているもの
-
-### 書き換えの方針
-
-対象コメントは、次の観点で「今のコードの解説」に作り直す。
-
-1. **処理の流れを主役にする。** 関数やブロックの冒頭に「この処理が何をするか」「どの順序で何をするか（STEP 1 → STEP 2 …）」を簡潔にまとめる。既存の STEP コメントの粒度は活かしてよい。
-2. **機能単位で読めるようにする。** 「この関数はどの機能の一部か」「入力は何で、何を返すか」が分かるようにする。
-3. **変更前後の対比は原則削除する。** 「従来は〜」「以前は〜だった」の類は、今のコードの動作説明に置き換える。過去の実装には言及しない。
-4. **設計上の重要な理由は残す。** ただし「なぜ今このコードがこうなっているか」が**現在の理解に必要な場合のみ**、経緯ではなく理由として簡潔に残す（例：「先頭ワイルドカードの LIKE は通常のインデックスが効かないため trgm インデックスを使う」といった、コードを読むだけでは分からない知識）。改善計画書の項番such as `項目 A-1` は削り、内容だけを残す。
-5. **冗長さを削る。** 同じことを繰り返している長大なコメントは要点に圧縮する。1 つの処理に対して説明が過剰なら短くする。
-6. **日本語のトーンは既存に合わせる。** 丁寧で説明的な日本語を維持し、学習者向けの語り口にする。
-
-### 守ってほしい制約
-
-- **コードの挙動は一切変更しない。** 変数名・ロジック・処理順・出力を変えてはいけない。あくまでコメント（および必要なら整形）だけを対象にする。
-- **有用な既存コメントは残す。** 処理内容をきちんと説明している既存コメント（STEP 区切り、目次、関数の docstring など）は活かし、無理に消さない。
-- **ファイル冒頭の「目次」コメントは維持・更新する。** 目次がある場合は、整理後の内容と整合するよう保つ。
-- **セキュリティ上の注意書き（存在隠蔽、CSRF、認証まわりの意図など）は残す。** これらは今のコードを正しく理解・保守するために必要な情報。
-- **1 ファイルずつ、変更前後が分かる形で提示する。** どのコメントをなぜ整理したか、ファイルごとに簡単な要約を添える。
-
-### 進め方
-
-ファイルが多い場合は、どのファイルから着手するか提案してから始める。
-
-まずは対象ファイルの一覧と、着手する順番の提案から始めてください。
-
----
-</file>
-
 <file path="rendering.py">
 # ======================================================================
 # rendering.py — 記事本文（Markdown + 独自タグ）→ HTML 変換の共通モジュール
 # ======================================================================
 #
-# 【役割・追加の背景】
-#   従来 views/blog.py の detail() は、記事本文（Markdown + 独自タグ）を
-#   「アクセスのたびに」markdown.convert() で変換し、さらに
-#   [imgN] / [map:] / [youtube:] の置換を毎回行っていた。
-#   本文は投稿・編集時にしか変化しないため、閲覧ごとに同じ変換を
-#   繰り返すのは無駄が大きい（improvement.md の項目 5）。
-#
-#   そこで「変換ロジック」をこのモジュールに切り出し、
-#     ・投稿時（views/admin.py の create）
-#     ・編集時（views/admin.py の update）
-#   にだけ render_post_body() を呼んで結果を Post.body_html / Post.toc_html に
-#   保存し、詳細表示（detail）は保存済み HTML をそのまま出力する。
+# 【役割】
+#   記事本文（Markdown + [imgN] / [map:] / [youtube:] などの独自タグ）を
+#   HTML に変換するモジュール。投稿・編集時に render_post_body() を呼び、
+#   結果を Post.body_html / Post.toc_html に保存する。詳細表示（detail）は
+#   保存済み HTML をそのまま出力するため、閲覧のたびの再変換は発生しない。
 #
 #   変換に必要な入力は body / img_name / img_captions のみで、
-#   リクエストやログイン状態に依存しないため、事前生成しても
-#   detail() の出力は従来とまったく同じになる。
+#   リクエストやログイン状態には依存しない。
 #
 # 【このファイルの構成（目次）】
 #   [0] RENDER_VERSION           : レンダラのバージョン（キャッシュ無効化用）
@@ -13563,10 +13503,6 @@ class User(UserMixin, db.Model):
 #        (2-3) _replace_map()         : [map:] タグ → Google マップ iframe
 #        (2-4) _extract_youtube_id()  : YouTube URL から動画 ID を抽出
 #        (2-5) _replace_youtube()     : [youtube:] タグ → ファサード埋め込み
-#
-#   ※ (2-1)〜(2-5) は元々 views/blog.py に定義されていたものを、
-#     ロジックを変えずにそのまま移設したもの。blog.py はこのモジュールを
-#     import して利用する。
 # ======================================================================
 
 import re
@@ -13576,37 +13512,26 @@ from markupsafe import escape   # HTML 直組み立て時のエスケープに�
 
 
 # ======================================================================
-# [0] RENDER_VERSION — レンダラのバージョン（improvement.md 第2版 項目 B-3）
+# [0] RENDER_VERSION — レンダラのバージョン
 # ======================================================================
 #
-# 【この定数が必要な理由】
-# body_html / toc_html にレンダリング結果をキャッシュする仕組みは導入済みだが、
-# 従来は「キャッシュを捨てる（無効化する）手段」が無かった。
-# 再生成のきっかけが記事の編集しかなかったため、このファイルを修正しても
-#   ・地図の枠デザインを変えた
-#   ・YouTube 埋め込みを改修した
-#   ・画像に loading="lazy" を付けた
-# といった変更が既存記事に反映されず、全記事を手で開いて再保存する
-# 必要があった。
-#
-# 【使い方 — ここが運用上いちばん大事】
-#   このファイル（render_post_body が出力する HTML）を変更したら、
-#   必ず下の数値を +1 すること。
+# body_html / toc_html はキャッシュとして保存されるため、このファイルの
+# 出力 HTML を変更したら、必ず下の数値を +1 すること。
 #
 # 各記事は「生成に使ったバージョン」を Post.render_version に持っており、
 # views/blog.py の detail() が
 #     post.body_html is None or post.render_version != RENDER_VERSION
-# を判定する。不一致なら生成し直して保存するため、
-# 数値を上げるだけで既存記事も「次にアクセスされたとき」に自動更新される。
+# を判定する。不一致なら生成し直して保存するため、数値を上げるだけで
+# 既存記事も「次にアクセスされたとき」に自動更新される。
 #
-# アクセスを待たずに全記事をまとめて作り直したい場合は、
-# 管理コマンド（app.py に定義）を使う。
+# アクセスを待たずにまとめて作り直したい場合は管理コマンドを使う。
 #     flask rerender-posts            … 古いバージョンの記事だけ再生成
 #     flask rerender-posts --all      … 全記事を強制的に再生成
 #
-# 【変更履歴】
-#   1 : 初版（body_html / toc_html キャッシュ導入時の出力と同一）
-RENDER_VERSION = 1
+# 【バージョン履歴】
+#   1 : 初版
+#   2 : YouTube サムネイルを高解像度（maxresdefault）に変更
+RENDER_VERSION = 2
 
 
 # ======================================================================
@@ -13625,13 +13550,7 @@ def render_post_body(body: str, img_name: str | None = None,
                   本文中に [toc] マーカーがある場合は None
                   （その位置に目次が展開済みのため、冒頭には表示しない）。
 
-    【この関数の入力は body / img_name / img_captions のみ】
-    リクエストや current_user に依存しないため、投稿・編集時に一度だけ
-    呼び出して結果を保存しておけば、詳細表示のたびに再変換する必要がない。
-
-    【出力を変更したら RENDER_VERSION を +1 すること】
-    保存済みキャッシュを持つ既存記事は、バージョンが一致している限り
-    再生成されない（＝古い HTML のまま表示される）。
+    出力を変更したら RENDER_VERSION を +1 すること。
 
     【処理の流れ】
       STEP 1. 本文の連続空行を <br> に展開（_expand_blank_lines）
@@ -13725,7 +13644,7 @@ def render_post_body(body: str, img_name: str | None = None,
 
 
 # ======================================================================
-# [2] 内部ヘルパー関数群（views/blog.py から移設・ロジック不変）
+# [2] 内部ヘルパー関数群
 # ======================================================================
 
 # ----------------------------------------------------------------------
@@ -13831,6 +13750,9 @@ def _extract_youtube_id(raw: str) -> str | None:
     対応形式（順に判定し、最初にマッチしたものを返す）:
       通常 URL / 短縮 URL / ショート / 埋め込み URL / 動画 ID 単体
     どれにも該当しなければ None。
+
+    ※ static/js/editor.js の extractYoutubeId() と同じ判定ロジック。
+       片方を変更したらもう片方も合わせること。
     """
     raw = raw.strip()
 
@@ -13868,6 +13790,16 @@ def _replace_youtube(m: re.Match) -> str:
     クリック時に初めて iframe を生成する軽量な埋め込み方式
     （実際の iframe 生成は detail.html の ytPlay() が行う）。
 
+    【サムネイルの画質について】
+    YouTube のサムネイルには解像度の異なる複数のサイズがある。
+      maxresdefault.jpg : 1280x720（16:9・高画質。ただし動画によっては存在しない）
+      hqdefault.jpg     :  480x360（4:3。16:9 の動画は上下に黒帯が入る）
+    表示枠は 16:9 で幅いっぱいに拡大されるため、hqdefault.jpg だと
+    黒帯の切り取りと拡大でぼやけて見える。そこで最初に maxresdefault.jpg を
+    読み込み、存在しない場合（404、または 120x90 の代替画像が返る場合）は
+    detail.html の ytThumbFallback() が hqdefault.jpg に差し替える。
+    差し替え先は data-fallback 属性で渡す。
+
     動画 ID を認識できなかった場合のエラーメッセージ内のユーザー入力は
     escape() で無害化する。
     """
@@ -13877,16 +13809,21 @@ def _replace_youtube(m: re.Match) -> str:
     if not video_id:
         return f'<p style="color:#c0392b;">[youtube: 動画IDを認識できませんでした → {escape(raw)}]</p>'
 
-    thumb_url = f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
-    embed_url = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
+    thumb_url    = f'https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg'  # 高画質（優先）
+    fallback_url = f'https://i.ytimg.com/vi/{video_id}/hqdefault.jpg'      # 代替（必ず存在する）
+    embed_url    = f'https://www.youtube.com/embed/{video_id}?autoplay=1'
 
     return (
         f'<div class="post-youtube-wrapper" data-embed-url="{embed_url}">'
         f'  <div class="post-youtube-facade" onclick="ytPlay(this)">'
         f'    <img class="post-youtube-thumb"'
         f'         src="{thumb_url}"'
+        f'         data-fallback="{fallback_url}"'
+        f'         onerror="ytThumbFallback(this)"'
+        f'         onload="ytThumbFallback(this, true)"'
         f'         alt="YouTube動画のサムネイル"'
-        f'         loading="lazy">'
+        f'         loading="lazy"'
+        f'         decoding="async">'
         f'    <button class="post-youtube-play-btn" aria-label="動画を再生">'
         f'      <svg viewBox="0 0 68 48" width="68" height="48">'
         f'        <path class="yt-btn-bg" d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.8.3 34 .3 34 .3S12.2.3 7.5 1.7a8.5 8.5 0 0 0-6 6C.1 11.4 0 24 0 24s.1 12.6 1.5 16.3a8.5 8.5 0 0 0 6 6C12.2 47.7 34 47.7 34 47.7s21.8 0 26.5-1.4a8.5 8.5 0 0 0 6-6C67.9 36.6 68 24 68 24s-.1-12.6-1.5-16.3z"/>'
