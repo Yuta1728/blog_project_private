@@ -426,7 +426,7 @@ a[role="button"]:hover {
     .post-card {
         flex-direction: column;
         gap: 12px;
-        padding: 15px;
+        padding: 11px;
         margin-top: 5px;
         border-radius: 0 10px 10px 0;
     }
@@ -466,7 +466,7 @@ a[role="button"]:hover {
         justify-content: center;
         align-items: center;
         gap: 10px;
-        margin-top: 10px;
+        margin-top: 7px;
         margin-bottom: 3px;
         width: 100%;
     }
