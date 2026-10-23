@@ -169,8 +169,8 @@ a[role="button"]:hover {
 
 /* カード左側のサムネイル画像枠 */
 .post-thumbnail {
-    flex: 0 0 260px;
-    height: 158px;
+    flex: 0 0 265px;
+    height: 165px;
     border-radius: 8px;
     overflow: hidden;
     background-color: #e0f2fe;
@@ -427,7 +427,7 @@ a[role="button"]:hover {
         flex-direction: column;
         gap: 12px;
         padding: 11px;
-        margin-top: 5px;
+        margin-top: 7px;
         border-radius: 0 10px 10px 0;
     }
 
