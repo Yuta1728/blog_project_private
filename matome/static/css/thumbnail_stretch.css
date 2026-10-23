@@ -1,51 +1,48 @@
 /* ============================================================
-   static/css/thumbnail_stretch.css  
-   【対象】 PC表示（幅 601px 以上）の記事カードで、サムネイルを
-           カードの高さいっぱいに表示する上書きCSS
-   【対象ページ】 index.html / mypage.html
+   static/css/card_thumbnail_stretch.css
+   【対象】 PC 表示の記事カードで、サムネイルの下に余白が空く問題の修正
+   【対象ページ】 index.html（トップ）/ mypage.html（マイページ）
    ============================================================
-   【v1 で変化しなかった理由】
-   v1 は枠（.post-thumbnail）を縦に伸ばしたが、画像は
-   object-fit: contain のままだった。contain は「枠に収まる最大サイズ」
-   で縮尺するため、幅 260px で上限が決まり、画像そのものは大きく
-   ならない。結果として「枠だけ伸びて画像は同じ大きさ（上下は余白）」
-   となり、見た目が修正前と変わらなかった。
+   【背景】
+   記事カード（.post-card）は display: flex で「左:サムネイル / 右:本文」を
+   横並びにしている。管理者でログイン中に index ページを開くと、各カードの
+   右側（本文側）に編集・削除ボタン（.post-actions）が増える。
+   その分だけカードの高さが伸びるが、左側のサムネイル枠（.post-thumbnail）は
+   height: 158px の固定値だったため一緒に伸びず、サムネイルの下に大きな
+   余白（空白）ができてしまっていた。
 
-   【v2 でやること】
-   1. 枠をカードの高さに合わせて伸ばす（v1 と同じ）。
-   2. 画像を object-fit: cover にして、伸びた枠を画像で埋める。
-      → サムネイルがカードの高さいっぱいに表示される。
-      （枠と画像の縦横比が違う分は、上下または左右が少し切れる）
-   3. !important を付けて、他CSSの指定順に左右されないようにする。
+   【この修正でやること】
+   サムネイル枠の「固定高さ」をやめ、カードの高さいっぱいに伸びるようにする。
+     - height: 158px（固定）→ align-self: stretch ＋ min-height: 158px
+       flex 親（.post-card）の align-items は既定で stretch のため、
+       子に固定 height が無ければカードの高さに合わせて伸びる。
+       min-height でボタンが無いとき（カードが低いとき）の見た目は従来どおり
+       158px を下限に保つ。
+   これにより、編集・削除ボタンでカードが高くなってもサムネイルが
+   その高さまで伸び、下側の余白が解消される。
 
-   ※ 画像を切り取りたくない場合は、下の「object-fit: cover」を
-     「object-fit: contain」に変えると全体表示に戻る
-     （ただし画像の大きさは変わらず、余白が出る）。
+   サムネイル画像自体は thumbnail_fit.css の object-fit: contain のままなので、
+   枠が縦に伸びても画像は中央に収まり、切り取られない。
 
-   スマホ（600px 以下）には影響しない。
+   【読み込み順について】
+   index.css（後から読み込まれる）の .post-thumbnail（詳細度 0,1,0）に
+   確実に勝てるよう、セレクタを .post-card .post-thumbnail（詳細度 0,2,0）
+   として一段高くしてある。base.html の共通 CSS として読み込むため
+   読み込み順に依存しない。
+
+   【効果範囲】
+   PC 表示（601px 以上）の index / mypage の記事カードのみ。
+   スマホ（600px 以下）はサムネイルを上に縦積みする別レイアウトのため、
+   メディアクエリで対象外にしている（mobile_compact.css の指定を尊重）。
    ============================================================ */
 
 @media (min-width: 601px) {
-
-    /* ---- 枠：カードの高さに追従して縦に伸びる ---- */
+    /* サムネイル枠を固定高さから「カードの高さに追従」へ変更。
+       .post-card の align-items は既定の stretch なので、子から固定 height を
+       外し、代わりに min-height で下限（従来の 158px）を確保する。 */
     .post-card .post-thumbnail {
-        flex: 0 0 260px !important;     /* 幅は 260px 固定 */
-        width: 260px !important;
-        height: auto !important;        /* index.css の height:158px を打ち消す */
-        min-height: 158px !important;   /* 短いタイトルでも従来の高さは確保 */
-        align-self: stretch !important; /* 右側の高さに合わせて伸ばす */
-        position: relative !important;
-        display: block !important;
-    }
-
-    /* ---- 画像：枠いっぱいに敷き詰める ---- */
-    .post-card .post-thumbnail .thumb-img {
-        position: absolute !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;    /* ← 枠を画像で埋める */
-        object-position: center !important;
-        display: block !important;
+        height: auto;
+        align-self: stretch;
+        min-height: 158px;
     }
 }
