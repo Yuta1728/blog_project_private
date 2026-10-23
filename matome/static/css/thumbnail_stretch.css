@@ -1,61 +1,51 @@
 /* ============================================================
-   static/css/thumbnail_stretch.css
-   【対象】 PC表示（幅 601px 以上）の記事カードのサムネイル枠を
-           「カードの高さいっぱい」に追従させる上書きCSS
-   【対象ページ】 index.html（トップ）/ mypage.html（マイページ）
+   static/css/thumbnail_stretch.css  
+   【対象】 PC表示（幅 601px 以上）の記事カードで、サムネイルを
+           カードの高さいっぱいに表示する上書きCSS
+   【対象ページ】 index.html / mypage.html
    ============================================================
-   【背景】
-   記事カード（.post-card）は左にサムネイル、右に本文を並べた
-   フレックスレイアウト。サムネイル枠は index.css で
-   「height: 158px」の固定値だったため、タイトルが 2〜3 行に
-   伸びて右側（タイトル〜編集・削除ボタン）が縦に広がっても、
-   左のサムネイルだけが 158px のまま据え置かれ、
-   カード内で小さく・左上に寄って見えていた。
+   【v1 で変化しなかった理由】
+   v1 は枠（.post-thumbnail）を縦に伸ばしたが、画像は
+   object-fit: contain のままだった。contain は「枠に収まる最大サイズ」
+   で縮尺するため、幅 260px で上限が決まり、画像そのものは大きく
+   ならない。結果として「枠だけ伸びて画像は同じ大きさ（上下は余白）」
+   となり、見た目が修正前と変わらなかった。
 
-   【この修正でやること】
-   1. サムネイル枠の固定高さをやめ、カードの高さに合わせて
-      縦に伸びるようにする（align-self: stretch）。
-      タイトルが短いときでも最低 158px は確保する（min-height）。
-   2. 枠が縦に伸びても画像が歪んだり位置がずれたりしないよう、
-      画像を枠いっぱいに絶対配置し、object-fit: contain で
-      「切り取らず・縦横比を保って・中央に」表示する。
-      （thumbnail_fit.css の「切り取らず全体表示」の方針を維持）
+   【v2 でやること】
+   1. 枠をカードの高さに合わせて伸ばす（v1 と同じ）。
+   2. 画像を object-fit: cover にして、伸びた枠を画像で埋める。
+      → サムネイルがカードの高さいっぱいに表示される。
+      （枠と画像の縦横比が違う分は、上下または左右が少し切れる）
+   3. !important を付けて、他CSSの指定順に左右されないようにする。
 
-   【スマホ（600px 以下）には影響しない】
-   すべて @media (min-width: 601px) の中に書いてあるため、
-   mobile_compact.css / index.css のスマホ向け指定（16:9 比率など）は
-   そのまま働く。
+   ※ 画像を切り取りたくない場合は、下の「object-fit: cover」を
+     「object-fit: contain」に変えると全体表示に戻る
+     （ただし画像の大きさは変わらず、余白が出る）。
 
-   【読み込み順】
-   base.html で thumbnail_fit.css / mobile_compact.css の後に
-   読み込む。セレクタは「.post-card …」始まりで詳細度を上げてあるため、
-   index.css・thumbnail_fit.css の指定に確実に勝つ。
+   スマホ（600px 以下）には影響しない。
    ============================================================ */
 
 @media (min-width: 601px) {
 
-    /* ---- サムネイル枠：カードの高さに追従して縦に伸びる ---- */
+    /* ---- 枠：カードの高さに追従して縦に伸びる ---- */
     .post-card .post-thumbnail {
-        flex: 0 0 260px;          /* 幅は従来どおり 260px 固定 */
-        height: auto;             /* 固定の 158px をやめる */
-        min-height: 158px;        /* タイトルが短いカードでも従来の高さを下回らない */
-        align-self: stretch;      /* 右側（本文）の高さに合わせて縦に伸ばす */
-        position: relative;       /* 中の画像を絶対配置するための基準 */
-        display: block;           /* thumbnail_fit.css の flex 中央寄せを解除 */
+        flex: 0 0 260px !important;     /* 幅は 260px 固定 */
+        width: 260px !important;
+        height: auto !important;        /* index.css の height:158px を打ち消す */
+        min-height: 158px !important;   /* 短いタイトルでも従来の高さは確保 */
+        align-self: stretch !important; /* 右側の高さに合わせて伸ばす */
+        position: relative !important;
+        display: block !important;
     }
 
-    /* ---- 画像：枠いっぱいに敷き、切り取らず中央に収める ----
-       枠の高さが auto（中身ではなくカードの高さで決まる）なので、
-       画像は height:100% ではなく絶対配置（inset: 0）で枠に
-       ぴったり合わせる。HTML の width="260" height="158" 属性は
-       この指定で上書きされる。 */
+    /* ---- 画像：枠いっぱいに敷き詰める ---- */
     .post-card .post-thumbnail .thumb-img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;      /* 全体を表示（トリミングしない） */
-        object-position: center;  /* 余白は上下左右均等に */
-        display: block;
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;    /* ← 枠を画像で埋める */
+        object-position: center !important;
+        display: block !important;
     }
 }
