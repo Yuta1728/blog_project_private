@@ -1,0 +1,116 @@
+/* ============================================================
+   static/css/mobile_compact.css
+   【対象】 スマホ表示（幅 600px 以下）の記事カードの縦余白を詰める
+   【対象ページ】 index.html（トップ）/ mypage.html（マイページ・管理者画面）
+   ============================================================
+   【背景】
+   スマホでは記事カードを縦積み（サムネイル → 本文）にしているが、
+   次の余白・高さが重なって 1 件あたりが縦に長くなっていた。
+     ・サムネイル枠が高さ 240px 固定
+     ・カード内の gap（12px）と padding（15px）
+     ・ジャンルバッジ／タイトル／ハッシュタグ／日付／編集・削除ボタンの
+       それぞれに付いた上下マージン
+     ・タイトルが長いと何行にも伸びる
+
+   【この修正でやること】
+   - サムネイル枠を「固定の高さ」から「16:9 の比率」に変更（約 190px 前後）。
+     中身は contain のままなので、画像は切り取られず全体が見える。
+   - カードの padding / gap と、各要素の上下マージンを詰める。
+   - タイトルは最大 2 行で省略（…）表示にする。
+   - ハッシュタグ・日付・編集/削除ボタンを小さめにする。
+
+   【読み込み順について】
+   index.css（後から読み込まれる）の同じセレクタに負けないよう、
+   すべて「.post-card 〜」で始めて詳細度を一段高くしてある。
+   PC 表示（600px 超）には一切影響しない。
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+    /* ---- カード全体：外側・内側の余白と、サムネイル⇔本文の間隔 ---- */
+    .post-card {
+        gap: 8px;
+        padding: 10px 12px;
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+
+    /* ---- サムネイル：高さ固定(240px)をやめ、16:9 の比率にする ----
+       aspect-ratio により幅に応じた高さになる（幅 340px なら約 190px）。
+       画像は contain（thumbnail_fit.css）なので切り取られない。 */
+    .post-card .post-thumbnail {
+        flex: none;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+
+    /* ---- 本文エリア ---- */
+    .post-card .post-content {
+        gap: 0;
+    }
+
+    /* ジャンル・非公開バッジ行 */
+    .post-card .post-header-meta {
+        margin-bottom: 2px;
+        gap: 6px;
+    }
+
+    .post-card .badge-genre,
+    .post-card .badge-private {
+        font-size: 11px;
+        padding: 1px 8px;
+    }
+
+    /* タイトル：余白を詰め、最大 2 行で省略する
+       （カード全面タップ用の a::after は absolute のため、
+         h2 の overflow:hidden では切り取られない） */
+    .post-card .post-title {
+        margin: 2px 0 4px;
+        font-size: 1.02rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
+    }
+
+    /* ハッシュタグ：上下マージンを詰め、バッジを小さく */
+    .post-card .post-hashtags {
+        margin: 0 0 4px;
+        gap: 4px;
+    }
+
+    .post-card .post-hashtags .hashtag-badge {
+        font-size: 10.5px;
+        padding: 1px 7px;
+    }
+
+    /* 投稿日・更新日 */
+    .post-card .post-date {
+        margin: 0;
+        font-size: 0.72rem;
+        line-height: 1.4;
+    }
+
+    /* 編集・削除ボタン行（投稿者本人のみ表示） */
+    .post-card .post-actions {
+        margin: 6px 0 0;
+        gap: 8px;
+    }
+
+    .post-card .btn-edit,
+    .post-card .btn-delete {
+        margin: 0;
+        padding: 3px 14px;
+        font-size: 12.5px;
+        min-height: 0;
+        line-height: 1.4;
+    }
+
+    /* ---- カード同士の下余白とページ送りも少し詰める ---- */
+    .index-pagination {
+        margin: 4px 0 24px;
+    }
+}
