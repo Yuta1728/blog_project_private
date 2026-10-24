@@ -98,8 +98,8 @@ h1 {
     gap: 5px;
     font-size: 13px;
     color: #4a7a96;
-    margin-bottom: 30px;
-    padding-bottom: 24px;
+    margin-bottom: 35px;
+    padding-bottom: 20px;
     border-bottom: 1px solid #e0f2fe;
     width: 100%;
 }
@@ -136,7 +136,7 @@ h1 {
     border-left: 4px solid #0ea5e9 !important;
     border-radius: 0 8px 8px 0;
     padding: 20px 24px;
-    margin: 36px 0;
+    margin: 35px 0;
     box-sizing: border-box;
 }
 
