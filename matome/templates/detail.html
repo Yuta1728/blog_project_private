@@ -69,7 +69,7 @@
                     alt="avatar" width="21" height="21">
                 <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
             </div>
-            
+
             <div class="post-time">
                 投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
                 &nbsp;
@@ -118,9 +118,6 @@
             <h2 class="related-heading">
                 <span class="related-heading-icon">🔗</span>
                 関連記事
-                {% if related_sub_label %}
-                    <span class="related-heading-sub">{{ related_sub_label }}</span>
-                {% endif %}
             </h2>
 
             <ul class="related-list">

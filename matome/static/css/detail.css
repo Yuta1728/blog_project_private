@@ -457,22 +457,6 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 .related-heading-icon { font-size: 16px; flex-shrink: 0; }
 
-/* 「📂○○ / #タグ を表示中」のサブラベルバッジ */
-.related-heading-sub {
-    font-size: 13px;
-    font-weight: 500;
-    color: #0369a1;
-    background: #dbeafe;
-    border: 1px solid #38bdf8;
-    border-radius: 10px;
-    padding: 2px 10px;
-    margin-left: 4px;
-    white-space: nowrap;
-    letter-spacing: 0;
-    line-height: 1.6;
-    flex-shrink: 0;
-}
-
 .related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
 /* 関連記事カード（一覧カードと同じ左アクセントラインデザイン、ホバーでゴールドに変化） */
@@ -576,7 +560,6 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .post-figcaption { font-size: 13px; }
     .related-section { margin-top: 28px; padding: 0 0 8px; }
     .related-heading { font-size: 16px; margin: 24px 0 12px; padding-bottom: 8px; }
-    .related-heading-sub { margin-left: 0; font-size: 11px; }
     .related-list { gap: 8px; }
     .related-card { gap: 14px; padding: 12px 14px 12px 12px; border-radius: 0 8px 8px 0; }
     .related-thumb { flex: 0 0 100px; width: 100px; height: 70px; }
