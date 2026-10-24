@@ -438,7 +438,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 /* ============================================================
    【detail.html】関連記事セクション（記事末尾、最大4件表示）
    ============================================================ */
-.related-section { margin-top: 20px; padding-top: 8px; }
+.related-section { margin-top: 15px; padding-top: 8px; }
 
 .related-heading {
     display: flex;
