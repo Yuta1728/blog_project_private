@@ -145,7 +145,7 @@ h1 {
     content: "目次" !important;
     display: block !important;
     font-weight: 700 !important;
-    font-size: 15px !important;
+    font-size: 16px !important;
     margin: 0 0 14px !important;
     color: #0c1f35 !important;
     text-align: left !important;
@@ -182,11 +182,16 @@ h1 {
 .detail-article-body h2,
 .detail-article-body h3 { scroll-margin-top: 100px; }
 
+/* 目次トップレベル項目（H2 相当）
+   ------------------------------------------------------------
+   【フォントサイズ調整】15px → 16px に拡大して読みやすくする。
+   色は従来どおり #0c1f35（濃いインク色）で、ライトモードでも黒く
+   はっきり見える。 */
 .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li {
     text-align: left !important;
     margin-bottom: 0 !important;
     padding: 11px 0 !important;
-    font-size: 15px !important;
+    font-size: 16px !important;
     font-weight: bold !important;
     display: block !important;
     background: none !important;
@@ -216,15 +221,19 @@ h1 {
    （記号の右）を基準に折り返すため、2 行目以降も 1 行目のテキストに
    きれいに揃う（＝ぶら下げインデント）。
    align-items: baseline で記号と文字のベースラインを合わせている。
+
+   【フォントサイズ・色調整】
+   フォントサイズを 14px → 15px に拡大。色はライトモードで黒くはっきり
+   読めるよう #2a4a5e（青みがかったグレー）→ #1a1a1a（黒）に変更する。
    ------------------------------------------------------------ */
 .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
-    font-size: 14px !important;
+    font-size: 15px !important;
     font-weight: normal !important;
     padding: 4px 0 !important;
     border-bottom: none !important;
     display: flex !important;
     align-items: baseline !important;
-    color: #2a4a5e !important;
+    color: #1a1a1a !important;
 }
 
 .post-toc ul ul li::before, .post-toc .toc ul ul li::before, .detail-article-body .toc ul ul li::before {
@@ -245,8 +254,17 @@ h1 {
     padding-top: 4px !important;
 }
 
+/* 目次のリンク（各項目の遷移リンク）
+   ------------------------------------------------------------
+   【色調整】従来は #0369a1（セルリアン）で、目次パネルの淡い水色背景
+   （#f0f9ff）と同系統のため、背景をいくら濃くしても文字が沈んで
+   見づらかった。ライトモードでは黒（#1a1a1a）にして、背景との
+   コントラストをはっきりさせる。
+   ホバー時はアクセント色（#0ea5e9）＋下線で「押せる」ことを示す。
+   ※ ダークモードの目次リンク色は dark-mode.css が !important で
+     上書きするため、この変更はライトモードにのみ効く。 */
 .post-toc a, .detail-article-body .toc a {
-    color: #0369a1 !important;
+    color: #1a1a1a !important;
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
@@ -299,10 +317,16 @@ article img { max-width: 100%; height: auto; display: block; margin: 25px auto; 
 
 /* ------------------------------------------------------------
    【detail.html】本文内の画像キャプション（[imgN]＋キャプション文）
+   ------------------------------------------------------------
+   【フォントサイズ・色調整】
+   フォントサイズを 15px → 16px に拡大。色はライトモードで黒く
+   はっきり読めるよう #0369a1（セルリアン）→ #1a1a1a（黒）に変更する。
+   ※ ダークモードのキャプション色は dark-mode.css が指定するため、
+     この変更はライトモードにのみ効く。
    ------------------------------------------------------------ */
 .post-figure { display: block; margin: 16px auto 8px; text-align: center; }
 .post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
-.post-figcaption { margin-top: 6px; text-align: center !important; font-size: 15px; color: #0369a1; line-height: 1.5; display: block; width: 100%; }
+.post-figcaption { margin-top: 6px; text-align: center !important; font-size: 16px; color: #1a1a1a; line-height: 1.5; display: block; width: 100%; }
 .post-figure + p { margin-top: 0.6em; }
 
 /* ------------------------------------------------------------
@@ -517,9 +541,11 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .detail-article-body h2 { font-size: 18px; margin: 32px 0 12px; }
     .detail-article-body h3 { font-size: 16px; margin: 24px 0 0; padding-left: 8px; }
     .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
-    .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 14px !important; padding: 10px 0 !important; }
+    /* 目次トップレベル項目（スマホ）: 14px → 15px に拡大 */
+    .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 15px !important; padding: 10px 0 !important; }
     .post-toc ul ul, .post-toc .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
-    .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 13px !important; padding: 5px 0 !important; }
+    /* 目次サブ項目（スマホ）: 13px → 14px に拡大 */
+    .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 14px !important; padding: 5px 0 !important; }
     .post-map-iframe { height: 260px; }
     .post-youtube-wrapper { border-radius: 6px; margin: 16px 0; }
     hr { margin: 0 16px 20px; }
@@ -529,7 +555,8 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .detail-ul-li { width: 100%; }
     .detail-ul-li-a { font-size: 15px; padding: 13px 24px; display: block; text-align: center; width: 100%; box-sizing: border-box; min-height: 48px; }
     .post-figure { margin: 12px auto 6px; }
-    .post-figcaption { font-size: 12px; }
+    /* 画像キャプション（スマホ）: 12px → 13px に拡大 */
+    .post-figcaption { font-size: 13px; }
     .related-section { margin-top: 28px; padding: 0 0 8px; }
     .related-heading { font-size: 16px; margin: 24px 0 12px; padding-bottom: 8px; }
     .related-heading-sub { margin-left: 0; font-size: 11px; }
