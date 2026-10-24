@@ -3805,27 +3805,44 @@ h1 {
     width: 100%;
 }
 
-/* 投稿者アイコン＋ニックネーム表示 */
+/* 投稿者アイコン＋ニックネーム表示
+   ------------------------------------------------------------
+   【PCのみ・フォントサイズ微調整】
+   ハッシュタグ下の投稿者名を少しだけ読みやすくするため、
+   12px → 13px に拡大する（+1px）。
+   ※ スマホ側は下部のメディアクエリが 13px に上書きするため、
+     この変更でも PC・スマホともに 13px にそろう。 */
 .post-user-info {
     display: flex;
     align-items: center;
     gap: 8px;
     color: #0369a1;
     font-weight: 600;
-    font-size: 12px;
+    font-size: 13px;
 }
 
+/* 投稿者アイコン本体。
+   ------------------------------------------------------------
+   【PCのみ・フォントサイズ微調整に合わせたサイズ調整】
+   名前のフォントを少し大きくしたぶん、アイコンも 21px → 22px に
+   わずかに拡大して縦位置のバランスを保つ。 */
 .post-user-info img {
-    width: 21px;
-    height: 21px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: #dbeafe;
     border: 1px solid #7dd3fa;
     margin: 0 !important;
 }
 
-/* 投稿日時・更新日時テキスト */
-.post-time { color: #4a7a96; font-size: 12px; }
+/* 投稿日時・更新日時テキスト
+   ------------------------------------------------------------
+   【PCのみ・フォントサイズ微調整】
+   投稿・更新日時を少しだけ読みやすくするため、
+   12px → 13px に拡大する（+1px）。
+   ※ スマホ側は下部のメディアクエリで 12px のまま（この行は上書きされない）
+     ため、この変更は PC 表示にのみ効く。 */
+.post-time { color: #4a7a96; font-size: 13px; }
 
 /* ============================================================
    【detail.html】目次（本文中の [toc] マーカーから自動生成）
@@ -7989,7 +8006,7 @@ document.addEventListener('keydown', function(e) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     {# ページタイトル（各ページが {% block title %} で上書き可能） #}
-    <title>{% block title %}MITO Blog｜日々の記録と学習メモ{% endblock %}</title>
+    <title>{% block title %}MITO Blog｜日常の記録メモ{% endblock %}</title>
 
     {# メタ情報・OGP（detail.html など内容ごとに変えたいページは {% block meta %} を差し替える） #}
     {% block meta %}
@@ -8748,7 +8765,7 @@ function ytThumbFallback(img, isLoad) {
     {%- if selected_hashtag %}#{{ selected_hashtag }} の記事｜MITO Blog
     {%- elif selected_genre %}{{ selected_genre }} の記事｜MITO Blog
     {%- elif search_word %}「{{ search_word }}」の検索結果｜MITO Blog
-    {%- else %}MITO Blog｜日々の記録と学習メモ
+    {%- else %}MITO Blog｜日常の記録メモ
     {%- endif -%}
 {% endblock %}
 
