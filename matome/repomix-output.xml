@@ -4076,8 +4076,17 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
 
 /* ------------------------------------------------------------
    【detail.html】「前の画面に戻る」「この記事を編集する」ボタン行
+   ------------------------------------------------------------
+   【PCのみ・余白微調整】
+   「前の画面に戻る」ボタンと、その下の「関連記事」見出しの間が
+   PC 表示で広く空いていた（ボタン行の下 padding 32px ＋
+   .related-heading の上 margin 32px）。間延びを抑えるため、
+   ボタン行の下 padding を 32px → 20px に少しだけ詰める
+   （あわせて .related-heading 側の上 margin も 32px → 20px に調整）。
+   ※ スマホ側は下部のメディアクエリ（padding: 0 16px 28px）が
+     上書きするため、この変更は PC 表示にのみ効く。
    ------------------------------------------------------------ */
-.detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 32px; flex-wrap: wrap; }
+.detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 20px; flex-wrap: wrap; }
 
 .detail-btn {
     display: inline-flex;
@@ -4141,6 +4150,16 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
    ============================================================ */
 .related-section { margin-top: 20px; padding-top: 8px; }
 
+/* ------------------------------------------------------------
+   関連記事セクションの見出し
+   ------------------------------------------------------------
+   【PCのみ・余白微調整】
+   「前の画面に戻る」ボタン行との距離を詰めるため、
+   上 margin を 32px → 20px に縮小する（下記ボタン行側の
+   padding 短縮とあわせて、PC 表示での間延びを解消する）。
+   ※ スマホ側は下部のメディアクエリ（margin: 24px 0 12px）が
+     上書きするため、この変更は PC 表示にのみ効く。
+   ------------------------------------------------------------ */
 .related-heading {
     display: flex;
     align-items: center;
@@ -4151,7 +4170,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     color: #0c1f35;
     border-bottom: 2px solid #0ea5e9;
     padding-bottom: 10px;
-    margin: 32px 0 14px;
+    margin: 20px 0 14px;
     text-align: left;
     letter-spacing: 0.02em;
 }
