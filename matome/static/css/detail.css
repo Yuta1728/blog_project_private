@@ -164,7 +164,7 @@ h1 {
     font-weight: 700 !important;
     font-size: 16px !important;
     margin: 0 0 14px !important;
-    color: #103a63 !important;
+    color: #1a4b7a !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -178,7 +178,7 @@ h1 {
     font-weight: 700 !important;
     font-size: 16px !important;
     margin: 0 0 14px !important;
-    color: #103a63 !important;
+    color: #1a4b7a !important;
     text-align: left !important;
     letter-spacing: 0.05em !important;
     text-transform: none !important;
@@ -202,7 +202,7 @@ h1 {
 /* 目次トップレベル項目（H2 相当）
    ------------------------------------------------------------
    【フォントサイズ調整】15px → 16px に拡大して読みやすくする。
-   色はライトモードで、背景と同系統の青みのある濃紺（#103a63）にして
+   色はライトモードで、背景と同系統の青みのある濃紺（#1a4b7a）にして
    目次全体の色をそろえる（ほぼ黒だが青寄り）。 */
 .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li {
     text-align: left !important;
@@ -214,7 +214,7 @@ h1 {
     background: none !important;
     border: none !important;
     border-bottom: 1px solid #bae6fd !important;
-    color: #103a63 !important;
+    color: #1a4b7a !important;
 }
 
 .post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul {
@@ -241,7 +241,7 @@ h1 {
 
    【フォントサイズ・色調整】
    フォントサイズを 14px → 15px に拡大。色はライトモードで、背景（淡い水色）と
-   同系統で落ち着いて読めるよう #2a4a5e（青みがかったグレー）→ #103a63
+   同系統で落ち着いて読めるよう #2a4a5e（青みがかったグレー）→ #1a4b7a
    （黒に近いが青みのある濃紺）に変更する。目次全体で色をそろえている。
    ------------------------------------------------------------ */
 .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
@@ -251,7 +251,7 @@ h1 {
     border-bottom: none !important;
     display: flex !important;
     align-items: baseline !important;
-    color: #103a63 !important;
+    color: #1a4b7a !important;
 }
 
 .post-toc ul ul li::before, .post-toc .toc ul ul li::before, .detail-article-body .toc ul ul li::before {
@@ -277,13 +277,13 @@ h1 {
    【色調整】従来は #0369a1（セルリアン）で、目次パネルの淡い水色背景
    （#f0f9ff）と同系統のため、背景をいくら濃くしても文字が沈んで
    見づらかった。ライトモードでは背景と同じ青系統の、黒に近いが青みのある
-   濃紺（#103a63）にして、落ち着いた見た目を保ちつつ背景とのコントラストを
+   濃紺（#1a4b7a）にして、落ち着いた見た目を保ちつつ背景とのコントラストを
    確保する（見出し・各項目テキストと色がそろう）。
    ホバー時はアクセント色（#0ea5e9）＋下線で「押せる」ことを示す。
    ※ ダークモードの目次リンク色は dark-mode.css が !important で
      上書きするため、この変更はライトモードにのみ効く。 */
 .post-toc a, .detail-article-body .toc a {
-    color: #103a63 !important;
+    color: #1a4b7a !important;
     text-decoration: none !important;
     transition: color 0.15s !important;
     display: inline-block !important;
