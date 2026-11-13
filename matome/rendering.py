@@ -51,7 +51,8 @@ from markupsafe import escape             # HTML 直組み立て時のエスケ�
 #   1 : 初版
 #   2 : YouTube サムネイルを高解像度（maxresdefault）に変更
 #   3 : [link:] リンクカードタグに対応
-RENDER_VERSION = 3
+#   4 : リンクカードを「左:テキスト／右:ファビコン大」の2カラムレイアウトに変更
+RENDER_VERSION = 4
 
 
 # ======================================================================
@@ -458,20 +459,32 @@ def _replace_link(m: re.Match) -> str:
     url_attr    = escape(url)
     title_html  = escape(display_title)
     domain_html = escape(domain)
-    favicon_url = f'https://www.google.com/s2/favicons?domain={quote(domain, safe="")}&sz=64'
+    # 右側に大きく表示するため、高解像度（sz=128）でファビコンを要求する。
+    favicon_url = f'https://www.google.com/s2/favicons?domain={quote(domain, safe="")}&sz=128'
 
     # 説明文（任意）
     desc_html = f'<span class="post-link-card-desc">{escape(desc)}</span>' if desc else ''
 
+    # レイアウト:
+    #   ┌─────────────────────────────┬───────────┐
+    #   │ タイトル                      │           │
+    #   │ 説明文                        │  favicon  │  ← 右に大きく
+    #   │ ドメイン名(.com)              │           │
+    #   └─────────────────────────────┴───────────┘
+    #   左の body（タイトル・説明・ドメイン）と、右の thumb（ファビコン）を
+    #   .post-link-card の flex（横並び）で左右に配置する。
+    #   ファビコンの取得に失敗した場合は、右パネルごと非表示にして
+    #   テキストだけのカードにフォールバックする（空枠を残さない）。
     return (
         f'<a class="post-link-card" href="{url_attr}" target="_blank" rel="noopener noreferrer nofollow">'
         f'<span class="post-link-card-body">'
         f'<span class="post-link-card-title">{title_html}</span>'
         f'{desc_html}'
-        f'<span class="post-link-card-domain">'
-        f'<img class="post-link-card-favicon" src="{favicon_url}" alt="" width="16" height="16" loading="lazy" onerror="this.style.display=\'none\'">'
-        f'{domain_html}'
+        f'<span class="post-link-card-domain">{domain_html}</span>'
         f'</span>'
+        f'<span class="post-link-card-thumb">'
+        f'<img class="post-link-card-favicon" src="{favicon_url}" alt="" loading="lazy"'
+        f' onerror="this.closest(\'.post-link-card-thumb\').style.display=\'none\'">'
         f'</span>'
         f'</a>'
     )

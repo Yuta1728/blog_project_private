@@ -115,21 +115,26 @@ function updateLinkPreview() {
         body.appendChild(descEl);
     }
 
+    // ドメイン名（.com）は左カラムの最下段にテキストだけで表示
     var domainEl = document.createElement('span');
-    domainEl.className = 'post-link-card-domain';
-
-    var favicon = document.createElement('img');
-    favicon.className = 'post-link-card-favicon';
-    favicon.src       = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=64';
-    favicon.alt       = '';
-    favicon.width     = 16;
-    favicon.height    = 16;
-    favicon.onerror   = function () { this.style.display = 'none'; };
-    domainEl.appendChild(favicon);
-    domainEl.appendChild(document.createTextNode(domain));
+    domainEl.className   = 'post-link-card-domain';
+    domainEl.textContent = domain;
     body.appendChild(domainEl);
 
     card.appendChild(body);
+
+    // 右側のファビコンパネル（大きく表示）
+    var thumb = document.createElement('span');
+    thumb.className = 'post-link-card-thumb';
+
+    var favicon = document.createElement('img');
+    favicon.className = 'post-link-card-favicon';
+    favicon.src       = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128';
+    favicon.alt       = '';
+    // 取得に失敗したら右パネルごと隠し、テキストだけのカードにする
+    favicon.onerror   = function () { thumb.style.display = 'none'; };
+    thumb.appendChild(favicon);
+    card.appendChild(thumb);
 
     previewEl.textContent = '';
     previewEl.appendChild(card);
