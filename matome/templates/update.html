@@ -12,6 +12,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ static_url('css/create_update.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/mobile-editor.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/link_card.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -77,6 +78,7 @@
             <span class="md-btn-separator"></span>
             <button type="button" class="md-btn md-btn-map" onclick="openMapModal()">🗺️ 地図</button>
             <button type="button" class="md-btn md-btn-youtube" onclick="openYoutubeModal()">▶ YouTube</button>
+            <button type="button" class="md-btn md-btn-link" onclick="openLinkModal()">🔗 リンク</button>
             <span class="md-btn-separator"></span>
             <span id="img-btn-group">
                 {% if post.img_name %}
@@ -88,9 +90,10 @@
             </span>
         </div>
 
-        {# 地図・YouTube 挿入モーダル（create/update 共通部分テンプレート） #}
+        {# 地図・YouTube・リンク 挿入モーダル（create/update 共通部分テンプレート） #}
         {% include '_map_modal.html' %}
         {% include '_youtube_modal.html' %}
+        {% include '_link_modal.html' %}
 
         <textarea name="body" id="bodyTextarea" rows="17">{{post.body}}</textarea>
 
@@ -285,11 +288,15 @@
    対象要素が存在するこのページと create.html でのみ読み込む。
    editor.js とは互いに独立した IIFE のため読み込み順に依存はない。
    【A-7】JS も static_url で読み込み、キャッシュバスティングを効かせる。
+
+   【リンクカード機能】editor-link.js を editor.js の「後」に読み込む。
+   🔗 リンク挿入モーダルの挙動（openLinkModal 等）を担当する。
    ============================================================ #}
 <script>
     window.EDITOR_CONFIG = { newImageCaptionPrefix: 'new_img_caption_' };
 </script>
 <script src="{{ static_url('js/editor.js') }}"></script>
+<script src="{{ static_url('js/editor-link.js') }}"></script>
 <script src="{{ static_url('js/mobile-editor.js') }}"></script>
 
 {% endblock %}

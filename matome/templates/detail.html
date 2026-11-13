@@ -32,9 +32,11 @@
 {% endblock %}
 
 {# ページ固有 CSS は <head> の extra_css ブロックで読み込む。
-   static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。 #}
+   static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。
+   link_card.css は本文中の [link:] リンクカードの表示に使う。 #}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/link_card.css') }}">
 {% endblock %}
 
 {% block content %}
