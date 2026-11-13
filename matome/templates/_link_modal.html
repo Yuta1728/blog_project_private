@@ -1,0 +1,55 @@
+{# ============================================================
+   templates/_link_modal.html
+   create.html / update.html 共通の「🔗 リンクカード挿入モーダル」
+   使い方: {% include '_link_modal.html' %}
+   （挙動は static/js/editor-link.js の openLinkModal 系が担当）
+
+   ※ 見た目は YouTube / 地図モーダルと同じ .map-modal 系クラスを流用する。
+     リンクカード固有のスタイル（入力欄の余白・プレビューカード）は
+     static/css/link_card.css が担当する。
+   ============================================================ #}
+<div id="link-modal-overlay" class="map-modal-overlay" onclick="closeLinkModal()"></div>
+<div id="link-modal" class="map-modal" role="dialog" aria-modal="true" aria-label="リンクカード挿入">
+    <div class="map-modal-header">
+        <span class="map-modal-title">🔗 リンクカードを挿入</span>
+        <button type="button" class="map-modal-close" onclick="closeLinkModal()">✕</button>
+    </div>
+    <div class="map-modal-body">
+        {# --- リンク先 URL（必須） --- #}
+        <label class="map-modal-label" for="link-url-input">リンク先 URL（必須）</label>
+        <input type="url" id="link-url-input" class="map-modal-input"
+               placeholder="例：https://example.com/article"
+               autocomplete="off"
+               oninput="updateLinkPreview()">
+
+        {# --- 表示タイトル（任意） --- #}
+        <label class="map-modal-label link-modal-label-gap" for="link-title-input">表示タイトル（任意）</label>
+        <input type="text" id="link-title-input" class="map-modal-input"
+               placeholder="例：参考にした記事のタイトル"
+               maxlength="120"
+               autocomplete="off"
+               oninput="updateLinkPreview()">
+
+        {# --- 説明文（任意） --- #}
+        <label class="map-modal-label link-modal-label-gap" for="link-desc-input">説明文（任意）</label>
+        <textarea id="link-desc-input" class="map-modal-input link-modal-textarea"
+                  placeholder="例：このサイトの概要を一言で（省略可）"
+                  maxlength="200"
+                  rows="2"
+                  oninput="updateLinkPreview()"></textarea>
+
+        <p class="link-modal-hint">
+            ※ タイトル・説明を省略すると、URL のドメイン名だけのシンプルなカードになります。
+        </p>
+
+        {# --- プレビュー --- #}
+        <div class="map-preview-area link-preview-area" id="link-preview-area">
+            <p class="map-preview-placeholder">URL を入力するとプレビューが表示されます</p>
+        </div>
+    </div>
+    <div class="map-modal-footer">
+        <button type="button" class="map-modal-cancel" onclick="closeLinkModal()">キャンセル</button>
+        <button type="button" class="map-modal-insert" id="link-insert-btn"
+                onclick="insertLinkTag()" disabled>本文に挿入</button>
+    </div>
+</div>

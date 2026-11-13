@@ -3,7 +3,7 @@
 # ======================================================================
 #
 # 【役割】
-#   記事本文（Markdown + [imgN] / [map:] / [youtube:] などの独自タグ）を
+#   記事本文（Markdown + [imgN] / [map:] / [youtube:] / [link:] などの独自タグ）を
 #   HTML に変換するモジュール。投稿・編集時に render_post_body() を呼び、
 #   結果を Post.body_html / Post.toc_html に保存する。詳細表示（detail）は
 #   保存済み HTML をそのまま出力するため、閲覧のたびの再変換は発生しない。
@@ -20,12 +20,14 @@
 #        (2-3) _replace_map()         : [map:] タグ → Google マップ iframe
 #        (2-4) _extract_youtube_id()  : YouTube URL から動画 ID を抽出
 #        (2-5) _replace_youtube()     : [youtube:] タグ → ファサード埋め込み
+#        (2-6) _derive_domain()       : URL → 表示用ドメイン名
+#        (2-7) _replace_link()        : [link:] タグ → リンクカード
 # ======================================================================
 
 import re
 import markdown
-from urllib.parse import quote  # 地図 URL の正しいエンコードに使用
-from markupsafe import escape   # HTML 直組み立て時のエスケープに使用
+from urllib.parse import quote, urlparse  # 地図 URL のエンコード・リンクのドメイン抽出に使用
+from markupsafe import escape             # HTML 直組み立て時のエスケープに使用
 
 
 # ======================================================================
@@ -48,7 +50,8 @@ from markupsafe import escape   # HTML 直組み立て時のエスケープに�
 # 【バージョン履歴】
 #   1 : 初版
 #   2 : YouTube サムネイルを高解像度（maxresdefault）に変更
-RENDER_VERSION = 2
+#   3 : [link:] リンクカードタグに対応
+RENDER_VERSION = 3
 
 
 # ======================================================================
@@ -62,7 +65,7 @@ def render_post_body(body: str, img_name: str | None = None,
     (本文 HTML, 目次 HTML) のタプルを返す。
 
     返り値:
-      body_html : Markdown 変換 + [imgN]/[map:]/[youtube:] 置換まで済ませた本文 HTML
+      body_html : Markdown 変換 + [imgN]/[map:]/[youtube:]/[link:] 置換まで済ませた本文 HTML
       toc_html  : 記事冒頭に表示する目次 HTML。
                   本文中に [toc] マーカーがある場合は None
                   （その位置に目次が展開済みのため、冒頭には表示しない）。
@@ -77,7 +80,8 @@ def render_post_body(body: str, img_name: str | None = None,
       STEP 5. 未使用の [imgN] タグを除去
       STEP 6. [map:] タグを Google マップ iframe に置換
       STEP 7. [youtube:] タグをファサード埋め込みに置換
-      STEP 8. (body_html, toc_html) を返す
+      STEP 8. [link:] タグをリンクカードに置換
+      STEP 9. (body_html, toc_html) を返す
     """
     # ------------------------------------------------------------------
     # STEP 1. 本文の前処理（連続空行の展開）
@@ -155,7 +159,18 @@ def render_post_body(body: str, img_name: str | None = None,
     )
 
     # ------------------------------------------------------------------
-    # STEP 8. 生成結果を返す
+    # STEP 8. リンクカードタグの変換（[link:URL|タイトル|説明] → カード）
+    # ------------------------------------------------------------------
+    # タグが単独行にあると Markdown が <p>...</p> で囲むため、その <p> ごと
+    # カード（ブロック要素）に差し替える。囲まれていない場合もそのまま置換する。
+    display_body = re.sub(
+        r'(?:<p>)?\[link:([^\]]+)\](?:</p>)?',
+        _replace_link,
+        display_body
+    )
+
+    # ------------------------------------------------------------------
+    # STEP 9. 生成結果を返す
     # ------------------------------------------------------------------
     return display_body, toc_html
 
@@ -349,4 +364,114 @@ def _replace_youtube(m: re.Match) -> str:
         f'    </button>'
         f'  </div>'
         f'</div>'
+    )
+
+
+# ----------------------------------------------------------------------
+# (2-6) リンク先 URL → 表示用ドメイン名
+# ----------------------------------------------------------------------
+def _derive_domain(url: str) -> str:
+    """
+    URL から表示用のドメイン名を取り出す（先頭の 'www.' は省く）。
+
+    例:
+      https://www.example.com/path?q=1 → example.com
+      https://blog.example.co.jp       → blog.example.co.jp
+    解析に失敗した場合は空文字を返す。
+    """
+    try:
+        netloc = urlparse(url).netloc
+    except ValueError:
+        return ''
+    if netloc.lower().startswith('www.'):
+        netloc = netloc[4:]
+    return netloc
+
+
+# ----------------------------------------------------------------------
+# (2-6.5) Markdown が付けた実体参照を元に戻す
+# ----------------------------------------------------------------------
+def _unescape_md(s: str) -> str:
+    """
+    Markdown 変換後の文字列から独自タグを取り出す際の二重エスケープを防ぐ。
+
+    _replace_link() などは Markdown 変換「後」の HTML（display_body）に対して
+    働くため、タグの中身は既に Markdown が & < > を &amp; &lt; &gt; へ
+    エスケープした状態で渡ってくる。そのまま再度 escape() すると
+    &amp; → &amp;amp; のように二重エスケープされ、特に URL のクエリ文字列
+    （?a=1&b=2）のリンク先が壊れる。
+
+    そこで escape() でエンコードし直す前に、Markdown が付けた実体参照を
+    いったん生の文字へ戻す。&amp; は他を復元し終えた最後に戻すこと
+    （先に戻すと &amp;lt; → <  のような誤復元が起きるため）。
+    """
+    return (
+        s.replace('&lt;', '<')
+         .replace('&gt;', '>')
+         .replace('&quot;', '"')
+         .replace('&#34;', '"')
+         .replace('&#39;', "'")
+         .replace('&amp;', '&')
+    )
+
+
+# ----------------------------------------------------------------------
+# (2-7) リンクカードタグの変換
+# ----------------------------------------------------------------------
+def _replace_link(m: re.Match) -> str:
+    """
+    [link:URL|タイトル|説明] を、クリックで別サイトへ遷移するリンクカードに変換する。
+
+    タグの中身は「|」区切りで最大 3 フィールド。
+      1 番目: リンク先 URL（必須）
+      2 番目: 表示タイトル（任意。省略時はドメイン名を表示）
+      3 番目: 説明文（任意）
+
+    【安全対策】
+      ・URL は http:// / https:// のスキームだけを許可する。
+        javascript: などの危険なスキームは弾き、エラー表示に置き換える
+        （onclick や href 経由の XSS を防ぐ）。
+      ・href / タイトル / 説明 / ドメインはすべて escape() で無害化してから
+        HTML に埋め込む（属性値・テキストの突き破りを防ぐ）。
+      ・外部リンクには rel="noopener noreferrer nofollow" と target="_blank" を付与し、
+        別タブで開く・リファラ漏洩や tabnabbing・SEO 評価の受け渡しを抑制する。
+      ・ファビコンは Google のファビコンサービスを閲覧者のブラウザ側で読み込む。
+        取得に失敗した場合は onerror で非表示にする（サーバーは通信しない）。
+    """
+    # Markdown が付けた &amp; &lt; &gt; を生の文字へ戻してから扱う
+    # （下で escape() し直すため。戻さないと URL の & が二重エスケープされる）
+    raw = _unescape_md(m.group(1))
+
+    # 「|」で URL / タイトル / 説明 に分割（説明に | が含まれても安全なよう maxsplit=2）
+    parts = raw.split('|', 2)
+    url   = parts[0].strip()
+    title = parts[1].strip() if len(parts) > 1 else ''
+    desc  = parts[2].strip() if len(parts) > 2 else ''
+
+    # スキーム検証（http/https のみ許可）
+    if not re.match(r'^https?://', url, re.IGNORECASE):
+        return f'<p style="color:#c0392b;">[link: 正しい URL ではありません（http:// か https:// で始めてください）→ {escape(url)}]</p>'
+
+    domain        = _derive_domain(url)
+    display_title = title if title else domain   # タイトル省略時はドメイン名を見出しにする
+
+    url_attr    = escape(url)
+    title_html  = escape(display_title)
+    domain_html = escape(domain)
+    favicon_url = f'https://www.google.com/s2/favicons?domain={quote(domain, safe="")}&sz=64'
+
+    # 説明文（任意）
+    desc_html = f'<span class="post-link-card-desc">{escape(desc)}</span>' if desc else ''
+
+    return (
+        f'<a class="post-link-card" href="{url_attr}" target="_blank" rel="noopener noreferrer nofollow">'
+        f'<span class="post-link-card-body">'
+        f'<span class="post-link-card-title">{title_html}</span>'
+        f'{desc_html}'
+        f'<span class="post-link-card-domain">'
+        f'<img class="post-link-card-favicon" src="{favicon_url}" alt="" width="16" height="16" loading="lazy" onerror="this.style.display=\'none\'">'
+        f'{domain_html}'
+        f'</span>'
+        f'</span>'
+        f'</a>'
     )

@@ -1,0 +1,192 @@
+/* ============================================================
+   static/css/link_card.css — リンクカード（[link:URL] タグ）
+   ============================================================
+   【役割】
+   記事本文に挿入した [link:...] タグが変換される「リンクカード」の
+   見た目を定義する。読み込むページは次の 3 つ。
+     - detail.html      … 記事詳細（実際に表示されるカード）
+     - create.html      … 投稿フォーム（挿入モーダルのプレビュー）
+     - update.html      … 編集フォーム（挿入モーダルのプレビュー）
+
+   配色は既存の地図／YouTube 埋め込み（detail.css）と同じ
+   アクセントブルー系（#0ea5e9 / #7dd3fa / #f0f9ff / #0369a1）に
+   そろえ、記事内での統一感を持たせる。
+
+   ダークモードは dark-mode.css と同じく html[data-theme="dark"] を
+   前置して上書きする（詳細度が高いため読み込み順に依存しない）。
+   ============================================================ */
+
+
+/* ============================================================
+   [1] リンクカード本体（詳細ページで表示される実カード）
+   ============================================================ */
+.post-link-card {
+    display: flex;
+    align-items: stretch;
+    margin: 24px 0;
+    border: 1px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 10px 10px 0;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10);
+    text-decoration: none;
+    overflow: hidden;
+    transition: box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.post-link-card:hover {
+    background: #f0f9ff;
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.20);
+    transform: translateY(-1px);
+}
+
+.post-link-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    min-width: 0;            /* 子要素の省略（…）を効かせるため */
+    width: 100%;
+}
+
+.post-link-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #0369a1;
+    /* タイトルは最大 2 行で省略 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.post-link-card-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555555;
+    /* 説明文は最大 2 行で省略 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.post-link-card-domain {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #0ea5e9;
+    word-break: break-all;
+}
+
+.post-link-card-favicon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: contain;
+    background: transparent;
+}
+
+
+/* ============================================================
+   [2] モーダル内プレビュー用の微調整
+   ============================================================
+   プレビューはクリックできないダミーカードのため、
+   ホバーの浮き上がりを無効化する。 */
+.post-link-card--preview {
+    margin: 0;
+    width: 100%;
+    cursor: default;
+}
+.post-link-card--preview:hover {
+    background: #ffffff;
+    transform: none;
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10);
+}
+
+/* プレビュー表示エリア（_link_modal.html の #link-preview-area）。
+   地図/YouTube のプレビュー枠（.map-preview-area）は中央寄せ＆高さ固定だが、
+   リンクカードは高さが可変なので、左寄せ・パディング付きに上書きする。 */
+.link-preview-area {
+    display: block;
+    height: auto;
+    min-height: 0;
+    padding: 14px;
+    text-align: left;
+}
+
+/* モーダルの各入力欄の間隔（2 つ目以降のラベル上に余白を足す） */
+.link-modal-label-gap {
+    margin-top: 14px;
+}
+
+/* 説明文は textarea。他の入力欄（.map-modal-input）と見た目をそろえつつ
+   複数行入力できるように高さと折り返しだけ調整する。 */
+.link-modal-textarea {
+    resize: vertical;
+    min-height: 52px;
+    line-height: 1.5;
+    font-family: inherit;
+}
+
+.link-modal-hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+
+/* ============================================================
+   [3] レスポンシブ（スマホ）
+   ============================================================ */
+@media (max-width: 767px) {
+    .post-link-card {
+        margin: 16px 0;
+    }
+    .post-link-card-body {
+        padding: 12px 14px;
+    }
+    .post-link-card-title {
+        font-size: 14px;
+    }
+}
+
+
+/* ============================================================
+   [4] ダークモード（html[data-theme="dark"] で上書き）
+   ============================================================ */
+html[data-theme="dark"] .post-link-card {
+    background: #1b2b3a;
+    border-color: #2a6f97;
+    border-left-color: #38bdf8;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+html[data-theme="dark"] .post-link-card:hover {
+    background: #22384a;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+html[data-theme="dark"] .post-link-card-title {
+    color: #7dd3fc;
+}
+html[data-theme="dark"] .post-link-card-desc {
+    color: #c7d2da;
+}
+html[data-theme="dark"] .post-link-card-domain {
+    color: #56c2f0;
+}
+
+/* モーダル内プレビュー（ダーク時） */
+html[data-theme="dark"] .post-link-card--preview:hover {
+    background: #1b2b3a;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+html[data-theme="dark"] .link-modal-hint {
+    color: #94a3b8;
+}
