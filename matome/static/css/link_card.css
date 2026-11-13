@@ -57,7 +57,7 @@
     /* タイトルは最大 2 行で省略 */
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;  
+    line-clamp: 2;              /* 標準プロパティ（互換性のため併記） */
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-word;
@@ -70,7 +70,7 @@
     /* 説明文は最大 2 行で省略 */
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;  
+    line-clamp: 2;              /* 標準プロパティ（互換性のため併記） */
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-word;
@@ -112,33 +112,57 @@
     box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10);
 }
 
+/* ------------------------------------------------------------
+   モーダル全体のサイズ調整（画面外へのはみ出し防止）
+   ------------------------------------------------------------
+   流用元の .map-modal は「入力1つ＋プレビュー」前提で、デスクトップでは
+   高さ上限も内部スクロールも持たない（モバイルのみ max-height + スクロール）。
+   リンクモーダルは入力欄が3つ＋説明＋注記＋プレビューと要素が多く、
+   そのままだと縦に伸びて画面外へはみ出す。そこでリンクモーダルだけ
+   高さに上限を設け、ヘッダー／フッターは固定のまま本文部分だけを
+   内部スクロールさせる。 */
+#link-modal {
+    max-height: 90vh;          /* ビューポートを超えない */
+}
+#link-modal .map-modal-body {
+    overflow-y: auto;          /* 本文が長いときは本文だけスクロール */
+    flex: 1 1 auto;
+    min-height: 0;             /* flex 子要素がスクロールできるように */
+}
+
 /* プレビュー表示エリア（_link_modal.html の #link-preview-area）。
    地図/YouTube のプレビュー枠（.map-preview-area）は中央寄せ＆高さ固定だが、
-   リンクカードは高さが可変なので、左寄せ・パディング付きに上書きする。 */
+   リンクカードは高さが可変なので、左寄せ・パディング付きに上書きする。
+   縦の高さは内容ぶんだけに抑え、固定の 260px を使わない。 */
 .link-preview-area {
     display: block;
     height: auto;
     min-height: 0;
-    padding: 14px;
+    padding: 12px;
     text-align: left;
 }
 
 /* モーダルの各入力欄の間隔（2 つ目以降のラベル上に余白を足す） */
 .link-modal-label-gap {
-    margin-top: 14px;
+    margin-top: 10px;
+}
+
+/* 入力欄の下余白を少し詰めて、全体の縦幅を圧縮する */
+#link-modal .map-modal-input {
+    margin-bottom: 10px;
 }
 
 /* 説明文は textarea。他の入力欄（.map-modal-input）と見た目をそろえつつ
    複数行入力できるように高さと折り返しだけ調整する。 */
 .link-modal-textarea {
     resize: vertical;
-    min-height: 52px;
+    min-height: 46px;
     line-height: 1.5;
     font-family: inherit;
 }
 
 .link-modal-hint {
-    margin: 8px 0 0;
+    margin: 6px 0 0;
     font-size: 12px;
     color: #64748b;
     line-height: 1.5;
