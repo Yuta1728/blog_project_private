@@ -78,14 +78,18 @@
                         {% if current_user.is_authenticated %}
                             <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            <li><a href="{{ url_for('blog.index') }}">トップページ</a></li>
 
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                            <li><a href="{{ url_for('blog.howto') }}">使い方</a></li>
                             <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
                             <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
                         {% else %}
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            <li><a href="{{ url_for('blog.index') }}">トップページ</a></li>
 
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                            <li><a href="{{ url_for('blog.howto') }}">使い方</a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -117,14 +121,18 @@
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                <li><a href="{{ url_for('blog.index') }}">🏠 トップページ</a></li>
 
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
+                <li><a href="{{ url_for('blog.howto') }}">📖 使い方</a></li>
                 <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
             {% else %}
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                <li><a href="{{ url_for('blog.index') }}">🏠 トップページ</a></li>
 
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
+                <li><a href="{{ url_for('blog.howto') }}">📖 使い方</a></li>
             {% endif %}
         </ul>
     </div>
