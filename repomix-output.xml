@@ -11302,769 +11302,6 @@ if __name__ == '__main__':
 </html>
 </file>
 
-<file path="matome/static/css/index.css">
-/* ============================================================
-   static/css/index.css - Coastal Dawn v2
-   【対象ページ】 index.html（トップページ・記事一覧）
-   ============================================================
-   トップページのスタイルをまとめたファイル。
-   扱うパーツは大きく分けて次の3つ。
-     ・記事一覧全体のレイアウト（.page-wrapper）
-     ・記事カード（.post-card 系。mypage.html と共用）
-     ・ページ番号によるページ送り（.index-pagination 系）
-   パーツ単位で見出しコメントを付け、どの UI 要素の
-   スタイルかを追いやすくしている。
-   ============================================================ */
-
-
-/* ------------------------------------------------------------
-   【index.html】メインレイアウト（記事一覧全体を囲む余白）
-   ------------------------------------------------------------ */
-.page-wrapper {
-    max-width: 940px;
-    margin: 0 auto;
-    padding: 32px 28px 60px;
-    margin-top: 15px;
-}
-
-/* ------------------------------------------------------------
-   【index.html】ページ送り後に記事一覧の先頭へスクロールさせる目印
-   ------------------------------------------------------------
-   ページ番号リンクは URL 末尾に #index-articles-anchor を付けており、
-   遷移後にこの空要素までスクロールする。
-   ヘッダーは position: fixed で画面上部に固定されているため、
-   scroll-margin-top をヘッダーの高さぶん確保して、
-   スクロール先がヘッダーの下に隠れないようにしている。
-   ------------------------------------------------------------ */
-#index-articles-anchor {
-    scroll-margin-top: 100px;
-}
-
-@media (max-width: 767px) {
-    #index-articles-anchor {
-        scroll-margin-top: 80px;
-    }
-}
-
-
-/* ------------------------------------------------------------
-   【index.html / mypage.html 共通】記事カードの「編集」リンクボタン
-   ------------------------------------------------------------ */
-.btn-edit {
-    display: inline-block;
-    padding: 3px 14px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #0369a1;
-    border: 1.2px solid #7dd3fa;
-    border-radius: 4px;
-    margin-right: 7px;
-    background: transparent;
-    text-decoration: none;
-}
-
-a[role="button"]:hover {
-    color: #0c1f35;
-    border-color: #0ea5e9;
-    background: #e0f2fe;
-    text-decoration: none;
-}
-
-
-/* ------------------------------------------------------------
-   【index.html】検索・絞り込み結果ラベル（「🔍「◯◯」の検索結果」）
-   ------------------------------------------------------------ */
-.filter-label {
-    font-size: 19px;
-    color: #0c1f35;
-    font-weight: 600;
-    margin-bottom: 10px;
-    display: inline-block;
-}
-
-
-/* ------------------------------------------------------------
-   【index.html】「📋 最新の記事」セクション見出し
-   ------------------------------------------------------------
-   フォントサイズ等はこのファイルの指定が優先される
-   （top_sections.css にも同名クラスの基本デザインがある）。
-   ------------------------------------------------------------ */
-.posts-section-title {
-    font-size: 1.3rem !important;
-    font-weight: 700;
-    color: #0c1f35;
-    line-height: 1.4;
-    letter-spacing: 0.01em;
-}
-
-
-/* ------------------------------------------------------------
-   【index.html】自己紹介（hero）セクションの見出し
-   ------------------------------------------------------------
-   セクション本体の詳細レイアウトは top_sections.css で定義しており、
-   ここでは見出しのフォント指定だけを担当する。
-   ------------------------------------------------------------ */
-.hero-section-title {
-    font-size: 1.3rem !important;
-    font-weight: 700;
-    color: #0c1f35;
-    line-height: 1.4;
-    letter-spacing: 0.01em;
-}
-
-
-/* ------------------------------------------------------------
-   【index.html / mypage.html 共通】記事カードのジャンル・非公開バッジ
-   ------------------------------------------------------------ */
-.badge-genre {
-    font-size: 12px;
-    font-weight: 600;
-    color: #0369a1;
-    background: #dbeafe;
-    border: 1px solid #38bdf8;
-    border-radius: 7px;
-    padding: 2px 10px;
-    white-space: nowrap;
-}
-
-.badge-private {
-    font-size: 12px;
-    font-weight: 700;
-    color: #c0392b;
-    background: #fff0ee;
-    border: 1.2px solid #f5b7b1;
-    border-radius: 12px;
-    padding: 2px 10px;
-    white-space: nowrap;
-}
-
-
-/* ============================================================
-   【index.html / mypage.html 共通】記事カード本体
-   ============================================================
-   左にサムネイル、右に本文（ジャンル・タイトル・日付・操作ボタン）を
-   横並びにしたカード。カード全体がリンクになっており、
-   ホバーするとゴールド系の配色に切り替わって浮き上がる。
-   ============================================================ */
-.post-card {
-    display: flex;
-    gap: 30px;
-    background: #ffffff;
-    border: 1.5px solid #7dd3fa;
-    border-left: 5px solid #0ea5e9;
-    border-radius: 0 12px 12px 0;
-    padding: 16px 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
-    transition: transform 0.22s ease, box-shadow 0.22s ease,
-                border-left-color 0.22s ease, border-color 0.22s ease,
-                background-color 0.22s ease;
-    position: relative;
-    cursor: pointer;
-}
-
-.post-card:hover {
-    transform: translateY(-3px);
-    background: #fffbeb;
-    border: 1.5px solid #fbbf24;
-    border-left: 5px solid #f59e0b;
-    box-shadow: 0 8px 28px rgba(245, 158, 11, 0.20),
-                0 2px 8px rgba(14, 165, 233, 0.08);
-}
-
-/* ------------------------------------------------------------
-   カード左側のサムネイル画像枠
-   ------------------------------------------------------------
-   【目的】カードの高さは「右側コンテンツ（.post-content）」だけで決め、
-   サムネイルはその高さに合わせて上下が自動調整されるようにする。
-   管理者ログイン時に「編集・削除」ボタンが出て右側が高くなれば、
-   サムネイルもそのボタン位置まで一緒に伸びる。
-
-   【前回修正で起きた不具合とその原因】
-   以前の固定高さ（height: 170px）を外しただけだと、今度はサムネイル枠の
-   高さが「画像そのものの縦横比（270px 幅に収まる画像の本来の高さ）」で
-   決まってしまった。.post-card は display: flex（既定で
-   align-items: stretch）のため、左右のうち背の高い方にカード高さが揃う。
-   縦長・4:3 などの画像だと枠が右側コンテンツより高くなり、その高さに
-   カード全体が引き伸ばされる。結果、.post-content の
-   justify-content: space-between によってタイトル・ハッシュタグ・日付が
-   上下いっぱいに押し広げられ、隙間が無駄に空いてしまっていた。
-
-   【この修正でやること】
-   サムネイル内の画像（.thumb-img）を position: absolute でフロー
-   （高さ計算）から外す（下の .thumb-img を参照）。こうすると
-   「画像の比率」が枠の高さを決めなくなり、.post-thumbnail の高さは
-   align-self: stretch によって「右側コンテンツの高さ」にだけ追従する。
-   画像はその確定した枠の中に後から流し込まれる形になる。
-
-   - position: relative … 絶対配置する画像の基準枠にする
-   - align-self: stretch … カード（＝右側コンテンツ）の高さまで伸ばす
-   - min-height: 170px   … 右側が短い記事でもサムネイルが潰れないための下限
-                           （下限であって上限ではないので、伸びる方向は妨げない）
-
-   ※ 画像の収め方（object-fit: contain）は base.html で後から読み込む
-     thumbnail_fit.css（詳細度が高い）が上書きするため、サイズに関わらず
-     「切り取らず全体表示」のまま。ここでは枠の高さの決まり方だけを扱う。
-   ------------------------------------------------------------ */
-.post-thumbnail {
-    flex: 0 0 270px;
-    align-self: stretch;     /* カード（＝右側コンテンツ）の高さまで引き伸ばす */
-    min-height: 170px;       /* 右側が短いときの下限（従来の固定値を踏襲） */
-    position: relative;      /* 中の画像（absolute）の位置基準 */
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: #e0f2fe;
-    border: 1.5px solid #7dd3fa;
-    transition: border-color 0.22s ease;
-}
-
-.post-card:hover .post-thumbnail {
-    border-color: #fbbf24;
-    background-color: #fef3c7;
-}
-
-/* サムネイル画像本体。
-   position: absolute + inset: 0 で枠いっぱいに敷き詰め、かつ高さ計算からは
-   外す。これにより「画像の縦横比が枠の高さを押し広げる」ことがなくなり、
-   枠は右側コンテンツの高さにだけ追従する。 */
-.thumb-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-}
-
-/* カード右側のコンテンツ（ジャンル・タイトル・日付・操作ボタン）レイアウト */
-.post-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.post-header-meta {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 6px;
-    font-size: 0.95rem;
-    flex-wrap: wrap;
-}
-
-/* ------------------------------------------------------------
-   【index.html / mypage.html 共通】記事タイトルリンク
-   ------------------------------------------------------------ */
-.post-title {
-    margin: 8px 0 8px 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    line-height: 1.5;
-    text-align: left !important;
-}
-
-.post-title a {
-    color: #0c1f35;
-    text-decoration: none;
-    display: inline-block;
-    transition: color 0.22s ease;
-}
-
-/* カード全域をタップ可能にする透明レイヤー
-   （タイトルリンクを ::after でカード全面に広げ、
-     カードのどこを押しても記事詳細へ遷移できるようにする） */
-.post-title a::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-}
-
-.post-card:hover .post-title a {
-    color: #0369a1;
-    font-weight: 700;
-}
-
-/* ------------------------------------------------------------
-   【index.html / mypage.html 共通】「編集」「削除」ボタン行(投稿者本人のみ表示)
-   ------------------------------------------------------------ */
-.post-actions {
-    position: relative;
-    z-index: 2;
-    margin-top: 8px;
-}
-
-/* 編集・削除ボタンを横並びにするため、削除フォームをインライン表示にする */
-.post-actions form {
-    display: inline;
-}
-
-.btn-delete {
-    background: transparent;
-    border: 1.2px solid #f5b7b1;
-    color: #c0392b;
-    padding: 3px 14px;
-    font-size: 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.18s;
-}
-
-.btn-delete:hover {
-    background-color: #fff0ee;
-    border-color: #e74c3c;
-    color: #a93226;
-}
-
-/* ------------------------------------------------------------
-   【index.html / mypage.html 共通】投稿日・更新日の表示
-   ------------------------------------------------------------ */
-.post-date {
-    margin: 1px 0 0 0;
-    font-size: 0.80rem;
-    color: #0369a1;
-    font-weight: 500;
-    transition: color 0.22s ease;
-}
-
-.post-card:hover .post-date {
-    color: #b45309;
-}
-
-
-/* ------------------------------------------------------------
-   【index.html】検索・絞り込みで該当記事がないときの空メッセージ
-   ------------------------------------------------------------ */
-.index-empty-message {
-    text-align: center;
-    color: #aaa;
-    margin-top: 60px;
-}
-
-
-/* ============================================================
-   【index.html】ページ番号によるページ送り
-   ============================================================
-   サーバー側で 1 ページ 4 件ずつ取得し、Jinja 側でページ数が
-   2 以上のときだけ <nav> を出力する。そのためこのナビは
-   「表示されるときは常にページが複数ある」前提で作られており、
-   初期状態を隠す必要がないため常に flex 表示にしている。
-
-   ボタンは次の3種類。
-     ・ページ番号（現在ページは .active で塗りつぶし強調）
-     ・「‹」「›」前へ／次へ（.page-btn-arrow）
-     ・先頭/末尾での無効表示（.page-btn-disabled）
-   ============================================================ */
-
-/* ページ送りナビ全体 */
-.index-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 8px 0 40px;
-    flex-wrap: wrap;
-}
-
-/* ページ番号・前へ／次へ の共通ボタンデザイン
-   （リンク <a> と、現在ページ・無効状態の <span> で共用する） */
-.page-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    height: 40px;
-    padding: 0 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
-    color: #0369a1;
-    background-color: #ffffff;
-    border: 1px solid #7dd3fa;
-    cursor: pointer;
-    text-decoration: none;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-                color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-
-.page-btn:hover {
-    background-color: #dbeafe;
-    border-color: #38bdf8;
-    color: #0c1f35;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
-    transform: translateY(-1px);
-    text-decoration: none;
-}
-
-.page-btn:active {
-    transform: translateY(0);
-    box-shadow: none;
-    background-color: #bae6fd;
-}
-
-/* 現在表示中のページ番号（塗りつぶし強調、<span> で出力） */
-.page-btn.active {
-    background-color: #0ea5e9;
-    border-color: #0ea5e9;
-    color: #ffffff;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
-    cursor: default;
-}
-
-/* 現在ページはリンクではないのでホバーで浮かせない */
-.page-btn.active:hover {
-    background-color: #0ea5e9;
-    border-color: #0ea5e9;
-    color: #ffffff;
-    transform: none;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
-}
-
-/* 「‹」「›」前へ／次へ ボタン */
-.page-btn-arrow {
-    font-size: 16px;
-    font-weight: 700;
-}
-
-/* 先頭・末尾ページで無効化された前へ／次へ（<span> で出力）
-   ------------------------------------------------------------
-   <a> と違い <span> は :disabled を持てないため、専用クラスで
-   見た目を無効化する。pointer-events: none によりホバー効果も
-   無効になる。 */
-.page-btn-disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
-    pointer-events: none;
-}
-
-/* ページ番号の省略記号（…） */
-.page-ellipsis {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 40px;
-    color: #7dd3fa;
-    font-size: 14px;
-    font-weight: 700;
-    user-select: none;
-}
-
-
-/* ==========================================================================
-   【index.html / mypage.html 共通】レスポンシブ（スマホ）
-   ==========================================================================
-   スマホでは記事カードを縦積みにし（サムネイルを上・本文を下）、
-   操作ボタンを中央寄せ・ページ送りボタンを一回り小さくする。
-
-   ※ スマホ時はこのメディアクエリ内でサムネイルに確定した高さ
-     （height: 240px、mobile_compact.css では aspect-ratio）を与えており、
-     上の PC 向けルール（可変高さ・画像の絶対配置）の影響で見た目が
-     変わることはない（スマホの表示は従来どおり）。
-   ========================================================================== */
-
-@media (max-width: 600px) {
-    .page-wrapper {
-        padding: 16px 14px 48px;
-    }
-
-    .post-card {
-        flex-direction: column;
-        gap: 12px;
-        padding: 11px;
-        margin-top: 0;
-        margin-bottom: 14px;
-        border-radius: 0 10px 10px 0;
-    }
-
-    .post-thumbnail {
-        flex: none;
-        width: 100%;
-        height: 240px;
-    }
-
-    .post-content {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .post-header-meta {
-        font-size: 0.85rem;
-        margin-bottom: 4px;
-    }
-
-    .post-title {
-        font-size: 1.1rem;
-        line-height: 1.45;
-        margin-bottom: 10px;
-    }
-
-    .post-date {
-        order: 0;
-        font-size: 0.75rem;
-        margin-top: 3px;
-        margin-bottom: 3px;
-    }
-
-    .post-actions {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        margin-top: 7px;
-        margin-bottom: 3px;
-        width: 100%;
-    }
-
-    .btn-edit,
-    .btn-delete {
-        padding: 4px 17px;
-        font-size: 13px;
-        min-height: 20px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .post-actions {
-        order: 1;
-    }
-
-    .post-title a::after {
-        inset: 0;
-        z-index: 1;
-    }
-
-    .index-pagination {
-        gap: 6px;
-        margin: 8px 0 32px;
-    }
-
-    .page-btn {
-        min-width: 36px;
-        height: 36px;
-        padding: 0 10px;
-        font-size: 13px;
-    }
-
-    .page-ellipsis {
-        height: 36px;
-        min-width: 20px;
-    }
-}
-</file>
-
-<file path="matome/templates/detail.html">
-{% extends "base.html" %}
-{% from '_macros.html' import post_thumbnail, thumbnail_url %}
-
-{# ページタイトル: 記事タイトルを反映する。 #}
-{% block title %}{{ post.title }}｜MITO Blog{% endblock %}
-
-{# ============================================================
-   メタ情報・OGP
-   ------------------------------------------------------------
-   SNS シェア時にタイトル・説明・画像が出るよう、記事ごとの
-   og:* / twitter:* を出力して base.html の既定メタを丸ごと差し替える。
-
-   - 説明文は本文 HTML（display_body）からタグを除いた冒頭 110 文字。
-     content="..." の中は Jinja が自動エスケープする。
-   - og:image は thumbnail_url マクロで絶対 URL を取得する
-     （OGP 画像は絶対 URL 必須のため external=True）。
-============================================================ #}
-{% block meta %}
-    {%- set meta_description = display_body | striptags | truncate(110, True, '…') -%}
-    {%- set og_image = thumbnail_url(post, external=True) -%}
-    <meta name="description" content="{{ meta_description }}">
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="MITO Blog">
-    <meta property="og:title" content="{{ post.title }}">
-    <meta property="og:description" content="{{ meta_description }}">
-    <meta property="og:image" content="{{ og_image }}">
-    <meta property="og:url" content="{{ url_for('blog.detail', id=post.id, _external=True) }}">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ post.title }}">
-    <meta name="twitter:description" content="{{ meta_description }}">
-    <meta name="twitter:image" content="{{ og_image }}">
-{% endblock %}
-
-{# ページ固有 CSS は <head> の extra_css ブロックで読み込む。
-   static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。
-   link_card.css は本文中の [link:] リンクカードの表示に使う。 #}
-{% block extra_css %}
-<link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
-<link rel="stylesheet" href="{{ static_url('css/link_card.css') }}">
-{% endblock %}
-
-{% block content %}
-
-<div class="detail-container">
-    <article>
-        <h1>
-            {{ post.title }}
-        </h1>
-
-        {% set genre_display = post.genre if post.genre else '未分類' %}
-
-        <div class="post-meta">
-            <div class="detail-tag-row">
-                <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
-                    📂 {{ genre_display }}
-                </a>
-
-                {% if post.hashtags %}
-                    {% for tag in post.hashtags %}
-                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
-                           class="hashtag-badge">
-                            #{{ tag.name }}
-                        </a>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <div class="post-user-info">
-                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ #}
-                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
-                    alt="avatar" width="21" height="21">
-                <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
-            </div>
-
-            <div class="post-time">
-                投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                &nbsp;
-                {% if post.updated_at %}
-                    更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
-                {% endif %}
-            </div>
-        </div>
-
-        {% if toc_html and '<li>' in toc_html %}
-            <div class="post-toc">
-                <p class="toc-title">目次</p>
-                {{ toc_html | safe }}
-            </div>
-        {% endif %}
-
-        <div class="detail-article-body">{{ display_body | safe }}</div>
-    </article>
-
-    <hr>
-    <div class="detail-actions">
-        <button type="button" class="detail-btn detail-btn-back" onclick="goBack();">
-            <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            前の画面に戻る
-        </button>
-        {% if current_user.is_authenticated and post.user_id == current_user.id %}
-            <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-btn detail-btn-edit">
-                <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M14.7 3.3a1 1 0 0 1 1.4 0l.6.6a1 1 0 0 1 0 1.4L5.5 16.5l-2.5.5.5-2.5L14.7 3.3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                この記事を編集する
-            </a>
-        {% endif %}
-    </div>
-
-    {# ================================================================
-       関連記事セクション（単一ブロック、最大4件）
-       サムネイルは _macros.html の post_thumbnail マクロで描画
-       （index/mypage と共通の優先順位ロジック）。
-       ================================================================ #}
-    {% if related_posts %}
-        <section class="related-section">
-
-            <h2 class="related-heading">
-                <span class="related-heading-icon">🔗</span>
-                関連記事
-            </h2>
-
-            <ul class="related-list">
-                {% for rel in related_posts %}
-                    <li class="related-item">
-                        <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
-                            <div class="related-thumb">
-                                {# 関連記事サムネイルはデスクトップ基準で 120 x 85 #}
-                                {{ post_thumbnail(rel, width=120, height=85) }}
-                            </div>
-                            <div class="related-body">
-                                <p class="related-title">{{ rel.title }}</p>
-                                <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
-                            </div>
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-
-        </section>
-    {% endif %}
-    {# ================================================================ #}
-
-</div>
-
-<script>
-/* ============================================================
-   前の画面に戻る
-   ============================================================ */
-function goBack() {
-    const referrer = document.referrer;
-    if (referrer && new URL(referrer).origin === location.origin) {
-        location.href = referrer;
-    } else {
-        history.back();
-    }
-}
-
-/* ============================================================
-   YouTube ファサード再生
-   ============================================================ */
-function ytPlay(facadeEl) {
-    const wrapper  = facadeEl.closest('.post-youtube-wrapper');
-    const embedUrl = wrapper.dataset.embedUrl;
-
-    const iframe = document.createElement('iframe');
-    iframe.src             = embedUrl;
-    iframe.className       = 'post-youtube-iframe';
-    iframe.allow           = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-    iframe.allowFullscreen = true;
-    iframe.referrerPolicy  = 'strict-origin-when-cross-origin';
-
-    wrapper.appendChild(iframe);
-    facadeEl.style.display = 'none';
-}
-
-/* ============================================================
-   YouTube サムネイルの高画質 → 通常画質フォールバック
-
-   サムネイルは最初に高画質版（maxresdefault.jpg・1280x720）を読み込む。
-   ただし動画によっては高画質版が存在しない。その場合は次の 2 通りになる。
-     (1) 404 を返す                → onerror で検知
-     (2) 120x90 の小さな代替画像を返す → onload で画像の幅を見て検知
-   どちらの場合も、data-fallback に入っている通常画質版
-   （hqdefault.jpg・必ず存在する）へ差し替える。
-
-   @param img    : サムネイルの <img> 要素
-   @param isLoad : onload から呼ばれたとき true（画像サイズの検査を行う）
-   ============================================================ */
-function ytThumbFallback(img, isLoad) {
-    const fallback = img.dataset.fallback;
-    if (!fallback) return;                           // 差し替え済み（または不要）
-    if (isLoad && img.naturalWidth >= 320) return;   // 高画質版が正常に読めた
-    img.removeAttribute('data-fallback');            // 差し替えは 1 回だけ（無限ループ防止）
-    img.src = fallback;
-}
-</script>
-
-{% endblock %}
-</file>
-
 <file path="matome/views/blog.py">
 # ======================================================================
 # views/blog.py — 一般公開ページ（誰でも閲覧できるページ）
@@ -12792,6 +12029,210 @@ def sitemap_xml():
 
     xml = '\n'.join(parts) + '\n'
     return Response(xml, mimetype='application/xml')
+</file>
+
+<file path="matome/templates/detail.html">
+{% extends "base.html" %}
+{% from '_macros.html' import post_thumbnail, thumbnail_url %}
+
+{# ページタイトル: 記事タイトルを反映する。 #}
+{% block title %}{{ post.title }}｜MITO Blog{% endblock %}
+
+{# ============================================================
+   メタ情報・OGP
+   ------------------------------------------------------------
+   SNS シェア時にタイトル・説明・画像が出るよう、記事ごとの
+   og:* / twitter:* を出力して base.html の既定メタを丸ごと差し替える。
+
+   - 説明文は本文 HTML（display_body）からタグを除いた冒頭 110 文字。
+     content="..." の中は Jinja が自動エスケープする。
+   - og:image は thumbnail_url マクロで絶対 URL を取得する
+     （OGP 画像は絶対 URL 必須のため external=True）。
+============================================================ #}
+{% block meta %}
+    {%- set meta_description = display_body | striptags | truncate(110, True, '…') -%}
+    {%- set og_image = thumbnail_url(post, external=True) -%}
+    <meta name="description" content="{{ meta_description }}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="MITO Blog">
+    <meta property="og:title" content="{{ post.title }}">
+    <meta property="og:description" content="{{ meta_description }}">
+    <meta property="og:image" content="{{ og_image }}">
+    <meta property="og:url" content="{{ url_for('blog.detail', id=post.id, _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ post.title }}">
+    <meta name="twitter:description" content="{{ meta_description }}">
+    <meta name="twitter:image" content="{{ og_image }}">
+{% endblock %}
+
+{# ページ固有 CSS は <head> の extra_css ブロックで読み込む。
+   static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。
+   link_card.css は本文中の [link:] リンクカードの表示に使う。 #}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/link_card.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="detail-container">
+    <article>
+        <h1>
+            {{ post.title }}
+        </h1>
+
+        {% set genre_display = post.genre if post.genre else '未分類' %}
+
+        <div class="post-meta">
+            <div class="detail-tag-row">
+                <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
+                    📂 {{ genre_display }}
+                </a>
+
+                {% if post.hashtags %}
+                    {% for tag in post.hashtags %}
+                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                           class="hashtag-badge">
+                            #{{ tag.name }}
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="post-user-info">
+                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ #}
+                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
+                    alt="avatar" width="21" height="21">
+                <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
+            </div>
+
+            <div class="post-time">
+                投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                &nbsp;
+                {% if post.updated_at %}
+                    更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if toc_html and '<li>' in toc_html %}
+            <div class="post-toc">
+                <p class="toc-title">目次</p>
+                {{ toc_html | safe }}
+            </div>
+        {% endif %}
+
+        <div class="detail-article-body">{{ display_body | safe }}</div>
+    </article>
+
+    <hr>
+    <div class="detail-actions">
+        <button type="button" class="detail-btn detail-btn-back" onclick="goBack();">
+            <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            前の画面に戻る
+        </button>
+        {% if current_user.is_authenticated and post.user_id == current_user.id %}
+            <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-btn detail-btn-edit">
+                <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M14.7 3.3a1 1 0 0 1 1.4 0l.6.6a1 1 0 0 1 0 1.4L5.5 16.5l-2.5.5.5-2.5L14.7 3.3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                この記事を編集する
+            </a>
+        {% endif %}
+    </div>
+
+    {# ================================================================
+       関連記事セクション（単一ブロック、最大4件）
+       サムネイルは _macros.html の post_thumbnail マクロで描画
+       （index/mypage と共通の優先順位ロジック）。
+       ================================================================ #}
+    {% if related_posts %}
+        <section class="related-section">
+
+            <h2 class="related-heading">
+                <span class="related-heading-icon">🔗</span>
+                関連記事
+            </h2>
+
+            <ul class="related-list">
+                {% for rel in related_posts %}
+                    <li class="related-item">
+                        <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                            <div class="related-thumb">
+                                {# 関連記事サムネイルはデスクトップ基準で 120 x 85 #}
+                                {{ post_thumbnail(rel, width=120, height=85) }}
+                            </div>
+                            <div class="related-body">
+                                <p class="related-title">{{ rel.title }}</p>
+                                <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                            </div>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+
+        </section>
+    {% endif %}
+    {# ================================================================ #}
+
+</div>
+
+<script>
+/* ============================================================
+   前の画面に戻る
+   ============================================================ */
+function goBack() {
+    const referrer = document.referrer;
+    if (referrer && new URL(referrer).origin === location.origin) {
+        location.href = referrer;
+    } else {
+        history.back();
+    }
+}
+
+/* ============================================================
+   YouTube ファサード再生
+   ============================================================ */
+function ytPlay(facadeEl) {
+    const wrapper  = facadeEl.closest('.post-youtube-wrapper');
+    const embedUrl = wrapper.dataset.embedUrl;
+
+    const iframe = document.createElement('iframe');
+    iframe.src             = embedUrl;
+    iframe.className       = 'post-youtube-iframe';
+    iframe.allow           = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy  = 'strict-origin-when-cross-origin';
+
+    wrapper.appendChild(iframe);
+    facadeEl.style.display = 'none';
+}
+
+/* ============================================================
+   YouTube サムネイルの高画質 → 通常画質フォールバック
+
+   サムネイルは最初に高画質版（maxresdefault.jpg・1280x720）を読み込む。
+   ただし動画によっては高画質版が存在しない。その場合は次の 2 通りになる。
+     (1) 404 を返す                → onerror で検知
+     (2) 120x90 の小さな代替画像を返す → onload で画像の幅を見て検知
+   どちらの場合も、data-fallback に入っている通常画質版
+   （hqdefault.jpg・必ず存在する）へ差し替える。
+
+   @param img    : サムネイルの <img> 要素
+   @param isLoad : onload から呼ばれたとき true（画像サイズの検査を行う）
+   ============================================================ */
+function ytThumbFallback(img, isLoad) {
+    const fallback = img.dataset.fallback;
+    if (!fallback) return;                           // 差し替え済み（または不要）
+    if (isLoad && img.naturalWidth >= 320) return;   // 高画質版が正常に読めた
+    img.removeAttribute('data-fallback');            // 差し替えは 1 回だけ（無限ループ防止）
+    img.src = fallback;
+}
+</script>
+
+{% endblock %}
 </file>
 
 <file path="matome/templates/index.html">
@@ -13581,827 +13022,562 @@ DEFAULT_THUMBNAILS = [
 | **第 5 段階**（設計改善） | B-8（画像テーブルの正規化）／B-4（srcset）／B-5（サニタイズ）／C-1（SEO） | 機能拡張への備え |
 </file>
 
-<file path="README.md">
-# MITO Blog
-
-Flask 製の個人用ブログアプリです。記事の投稿・編集・公開に加え、Markdown 記法・独自タグ（地図 / YouTube / 画像キャプション）による表現、ハッシュタグやジャンルでの絞り込み、ダークモード対応などを備えています。学習用途を想定し、コードには処理の流れが追える日本語コメントを付けています。
-
-本番（PostgreSQL）と無料ホスティング（SQLite）の両方で動作するよう設計されています。
-
----
-
-## 目次
-
-- [MITO Blog](#mito-blog)
-  - [目次](#目次)
-  - [主な機能](#主な機能)
-    - [閲覧者向けの機能（公開ページ）](#閲覧者向けの機能公開ページ)
-    - [管理者向けの機能（ログイン必須）](#管理者向けの機能ログイン必須)
-  - [技術スタック](#技術スタック)
-  - [ディレクトリ構成](#ディレクトリ構成)
-  - [セットアップ](#セットアップ)
-    - [環境変数（.env）](#環境変数env)
-    - [ローカル開発（PostgreSQL）](#ローカル開発postgresql)
-    - [SQLite で動かす場合](#sqlite-で動かす場合)
-  - [管理コマンド](#管理コマンド)
-  - [デプロイ](#デプロイ)
-  - [ライセンス](#ライセンス)
-
----
-
-## 主な機能
-
-### 閲覧者向けの機能（公開ページ）
-
-誰でもログインなしで利用できる機能です。
-
-- **記事一覧・ページ送り** — トップページで公開記事を新着順に表示。サーバーサイドのページネーションに対応しています。
-- **キーワード検索** — タイトルとハッシュタグ名を対象とした部分一致検索。PostgreSQL では pg_trgm のトリグラム索引を使い、部分一致でも高速に検索できます。
-- **ジャンル絞り込み** — ジャンル単位で記事を絞り込み。ジャンル一覧ページはカテゴリごとのアコーディオン表示です。
-- **ハッシュタグ絞り込み** — ジャンル選択中に、そのジャンル内で使われているタグでさらに絞り込めます。
-- **記事詳細ページ** — 以下の表現に対応しています。
-  - Markdown 記法（見出し・太字・箇条書きなど）
-  - 目次の自動生成（記事冒頭表示、または本文中の `[toc]` 位置に展開）
-  - 本文中への画像埋め込みとキャプション表示
-  - Google マップの埋め込み（`[map:場所名]`）
-  - YouTube 動画の埋め込み（サムネイルをタップして再生するファサード方式）
-- **関連記事の表示** — 記事末尾に、同じジャンル・同じタグを優先して最大 4 件を表示します。
-- **サイト統計** — トップページで総投稿数・ハッシュタグ種類数・最終更新日を表示します。
-- **自己紹介 / 使い方ページ** — 管理者プロフィールとブログの使い方を掲載する静的ページ。
-- **ダークモード切り替え** — 🌙 / ☀️ ボタンで切り替え。選択内容はブラウザに保存され、次回訪問時も維持されます。
-- **レスポンシブ対応** — スマホではハンバーガーメニューによるドロワーナビ、スクロール連動のヘッダー表示/非表示に対応。
-- **SEO 対応** — ページごとの `<title>` と OGP / Twitter Card メタタグ、`robots.txt`、`sitemap.xml`（公開記事のみ収録）を配信します。
-
-### 管理者向けの機能（ログイン必須）
-
-管理者としてログインした場合のみ利用できる機能です。
-
-- **記事の投稿** — タイトル・本文・ジャンル・ハッシュタグ・公開設定を指定して投稿できます。
-- **記事の編集** — 既存記事の内容・画像・キャプション・サムネイルをまとめて編集できます。
-- **記事の削除** — CSRF トークン付きの POST でのみ削除でき、関連画像も物理削除されます。
-- **Markdown エディタツールバー** — H2/H3 見出し・太字・目次・箇条書き（自動継続対応）・地図挿入・YouTube 挿入・画像挿入をボタン操作で入力できます。スマホでは編集ツールバーがキーボード直上に固定表示されます。
-- **画像アップロードと自動最適化** — 本文画像は Pillow で長辺 1200px に縮小・再圧縮して保存。複数まとめて選択・1 枚ずつ追加の両方に対応し、各画像にキャプションを付けられます。
-- **サムネイルの管理** — 記事一覧に表示するサムネイルを、専用画像のアップロード（WebP 縮小版で保存）／プリセットから選択／システム既定、の優先順位で設定できます。
-- **ハッシュタグ入力** — スペース・カンマ区切りで複数入力でき、入力しながらタグのプレビューが表示されます。使われなくなった孤立タグは自動で掃除されます。
-- **公開 / 非公開の切り替え** — 記事単位で公開状態を切り替え。非公開記事は管理者本人だけが閲覧できます。
-- **マイページ** — 自分の投稿一覧（ページ送り付き）、総投稿数、使用ジャンルの確認、ニックネーム変更を行えます。
-
----
-
-## 技術スタック
-
-| 分類 | 使用技術 |
-| --- | --- |
-| 言語 | Python 3.10 |
-| フレームワーク | Flask（Application Factory パターン） |
-| ORM / マイグレーション | SQLAlchemy 2.0 / Flask-Migrate（Alembic） |
-| 認証 | Flask-Login |
-| フォーム保護 | Flask-WTF（CSRF） |
-| テンプレート | Jinja2 |
-| 画像処理 | Pillow / filetype |
-| 本文変換 | Markdown |
-| データベース | PostgreSQL（本番・ローカル） / SQLite（無料枠） |
-| フロントエンド | 素の HTML / CSS / JavaScript（ビルド不要） |
-
----
-
-## ディレクトリ構成
-
-```
-.
-├── app.py                    # エントリーポイント（create_app ファクトリ）
-├── config.py                 # 環境変数の読み込み
-├── constants.py              # ジャンル定義（唯一の情報源）
-├── extensions.py             # db / login_manager / migrate のインスタンス
-├── models.py                 # User / Post / Hashtag のテーブル定義
-├── rendering.py              # 本文（Markdown + 独自タグ）→ HTML 変換
-├── init_db.py                # SQLite 用のDB初期化スクリプト
-│
-├── views/                    # Blueprint（ルート定義）
-│   ├── auth.py               #   ログイン・ログアウト
-│   ├── blog.py               #   一般公開ページ（一覧・詳細・ジャンル・SEO）
-│   └── admin.py              #   管理者専用（投稿・編集・削除・マイページ）
-│
-├── services/                 # ドメインロジック層
-│   ├── images.py             #   画像の検証・最適化・保存・削除
-│   ├── hashtags.py           #   ハッシュタグの解析・同期・掃除
-│   └── captions.py           #   画像キャプションのフォーム取得
-│
-├── templates/                # Jinja2 テンプレート
-├── static/                   # CSS / JS / 画像・favicon
-├── migrations/               # Alembic マイグレーション
-│
-├── requirements.txt          # 依存パッケージ（PostgreSQL 含む）
-└── requirements-pythonanywhere.txt  # SQLite 運用向け（psycopg 除外）
-```
-
----
-
-## セットアップ
-
-### 環境変数（.env）
-
-プロジェクト直下に `.env` を作成します（`.gitignore` 済み）。
-
-```dotenv
-# --- 共通（必須） ---
-SECRET_KEY=ランダムな長い文字列
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=ログインパスワード（平文でもハッシュ済みでも可）
-ADMIN_LOGIN_PATH=secret-login-xxxxxxxx   # ログイン画面の秘密URLパス
-ADMIN_GATE_KEY=別のランダムな長い文字列    # ログイン画面を表示する合言葉
-
-# --- 本番運用（SQLite でも本番なら設定） ---
-FLASK_ENV=production
-
-# --- SQLite を使う場合 ---
-USE_SQLITE=1
-
-# --- ローカル PostgreSQL（docker-compose）を使う場合 ---
-POSTGRES_USER=blog_user
-POSTGRES_PASSWORD=blog_password
-POSTGRES_DB=blog_db
-```
-
-ランダム文字列は次のコマンドで生成できます（`SECRET_KEY` と `ADMIN_GATE_KEY` には別々の値を使ってください）。
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-主な変数の意味は次のとおりです。
-
-| 変数 | 説明 |
-| --- | --- |
-| `SECRET_KEY` | セッション・CSRF トークンの署名に使う秘密鍵。本番では未設定だと起動時に停止します。 |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | 管理者ログインのユーザー名・パスワード。 |
-| `ADMIN_LOGIN_PATH` | ログイン画面の URL パス（推測されにくい文字列）。未設定だと起動できません。 |
-| `ADMIN_GATE_KEY` | ログイン画面を表示するための合言葉。 |
-| `FLASK_ENV` | `production` にすると本番扱いになり、Secure Cookie 有効化・SECRET_KEY 必須化が行われます。 |
-| `USE_SQLITE` | `1` にすると `instance/blog.db`（SQLite）を使用します。 |
-
-### ローカル開発（PostgreSQL）
-
-依存パッケージのインストール：
-
-```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows は .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-`docker-compose.yml` の PostgreSQL を起動（ホスト側ポートは 15432）：
-
-```bash
-docker compose up -d
-```
-
-マイグレーションを適用して起動：
-
-```bash
-flask db upgrade
-python app.py
-```
-
-`DATABASE_URL` も `USE_SQLITE` も未設定のとき、`localhost:15432` のローカル PostgreSQL に接続します。デバッグモードは `FLASK_DEBUG=1` を設定したローカル環境でのみ有効になります。
-
-### SQLite で動かす場合
-
-マイグレーション不要で、テーブル作成と管理者ユーザー登録を一括で行えます。
-
-```bash
-pip install -r requirements-pythonanywhere.txt
-python init_db.py
-```
-
-`.env` に `USE_SQLITE=1` と `FLASK_ENV=production` を設定しておいてください。`init_db.py` は何度実行しても安全です（既存テーブル・ユーザーはスキップされます）。
-
----
-
-## 管理コマンド
-
-`flask <コマンド名>` で実行できる運用コマンドがあります。
-
-| コマンド | 説明 |
-| --- | --- |
-| `flask rerender-posts` | 本文キャッシュ HTML が古いバージョンの記事だけを再生成します。 |
-| `flask rerender-posts --all` | 全記事の本文 HTML を強制的に再生成します。 |
-| `flask rerender-posts --dry-run` | 再生成の対象を表示するだけで保存しません。 |
-| `flask clean-orphan-images` | どの記事からも参照されていない孤児画像を一覧表示します。 |
-| `flask clean-orphan-images --delete` | 孤児画像を実際に削除します。 |
-
-記事本文の HTML は投稿・編集時に生成して DB にキャッシュしています。`rendering.py` の出力を変更したときは、`rendering.py` の `RENDER_VERSION` を `+1` してください。既存記事も次のアクセス時に自動で作り直されます（`flask rerender-posts` で一括更新も可能）。
-
----
-
-## デプロイ
-
-PythonAnywhere（無料枠・SQLite 運用）への手順は `deploy_pythonanywhere.md` に詳細をまとめています。要点は以下のとおりです。
-
-1. GitHub からサーバーへ `git clone`
-2. 仮想環境を作成し `requirements-pythonanywhere.txt` をインストール
-3. サーバー上に `.env` を作成（`USE_SQLITE=1` / `FLASK_ENV=production` を含める）
-4. `python init_db.py` でテーブルと管理者ユーザーを作成
-5. Web タブで Manual configuration（WSGI から `create_app()` を呼び出し）を設定して Reload
-
-コードを更新したときは「PC で修正 → GitHub に push → サーバーで pull → **Web タブで Reload**」が基本の流れです。静的ファイルは `static_url()` によるキャッシュバスティングに対応しているため、CSS/JS を更新すればブラウザにも即座に反映されます。
-
----
-
-## ライセンス
-
-学習・個人利用を目的としたプロジェクトです。
-</file>
-
-<file path="matome/static/css/detail.css">
+<file path="matome/static/css/index.css">
 /* ============================================================
-   static/css/detail.css - Coastal Dawn v2
-   【対象ページ】 detail.html（記事詳細ページ）
+   static/css/index.css - Coastal Dawn v2
+   【対象ページ】 index.html（トップページ・記事一覧）
    ============================================================
-   記事詳細ページ専用のスタイルをまとめたファイル。
-   記事本文カード・目次・本文（見出し/画像/地図/YouTube）・
-   関連記事セクションなどを、機能・パーツ単位で見出しコメントを
-   付けて整理している。
+   トップページのスタイルをまとめたファイル。
+   扱うパーツは大きく分けて次の3つ。
+     ・記事一覧全体のレイアウト（.page-wrapper）
+     ・記事カード（.post-card 系。mypage.html と共用）
+     ・ページ番号によるページ送り（.index-pagination 系）
+   パーツ単位で見出しコメントを付け、どの UI 要素の
+   スタイルかを追いやすくしている。
    ============================================================ */
 
+
 /* ------------------------------------------------------------
-   【detail.html】ページ全体のコンテナ
+   【index.html】メインレイアウト（記事一覧全体を囲む余白）
    ------------------------------------------------------------ */
-.detail-container {
-    max-width: 860px !important;
+.page-wrapper {
+    max-width: 940px;
     margin: 0 auto;
-    padding: 36px 32px 60px;
-    box-sizing: border-box;
+    padding: 32px 28px 60px;
+    margin-top: 15px;
 }
 
 /* ------------------------------------------------------------
-   【detail.html】記事本文カード（一覧カードと左アクセントラインで統一）
+   【index.html】ページ送り後に記事一覧の先頭へスクロールさせる目印
+   ------------------------------------------------------------
+   ページ番号リンクは URL 末尾に #index-articles-anchor を付けており、
+   遷移後にこの空要素までスクロールする。
+   ヘッダーは position: fixed で画面上部に固定されているため、
+   scroll-margin-top をヘッダーの高さぶん確保して、
+   スクロール先がヘッダーの下に隠れないようにしている。
    ------------------------------------------------------------ */
-article {
-    background: #fff;
-    padding: 52px 60px;
+#index-articles-anchor {
+    scroll-margin-top: 100px;
+}
+
+@media (max-width: 767px) {
+    #index-articles-anchor {
+        scroll-margin-top: 80px;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】記事カードの「編集」リンクボタン
+   ------------------------------------------------------------ */
+.btn-edit {
+    display: inline-block;
+    padding: 3px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0369a1;
+    border: 1.2px solid #7dd3fa;
+    border-radius: 4px;
+    margin-right: 7px;
+    background: transparent;
+    text-decoration: none;
+}
+
+a[role="button"]:hover {
+    color: #0c1f35;
+    border-color: #0ea5e9;
+    background: #e0f2fe;
+    text-decoration: none;
+}
+
+
+/* ------------------------------------------------------------
+   【index.html】検索・絞り込み結果ラベル（「🔍「◯◯」の検索結果」）
+   ------------------------------------------------------------ */
+.filter-label {
+    font-size: 19px;
+    color: #0c1f35;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+
+/* ------------------------------------------------------------
+   【index.html】「📋 最新の記事」セクション見出し
+   ------------------------------------------------------------
+   フォントサイズ等はこのファイルの指定が優先される
+   （top_sections.css にも同名クラスの基本デザインがある）。
+   ------------------------------------------------------------ */
+.posts-section-title {
+    font-size: 1.3rem !important;
+    font-weight: 700;
+    color: #0c1f35;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+}
+
+
+/* ------------------------------------------------------------
+   【index.html】自己紹介（hero）セクションの見出し
+   ------------------------------------------------------------
+   セクション本体の詳細レイアウトは top_sections.css で定義しており、
+   ここでは見出しのフォント指定だけを担当する。
+   ------------------------------------------------------------ */
+.hero-section-title {
+    font-size: 1.3rem !important;
+    font-weight: 700;
+    color: #0c1f35;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+}
+
+
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】記事カードのジャンル・非公開バッジ
+   ------------------------------------------------------------ */
+.badge-genre {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0369a1;
+    background: #dbeafe;
+    border: 1px solid #38bdf8;
+    border-radius: 7px;
+    padding: 2px 10px;
+    white-space: nowrap;
+}
+
+.badge-private {
+    font-size: 12px;
+    font-weight: 700;
+    color: #c0392b;
+    background: #fff0ee;
+    border: 1.2px solid #f5b7b1;
+    border-radius: 12px;
+    padding: 2px 10px;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   【index.html / mypage.html 共通】記事カード本体
+   ============================================================
+   左にサムネイル、右に本文（ジャンル・タイトル・日付・操作ボタン）を
+   横並びにしたカード。カード全体がリンクになっており、
+   ホバーするとゴールド系の配色に切り替わって浮き上がる。
+   ============================================================ */
+.post-card {
+    display: flex;
+    gap: 30px;
+    background: #ffffff;
     border: 1.5px solid #7dd3fa;
     border-left: 5px solid #0ea5e9;
     border-radius: 0 12px 12px 0;
-    margin-bottom: 32px;
-    box-sizing: border-box;
+    padding: 16px 22px;
+    margin-bottom: 20px;
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
+    transition: transform 0.22s ease, box-shadow 0.22s ease,
+                border-left-color 0.22s ease, border-color 0.22s ease,
+                background-color 0.22s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.post-card:hover {
+    transform: translateY(-3px);
+    background: #fffbeb;
+    border: 1.5px solid #fbbf24;
+    border-left: 5px solid #f59e0b;
+    box-shadow: 0 8px 28px rgba(245, 158, 11, 0.20),
+                0 2px 8px rgba(14, 165, 233, 0.08);
 }
 
 /* ------------------------------------------------------------
-   【detail.html】記事タイトル
-   ------------------------------------------------------------ */
-h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #0c1f35;
-    margin: 0 0 20px;
-    text-align: left;
-    line-height: 1.4;
-    letter-spacing: -0.02em;
-}
-
-/* ------------------------------------------------------------
-   【detail.html】ジャンルバッジ（クリックでジャンル絞り込みへ遷移するリンク）
-   ------------------------------------------------------------ */
-.genre-badge {
-    display: inline-block;
-    background-color: #dbeafe;
-    color: #0369a1;
-    padding: 2px 7px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin-bottom: 8px;
-    font-weight: 600;
-    border: 1px solid #38bdf8;
-    text-decoration: none;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.genre-badge:hover {
-    background-color: #bae6fd;
-    border-color: #0ea5e9;
-    color: #0c1f35;
-    text-decoration: none;
-}
-
-/* ------------------------------------------------------------
-   【detail.html】ジャンルバッジ＋ハッシュタグを1行に並べる行
+   カード左側のサムネイル画像枠
    ------------------------------------------------------------
-   ジャンルバッジを左端に、その右にハッシュタグを横並びで配置する。
+   【目的】カードの高さは「右側コンテンツ（.post-content）」だけで決め、
+   サムネイルはその高さに合わせて上下が自動調整されるようにする。
+   管理者ログイン時に「編集・削除」ボタンが出て右側が高くなれば、
+   サムネイルもそのボタン位置まで一緒に伸びる。
+
+   【前回修正で起きた不具合とその原因】
+   以前の固定高さ（height: 170px）を外しただけだと、今度はサムネイル枠の
+   高さが「画像そのものの縦横比（270px 幅に収まる画像の本来の高さ）」で
+   決まってしまった。.post-card は display: flex（既定で
+   align-items: stretch）のため、左右のうち背の高い方にカード高さが揃う。
+   縦長・4:3 などの画像だと枠が右側コンテンツより高くなり、その高さに
+   カード全体が引き伸ばされる。結果、.post-content の
+   justify-content: space-between によってタイトル・ハッシュタグ・日付が
+   上下いっぱいに押し広げられ、隙間が無駄に空いてしまっていた。
+
+   【この修正でやること】
+   サムネイル内の画像（.thumb-img）を position: absolute でフロー
+   （高さ計算）から外す（下の .thumb-img を参照）。こうすると
+   「画像の比率」が枠の高さを決めなくなり、.post-thumbnail の高さは
+   align-self: stretch によって「右側コンテンツの高さ」にだけ追従する。
+   画像はその確定した枠の中に後から流し込まれる形になる。
+
+   - position: relative … 絶対配置する画像の基準枠にする
+   - align-self: stretch … カード（＝右側コンテンツ）の高さまで伸ばす
+   - min-height: 170px   … 右側が短い記事でもサムネイルが潰れないための下限
+                           （下限であって上限ではないので、伸びる方向は妨げない）
+
+   ※ 画像の収め方（object-fit: contain）は base.html で後から読み込む
+     thumbnail_fit.css（詳細度が高い）が上書きするため、サイズに関わらず
+     「切り取らず全体表示」のまま。ここでは枠の高さの決まり方だけを扱う。
    ------------------------------------------------------------ */
-.detail-tag-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 5px;
+.post-thumbnail {
+    flex: 0 0 270px;
+    align-self: stretch;     /* カード（＝右側コンテンツ）の高さまで引き伸ばす */
+    min-height: 170px;       /* 右側が短いときの下限（従来の固定値を踏襲） */
+    position: relative;      /* 中の画像（absolute）の位置基準 */
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #e0f2fe;
+    border: 1.5px solid #7dd3fa;
+    transition: border-color 0.22s ease;
 }
 
-/* 行内に並べるジャンルバッジは、単体表示用の下マージン（margin-bottom: 8px）を
-   打ち消して、ハッシュタグと高さ・縦位置をそろえる */
-.detail-tag-row .genre-badge {
-    margin-bottom: 0;
+.post-card:hover .post-thumbnail {
+    border-color: #fbbf24;
+    background-color: #fef3c7;
 }
 
-/* ------------------------------------------------------------
-   【detail.html】メタ情報エリア（ジャンル・投稿者・日時・ハッシュタグをまとめる領域）
-   ------------------------------------------------------------ */
-.post-meta {
+/* サムネイル画像本体。
+   position: absolute + inset: 0 で枠いっぱいに敷き詰め、かつ高さ計算からは
+   外す。これにより「画像の縦横比が枠の高さを押し広げる」ことがなくなり、
+   枠は右側コンテンツの高さにだけ追従する。 */
+.thumb-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* カード右側のコンテンツ（ジャンル・タイトル・日付・操作ボタン）レイアウト */
+.post-content {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-    font-size: 13px;
-    color: #4a7a96;
-    margin-bottom: 35px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e0f2fe;
-    width: 100%;
+    justify-content: space-between;
 }
 
-/* 投稿者アイコン＋ニックネーム表示
-   ------------------------------------------------------------
-   【PCのみ・フォントサイズ微調整】
-   ハッシュタグ下の投稿者名を少しだけ読みやすくするため、
-   12px → 13px に拡大する（+1px）。
-   ※ スマホ側は下部のメディアクエリが 13px に上書きするため、
-     この変更でも PC・スマホともに 13px にそろう。 */
-.post-user-info {
+.post-header-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】記事タイトルリンク
+   ------------------------------------------------------------ */
+.post-title {
+    margin: 8px 0 8px 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: left !important;
+}
+
+.post-title a {
+    color: #0c1f35;
+    text-decoration: none;
+    display: inline-block;
+    transition: color 0.22s ease;
+}
+
+/* カード全域をタップ可能にする透明レイヤー
+   （タイトルリンクを ::after でカード全面に広げ、
+     カードのどこを押しても記事詳細へ遷移できるようにする） */
+.post-title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.post-card:hover .post-title a {
+    color: #0369a1;
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】「編集」「削除」ボタン行(投稿者本人のみ表示)
+   ------------------------------------------------------------ */
+.post-actions {
+    position: relative;
+    z-index: 2;
+    margin-top: 8px;
+}
+
+/* 編集・削除ボタンを横並びにするため、削除フォームをインライン表示にする */
+.post-actions form {
+    display: inline;
+}
+
+.btn-delete {
+    background: transparent;
+    border: 1.2px solid #f5b7b1;
+    color: #c0392b;
+    padding: 3px 14px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.18s;
+}
+
+.btn-delete:hover {
+    background-color: #fff0ee;
+    border-color: #e74c3c;
+    color: #a93226;
+}
+
+/* ------------------------------------------------------------
+   【index.html / mypage.html 共通】投稿日・更新日の表示
+   ------------------------------------------------------------ */
+.post-date {
+    margin: 1px 0 0 0;
+    font-size: 0.80rem;
+    color: #0369a1;
+    font-weight: 500;
+    transition: color 0.22s ease;
+}
+
+.post-card:hover .post-date {
+    color: #b45309;
+}
+
+
+/* ------------------------------------------------------------
+   【index.html】検索・絞り込みで該当記事がないときの空メッセージ
+   ------------------------------------------------------------ */
+.index-empty-message {
+    text-align: center;
+    color: #aaa;
+    margin-top: 60px;
+}
+
+
+/* ============================================================
+   【index.html】ページ番号によるページ送り
+   ============================================================
+   サーバー側で 1 ページ 4 件ずつ取得し、Jinja 側でページ数が
+   2 以上のときだけ <nav> を出力する。そのためこのナビは
+   「表示されるときは常にページが複数ある」前提で作られており、
+   初期状態を隠す必要がないため常に flex 表示にしている。
+
+   ボタンは次の3種類。
+     ・ページ番号（現在ページは .active で塗りつぶし強調）
+     ・「‹」「›」前へ／次へ（.page-btn-arrow）
+     ・先頭/末尾での無効表示（.page-btn-disabled）
+   ============================================================ */
+
+/* ページ送りナビ全体 */
+.index-pagination {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    color: #0369a1;
-    font-weight: 600;
-    font-size: 13px;
+    margin: 8px 0 40px;
+    flex-wrap: wrap;
 }
 
-/* 投稿者アイコン本体。
-   ------------------------------------------------------------
-   【PCのみ・フォントサイズ微調整に合わせたサイズ調整】
-   名前のフォントを少し大きくしたぶん、アイコンも 21px → 22px に
-   わずかに拡大して縦位置のバランスを保つ。 */
-.post-user-info img {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #dbeafe;
-    border: 1px solid #7dd3fa;
-    margin: 0 !important;
-}
-
-/* 投稿日時・更新日時テキスト
-   ------------------------------------------------------------
-   【PCのみ・フォントサイズ微調整】
-   投稿・更新日時を少しだけ読みやすくするため、
-   12px → 13px に拡大する（+1px）。
-   ※ スマホ側は下部のメディアクエリで 12px のまま（この行は上書きされない）
-     ため、この変更は PC 表示にのみ効く。 */
-.post-time { color: #4a7a96; font-size: 13px; }
-
-/* ============================================================
-   【detail.html】目次（本文中の [toc] マーカーから自動生成）
-   ============================================================ */
-.post-toc,
-.detail-article-body .toc {
-    background-color: #f0f9ff !important;
-    border: 1px solid #7dd3fa !important;
-    border-left: 4px solid #0ea5e9 !important;
-    border-radius: 0 8px 8px 0;
-    padding: 20px 24px;
-    margin: 35px 0;
-    box-sizing: border-box;
-}
-
-/* 本文中の[toc]位置に挿入された目次の見出しラベル */
-.detail-article-body .toc::before {
-    content: "目次" !important;
-    display: block !important;
-    font-weight: 700 !important;
-    font-size: 16px !important;
-    margin: 0 0 14px !important;
-    color: #1f5a99 !important;
-    text-align: left !important;
-    letter-spacing: 0.05em !important;
-    text-transform: none !important;
-    border-bottom: none !important;
-    padding-bottom: 0 !important;
-}
-
-/* 記事先頭に自動表示される目次の見出しラベル（[toc]未使用時） */
-.post-toc .toc-title, .toc-fixed .toc-title, .toc-sticky .toc-title {
-    display: block !important;
-    font-weight: 700 !important;
-    font-size: 16px !important;
-    margin: 0 0 14px !important;
-    color: #1f5a99 !important;
-    text-align: left !important;
-    letter-spacing: 0.05em !important;
-    text-transform: none !important;
-    border-bottom: none !important;
-    padding-bottom: 0 !important;
-}
-
-.post-toc > ul, .post-toc .toc > ul, .detail-article-body .toc > ul {
-    list-style-type: none !important;
-    padding-left: 0 !important;
-    margin: 0 !important;
-    text-align: left !important;
-    display: block !important;
-}
-
-/* 本文中の見出し（H1〜H3）に、固定ヘッダー分のスクロール余白を確保 */
-.detail-article-body h1,
-.detail-article-body h2,
-.detail-article-body h3 { scroll-margin-top: 100px; }
-
-/* 目次トップレベル項目（H2 相当）
-   ------------------------------------------------------------
-   【フォントサイズ調整】15px → 16px に拡大して読みやすくする。
-   色はライトモードで、背景と同系統の青みのある濃紺（#1f5a99）にして
-   目次全体の色をそろえる（ほぼ黒だが青寄り）。 */
-.post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li {
-    text-align: left !important;
-    margin-bottom: 0 !important;
-    padding: 11px 0 !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    display: block !important;
-    background: none !important;
-    border: none !important;
-    border-bottom: 1px solid #bae6fd !important;
-    color: #1f5a99 !important;
-}
-
-.post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul {
-    list-style-type: none !important;
-    padding-left: 20px !important;
-    margin: 6px 0 0 !important;
-    display: block !important;
-}
-
-/* ------------------------------------------------------------
-   目次サブ項目（H3 相当）1 行分
-   ------------------------------------------------------------
-   【ぶら下げインデント対応（折り返しが「•」の下に入り込む問題の修正）】
-   従来は display: block とし、箇条書き記号「•」を ::before で行頭に
-   インライン挿入していた。この場合、目次テキストが 1 行に収まらず
-   折り返すと、2 行目がブロックの左端（＝ • の真下）に戻ってしまい、
-   「・の下に目次文が入り込む」見た目になっていた。
-
-   そこで項目自体を display: flex にして「記号」と「テキスト（<a>）」を
-   別々のフレックスアイテムとして横並びにする。テキスト側は自分の左端
-   （記号の右）を基準に折り返すため、2 行目以降も 1 行目のテキストに
-   きれいに揃う（＝ぶら下げインデント）。
-   align-items: baseline で記号と文字のベースラインを合わせている。
-
-   【フォントサイズ・色調整】
-   フォントサイズを 14px → 15px に拡大。色はライトモードで、背景（淡い水色）と
-   同系統で落ち着いて読めるよう #2a4a5e（青みがかったグレー）→ #1f5a99
-   （黒に近いが青みのある濃紺）に変更する。目次全体で色をそろえている。
-   ------------------------------------------------------------ */
-.post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
-    font-size: 15px !important;
-    font-weight: normal !important;
-    padding: 4px 0 !important;
-    border-bottom: none !important;
-    display: flex !important;
-    align-items: baseline !important;
-    color: #1f5a99 !important;
-}
-
-.post-toc ul ul li::before, .post-toc .toc ul ul li::before, .detail-article-body .toc ul ul li::before {
-    content: "•" !important;
-    color: #38bdf8 !important;
-    margin-right: 6px !important;
-    font-size: 13px !important;
-    flex: 0 0 auto !important;   /* 記号は縮まない固定項目にする */
-}
-
-.post-toc > ul > li:last-child, .post-toc .toc > ul > li:last-child, .detail-article-body .toc > ul > li:last-child {
-    margin-bottom: 0 !important;
-    border-bottom: none !important;
-    padding-bottom: 0 !important;
-}
-
-.post-toc > ul > li:first-child, .post-toc .toc > ul > li:first-child, .detail-article-body .toc > ul > li:first-child {
-    padding-top: 4px !important;
-}
-
-/* 目次のリンク（各項目の遷移リンク）
-   ------------------------------------------------------------
-   【色調整】従来は #0369a1（セルリアン）で、目次パネルの淡い水色背景
-   （#f0f9ff）と同系統のため、背景をいくら濃くしても文字が沈んで
-   見づらかった。ライトモードでは背景と同じ青系統の、黒に近いが青みのある
-   濃紺（#1f5a99）にして、落ち着いた見た目を保ちつつ背景とのコントラストを
-   確保する（見出し・各項目テキストと色がそろう）。
-   ホバー時はアクセント色（#0ea5e9）＋下線で「押せる」ことを示す。
-   ※ ダークモードの目次リンク色は dark-mode.css が !important で
-     上書きするため、この変更はライトモードにのみ効く。 */
-.post-toc a, .detail-article-body .toc a {
-    color: #1f5a99 !important;
-    text-decoration: none !important;
-    transition: color 0.15s !important;
-    display: inline-block !important;
-}
-
-.post-toc a:hover, .detail-article-body .toc a:hover {
-    color: #0ea5e9 !important;
-    text-decoration: underline !important;
-}
-
-/* ============================================================
-   【detail.html】記事本文（Markdown→HTML変換後のテキスト）
-   ============================================================ */
-.detail-article-body {
-    font-weight: 400;
-    font-size: 17px;
-    line-height: 1.8;
-    word-break: break-word;
-    text-align: left;
-    white-space: normal;
-    color: #1e3a4f;
-}
-
-.detail-article-body strong { font-weight: 700 !important; color: #0c1f35; }
-
-.detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 17px; font-weight: 400; }
-
-.detail-article-body h2 {
-    font-size: 22px;
-    font-weight: 700;
-    border-bottom: 2px solid #7dd3fa;
-    padding-bottom: 6px;
-    margin: 40px 0 16px;
-    text-align: left;
-    color: #0c1f35;
-}
-
-.detail-article-body h3 {
-    font-size: 19px;
-    font-weight: 700;
-    margin: 28px 0 0;
-    text-align: left;
-    color: #0c1f35;
-    border-left: 4px solid #0ea5e9;
-    padding-left: 10px;
-}
-
-/* 本文内の画像共通スタイル */
-article img { max-width: 100%; height: auto; display: block; margin: 25px auto; border-radius: 5px; }
-
-/* ------------------------------------------------------------
-   【detail.html】本文内の画像キャプション（[imgN]＋キャプション文）
-   ------------------------------------------------------------
-   【フォントサイズ・色調整】
-   フォントサイズを 15px → 16px に拡大。色はライトモードで黒く
-   はっきり読めるよう #0369a1（セルリアン）→ #1a1a1a（黒）に変更する。
-   ※ ダークモードのキャプション色は dark-mode.css が指定するため、
-     この変更はライトモードにのみ効く。
-   ------------------------------------------------------------ */
-.post-figure { display: block; margin: 16px auto 8px; text-align: center; }
-.post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
-.post-figcaption { margin-top: 6px; text-align: center !important; font-size: 16px; color: #1a1a1a; line-height: 1.5; display: block; width: 100%; }
-.post-figure + p { margin-top: 0.6em; }
-
-/* ------------------------------------------------------------
-   【detail.html】本文内の地図埋め込み（[map:場所名]タグから生成）
-   ------------------------------------------------------------ */
-.post-map-wrapper { margin: 24px 0; border-radius: 0 10px 10px 0; overflow: hidden; border: 1.5px solid #7dd3fa; border-left: 4px solid #0ea5e9; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); }
-.post-map-label { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0369a1; background: #f0f9ff; border-bottom: 1px solid #7dd3fa; }
-.post-map-iframe { width: 100%; height: 380px; border: none; display: block; }
-
-/* ------------------------------------------------------------
-   【detail.html】本文内のYouTube埋め込み（[youtube:URL]タグから生成、
-   サムネイルをタップすると再生が始まる「ファサード」形式）
-   ------------------------------------------------------------ */
-.post-youtube-wrapper { margin: 24px 0; border-radius: 10px; overflow: hidden; border: 1px solid #7dd3fa; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
-.post-youtube-facade { position: absolute; inset: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.post-youtube-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s ease; }
-.post-youtube-facade:hover .post-youtube-thumb { filter: brightness(0.85); }
-.post-youtube-play-btn { position: absolute; background: none; border: none; cursor: pointer; padding: 0; transition: transform 0.15s ease; }
-.post-youtube-facade:hover .post-youtube-play-btn { transform: scale(1.1); }
-.yt-btn-bg { fill: #ff0000; fill-opacity: 0.9; transition: fill-opacity 0.15s ease; }
-.post-youtube-facade:hover .yt-btn-bg { fill-opacity: 1; }
-.yt-btn-icon { fill: #fff; }
-.post-youtube-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
-
-/* ------------------------------------------------------------
-   【detail.html】本文下の区切り線
-   ------------------------------------------------------------ */
-hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
-
-/* ------------------------------------------------------------
-   【detail.html】「前の画面に戻る」「この記事を編集する」ボタン行
-   ------------------------------------------------------------
-   【PCのみ・余白微調整】
-   「前の画面に戻る」ボタンと、その下の「関連記事」見出しの間が
-   PC 表示で広く空いていた（ボタン行の下 padding 32px ＋
-   .related-heading の上 margin 32px）。間延びを抑えるため、
-   ボタン行の下 padding を 32px → 20px に少しだけ詰める
-   （あわせて .related-heading 側の上 margin も 32px → 20px に調整）。
-   ※ スマホ側は下部のメディアクエリ（padding: 0 16px 28px）が
-     上書きするため、この変更は PC 表示にのみ効く。
-   ------------------------------------------------------------ */
-.detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 20px; flex-wrap: wrap; }
-
-.detail-btn {
+/* ページ番号・前へ／次へ の共通ボタンデザイン
+   （リンク <a> と、現在ページ・無効状態の <span> で共用する） */
+.page-btn {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 11px 24px;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 20px;
     font-size: 14px;
     font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
     font-family: inherit;
-    letter-spacing: 0.02em;
-    text-decoration: none;
-    transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.13s;
-    white-space: nowrap;
-    min-height: 44px;
-    line-height: 1;
-}
-
-.detail-btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
-
-/* 「前の画面に戻る」ボタン（白背景） */
-.detail-btn-back {
+    color: #0369a1;
     background-color: #ffffff;
-    color: #4a7a96;
     border: 1px solid #7dd3fa;
-    box-shadow: 0 1px 4px rgba(14, 165, 233, 0.08);
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.detail-btn-back:hover {
-    background-color: #f0f9ff;
+.page-btn:hover {
+    background-color: #dbeafe;
     border-color: #38bdf8;
     color: #0c1f35;
-    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.14);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
     transform: translateY(-1px);
+    text-decoration: none;
 }
 
-.detail-btn-back:active { transform: translateY(0); box-shadow: none; background-color: #dbeafe; }
+.page-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #bae6fd;
+}
 
-/* 「この記事を編集する」ボタン（セルリアン塗りつぶし・投稿者本人のみ表示） */
-.detail-btn-edit {
+/* 現在表示中のページ番号（塗りつぶし強調、<span> で出力） */
+.page-btn.active {
     background-color: #0ea5e9;
+    border-color: #0ea5e9;
     color: #ffffff;
-    border: 1px solid #0ea5e9;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+    cursor: default;
+}
+
+/* 現在ページはリンクではないのでホバーで浮かせない */
+.page-btn.active:hover {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+    color: #ffffff;
+    transform: none;
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
-.detail-btn-edit:hover {
-    background-color: #0369a1;
-    border-color: #0369a1;
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.30);
-    transform: translateY(-1px);
-    text-decoration: none;
-}
-
-.detail-btn-edit:active { transform: translateY(0); box-shadow: none; background-color: #075985; }
-
-/* ============================================================
-   【detail.html】関連記事セクション（記事末尾、最大4件表示）
-   ============================================================ */
-.related-section { margin-top: 20px; padding-top: 8px; }
-
-/* ------------------------------------------------------------
-   関連記事セクションの見出し
-   ------------------------------------------------------------
-   【PCのみ・余白微調整】
-   「前の画面に戻る」ボタン行との距離を詰めるため、
-   上 margin を 32px → 20px に縮小する（下記ボタン行側の
-   padding 短縮とあわせて、PC 表示での間延びを解消する）。
-   ※ スマホ側は下部のメディアクエリ（margin: 24px 0 12px）が
-     上書きするため、この変更は PC 表示にのみ効く。
-   ------------------------------------------------------------ */
-.related-heading {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 20px;
+/* 「‹」「›」前へ／次へ ボタン */
+.page-btn-arrow {
+    font-size: 16px;
     font-weight: 700;
-    color: #0c1f35;
-    border-bottom: 2px solid #0ea5e9;
-    padding-bottom: 10px;
-    margin: 20px 0 14px;
-    text-align: left;
-    letter-spacing: 0.02em;
 }
 
-.related-heading-icon { font-size: 16px; flex-shrink: 0; }
+/* 先頭・末尾ページで無効化された前へ／次へ（<span> で出力）
+   ------------------------------------------------------------
+   <a> と違い <span> は :disabled を持てないため、専用クラスで
+   見た目を無効化する。pointer-events: none によりホバー効果も
+   無効になる。 */
+.page-btn-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    pointer-events: none;
+}
 
-.related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
-
-/* 関連記事カード（一覧カードと同じ左アクセントラインデザイン、ホバーでゴールドに変化） */
-.related-card {
-    display: flex;
+/* ページ番号の省略記号（…） */
+.page-ellipsis {
+    display: inline-flex;
     align-items: center;
-    gap: 18px;
-    background: #fff;
-    border: 1.5px solid #7dd3fa;
-    border-left: 4px solid #0ea5e9;
-    border-radius: 0 10px 10px 0;
-    padding: 14px 18px 14px 14px;
-    text-decoration: none;
-    color: inherit;
-    transition: box-shadow 0.18s, border-color 0.18s, background 0.18s, transform 0.15s;
-    overflow: hidden;
+    justify-content: center;
+    min-width: 24px;
+    height: 40px;
+    color: #7dd3fa;
+    font-size: 14px;
+    font-weight: 700;
+    user-select: none;
 }
 
-.related-card:hover {
-    border-left-color: #f59e0b;
-    border-color: #fbbf24;
-    background: #fffbeb;
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
-    transform: translateY(-1px);
-    text-decoration: none;
-    color: inherit;
-}
 
-.related-thumb {
-    flex: 0 0 120px;
-    width: 120px;
-    height: 85px;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #dbeafe;
-    border: 1px solid #7dd3fa;
-    transition: border-color 0.18s;
-}
+/* ==========================================================================
+   【index.html / mypage.html 共通】レスポンシブ（スマホ）
+   ==========================================================================
+   スマホでは記事カードを縦積みにし（サムネイルを上・本文を下）、
+   操作ボタンを中央寄せ・ページ送りボタンを一回り小さくする。
 
-.related-card:hover .related-thumb { border-color: #fbbf24; background: #fef3c7; }
+   ※ スマホ時はこのメディアクエリ内でサムネイルに確定した高さ
+     （height: 240px、mobile_compact.css では aspect-ratio）を与えており、
+     上の PC 向けルール（可変高さ・画像の絶対配置）の影響で見た目が
+     変わることはない（スマホの表示は従来どおり）。
+   ========================================================================== */
 
-.related-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; margin: 0 !important; border-radius: 0; }
+@media (max-width: 600px) {
+    .page-wrapper {
+        padding: 16px 14px 48px;
+    }
 
-.related-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .post-card {
+        flex-direction: column;
+        gap: 12px;
+        padding: 11px;
+        margin-top: 0;
+        margin-bottom: 20px;
+        border-radius: 0 10px 10px 0;
+    }
 
-.related-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #0c1f35;
-    line-height: 1.45;
-    margin: 0;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
+    .post-thumbnail {
+        flex: none;
+        width: 100%;
+        height: 240px;
+    }
 
-.related-card:hover .related-title { color: #0369a1; }
-.related-date { font-size: 12px; color: #0369a1; margin: 0; font-weight: 500; }
+    .post-content {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
 
-/* ------------------------------------------------------------
-   【detail.html】旧ボタンデザインの予備クラス（現在どこからも参照されていない）
-   ------------------------------------------------------------ */
-.detail-ul { display: flex; justify-content: center; gap: 16px; padding: 0; margin: 0; list-style: none; flex-wrap: wrap; }
-.detail-ul-li { background: none; border: none; padding: 0; }
-.detail-ul-li-a { font-size: 14px; color: #0369a1; text-decoration: none; padding: 10px 22px; border: 1px solid #7dd3fa; border-radius: 20px; display: inline-block; transition: all 0.18s; background: none; cursor: pointer; font-family: inherit; }
-.detail-ul-li-a:hover { border-color: #0ea5e9; color: #0c1f35; background: #dbeafe; text-decoration: none; }
+    .post-header-meta {
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+    }
 
-/* ------------------------------------------------------------
-   【detail.html】レスポンシブ（スマホ）
-   ------------------------------------------------------------ */
-@media (max-width: 767px) {
-    .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
-    article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }
-    h1 { font-size: 20px; letter-spacing: -0.01em; line-height: 1.45; }
-    .post-meta { font-size: 12px; margin-bottom: 24px; padding-bottom: 16px; }
-    .post-user-info { font-size: 13px; }
-    .detail-article-body {
-    font-weight: 500; font-size: 15px !important; line-height: 1.75 !important; word-break: break-all; }
-    .detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 15px; }
-    .detail-article-body pre, .detail-article-body code, .detail-article-body table { max-width: 100% !important; overflow-x: auto !important; display: block; word-break: normal; }
-    .detail-article-body h2 { font-size: 18px; margin: 32px 0 12px; }
-    .detail-article-body h3 { font-size: 16px; margin: 24px 0 0; padding-left: 8px; }
-    .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
-    /* 目次トップレベル項目（スマホ）: 14px → 15px に拡大 */
-    .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 15px !important; padding: 10px 0 !important; }
-    .post-toc ul ul, .post-toc .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
-    /* 目次サブ項目（スマホ）: 13px → 14px に拡大 */
-    .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 14px !important; padding: 5px 0 !important; }
-    .post-map-iframe { height: 260px; }
-    .post-youtube-wrapper { border-radius: 6px; margin: 16px 0; }
-    hr { margin: 0 16px 20px; }
-    .detail-actions { flex-direction: column; gap: 10px; padding: 0 16px 28px; }
-    .detail-btn { width: 100%; justify-content: center; padding: 13px 24px; font-size: 15px; border-radius: 8px; box-sizing: border-box; }
-    .detail-ul { flex-direction: column; align-items: center; gap: 12px; padding: 0 16px 12px; box-sizing: border-box; }
-    .detail-ul-li { width: 100%; }
-    .detail-ul-li-a { font-size: 15px; padding: 13px 24px; display: block; text-align: center; width: 100%; box-sizing: border-box; min-height: 48px; }
-    .post-figure { margin: 12px auto 6px; }
-    /* 画像キャプション（スマホ）: 12px → 13px に拡大 */
-    .post-figcaption { font-size: 13px; }
-    .related-section { margin-top: 28px; padding: 0 0 8px; }
-    .related-heading { font-size: 16px; margin: 24px 0 12px; padding-bottom: 8px; }
-    .related-list { gap: 8px; }
-    .related-card { gap: 14px; padding: 12px 14px 12px 12px; border-radius: 0 8px 8px 0; }
-    .related-thumb { flex: 0 0 100px; width: 100px; height: 70px; }
-    .related-title { font-size: 14px; }
-    .related-date { font-size: 12px; }
+    .post-title {
+        font-size: 1.1rem;
+        line-height: 1.45;
+        margin-bottom: 10px;
+    }
+
+    .post-date {
+        order: 0;
+        font-size: 0.75rem;
+        margin-top: 3px;
+        margin-bottom: 3px;
+    }
+
+    .post-actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 7px;
+        margin-bottom: 3px;
+        width: 100%;
+    }
+
+    .btn-edit,
+    .btn-delete {
+        padding: 4px 17px;
+        font-size: 13px;
+        min-height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .post-actions {
+        order: 1;
+    }
+
+    .post-title a::after {
+        inset: 0;
+        z-index: 1;
+    }
+
+    .index-pagination {
+        gap: 6px;
+        margin: 8px 0 32px;
+    }
+
+    .page-btn {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        font-size: 13px;
+    }
+
+    .page-ellipsis {
+        height: 36px;
+        min-width: 20px;
+    }
 }
 </file>
 
@@ -15092,6 +14268,830 @@ def mypage():
         total_count = pagination.total, # 「総投稿数」表示用（全件数）
         user_genres = user_genres,
     )
+</file>
+
+<file path="README.md">
+# MITO Blog
+
+Flask 製の個人用ブログアプリです。記事の投稿・編集・公開に加え、Markdown 記法・独自タグ（地図 / YouTube / 画像キャプション）による表現、ハッシュタグやジャンルでの絞り込み、ダークモード対応などを備えています。学習用途を想定し、コードには処理の流れが追える日本語コメントを付けています。
+
+本番（PostgreSQL）と無料ホスティング（SQLite）の両方で動作するよう設計されています。
+
+---
+
+## 目次
+
+- [MITO Blog](#mito-blog)
+  - [目次](#目次)
+  - [主な機能](#主な機能)
+    - [閲覧者向けの機能（公開ページ）](#閲覧者向けの機能公開ページ)
+    - [管理者向けの機能（ログイン必須）](#管理者向けの機能ログイン必須)
+  - [技術スタック](#技術スタック)
+  - [ディレクトリ構成](#ディレクトリ構成)
+  - [セットアップ](#セットアップ)
+    - [環境変数（.env）](#環境変数env)
+    - [ローカル開発（PostgreSQL）](#ローカル開発postgresql)
+    - [SQLite で動かす場合](#sqlite-で動かす場合)
+  - [管理コマンド](#管理コマンド)
+  - [デプロイ](#デプロイ)
+  - [ライセンス](#ライセンス)
+
+---
+
+## 主な機能
+
+### 閲覧者向けの機能（公開ページ）
+
+誰でもログインなしで利用できる機能です。
+
+- **記事一覧・ページ送り** — トップページで公開記事を新着順に表示。サーバーサイドのページネーションに対応しています。
+- **キーワード検索** — タイトルとハッシュタグ名を対象とした部分一致検索。PostgreSQL では pg_trgm のトリグラム索引を使い、部分一致でも高速に検索できます。
+- **ジャンル絞り込み** — ジャンル単位で記事を絞り込み。ジャンル一覧ページはカテゴリごとのアコーディオン表示です。
+- **ハッシュタグ絞り込み** — ジャンル選択中に、そのジャンル内で使われているタグでさらに絞り込めます。
+- **記事詳細ページ** — 以下の表現に対応しています。
+  - Markdown 記法（見出し・太字・箇条書きなど）
+  - 目次の自動生成（記事冒頭表示、または本文中の `[toc]` 位置に展開）
+  - 本文中への画像埋め込みとキャプション表示
+  - Google マップの埋め込み（`[map:場所名]`）
+  - YouTube 動画の埋め込み（サムネイルをタップして再生するファサード方式）
+- **関連記事の表示** — 記事末尾に、同じジャンル・同じタグを優先して最大 4 件を表示します。
+- **サイト統計** — トップページで総投稿数・ハッシュタグ種類数・最終更新日を表示します。
+- **自己紹介 / 使い方ページ** — 管理者プロフィールとブログの使い方を掲載する静的ページ。
+- **ダークモード切り替え** — 🌙 / ☀️ ボタンで切り替え。選択内容はブラウザに保存され、次回訪問時も維持されます。
+- **レスポンシブ対応** — スマホではハンバーガーメニューによるドロワーナビ、スクロール連動のヘッダー表示/非表示に対応。
+- **SEO 対応** — ページごとの `<title>` と OGP / Twitter Card メタタグ、`robots.txt`、`sitemap.xml`（公開記事のみ収録）を配信します。
+
+### 管理者向けの機能（ログイン必須）
+
+管理者としてログインした場合のみ利用できる機能です。
+
+- **記事の投稿** — タイトル・本文・ジャンル・ハッシュタグ・公開設定を指定して投稿できます。
+- **記事の編集** — 既存記事の内容・画像・キャプション・サムネイルをまとめて編集できます。
+- **記事の削除** — CSRF トークン付きの POST でのみ削除でき、関連画像も物理削除されます。
+- **Markdown エディタツールバー** — H2/H3 見出し・太字・目次・箇条書き（自動継続対応）・地図挿入・YouTube 挿入・画像挿入をボタン操作で入力できます。スマホでは編集ツールバーがキーボード直上に固定表示されます。
+- **画像アップロードと自動最適化** — 本文画像は Pillow で長辺 1200px に縮小・再圧縮して保存。複数まとめて選択・1 枚ずつ追加の両方に対応し、各画像にキャプションを付けられます。
+- **サムネイルの管理** — 記事一覧に表示するサムネイルを、専用画像のアップロード（WebP 縮小版で保存）／プリセットから選択／システム既定、の優先順位で設定できます。
+- **ハッシュタグ入力** — スペース・カンマ区切りで複数入力でき、入力しながらタグのプレビューが表示されます。使われなくなった孤立タグは自動で掃除されます。
+- **公開 / 非公開の切り替え** — 記事単位で公開状態を切り替え。非公開記事は管理者本人だけが閲覧できます。
+- **マイページ** — 自分の投稿一覧（ページ送り付き）、総投稿数、使用ジャンルの確認、ニックネーム変更を行えます。
+
+---
+
+## 技術スタック
+
+| 分類 | 使用技術 |
+| --- | --- |
+| 言語 | Python 3.10 |
+| フレームワーク | Flask（Application Factory パターン） |
+| ORM / マイグレーション | SQLAlchemy 2.0 / Flask-Migrate（Alembic） |
+| 認証 | Flask-Login |
+| フォーム保護 | Flask-WTF（CSRF） |
+| テンプレート | Jinja2 |
+| 画像処理 | Pillow / filetype |
+| 本文変換 | Markdown |
+| データベース | PostgreSQL（本番・ローカル） / SQLite（無料枠） |
+| フロントエンド | 素の HTML / CSS / JavaScript（ビルド不要） |
+
+---
+
+## ディレクトリ構成
+
+```
+.
+├── app.py                    # エントリーポイント（create_app ファクトリ）
+├── config.py                 # 環境変数の読み込み
+├── constants.py              # ジャンル定義（唯一の情報源）
+├── extensions.py             # db / login_manager / migrate のインスタンス
+├── models.py                 # User / Post / Hashtag のテーブル定義
+├── rendering.py              # 本文（Markdown + 独自タグ）→ HTML 変換
+├── init_db.py                # SQLite 用のDB初期化スクリプト
+│
+├── views/                    # Blueprint（ルート定義）
+│   ├── auth.py               #   ログイン・ログアウト
+│   ├── blog.py               #   一般公開ページ（一覧・詳細・ジャンル・SEO）
+│   └── admin.py              #   管理者専用（投稿・編集・削除・マイページ）
+│
+├── services/                 # ドメインロジック層
+│   ├── images.py             #   画像の検証・最適化・保存・削除
+│   ├── hashtags.py           #   ハッシュタグの解析・同期・掃除
+│   └── captions.py           #   画像キャプションのフォーム取得
+│
+├── templates/                # Jinja2 テンプレート
+├── static/                   # CSS / JS / 画像・favicon
+├── migrations/               # Alembic マイグレーション
+│
+├── requirements.txt          # 依存パッケージ（PostgreSQL 含む）
+└── requirements-pythonanywhere.txt  # SQLite 運用向け（psycopg 除外）
+```
+
+---
+
+## セットアップ
+
+### 環境変数（.env）
+
+プロジェクト直下に `.env` を作成します（`.gitignore` 済み）。
+
+```dotenv
+# --- 共通（必須） ---
+SECRET_KEY=ランダムな長い文字列
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=ログインパスワード（平文でもハッシュ済みでも可）
+ADMIN_LOGIN_PATH=secret-login-xxxxxxxx   # ログイン画面の秘密URLパス
+ADMIN_GATE_KEY=別のランダムな長い文字列    # ログイン画面を表示する合言葉
+
+# --- 本番運用（SQLite でも本番なら設定） ---
+FLASK_ENV=production
+
+# --- SQLite を使う場合 ---
+USE_SQLITE=1
+
+# --- ローカル PostgreSQL（docker-compose）を使う場合 ---
+POSTGRES_USER=blog_user
+POSTGRES_PASSWORD=blog_password
+POSTGRES_DB=blog_db
+```
+
+ランダム文字列は次のコマンドで生成できます（`SECRET_KEY` と `ADMIN_GATE_KEY` には別々の値を使ってください）。
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+主な変数の意味は次のとおりです。
+
+| 変数 | 説明 |
+| --- | --- |
+| `SECRET_KEY` | セッション・CSRF トークンの署名に使う秘密鍵。本番では未設定だと起動時に停止します。 |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | 管理者ログインのユーザー名・パスワード。 |
+| `ADMIN_LOGIN_PATH` | ログイン画面の URL パス（推測されにくい文字列）。未設定だと起動できません。 |
+| `ADMIN_GATE_KEY` | ログイン画面を表示するための合言葉。 |
+| `FLASK_ENV` | `production` にすると本番扱いになり、Secure Cookie 有効化・SECRET_KEY 必須化が行われます。 |
+| `USE_SQLITE` | `1` にすると `instance/blog.db`（SQLite）を使用します。 |
+
+### ローカル開発（PostgreSQL）
+
+依存パッケージのインストール：
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows は .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+`docker-compose.yml` の PostgreSQL を起動（ホスト側ポートは 15432）：
+
+```bash
+docker compose up -d
+```
+
+マイグレーションを適用して起動：
+
+```bash
+flask db upgrade
+python app.py
+```
+
+`DATABASE_URL` も `USE_SQLITE` も未設定のとき、`localhost:15432` のローカル PostgreSQL に接続します。デバッグモードは `FLASK_DEBUG=1` を設定したローカル環境でのみ有効になります。
+
+### SQLite で動かす場合
+
+マイグレーション不要で、テーブル作成と管理者ユーザー登録を一括で行えます。
+
+```bash
+pip install -r requirements-pythonanywhere.txt
+python init_db.py
+```
+
+`.env` に `USE_SQLITE=1` と `FLASK_ENV=production` を設定しておいてください。`init_db.py` は何度実行しても安全です（既存テーブル・ユーザーはスキップされます）。
+
+---
+
+## 管理コマンド
+
+`flask <コマンド名>` で実行できる運用コマンドがあります。
+
+| コマンド | 説明 |
+| --- | --- |
+| `flask rerender-posts` | 本文キャッシュ HTML が古いバージョンの記事だけを再生成します。 |
+| `flask rerender-posts --all` | 全記事の本文 HTML を強制的に再生成します。 |
+| `flask rerender-posts --dry-run` | 再生成の対象を表示するだけで保存しません。 |
+| `flask clean-orphan-images` | どの記事からも参照されていない孤児画像を一覧表示します。 |
+| `flask clean-orphan-images --delete` | 孤児画像を実際に削除します。 |
+
+記事本文の HTML は投稿・編集時に生成して DB にキャッシュしています。`rendering.py` の出力を変更したときは、`rendering.py` の `RENDER_VERSION` を `+1` してください。既存記事も次のアクセス時に自動で作り直されます（`flask rerender-posts` で一括更新も可能）。
+
+---
+
+## デプロイ
+
+PythonAnywhere（無料枠・SQLite 運用）への手順は `deploy_pythonanywhere.md` に詳細をまとめています。要点は以下のとおりです。
+
+1. GitHub からサーバーへ `git clone`
+2. 仮想環境を作成し `requirements-pythonanywhere.txt` をインストール
+3. サーバー上に `.env` を作成（`USE_SQLITE=1` / `FLASK_ENV=production` を含める）
+4. `python init_db.py` でテーブルと管理者ユーザーを作成
+5. Web タブで Manual configuration（WSGI から `create_app()` を呼び出し）を設定して Reload
+
+コードを更新したときは「PC で修正 → GitHub に push → サーバーで pull → **Web タブで Reload**」が基本の流れです。静的ファイルは `static_url()` によるキャッシュバスティングに対応しているため、CSS/JS を更新すればブラウザにも即座に反映されます。
+
+---
+
+## ライセンス
+
+学習・個人利用を目的としたプロジェクトです。
+</file>
+
+<file path="matome/static/css/detail.css">
+/* ============================================================
+   static/css/detail.css - Coastal Dawn v2
+   【対象ページ】 detail.html（記事詳細ページ）
+   ============================================================
+   記事詳細ページ専用のスタイルをまとめたファイル。
+   記事本文カード・目次・本文（見出し/画像/地図/YouTube）・
+   関連記事セクションなどを、機能・パーツ単位で見出しコメントを
+   付けて整理している。
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   【detail.html】ページ全体のコンテナ
+   ------------------------------------------------------------ */
+.detail-container {
+    max-width: 860px !important;
+    margin: 0 auto;
+    padding: 36px 32px 60px;
+    box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------
+   【detail.html】記事本文カード（一覧カードと左アクセントラインで統一）
+   ------------------------------------------------------------ */
+article {
+    background: #fff;
+    padding: 52px 60px;
+    border: 1.5px solid #7dd3fa;
+    border-left: 5px solid #0ea5e9;
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 32px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
+}
+
+/* ------------------------------------------------------------
+   【detail.html】記事タイトル
+   ------------------------------------------------------------ */
+h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0c1f35;
+    margin: 0 0 20px;
+    text-align: left;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+}
+
+/* ------------------------------------------------------------
+   【detail.html】ジャンルバッジ（クリックでジャンル絞り込みへ遷移するリンク）
+   ------------------------------------------------------------ */
+.genre-badge {
+    display: inline-block;
+    background-color: #dbeafe;
+    color: #0369a1;
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    border: 1px solid #38bdf8;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.genre-badge:hover {
+    background-color: #bae6fd;
+    border-color: #0ea5e9;
+    color: #0c1f35;
+    text-decoration: none;
+}
+
+/* ------------------------------------------------------------
+   【detail.html】ジャンルバッジ＋ハッシュタグを1行に並べる行
+   ------------------------------------------------------------
+   ジャンルバッジを左端に、その右にハッシュタグを横並びで配置する。
+   ------------------------------------------------------------ */
+.detail-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+/* 行内に並べるジャンルバッジは、単体表示用の下マージン（margin-bottom: 8px）を
+   打ち消して、ハッシュタグと高さ・縦位置をそろえる */
+.detail-tag-row .genre-badge {
+    margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------
+   【detail.html】メタ情報エリア（ジャンル・投稿者・日時・ハッシュタグをまとめる領域）
+   ------------------------------------------------------------ */
+.post-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    font-size: 13px;
+    color: #4a7a96;
+    margin-bottom: 35px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0f2fe;
+    width: 100%;
+}
+
+/* 投稿者アイコン＋ニックネーム表示
+   ------------------------------------------------------------
+   【PCのみ・フォントサイズ微調整】
+   ハッシュタグ下の投稿者名を少しだけ読みやすくするため、
+   12px → 13px に拡大する（+1px）。
+   ※ スマホ側は下部のメディアクエリが 13px に上書きするため、
+     この変更でも PC・スマホともに 13px にそろう。 */
+.post-user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #0369a1;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* 投稿者アイコン本体。
+   ------------------------------------------------------------
+   【PCのみ・フォントサイズ微調整に合わせたサイズ調整】
+   名前のフォントを少し大きくしたぶん、アイコンも 21px → 22px に
+   わずかに拡大して縦位置のバランスを保つ。 */
+.post-user-info img {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #dbeafe;
+    border: 1px solid #7dd3fa;
+    margin: 0 !important;
+}
+
+/* 投稿日時・更新日時テキスト
+   ------------------------------------------------------------
+   【PCのみ・フォントサイズ微調整】
+   投稿・更新日時を少しだけ読みやすくするため、
+   12px → 13px に拡大する（+1px）。
+   ※ スマホ側は下部のメディアクエリで 12px のまま（この行は上書きされない）
+     ため、この変更は PC 表示にのみ効く。 */
+.post-time { color: #4a7a96; font-size: 13px; }
+
+/* ============================================================
+   【detail.html】目次（本文中の [toc] マーカーから自動生成）
+   ============================================================ */
+.post-toc,
+.detail-article-body .toc {
+    background-color: #f0f9ff !important;
+    border: 1px solid #7dd3fa !important;
+    border-left: 4px solid #0ea5e9 !important;
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin: 35px 0;
+    box-sizing: border-box;
+}
+
+/* 本文中の[toc]位置に挿入された目次の見出しラベル */
+.detail-article-body .toc::before {
+    content: "目次" !important;
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    margin: 0 0 14px !important;
+    color: #1f5a99 !important;
+    text-align: left !important;
+    letter-spacing: 0.05em !important;
+    text-transform: none !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+/* 記事先頭に自動表示される目次の見出しラベル（[toc]未使用時） */
+.post-toc .toc-title, .toc-fixed .toc-title, .toc-sticky .toc-title {
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    margin: 0 0 14px !important;
+    color: #1f5a99 !important;
+    text-align: left !important;
+    letter-spacing: 0.05em !important;
+    text-transform: none !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.post-toc > ul, .post-toc .toc > ul, .detail-article-body .toc > ul {
+    list-style-type: none !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    text-align: left !important;
+    display: block !important;
+}
+
+/* 本文中の見出し（H1〜H3）に、固定ヘッダー分のスクロール余白を確保 */
+.detail-article-body h1,
+.detail-article-body h2,
+.detail-article-body h3 { scroll-margin-top: 100px; }
+
+/* 目次トップレベル項目（H2 相当）
+   ------------------------------------------------------------
+   【フォントサイズ調整】15px → 16px に拡大して読みやすくする。
+   色はライトモードで、背景と同系統の青みのある濃紺（#1f5a99）にして
+   目次全体の色をそろえる（ほぼ黒だが青寄り）。 */
+.post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li {
+    text-align: left !important;
+    margin-bottom: 0 !important;
+    padding: 11px 0 !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    display: block !important;
+    background: none !important;
+    border: none !important;
+    border-bottom: 1px solid #bae6fd !important;
+    color: #1f5a99 !important;
+}
+
+.post-toc ul ul, .post-toc .toc ul ul, .detail-article-body .toc ul ul {
+    list-style-type: none !important;
+    padding-left: 20px !important;
+    margin: 6px 0 0 !important;
+    display: block !important;
+}
+
+/* ------------------------------------------------------------
+   目次サブ項目（H3 相当）1 行分
+   ------------------------------------------------------------
+   【ぶら下げインデント対応（折り返しが「•」の下に入り込む問題の修正）】
+   従来は display: block とし、箇条書き記号「•」を ::before で行頭に
+   インライン挿入していた。この場合、目次テキストが 1 行に収まらず
+   折り返すと、2 行目がブロックの左端（＝ • の真下）に戻ってしまい、
+   「・の下に目次文が入り込む」見た目になっていた。
+
+   そこで項目自体を display: flex にして「記号」と「テキスト（<a>）」を
+   別々のフレックスアイテムとして横並びにする。テキスト側は自分の左端
+   （記号の右）を基準に折り返すため、2 行目以降も 1 行目のテキストに
+   きれいに揃う（＝ぶら下げインデント）。
+   align-items: baseline で記号と文字のベースラインを合わせている。
+
+   【フォントサイズ・色調整】
+   フォントサイズを 14px → 15px に拡大。色はライトモードで、背景（淡い水色）と
+   同系統で落ち着いて読めるよう #2a4a5e（青みがかったグレー）→ #1f5a99
+   （黒に近いが青みのある濃紺）に変更する。目次全体で色をそろえている。
+   ------------------------------------------------------------ */
+.post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li {
+    font-size: 15px !important;
+    font-weight: normal !important;
+    padding: 4px 0 !important;
+    border-bottom: none !important;
+    display: flex !important;
+    align-items: baseline !important;
+    color: #1f5a99 !important;
+}
+
+.post-toc ul ul li::before, .post-toc .toc ul ul li::before, .detail-article-body .toc ul ul li::before {
+    content: "•" !important;
+    color: #38bdf8 !important;
+    margin-right: 6px !important;
+    font-size: 13px !important;
+    flex: 0 0 auto !important;   /* 記号は縮まない固定項目にする */
+}
+
+.post-toc > ul > li:last-child, .post-toc .toc > ul > li:last-child, .detail-article-body .toc > ul > li:last-child {
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.post-toc > ul > li:first-child, .post-toc .toc > ul > li:first-child, .detail-article-body .toc > ul > li:first-child {
+    padding-top: 4px !important;
+}
+
+/* 目次のリンク（各項目の遷移リンク）
+   ------------------------------------------------------------
+   【色調整】従来は #0369a1（セルリアン）で、目次パネルの淡い水色背景
+   （#f0f9ff）と同系統のため、背景をいくら濃くしても文字が沈んで
+   見づらかった。ライトモードでは背景と同じ青系統の、黒に近いが青みのある
+   濃紺（#1f5a99）にして、落ち着いた見た目を保ちつつ背景とのコントラストを
+   確保する（見出し・各項目テキストと色がそろう）。
+   ホバー時はアクセント色（#0ea5e9）＋下線で「押せる」ことを示す。
+   ※ ダークモードの目次リンク色は dark-mode.css が !important で
+     上書きするため、この変更はライトモードにのみ効く。 */
+.post-toc a, .detail-article-body .toc a {
+    color: #1f5a99 !important;
+    text-decoration: none !important;
+    transition: color 0.15s !important;
+    display: inline-block !important;
+}
+
+.post-toc a:hover, .detail-article-body .toc a:hover {
+    color: #0ea5e9 !important;
+    text-decoration: underline !important;
+}
+
+/* ============================================================
+   【detail.html】記事本文（Markdown→HTML変換後のテキスト）
+   ============================================================ */
+.detail-article-body {
+    font-weight: 400;
+    font-size: 17px;
+    line-height: 1.8;
+    word-break: break-word;
+    text-align: left;
+    white-space: normal;
+    color: #1e3a4f;
+}
+
+.detail-article-body strong { font-weight: 700 !important; color: #0c1f35; }
+
+.detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 17px; font-weight: 400; }
+
+.detail-article-body h2 {
+    font-size: 22px;
+    font-weight: 700;
+    border-bottom: 2px solid #7dd3fa;
+    padding-bottom: 6px;
+    margin: 40px 0 16px;
+    text-align: left;
+    color: #0c1f35;
+}
+
+.detail-article-body h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 30px 0 0;
+    text-align: left;
+    color: #0c1f35;
+    border-left: 4px solid #0ea5e9;
+    padding-left: 10px;
+}
+
+/* 本文内の画像共通スタイル */
+article img { max-width: 100%; height: auto; display: block; margin: 25px auto; border-radius: 5px; }
+
+/* ------------------------------------------------------------
+   【detail.html】本文内の画像キャプション（[imgN]＋キャプション文）
+   ------------------------------------------------------------
+   【フォントサイズ・色調整】
+   フォントサイズを 15px → 16px に拡大。色はライトモードで黒く
+   はっきり読めるよう #0369a1（セルリアン）→ #1a1a1a（黒）に変更する。
+   ※ ダークモードのキャプション色は dark-mode.css が指定するため、
+     この変更はライトモードにのみ効く。
+   ------------------------------------------------------------ */
+.post-figure { display: block; margin: 16px auto 8px; text-align: center; }
+.post-figure img { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; border-radius: 5px; }
+.post-figcaption { margin-top: 6px; text-align: center !important; font-size: 16px; color: #1a1a1a; line-height: 1.5; display: block; width: 100%; }
+.post-figure + p { margin-top: 0.6em; }
+
+/* ------------------------------------------------------------
+   【detail.html】本文内の地図埋め込み（[map:場所名]タグから生成）
+   ------------------------------------------------------------ */
+.post-map-wrapper { margin: 24px 0; border-radius: 0 10px 10px 0; overflow: hidden; border: 1.5px solid #7dd3fa; border-left: 4px solid #0ea5e9; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); }
+.post-map-label { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0369a1; background: #f0f9ff; border-bottom: 1px solid #7dd3fa; }
+.post-map-iframe { width: 100%; height: 380px; border: none; display: block; }
+
+/* ------------------------------------------------------------
+   【detail.html】本文内のYouTube埋め込み（[youtube:URL]タグから生成、
+   サムネイルをタップすると再生が始まる「ファサード」形式）
+   ------------------------------------------------------------ */
+.post-youtube-wrapper { margin: 24px 0; border-radius: 10px; overflow: hidden; border: 1px solid #7dd3fa; box-shadow: 0 3px 10px rgba(14, 165, 233, 0.10); position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.post-youtube-facade { position: absolute; inset: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.post-youtube-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s ease; }
+.post-youtube-facade:hover .post-youtube-thumb { filter: brightness(0.85); }
+.post-youtube-play-btn { position: absolute; background: none; border: none; cursor: pointer; padding: 0; transition: transform 0.15s ease; }
+.post-youtube-facade:hover .post-youtube-play-btn { transform: scale(1.1); }
+.yt-btn-bg { fill: #ff0000; fill-opacity: 0.9; transition: fill-opacity 0.15s ease; }
+.post-youtube-facade:hover .yt-btn-bg { fill-opacity: 1; }
+.yt-btn-icon { fill: #fff; }
+.post-youtube-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
+
+/* ------------------------------------------------------------
+   【detail.html】本文下の区切り線
+   ------------------------------------------------------------ */
+hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
+
+/* ------------------------------------------------------------
+   【detail.html】「前の画面に戻る」「この記事を編集する」ボタン行
+   ------------------------------------------------------------
+   【PCのみ・余白微調整】
+   「前の画面に戻る」ボタンと、その下の「関連記事」見出しの間が
+   PC 表示で広く空いていた（ボタン行の下 padding 32px ＋
+   .related-heading の上 margin 32px）。間延びを抑えるため、
+   ボタン行の下 padding を 32px → 20px に少しだけ詰める
+   （あわせて .related-heading 側の上 margin も 32px → 20px に調整）。
+   ※ スマホ側は下部のメディアクエリ（padding: 0 16px 28px）が
+     上書きするため、この変更は PC 表示にのみ効く。
+   ------------------------------------------------------------ */
+.detail-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 4px 0 20px; flex-wrap: wrap; }
+
+.detail-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.13s;
+    white-space: nowrap;
+    min-height: 44px;
+    line-height: 1;
+}
+
+.detail-btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
+
+/* 「前の画面に戻る」ボタン（白背景） */
+.detail-btn-back {
+    background-color: #ffffff;
+    color: #4a7a96;
+    border: 1px solid #7dd3fa;
+    box-shadow: 0 1px 4px rgba(14, 165, 233, 0.08);
+}
+
+.detail-btn-back:hover {
+    background-color: #f0f9ff;
+    border-color: #38bdf8;
+    color: #0c1f35;
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.14);
+    transform: translateY(-1px);
+}
+
+.detail-btn-back:active { transform: translateY(0); box-shadow: none; background-color: #dbeafe; }
+
+/* 「この記事を編集する」ボタン（セルリアン塗りつぶし・投稿者本人のみ表示） */
+.detail-btn-edit {
+    background-color: #0ea5e9;
+    color: #ffffff;
+    border: 1px solid #0ea5e9;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+}
+
+.detail-btn-edit:hover {
+    background-color: #0369a1;
+    border-color: #0369a1;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.30);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.detail-btn-edit:active { transform: translateY(0); box-shadow: none; background-color: #075985; }
+
+/* ============================================================
+   【detail.html】関連記事セクション（記事末尾、最大4件表示）
+   ============================================================ */
+.related-section { margin-top: 20px; padding-top: 8px; }
+
+/* ------------------------------------------------------------
+   関連記事セクションの見出し
+   ------------------------------------------------------------
+   【PCのみ・余白微調整】
+   「前の画面に戻る」ボタン行との距離を詰めるため、
+   上 margin を 32px → 20px に縮小する（下記ボタン行側の
+   padding 短縮とあわせて、PC 表示での間延びを解消する）。
+   ※ スマホ側は下部のメディアクエリ（margin: 24px 0 12px）が
+     上書きするため、この変更は PC 表示にのみ効く。
+   ------------------------------------------------------------ */
+.related-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0c1f35;
+    border-bottom: 2px solid #0ea5e9;
+    padding-bottom: 10px;
+    margin: 20px 0 14px;
+    text-align: left;
+    letter-spacing: 0.02em;
+}
+
+.related-heading-icon { font-size: 16px; flex-shrink: 0; }
+
+.related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+
+/* 関連記事カード（一覧カードと同じ左アクセントラインデザイン、ホバーでゴールドに変化） */
+.related-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: #fff;
+    border: 1.5px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px 14px 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.18s, border-color 0.18s, background 0.18s, transform 0.15s;
+    overflow: hidden;
+}
+
+.related-card:hover {
+    border-left-color: #f59e0b;
+    border-color: #fbbf24;
+    background: #fffbeb;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: inherit;
+}
+
+.related-thumb {
+    flex: 0 0 120px;
+    width: 120px;
+    height: 85px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #dbeafe;
+    border: 1px solid #7dd3fa;
+    transition: border-color 0.18s;
+}
+
+.related-card:hover .related-thumb { border-color: #fbbf24; background: #fef3c7; }
+
+.related-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; margin: 0 !important; border-radius: 0; }
+
+.related-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+.related-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0c1f35;
+    line-height: 1.45;
+    margin: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.related-card:hover .related-title { color: #0369a1; }
+.related-date { font-size: 12px; color: #0369a1; margin: 0; font-weight: 500; }
+
+/* ------------------------------------------------------------
+   【detail.html】旧ボタンデザインの予備クラス（現在どこからも参照されていない）
+   ------------------------------------------------------------ */
+.detail-ul { display: flex; justify-content: center; gap: 16px; padding: 0; margin: 0; list-style: none; flex-wrap: wrap; }
+.detail-ul-li { background: none; border: none; padding: 0; }
+.detail-ul-li-a { font-size: 14px; color: #0369a1; text-decoration: none; padding: 10px 22px; border: 1px solid #7dd3fa; border-radius: 20px; display: inline-block; transition: all 0.18s; background: none; cursor: pointer; font-family: inherit; }
+.detail-ul-li-a:hover { border-color: #0ea5e9; color: #0c1f35; background: #dbeafe; text-decoration: none; }
+
+/* ------------------------------------------------------------
+   【detail.html】レスポンシブ（スマホ）
+   ------------------------------------------------------------ */
+@media (max-width: 767px) {
+    .detail-container { padding: 16px 0 48px !important; width: 100% !important; overflow-x: hidden; }
+    article { padding: 28px 16px; border-radius: 0 10px 10px 0; border-left: none; border-right: none; margin-bottom: 16px; }
+    h1 { font-size: 20px; letter-spacing: -0.01em; line-height: 1.45; }
+    .post-meta { font-size: 12px; margin-bottom: 24px; padding-bottom: 16px; }
+    .post-user-info { font-size: 13px; }
+    .detail-article-body {
+    font-weight: 500; font-size: 15px !important; line-height: 1.75 !important; word-break: break-all; }
+    .detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 15px; }
+    .detail-article-body pre, .detail-article-body code, .detail-article-body table { max-width: 100% !important; overflow-x: auto !important; display: block; word-break: normal; }
+    .detail-article-body h2 { font-size: 18px; margin: 32px 0 12px; }
+    .detail-article-body h3 { font-size: 16px; margin: 26px 0 0; padding-left: 8px; }
+    .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
+    /* 目次トップレベル項目（スマホ）: 14px → 15px に拡大 */
+    .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 15px !important; padding: 10px 0 !important; }
+    .post-toc ul ul, .post-toc .toc ul ul { padding-left: 16px !important; margin: 4px 0 0 !important; }
+    /* 目次サブ項目（スマホ）: 13px → 14px に拡大 */
+    .post-toc ul ul li, .post-toc .toc ul ul li, .detail-article-body .toc ul ul li { font-size: 14px !important; padding: 5px 0 !important; }
+    .post-map-iframe { height: 260px; }
+    .post-youtube-wrapper { border-radius: 6px; margin: 16px 0; }
+    hr { margin: 0 16px 20px; }
+    .detail-actions { flex-direction: column; gap: 10px; padding: 0 16px 28px; }
+    .detail-btn { width: 100%; justify-content: center; padding: 13px 24px; font-size: 15px; border-radius: 8px; box-sizing: border-box; }
+    .detail-ul { flex-direction: column; align-items: center; gap: 12px; padding: 0 16px 12px; box-sizing: border-box; }
+    .detail-ul-li { width: 100%; }
+    .detail-ul-li-a { font-size: 15px; padding: 13px 24px; display: block; text-align: center; width: 100%; box-sizing: border-box; min-height: 48px; }
+    .post-figure { margin: 12px auto 6px; }
+    /* 画像キャプション（スマホ）: 12px → 13px に拡大 */
+    .post-figcaption { font-size: 13px; }
+    .related-section { margin-top: 28px; padding: 0 0 8px; }
+    .related-heading { font-size: 16px; margin: 24px 0 12px; padding-bottom: 8px; }
+    .related-list { gap: 8px; }
+    .related-card { gap: 14px; padding: 12px 14px 12px 12px; border-radius: 0 8px 8px 0; }
+    .related-thumb { flex: 0 0 100px; width: 100px; height: 70px; }
+    .related-title { font-size: 14px; }
+    .related-date { font-size: 12px; }
+}
 </file>
 
 </files>
