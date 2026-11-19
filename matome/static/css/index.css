@@ -149,7 +149,7 @@ a[role="button"]:hover {
     border-left: 5px solid #0ea5e9;
     border-radius: 0 12px 12px 0;
     padding: 16px 22px;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
     transition: transform 0.22s ease, box-shadow 0.22s ease,
                 border-left-color 0.22s ease, border-color 0.22s ease,
