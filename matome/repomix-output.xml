@@ -4296,6 +4296,190 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .related-title { font-size: 14px; }
     .related-date { font-size: 12px; }
 }
+
+/* ============================================================
+   【detail.html】PC 2カラムレイアウト ＋ 常時表示のサイドバー目次
+   ============================================================
+   【この改修で追加したブロック】
+   PC 幅（1024px 以上）では .detail-container をグリッドにして
+     左：記事カード本体（.detail-main）／右：サイドバー目次（.detail-toc-sidebar）
+   の 2 カラムにする。全体を少し広め（最大 1180px）に取って中央寄せするため、
+   記事カードは画面中央よりわずかに左へ寄り、右側に目次が貼り付き続ける。
+
+   サイドバー目次は position: sticky で、スクロールしても常に画面内に残り、
+   どの見出しへもワンクリックで移動できる。中身は detail.html の JS が
+   本文見出し（h2 / h3）から生成する。
+
+   1024px 未満（タブレット・スマホ）では従来どおり 1 カラム表示のままで、
+   記事カード冒頭の目次（.post-toc）を使う（サイドバーは非表示）。
+   ------------------------------------------------------------ */
+
+/* 左カラムのラッパ。グリッドの子がはみ出さないよう min-width: 0 を付ける。
+   1024px 未満では単なる透過ラッパとして機能し、見た目は変わらない。 */
+.detail-main {
+    min-width: 0;
+}
+
+/* サイドバー目次は既定で非表示。PC 幅（下の @media）でのみ表示する。 */
+.detail-toc-sidebar {
+    display: none;
+}
+
+/* ------------------------------------------------------------
+   PC 幅（1024px 以上）：2カラム化してサイドバー目次を出す
+   ------------------------------------------------------------ */
+@media (min-width: 1024px) {
+
+    /* コンテナを広めに取り、左 1fr（本文）＋右 300px（目次）のグリッドにする。
+       全体幅（最大 1240px）と目次幅（300px）のぶん、本文側（1fr）も
+       あわせて広がる。 */
+    .detail-container {
+        max-width: 1240px !important;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        column-gap: 46px;
+        align-items: start;   /* 目次を上端に合わせ、sticky を効かせる */
+    }
+
+    /* 見出しの無い記事では JS が .detail-no-toc を付ける → 1 カラム中央寄せに戻す */
+    .detail-container.detail-no-toc {
+        display: block;
+        max-width: 860px !important;
+    }
+
+    /* PC では記事カード冒頭の目次は右サイドバーに役割を譲るので隠す */
+    .detail-main .post-toc {
+        display: none !important;
+    }
+
+    /* サイドバー目次を表示。固定ヘッダー（85px）の下に貼り付かせる */
+    .detail-toc-sidebar {
+        display: block;
+        position: sticky;
+        top: 100px;                         /* 固定ヘッダー 85px ＋ 余白 */
+        align-self: start;
+        max-height: calc(100vh - 124px);    /* 画面に収まらない長い目次は内部スクロール */
+    }
+}
+
+/* サイドバー目次カード本体（白に近い極淡い水色で、本文カードとなじませる） */
+.toc-sidebar-inner {
+    background-color: #fafdff;
+    border: 1px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 8px 8px 0;
+    padding: 18px 20px;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.10);
+    box-sizing: border-box;
+}
+
+/* 目次見出しラベル「目次」 */
+.toc-sidebar-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 0 12px;
+    color: #1f5a99;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #bae6fd;
+    padding-bottom: 10px;
+}
+
+/* 目次の内部スクロール領域（長い目次のとき） */
+.toc-sidebar-nav {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* 目次リスト（JS が生成） */
+.toc-sidebar-list,
+.toc-sidebar-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* h3 のぶら下げ（h2 の下に少しインデントして並べる） */
+.toc-sidebar-sublist {
+    padding-left: 12px;
+    margin: 4px 0 2px;
+    border-left: 1px solid #cdeafd;
+}
+
+.toc-sidebar-item {
+    margin: 0;
+}
+
+/* 目次リンク 1 行分。左の 2px ラインが現在地ハイライトのベースになる */
+.toc-sidebar-link {
+    display: block;
+    padding: 6px 10px;
+    margin: 1px 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #1f5a99 !important;
+    text-decoration: none !important;
+    border-left: 2px solid transparent;
+    border-radius: 0 4px 4px 0;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* h2（トップレベル）項目は少し強調 */
+.toc-sidebar-item.toc-h2 > .toc-sidebar-link {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.toc-sidebar-link:hover {
+    background-color: #dbeafe;
+    color: #0c1f35 !important;
+    text-decoration: none !important;
+}
+
+/* いま読んでいる見出し（JS が .is-active を付与） */
+.toc-sidebar-link.is-active {
+    background-color: #e0f2fe;
+    color: #0369a1 !important;
+    border-left-color: #0ea5e9;
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------------
+   サイドバー目次 ダークモード対応
+   ------------------------------------------------------------
+   detail.css は base.html で dark-mode.css より後に読み込まれるため、
+   ここでの html[data-theme="dark"] 指定が有効になる（error.css と同じ方式）。
+   ------------------------------------------------------------ */
+html[data-theme="dark"] .toc-sidebar-inner {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border-strong);
+    border-left-color: var(--dk-accent-strong);
+    box-shadow: var(--dk-shadow);
+}
+
+html[data-theme="dark"] .toc-sidebar-title {
+    color: var(--dk-text);
+    border-bottom-color: var(--dk-border);
+}
+
+html[data-theme="dark"] .toc-sidebar-sublist {
+    border-left-color: var(--dk-border);
+}
+
+html[data-theme="dark"] .toc-sidebar-link {
+    color: var(--dk-text-body) !important;
+}
+
+html[data-theme="dark"] .toc-sidebar-link:hover {
+    background-color: var(--dk-surface-3);
+    color: var(--dk-text) !important;
+}
+
+html[data-theme="dark"] .toc-sidebar-link.is-active {
+    background-color: var(--dk-surface-3);
+    color: var(--dk-text) !important;
+    border-left-color: var(--dk-accent);
+}
 </file>
 
 <file path="static/css/error.css">
@@ -8934,107 +9118,144 @@ document.addEventListener('keydown', function(e) {
 
 {% block content %}
 
+{# ============================================================
+   記事詳細ページのレイアウト（PC は 2 カラム）
+   ------------------------------------------------------------
+   【この改修でやること】
+   PC 幅（1024px 以上）では .detail-container を CSS グリッドにして
+     ・左側：記事カード本体（.detail-main）
+     ・右側：常時表示のサイドバー目次（.detail-toc-sidebar、position: sticky）
+   の 2 カラムに分ける。記事カードは中央よりわずかに左へ寄り、
+   右側に目次が貼り付き続けるため、本文のどこまで読み進めても
+   好きな見出しへワンクリックで移動できる。
+
+   サイドバー目次は本文（.detail-article-body）の見出し（h2 / h3）から
+   JavaScript で生成する。見出しには Markdown の toc 拡張が付けた id が
+   あるため、サーバー側（rendering.py / DB）には一切手を加えずに動く。
+   [toc] マーカーで本文中に目次を展開している記事でも同じ仕組みで動作する。
+
+   スマホ・タブレット幅（1024px 未満）では従来どおり 1 カラム表示のままで、
+   記事カード冒頭の目次（.post-toc）をそのまま使う（サイドバーは非表示）。
+   ============================================================ #}
+
 <div class="detail-container">
-    <article>
-        <h1>
-            {{ post.title }}
-        </h1>
 
-        {% set genre_display = post.genre if post.genre else '未分類' %}
+    {# ===== 記事カード本体＋操作ボタン＋関連記事（左カラム） ===== #}
+    <div class="detail-main">
+        <article>
+            <h1>
+                {{ post.title }}
+            </h1>
 
-        <div class="post-meta">
-            <div class="detail-tag-row">
-                <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
-                    📂 {{ genre_display }}
+            {% set genre_display = post.genre if post.genre else '未分類' %}
+
+            <div class="post-meta">
+                <div class="detail-tag-row">
+                    <a href="{{ url_for('blog.index', genre=genre_display) }}" class="genre-badge">
+                        📂 {{ genre_display }}
+                    </a>
+
+                    {% if post.hashtags %}
+                        {% for tag in post.hashtags %}
+                            <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
+                               class="hashtag-badge">
+                                #{{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="post-user-info">
+                    {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ #}
+                    <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
+                        alt="avatar" width="21" height="21">
+                    <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
+                </div>
+
+                <div class="post-time">
+                    投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
+                    &nbsp;
+                    {% if post.updated_at %}
+                        更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
+                    {% endif %}
+                </div>
+            </div>
+
+            {# 記事カード冒頭の目次。PC（1024px 以上）では右サイドバー目次に
+               役割を譲るため detail.css で非表示にし、1024px 未満でのみ表示する。 #}
+            {% if toc_html and '<li>' in toc_html %}
+                <div class="post-toc">
+                    <p class="toc-title">目次</p>
+                    {{ toc_html | safe }}
+                </div>
+            {% endif %}
+
+            <div class="detail-article-body">{{ display_body | safe }}</div>
+        </article>
+
+        <hr>
+        <div class="detail-actions">
+            <button type="button" class="detail-btn detail-btn-back" onclick="goBack();">
+                <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                前の画面に戻る
+            </button>
+            {% if current_user.is_authenticated and post.user_id == current_user.id %}
+                <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-btn detail-btn-edit">
+                    <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M14.7 3.3a1 1 0 0 1 1.4 0l.6.6a1 1 0 0 1 0 1.4L5.5 16.5l-2.5.5.5-2.5L14.7 3.3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    この記事を編集する
                 </a>
-
-                {% if post.hashtags %}
-                    {% for tag in post.hashtags %}
-                        <a href="{{ url_for('blog.index', genre=post.genre, hashtag=tag.name) }}"
-                           class="hashtag-badge">
-                            #{{ tag.name }}
-                        </a>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <div class="post-user-info">
-                {# width/height を明示してアバター読み込み時のレイアウトシフトを防ぐ #}
-                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ post.user.nickname if post.user.nickname else 'admin' }}"
-                    alt="avatar" width="21" height="21">
-                <span>{{ post.user.nickname if post.user.nickname else '管理者' }}</span>
-            </div>
-
-            <div class="post-time">
-                投稿日時: {{ post.created_at.strftime('%Y年%m月%d日') }}
-                &nbsp;
-                {% if post.updated_at %}
-                    更新日時: {{ post.updated_at.strftime('%Y年%m月%d日') }}
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
 
-        {% if toc_html and '<li>' in toc_html %}
-            <div class="post-toc">
-                <p class="toc-title">目次</p>
-                {{ toc_html | safe }}
-            </div>
-        {% endif %}
+        {# ================================================================
+           関連記事セクション（単一ブロック、最大4件）
+           サムネイルは _macros.html の post_thumbnail マクロで描画
+           （index/mypage と共通の優先順位ロジック）。
+           ================================================================ #}
+        {% if related_posts %}
+            <section class="related-section">
 
-        <div class="detail-article-body">{{ display_body | safe }}</div>
-    </article>
+                <h2 class="related-heading">
+                    <span class="related-heading-icon">🔗</span>
+                    関連記事
+                </h2>
 
-    <hr>
-    <div class="detail-actions">
-        <button type="button" class="detail-btn detail-btn-back" onclick="goBack();">
-            <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            前の画面に戻る
-        </button>
-        {% if current_user.is_authenticated and post.user_id == current_user.id %}
-            <a href="{{ url_for('admin.update', id=post.id) }}" class="detail-btn detail-btn-edit">
-                <svg class="detail-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M14.7 3.3a1 1 0 0 1 1.4 0l.6.6a1 1 0 0 1 0 1.4L5.5 16.5l-2.5.5.5-2.5L14.7 3.3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                この記事を編集する
-            </a>
+                <ul class="related-list">
+                    {% for rel in related_posts %}
+                        <li class="related-item">
+                            <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
+                                <div class="related-thumb">
+                                    {# 関連記事サムネイルはデスクトップ基準で 120 x 85 #}
+                                    {{ post_thumbnail(rel, width=120, height=85) }}
+                                </div>
+                                <div class="related-body">
+                                    <p class="related-title">{{ rel.title }}</p>
+                                    <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+            </section>
         {% endif %}
+        {# ================================================================ #}
     </div>
 
-    {# ================================================================
-       関連記事セクション（単一ブロック、最大4件）
-       サムネイルは _macros.html の post_thumbnail マクロで描画
-       （index/mypage と共通の優先順位ロジック）。
-       ================================================================ #}
-    {% if related_posts %}
-        <section class="related-section">
-
-            <h2 class="related-heading">
-                <span class="related-heading-icon">🔗</span>
-                関連記事
-            </h2>
-
-            <ul class="related-list">
-                {% for rel in related_posts %}
-                    <li class="related-item">
-                        <a href="{{ url_for('blog.detail', id=rel.id) }}" class="related-card">
-                            <div class="related-thumb">
-                                {# 関連記事サムネイルはデスクトップ基準で 120 x 85 #}
-                                {{ post_thumbnail(rel, width=120, height=85) }}
-                            </div>
-                            <div class="related-body">
-                                <p class="related-title">{{ rel.title }}</p>
-                                <p class="related-date">{{ rel.created_at.strftime('%Y年%m月%d日') }}</p>
-                            </div>
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-
-        </section>
-    {% endif %}
-    {# ================================================================ #}
+    {# ===== 右カラム：常時表示のサイドバー目次（PC のみ・JS が中身を生成） =====
+       中身（nav#tocSidebarNav）は本文見出しから JavaScript で組み立てる。
+       見出しが 1 つも無い記事では JS が .detail-container に
+       .detail-no-toc を付与し、サイドバーを隠して 1 カラムに戻す。 #}
+    <aside class="detail-toc-sidebar" id="tocSidebar" aria-label="目次">
+        <div class="toc-sidebar-inner">
+            <p class="toc-sidebar-title">目次</p>
+            <nav class="toc-sidebar-nav" id="tocSidebarNav"></nav>
+        </div>
+    </aside>
 
 </div>
 
@@ -9089,6 +9310,140 @@ function ytThumbFallback(img, isLoad) {
     img.removeAttribute('data-fallback');            // 差し替えは 1 回だけ（無限ループ防止）
     img.src = fallback;
 }
+
+/* ============================================================
+   サイドバー目次（PC の右カラムに常時表示する目次）
+
+   本文（.detail-article-body）の見出し（h2 / h3）から目次を組み立て、
+   #tocSidebarNav に挿入する。見出しには Markdown の toc 拡張が付けた
+   id があるので、その id へのリンクを作るだけでジャンプできる。
+
+   さらにスクロール位置を監視し、いま読んでいる見出しに対応する
+   目次項目をハイライト（.is-active）する「スクロールスパイ」も行う。
+
+   ・サーバー側（rendering.py / DB）には手を加えない
+   ・[toc] マーカーで本文中に目次を展開した記事でも同じ仕組みで動く
+   ・見出しが無い記事では .detail-container に .detail-no-toc を付けて
+     サイドバーを隠し、本文を 1 カラムに戻す
+   ============================================================ */
+(function () {
+    const body      = document.querySelector('.detail-article-body');
+    const sidebar   = document.getElementById('tocSidebar');
+    const nav       = document.getElementById('tocSidebarNav');
+    const container = document.querySelector('.detail-container');
+    if (!body || !sidebar || !nav) return;
+
+    // 本文中の見出し（id 付きの h2 / h3 のみ）を収集する
+    const headings = Array.prototype.slice.call(
+        body.querySelectorAll('h2[id], h3[id]')
+    );
+
+    // 見出しが無い記事はサイドバー目次を作らず 1 カラムに戻す
+    if (headings.length === 0) {
+        if (container) container.classList.add('detail-no-toc');
+        sidebar.hidden = true;
+        return;
+    }
+
+    // ---- 目次リストを組み立てる（h2 を親、h3 を子として入れ子にする） ----
+    const rootUl = document.createElement('ul');
+    rootUl.className = 'toc-sidebar-list';
+
+    const linkMap = [];   // { id, link, el } の配列（スクロールスパイ用）
+
+    headings.forEach(function (h) {
+        const level = h.tagName.toLowerCase();   // 'h2' または 'h3'
+        const id    = h.id;
+        const text  = (h.textContent || '').trim();
+
+        const li = document.createElement('li');
+        li.className = 'toc-sidebar-item toc-' + level;
+
+        const a = document.createElement('a');
+        a.className = 'toc-sidebar-link';
+        a.href = '#' + id;
+        a.textContent = text;
+        a.setAttribute('data-target', id);
+        li.appendChild(a);
+
+        if (level === 'h3' && rootUl.lastElementChild) {
+            // 直前の h2 の下にぶら下げる
+            const parentLi = rootUl.lastElementChild;
+            let sub = parentLi.querySelector(':scope > ul.toc-sidebar-sublist');
+            if (!sub) {
+                sub = document.createElement('ul');
+                sub.className = 'toc-sidebar-sublist';
+                parentLi.appendChild(sub);
+            }
+            sub.appendChild(li);
+        } else {
+            rootUl.appendChild(li);
+        }
+
+        linkMap.push({ id: id, link: a, el: h });
+    });
+
+    nav.appendChild(rootUl);
+
+    // ---- クリックでスムーズスクロール（固定ヘッダー分は scroll-margin-top で吸収） ----
+    nav.addEventListener('click', function (e) {
+        const a = e.target.closest('a.toc-sidebar-link');
+        if (!a) return;
+        const target = document.getElementById(a.getAttribute('data-target'));
+        if (!target) return;
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (history.replaceState) {
+            history.replaceState(null, '', '#' + a.getAttribute('data-target'));
+        }
+    });
+
+    // ---- スクロールスパイ（いま読んでいる見出しをハイライト） ----
+    let activeLink = null;
+
+    function setActive(link) {
+        if (link === activeLink) return;
+        if (activeLink) activeLink.classList.remove('is-active');
+        if (link) {
+            link.classList.add('is-active');
+            // 目次が長くスクロールする場合、ハイライト項目を枠内に収める
+            const navRect  = nav.getBoundingClientRect();
+            const linkRect = link.getBoundingClientRect();
+            if (linkRect.top < navRect.top) {
+                nav.scrollTop -= (navRect.top - linkRect.top) + 12;
+            } else if (linkRect.bottom > navRect.bottom) {
+                nav.scrollTop += (linkRect.bottom - navRect.bottom) + 12;
+            }
+        }
+        activeLink = link;
+    }
+
+    let ticking = false;
+    function updateActive() {
+        ticking = false;
+        // 固定ヘッダー（85px）＋余白のぶん下げた位置を「読んでいる基準線」にする
+        const offset = 120;
+        let current = linkMap[0];
+        for (let i = 0; i < linkMap.length; i++) {
+            if (linkMap[i].el.getBoundingClientRect().top - offset <= 0) {
+                current = linkMap[i];
+            } else {
+                break;
+            }
+        }
+        setActive(current ? current.link : null);
+    }
+
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(updateActive);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    updateActive();   // 初期表示時のハイライト
+})();
 </script>
 
 {% endblock %}
