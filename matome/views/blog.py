@@ -347,103 +347,104 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
     """
     指定した記事に対する関連記事を最大 max_count 件取得して返す。
 
-    取得は以下の優先順位で段階的に行い、合計が max_count に達した時点で終了する。
+    【並び順の決め方：一致数スコア方式】
+    閲覧中の記事が持つ「ジャンル」と「ハッシュタグ」を一致判定の対象とし、
+    候補記事ごとに “いくつ一致したか”（＝関連スコア）を数えて、
+    スコアの大きい記事から順に上から並べる。
 
-      STEP 1: 同じジャンル × 同じタグあり（最も関連度が高い）
-      STEP 2: 同じタグのみ（ジャンル不問）
-      STEP 3: 同じジャンルのみ（タグ不問）
-      STEP 4: 最新記事（関連条件なし）
+        関連スコア = (ジャンルが一致すれば +1) + (共通するハッシュタグの数)
 
-    各 STEP 内では created_at DESC（新しい順）で取得する。
-    前の STEP で取得済みの記事は次の STEP 以降の候補から除外する（重複排除）。
+    スコアが同じ記事どうしは created_at DESC（新しい順）で並べる。
 
-    STEP 1 / STEP 2 の Post.hashtags.any(...) は中間テーブルを経由する
+    例）閲覧中の記事が「旅行」ジャンル / #横浜観光 #藤沢観光 #聖地巡礼 のとき
+        ・「旅行」× #横浜観光 #藤沢観光 #聖地巡礼 を持つ記事 → スコア 4（最上部）
+        ・「旅行」× #横浜観光 #藤沢観光          を持つ記事 → スコア 3
+        ・「旅行」× #聖地巡礼                    を持つ記事 → スコア 2
+        ・「旅行」のみ（共通タグなし）            の記事     → スコア 1
+        ・ジャンルも共通タグも無い                記事       → スコア 0（最下部/穴埋め）
+        の順に並ぶ。
+
+    【従来方式との違い】
+    従来は「同ジャンル×同タグ → 同タグ → 同ジャンル → 最新」の 4 段階で
+    該当記事を順に拾っていく “段階取得” 方式だった。本方式では候補をまとめて
+    取得し、一致数で並べ替える。これにより
+    「ジャンルもタグも多く一致する記事ほど上位」という直感的な並びになる。
+
+    【件数と穴埋め（従来の挙動を維持）】
+    「最大 max_count 件表示」を維持するため、関連記事（スコア 1 以上）だけで
+    max_count に満たない場合は、関連のない最新記事をスコア 0 相当として末尾に
+    補う。これは従来方式の STEP 4（最新記事での穴埋め）と同じ役割。
+
+    STEP 1 / STEP 3 の Post.hashtags.any(...) は中間テーブルを経由する
     EXISTS サブクエリであり、ix_post_hashtags_hashtag_id が効く。
-
-    関連記事カード（detail.html の .related-card）はタイトル・日付・
-    サムネイルしか表示せず、ハッシュタグを使わない。そのため、ここで取得した
-    記事に対するタグ先読みのクエリは発行されない（一覧系のように
-    selectinload を指定していないため）。
 
     @param post:       現在閲覧中の Post オブジェクト
     @param pub_filter: 公開状態の絞り込み条件（SQLAlchemy フィルター式）
     @param max_count:  最大取得件数（デフォルト 4）
-    @return:           STEP 順に並べた Post オブジェクトのリスト
+    @return:           並び順（スコア降順 → 新しい順）に整列した Post のリスト
     """
     # ------------------------------------------------------------------
-    # STEP 0. 初期化
+    # STEP 0. 準備：閲覧中記事のジャンルとタグ名を取り出す
     # ------------------------------------------------------------------
-    results    = []          # 最終的に返すリスト（STEP 順を維持）
-    seen_ids   = {post.id}   # 現在の記事を最初から除外対象に追加
-    remaining  = max_count   # まだ取得が必要な件数
-    tag_names  = [t.name for t in post.hashtags]
+    tag_names = [t.name for t in post.hashtags]
+    tag_set   = set(tag_names)   # スコア計算時の照合を O(1) にするため集合化
 
     # ------------------------------------------------------------------
-    # STEP 1: 同じジャンル × 同じタグあり
+    # STEP 1. 候補記事の収集
+    #   「同じジャンル」または「共通タグを 1 つ以上持つ」記事だけを候補にする。
+    #   （どちらにも当てはまらない記事はスコア 0。穴埋めが必要なときだけ
+    #     STEP 3 で最新記事として拾う）
+    #
+    #   ・自分自身（post.id）の除外と pub_filter（公開範囲）の適用は従来どおり。
+    #   ・スコア計算で各候補の hashtags を参照するため、selectinload で
+    #     タグを先読みしておく。モデル側 lazy は 'select' のため、
+    #     先読みしないと候補ごとにタグ取得クエリが走り N+1 になる。
+    #   ・あらかじめ created_at DESC で取得しておくことで、この後の
+    #     「スコアだけで安定ソート」で同スコア内が自動的に新しい順になる。
     # ------------------------------------------------------------------
-    # タグが 1 つも無ければ「同じタグを持つ記事」は存在しないため、
-    # tag_names のチェックを実行条件（if）側に置く。
-    # これにより、結果が必ず空と分かっているクエリを発行せずに済む。
-    if remaining > 0 and tag_names:
-        step1 = (
-            Post.query
-            .filter(
-                pub_filter,
-                Post.id.notin_(seen_ids),
-                Post.genre == post.genre,
-                Post.hashtags.any(Hashtag.name.in_(tag_names)),
-            )
-            .order_by(Post.created_at.desc())
-            .limit(remaining)
-            .all()
+    match_conditions = [Post.genre == post.genre]
+    if tag_names:
+        match_conditions.append(Post.hashtags.any(Hashtag.name.in_(tag_names)))
+
+    candidates = (
+        Post.query
+        .options(db.selectinload(Post.hashtags))
+        .filter(
+            pub_filter,
+            Post.id != post.id,
+            db.or_(*match_conditions),
         )
-        results   += step1
-        seen_ids  |= {p.id for p in step1}
-        remaining  = max_count - len(results)
+        .order_by(Post.created_at.desc())
+        .all()
+    )
 
     # ------------------------------------------------------------------
-    # STEP 2: 同じタグのみ（ジャンル不問）
+    # STEP 2. スコア計算 → スコア降順に並べ替え
+    #   関連スコア = ジャンル一致(0/1) + 共通タグ数
+    #
+    #   Python の sort は安定ソートのため、スコアだけを降順キーにすれば
+    #   同スコア内は STEP 1 の created_at DESC がそのまま保たれる。
+    #   （datetime 同士を Python で比較しないので、タイムゾーン有無の差で
+    #     比較エラーになる心配もない）
     # ------------------------------------------------------------------
-    if remaining > 0 and tag_names:
-        step2 = (
-            Post.query
-            .filter(
-                pub_filter,
-                Post.id.notin_(seen_ids),
-                Post.hashtags.any(Hashtag.name.in_(tag_names)),
-            )
-            .order_by(Post.created_at.desc())
-            .limit(remaining)
-            .all()
-        )
-        results   += step2
-        seen_ids  |= {p.id for p in step2}
-        remaining  = max_count - len(results)
+    def _relation_score(cand: Post) -> int:
+        score = 1 if cand.genre == post.genre else 0
+        score += sum(1 for t in cand.hashtags if t.name in tag_set)
+        return score
+
+    candidates.sort(key=_relation_score, reverse=True)
+
+    results  = candidates[:max_count]
+    seen_ids = {post.id} | {p.id for p in results}
 
     # ------------------------------------------------------------------
-    # STEP 3: 同じジャンルのみ（タグ不問）
+    # STEP 3. 穴埋め（従来の「最新記事」ステップに相当）
+    #   関連候補だけで max_count に満たない場合、関連条件なしの最新記事で補う。
+    #   これらは定義上スコア 0（ジャンルもタグも一致しない）なので末尾に付く。
     # ------------------------------------------------------------------
+    remaining = max_count - len(results)
     if remaining > 0:
-        step3 = (
-            Post.query
-            .filter(
-                pub_filter,
-                Post.id.notin_(seen_ids),
-                Post.genre == post.genre,
-            )
-            .order_by(Post.created_at.desc())
-            .limit(remaining)
-            .all()
-        )
-        results   += step3
-        seen_ids  |= {p.id for p in step3}
-        remaining  = max_count - len(results)
-
-    # ------------------------------------------------------------------
-    # STEP 4: 最新記事（関連条件なし）
-    # ------------------------------------------------------------------
-    if remaining > 0:
-        step4 = (
+        fillers = (
             Post.query
             .filter(
                 pub_filter,
@@ -453,7 +454,7 @@ def _get_related_posts(post: Post, pub_filter, max_count: int = 4) -> list:
             .limit(remaining)
             .all()
         )
-        results += step4
+        results += fillers
 
     return results
 
