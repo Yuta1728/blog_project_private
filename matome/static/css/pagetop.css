@@ -101,7 +101,22 @@
                 box-shadow 0.2s ease;
 }
 
-.page-top-btn:hover {
+/* ホバーでの色変化は「マウスなどの正確なポインタを持つ端末」だけに限定する。
+   スマホ等のタッチ端末では、タップ後も :hover が残り続ける（sticky hover）ため、
+   一度押すとボタンが濃い青のまま戻らなくなる。これを避けるため @media で囲う。
+   タップ時の濃い青フィードバックは下の .is-pressed（JS が付与）で表現する。 */
+@media (hover: hover) {
+    .page-top-btn:hover {
+        background-color: #0369a1;   /* 濃いめのブルー */
+        box-shadow: 0 6px 18px rgba(12, 31, 53, 0.34),
+                    0 2px 6px rgba(12, 31, 53, 0.2);
+    }
+}
+
+/* タップ中の押下フィードバック（濃い青）。
+   JS がタップ時に .is-pressed を付け、記事の最上部に戻った時点で外す。
+   これによりタップ→濃い青→最上部到達で水色（初期色）へ確実に戻る。 */
+.page-top-btn.is-pressed {
     background-color: #0369a1;   /* 濃いめのブルー */
     box-shadow: 0 6px 18px rgba(12, 31, 53, 0.34),
                 0 2px 6px rgba(12, 31, 53, 0.2);
@@ -121,7 +136,8 @@
 .page-top-btn:hover,
 .page-top-btn:active,
 .page-top-btn:focus,
-.page-top-btn:focus-visible {
+.page-top-btn:focus-visible,
+.page-top-btn.is-pressed {
     color: #ffffff;
 }
 
@@ -174,7 +190,16 @@ html[data-theme="dark"] .page-top-btn {
     box-shadow: var(--dk-shadow);
 }
 
-html[data-theme="dark"] .page-top-btn:hover {
+/* ダークモードのホバー色変化もマウス端末だけに限定（sticky hover 対策） */
+@media (hover: hover) {
+    html[data-theme="dark"] .page-top-btn:hover {
+        background-color: var(--dk-accent);
+        box-shadow: var(--dk-shadow-strong);
+    }
+}
+
+/* ダークモードのタップ中フィードバック（JS が付ける .is-pressed） */
+html[data-theme="dark"] .page-top-btn.is-pressed {
     background-color: var(--dk-accent);
     box-shadow: var(--dk-shadow-strong);
 }
@@ -183,7 +208,8 @@ html[data-theme="dark"] .page-top-btn:hover {
 html[data-theme="dark"] .page-top-btn:hover,
 html[data-theme="dark"] .page-top-btn:active,
 html[data-theme="dark"] .page-top-btn:focus,
-html[data-theme="dark"] .page-top-btn:focus-visible {
+html[data-theme="dark"] .page-top-btn:focus-visible,
+html[data-theme="dark"] .page-top-btn.is-pressed {
     color: #06243a;
 }
 
