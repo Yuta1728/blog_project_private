@@ -78,6 +78,7 @@ static/
     mobile_compact.css
     mobile-editor.css
     mypage.css
+    pagetop.css
     thumbnail_fit.css
     top_sections.css
   favicon/
@@ -6287,6 +6288,247 @@ html[data-theme="dark"] .link-modal-hint {
 }
 </file>
 
+<file path="static/css/pagetop.css">
+/* ============================================================
+   static/css/pagetop.css
+   【対象ページ】 detail.html（記事詳細）
+   ------------------------------------------------------------
+   スマホ・タブレット幅（1024px 未満）で画面右下に出す
+   「記事タイトルへ戻る」フローティングボタン（#pageTopBtn）のスタイル。
+
+   ねらい：
+     記事を読み進めてから上の見出し（＝記事タイトル）へ戻るとき、
+     長い本文をスクロールして戻る手間をなくす。右下の丸ボタンを
+     タップすると記事タイトル（#articleTop）までスムーズに戻る。
+
+   表示条件：
+     - PC 幅（1024px 以上）… 右サイドバー目次が同じ役割を担うため非表示。
+     - スマホ幅（1024px 未満）… 既定は非表示で、JS が「少し下へ
+       スクロールしたとき」だけ .is-visible を付けて出す。
+
+   読み込み順：
+     base.css → … → dark-mode.css → detail.css → link_card.css →
+     （このファイル）pagetop.css
+     dark-mode.css より後に読むので、ダークモード変数（--dk-*）を
+     そのまま使える。
+   ============================================================ */
+
+/* ============================================================
+   ジャンプ先（記事タイトル）
+   ------------------------------------------------------------
+   固定ヘッダー（.main-header・高さおよそ 85px）の下にタイトルが
+   隠れないよう、scroll-margin-top を確保する。
+   これでボタンや目次リンクから #articleTop へ飛んでも、
+   タイトルがヘッダーの真下にきれいに収まる。
+   ============================================================ */
+#articleTop {
+    scroll-margin-top: 100px;
+}
+
+@media (max-width: 767px) {
+    #articleTop {
+        scroll-margin-top: 80px;
+    }
+}
+
+/* ============================================================
+   フローティングボタン本体
+   ------------------------------------------------------------
+   position: fixed で画面右下に固定する。
+   iPhone などのホームバー領域に被らないよう、safe-area-inset を加味する。
+   既定は非表示（opacity:0 / visibility:hidden）で、わずかに下へずらして
+   おき、.is-visible が付くとふわっと浮き上がって表示される。
+   ============================================================ */
+.page-top-btn {
+    position: fixed;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 90;   /* 固定ヘッダー(100)より下、本文より上 */
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+
+    background-color: #0ea5e9;   /* サイト基調のスカイブルー */
+    color: #ffffff;
+    cursor: pointer;
+
+    /* スマホでタップした瞬間に出る OS 標準のタップハイライト（半透明の
+       暗い被膜）を無効化する。これが中の矢印・TOP 文字に被ると
+       タップ中だけ中身が見えづらくなるため透明にしておく。 */
+    -webkit-tap-highlight-color: transparent;
+
+    box-shadow: 0 4px 14px rgba(12, 31, 53, 0.28),
+                0 2px 4px rgba(12, 31, 53, 0.18);
+
+    /* 既定は非表示。少し下げておき、表示時に浮き上がらせる */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transition: opacity 0.22s ease,
+                visibility 0s linear 0.22s,
+                transform 0.22s ease,
+                background-color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+/* JS が付与する「表示」状態 */
+.page-top-btn.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.22s ease,
+                visibility 0s linear 0s,
+                transform 0.22s ease,
+                background-color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+/* ホバーでの色変化は「マウスなどの正確なポインタを持つ端末」だけに限定する。
+   スマホ等のタッチ端末では、タップ後も :hover が残り続ける（sticky hover）ため、
+   一度押すとボタンが濃い青のまま戻らなくなる。これを避けるため @media で囲う。
+   タップ時の濃い青フィードバックは下の .is-pressed（JS が付与）で表現する。 */
+@media (hover: hover) {
+    .page-top-btn:hover {
+        background-color: #0369a1;   /* 濃いめのブルー */
+        box-shadow: 0 6px 18px rgba(12, 31, 53, 0.34),
+                    0 2px 6px rgba(12, 31, 53, 0.2);
+    }
+}
+
+/* タップ中の押下フィードバック（濃い青）。
+   JS がタップ時に .is-pressed を付け、記事の最上部に戻った時点で外す。
+   これによりタップ→濃い青→最上部到達で水色（初期色）へ確実に戻る。 */
+.page-top-btn.is-pressed {
+    background-color: #0369a1;   /* 濃いめのブルー */
+    box-shadow: 0 6px 18px rgba(12, 31, 53, 0.34),
+                0 2px 6px rgba(12, 31, 53, 0.2);
+}
+
+.page-top-btn:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+/* ------------------------------------------------------------
+   丸の中身（矢印・TOP 文字）の色はタップしても変えない
+   ------------------------------------------------------------
+   背景色はタップ／ホバーで変化させるが、中身（currentColor を使う
+   SVG の線と TOP 文字）は常に同じ色のまま、はっきり表示させ続ける。
+   どの状態でも color を固定しておくことで、タップ中に中身が
+   消えたり見えづらくなったりしないようにする。 */
+.page-top-btn:hover,
+.page-top-btn:active,
+.page-top-btn:focus,
+.page-top-btn:focus-visible,
+.page-top-btn.is-pressed {
+    color: #ffffff;
+}
+
+/* SVG アイコンは currentColor（＝ボタンの color）を確実に継承させる */
+.page-top-btn-icon {
+    color: inherit;
+}
+
+/* キーボード操作時のフォーカスリング（アクセシビリティ） */
+.page-top-btn:focus-visible {
+    outline: 3px solid rgba(14, 165, 233, 0.45);
+    outline-offset: 2px;
+}
+
+.page-top-btn-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.page-top-btn-label {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   PC 幅では非表示
+   ------------------------------------------------------------
+   1024px 以上では右サイドバー目次（.detail-toc-sidebar）が
+   「どこからでも見出しへ戻れる」役割を担うため、このボタンは出さない。
+   JS が .is-visible を付けても display:none が勝つので表示されない。
+   ============================================================ */
+@media (min-width: 1024px) {
+    .page-top-btn {
+        display: none !important;
+    }
+}
+
+/* ============================================================
+   ダークモード
+   ------------------------------------------------------------
+   dark-mode.css の --dk-* 変数を使って、暗い背景でも浮いて見える
+   配色・影に差し替える。
+   ============================================================ */
+html[data-theme="dark"] .page-top-btn {
+    background-color: var(--dk-accent-strong);
+    color: #06243a;
+    box-shadow: var(--dk-shadow);
+}
+
+/* ダークモードのホバー色変化もマウス端末だけに限定（sticky hover 対策） */
+@media (hover: hover) {
+    html[data-theme="dark"] .page-top-btn:hover {
+        background-color: var(--dk-accent);
+        box-shadow: var(--dk-shadow-strong);
+    }
+}
+
+/* ダークモードのタップ中フィードバック（JS が付ける .is-pressed） */
+html[data-theme="dark"] .page-top-btn.is-pressed {
+    background-color: var(--dk-accent);
+    box-shadow: var(--dk-shadow-strong);
+}
+
+/* ダークモードでも中身（矢印・TOP 文字）の色はタップで変えず固定する */
+html[data-theme="dark"] .page-top-btn:hover,
+html[data-theme="dark"] .page-top-btn:active,
+html[data-theme="dark"] .page-top-btn:focus,
+html[data-theme="dark"] .page-top-btn:focus-visible,
+html[data-theme="dark"] .page-top-btn.is-pressed {
+    color: #06243a;
+}
+
+html[data-theme="dark"] .page-top-btn:focus-visible {
+    outline-color: rgba(56, 189, 248, 0.55);
+}
+
+/* ============================================================
+   モーション軽減設定の尊重
+   ------------------------------------------------------------
+   prefers-reduced-motion のユーザーには、ふわっとした動きを控える。
+   （クリック時のスクロールも detail.html 側 JS で auto に切り替える）
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    .page-top-btn {
+        transition: opacity 0.001s linear,
+                    visibility 0s linear;
+        transform: none;
+    }
+    .page-top-btn.is-visible {
+        transform: none;
+    }
+    .page-top-btn:active {
+        transform: none;
+    }
+}
+</file>
+
 <file path="static/css/thumbnail_fit.css">
 /* ============================================================
    static/css/thumbnail_fit.css
@@ -9110,10 +9352,12 @@ document.addEventListener('keydown', function(e) {
 
 {# ページ固有 CSS は <head> の extra_css ブロックで読み込む。
    static_url は更新時刻付きの URL を返し、キャッシュバスティングを行う。
-   link_card.css は本文中の [link:] リンクカードの表示に使う。 #}
+   link_card.css は本文中の [link:] リンクカードの表示に使う。
+   pagetop.css はスマホ幅で表示する「記事タイトルへ戻る」ボタンのスタイル。 #}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ static_url('css/detail.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/link_card.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/pagetop.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -9136,6 +9380,14 @@ document.addEventListener('keydown', function(e) {
 
    スマホ・タブレット幅（1024px 未満）では従来どおり 1 カラム表示のままで、
    記事カード冒頭の目次（.post-toc）をそのまま使う（サイドバーは非表示）。
+
+   【今回の追加（スマホ用「記事タイトルへ戻る」ボタン）】
+   スマホ・タブレット幅（1024px 未満）では右サイドバー目次が無いため、
+   読み進めてから上の見出しへ戻るにはスクロールし続ける必要があった。
+   そこで画面右下に邪魔にならないフローティングボタン（.page-top-btn）を
+   置き、タップすると記事タイトル（#articleTop）までスムーズに戻れるようにする。
+   ボタンは PC 幅では非表示（サイドバー目次が役割を担うため）で、
+   スマホ幅でも「少し下へスクロールしたとき」だけ表示する。
    ============================================================ #}
 
 <div class="detail-container">
@@ -9143,7 +9395,9 @@ document.addEventListener('keydown', function(e) {
     {# ===== 記事カード本体＋操作ボタン＋関連記事（左カラム） ===== #}
     <div class="detail-main">
         <article>
-            <h1>
+            {# id="articleTop" は「記事タイトルへ戻る」ボタンのジャンプ先。
+               固定ヘッダーに隠れないよう pagetop.css で scroll-margin-top を確保する。 #}
+            <h1 id="articleTop">
                 {{ post.title }}
             </h1>
 
@@ -9258,6 +9512,25 @@ document.addEventListener('keydown', function(e) {
     </aside>
 
 </div>
+
+{# ============================================================
+   スマホ用「記事タイトルへ戻る」フローティングボタン
+   ------------------------------------------------------------
+   画面右下に固定表示する page top ボタン。タップすると記事タイトル
+   （#articleTop）までスムーズに戻る。スタイルは pagetop.css、
+   表示/非表示の制御は下の JavaScript が担当する。
+   - PC 幅（1024px 以上）では pagetop.css が display:none にする
+     （右サイドバー目次が同じ役割を担うため）。
+   - スマホ幅でも、少し下へスクロールしたときだけ .is-visible を付けて出す。
+   初期状態は aria-hidden="true"（非表示）。JS が表示時に false へ更新する。
+   ============================================================ #}
+<button type="button" class="page-top-btn" id="pageTopBtn"
+        aria-label="記事タイトルへ戻る" aria-hidden="true" title="記事タイトルへ戻る">
+    <svg class="page-top-btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 19V6M12 6L6 12M12 6l6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="page-top-btn-label">TOP</span>
+</button>
 
 <script>
 /* ============================================================
@@ -9443,6 +9716,82 @@ function ytThumbFallback(img, isLoad) {
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll, { passive: true });
     updateActive();   // 初期表示時のハイライト
+})();
+
+/* ============================================================
+   スマホ用「記事タイトルへ戻る」ボタンの表示制御
+   ------------------------------------------------------------
+   ・クリックで記事タイトル（#articleTop）までスムーズに戻る。
+   ・少し下へスクロールしたときだけ .is-visible を付けて表示する
+     （最上部では非表示にして、読み始めの画面を邪魔しない）。
+   ・PC 幅（1024px 以上）では pagetop.css が display:none にするため、
+     この JS が .is-visible を付けても見た目には出てこない。
+   ・scroll イベントは requestAnimationFrame でバッチ処理し、
+     既存のヘッダー制御やスクロールスパイと同じく過剰発火を防ぐ。
+   ・prefers-reduced-motion を好むユーザーには即時スクロール（auto）にする。
+   ============================================================ */
+(function () {
+    const btn = document.getElementById('pageTopBtn');
+    if (!btn) return;
+
+    // このスクロール量（px）を超えて下げたらボタンを出す
+    const SHOW_AFTER = 400;
+    let shown   = false;
+    let ticking = false;
+
+    function setShown(next) {
+        if (next === shown) return;
+        shown = next;
+        btn.classList.toggle('is-visible', next);
+        btn.setAttribute('aria-hidden', next ? 'false' : 'true');
+    }
+
+    function update() {
+        ticking = false;
+        const atTopZone = window.scrollY <= SHOW_AFTER;
+        setShown(!atTopZone);
+        // 記事の最上部まで戻ったら、タップ中フィードバック（濃い青）を解除し
+        // ボタンを水色（初期色）に戻す。
+        if (atTopZone) {
+            btn.classList.remove('is-pressed');
+        }
+    }
+
+    window.addEventListener('scroll', function () {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(update);
+    }, { passive: true });
+
+    // クリックで記事タイトルへ戻る（見出しへジャンプする既存 UX と揃える）
+    btn.addEventListener('click', function () {
+        // タップの反応として濃い青にする（.is-pressed）。
+        // 最上部まで戻ると上の update() が .is-pressed を外し、水色に戻る。
+        // blur() でフォーカス由来の残留状態も解除しておく。
+        btn.classList.add('is-pressed');
+        btn.blur();
+
+        const prefersReduced = window.matchMedia &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const target = document.getElementById('articleTop');
+
+        if (target && target.scrollIntoView) {
+            target.scrollIntoView({
+                behavior: prefersReduced ? 'auto' : 'smooth',
+                block: 'start'
+            });
+        } else {
+            // 念のためのフォールバック（タイトル要素が無い場合はページ最上部へ）
+            window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+        }
+
+        // URL にハッシュが残らないようにしておく（任意）
+        if (history.replaceState) {
+            history.replaceState(null, '', location.pathname + location.search);
+        }
+    });
+
+    update();   // 初期表示時の状態を反映
 })();
 </script>
 
