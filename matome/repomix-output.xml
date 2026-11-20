@@ -2717,6 +2717,11 @@ h1 {
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
+    /* 本文入力欄の縦幅を下方向に広げる。
+       上端はツールバー直下に固定されたまま、min-height で下端だけを押し下げる。
+       rows="17"（約680px相当）より大きい値にすることで、元の上部の見た目は
+       変えずに下へ伸びる。共通の .post-form textarea の 520px を上書き。 */
+    min-height: 840px !important;
     scroll-margin-top: calc(85px + 48px + 8px);
 }
 
@@ -2899,7 +2904,7 @@ h1 {
     .md-btn { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; }
     .md-btn-list { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; gap: 4px; }
     .md-toolbar { top: 63px; padding: 8px 10px; gap: 5px; overflow-x: hidden; }
-    #bodyTextarea { scroll-margin-top: calc(63px + 56px + 8px); }
+    #bodyTextarea { scroll-margin-top: calc(63px + 56px + 8px); min-height: 600px !important; }
     .map-modal { top: auto; bottom: 0; left: 0; right: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 90dvh; overflow-y: auto; }
     .map-preview-area { height: 200px; }
     .preview-caption-input { font-size: 14px; }
@@ -4028,7 +4033,7 @@ h1 {
 .detail-article-body h3 {
     font-size: 19px;
     font-weight: 700;
-    margin: 28px 0 0;
+    margin: 30px 0 0;
     text-align: left;
     color: #0c1f35;
     border-left: 4px solid #0ea5e9;
@@ -4265,7 +4270,7 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .detail-article-body p { margin-top: 9px !important; margin-bottom: 1.4em; font-size: 15px; }
     .detail-article-body pre, .detail-article-body code, .detail-article-body table { max-width: 100% !important; overflow-x: auto !important; display: block; word-break: normal; }
     .detail-article-body h2 { font-size: 18px; margin: 32px 0 12px; }
-    .detail-article-body h3 { font-size: 16px; margin: 24px 0 0; padding-left: 8px; }
+    .detail-article-body h3 { font-size: 16px; margin: 26px 0 0; padding-left: 8px; }
     .post-toc, .detail-article-body .toc { padding: 16px !important; border-radius: 0 6px 6px 0 !important; margin: 24px 0 !important; }
     /* 目次トップレベル項目（スマホ）: 14px → 15px に拡大 */
     .post-toc > ul > li, .post-toc .toc > ul > li, .detail-article-body .toc > ul > li { font-size: 15px !important; padding: 10px 0 !important; }
@@ -4972,7 +4977,7 @@ a[role="button"]:hover {
     border-left: 5px solid #0ea5e9;
     border-radius: 0 12px 12px 0;
     padding: 16px 22px;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.12);
     transition: transform 0.22s ease, box-shadow 0.22s ease,
                 border-left-color 0.22s ease, border-color 0.22s ease,
@@ -5297,7 +5302,7 @@ a[role="button"]:hover {
         gap: 12px;
         padding: 11px;
         margin-top: 0;
-        margin-bottom: 14px;
+        margin-bottom: 20px;
         border-radius: 0 10px 10px 0;
     }
 
@@ -8581,14 +8586,18 @@ document.addEventListener('keydown', function(e) {
                         {% if current_user.is_authenticated %}
                             <li><a href="{{ url_for('admin.create') }}">新規投稿</a></li>
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            <li><a href="{{ url_for('blog.index') }}">トップページ</a></li>
 
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                            <li><a href="{{ url_for('blog.howto') }}">使い方</a></li>
                             <li><a href="{{ url_for('admin.mypage') }}">マイページ</a></li>
                             <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
                         {% else %}
                             <li><a href="{{ url_for('blog.genre_list') }}">ジャンル検索</a></li>
+                            <li><a href="{{ url_for('blog.index') }}">トップページ</a></li>
 
                             <li><a href="{{ url_for('blog.about') }}">自己紹介</a></li>
+                            <li><a href="{{ url_for('blog.howto') }}">使い方</a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -8620,14 +8629,18 @@ document.addEventListener('keydown', function(e) {
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('admin.create') }}">✏️ 新規投稿</a></li>
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                <li><a href="{{ url_for('blog.index') }}">🏠 トップページ</a></li>
 
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
+                <li><a href="{{ url_for('blog.howto') }}">📖 使い方</a></li>
                 <li><a href="{{ url_for('admin.mypage') }}">👤 マイページ</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">🚪 ログアウト</a></li>
             {% else %}
                 <li><a href="{{ url_for('blog.genre_list') }}">📂 ジャンル検索</a></li>
+                <li><a href="{{ url_for('blog.index') }}">🏠 トップページ</a></li>
 
                 <li><a href="{{ url_for('blog.about') }}">🙋 自己紹介</a></li>
+                <li><a href="{{ url_for('blog.howto') }}">📖 使い方</a></li>
             {% endif %}
         </ul>
     </div>

@@ -587,3 +587,185 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     .related-title { font-size: 14px; }
     .related-date { font-size: 12px; }
 }
+
+/* ============================================================
+   【detail.html】PC 2カラムレイアウト ＋ 常時表示のサイドバー目次
+   ============================================================
+   【この改修で追加したブロック】
+   PC 幅（1024px 以上）では .detail-container をグリッドにして
+     左：記事カード本体（.detail-main）／右：サイドバー目次（.detail-toc-sidebar）
+   の 2 カラムにする。全体を少し広め（最大 1180px）に取って中央寄せするため、
+   記事カードは画面中央よりわずかに左へ寄り、右側に目次が貼り付き続ける。
+
+   サイドバー目次は position: sticky で、スクロールしても常に画面内に残り、
+   どの見出しへもワンクリックで移動できる。中身は detail.html の JS が
+   本文見出し（h2 / h3）から生成する。
+
+   1024px 未満（タブレット・スマホ）では従来どおり 1 カラム表示のままで、
+   記事カード冒頭の目次（.post-toc）を使う（サイドバーは非表示）。
+   ------------------------------------------------------------ */
+
+/* 左カラムのラッパ。グリッドの子がはみ出さないよう min-width: 0 を付ける。
+   1024px 未満では単なる透過ラッパとして機能し、見た目は変わらない。 */
+.detail-main {
+    min-width: 0;
+}
+
+/* サイドバー目次は既定で非表示。PC 幅（下の @media）でのみ表示する。 */
+.detail-toc-sidebar {
+    display: none;
+}
+
+/* ------------------------------------------------------------
+   PC 幅（1024px 以上）：2カラム化してサイドバー目次を出す
+   ------------------------------------------------------------ */
+@media (min-width: 1024px) {
+
+    /* コンテナを広めに取り、左 1fr（本文）＋右 280px（目次）のグリッドにする */
+    .detail-container {
+        max-width: 1180px !important;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        column-gap: 44px;
+        align-items: start;   /* 目次を上端に合わせ、sticky を効かせる */
+    }
+
+    /* 見出しの無い記事では JS が .detail-no-toc を付ける → 1 カラム中央寄せに戻す */
+    .detail-container.detail-no-toc {
+        display: block;
+        max-width: 860px !important;
+    }
+
+    /* PC では記事カード冒頭の目次は右サイドバーに役割を譲るので隠す */
+    .detail-main .post-toc {
+        display: none !important;
+    }
+
+    /* サイドバー目次を表示。固定ヘッダー（85px）の下に貼り付かせる */
+    .detail-toc-sidebar {
+        display: block;
+        position: sticky;
+        top: 100px;                         /* 固定ヘッダー 85px ＋ 余白 */
+        align-self: start;
+        max-height: calc(100vh - 124px);    /* 画面に収まらない長い目次は内部スクロール */
+    }
+}
+
+/* サイドバー目次カード本体（.post-toc と同系統の配色でそろえる） */
+.toc-sidebar-inner {
+    background-color: #f0f9ff;
+    border: 1px solid #7dd3fa;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0 8px 8px 0;
+    padding: 18px 20px;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.10);
+    box-sizing: border-box;
+}
+
+/* 目次見出しラベル「目次」 */
+.toc-sidebar-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 0 12px;
+    color: #1f5a99;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #bae6fd;
+    padding-bottom: 10px;
+}
+
+/* 目次の内部スクロール領域（長い目次のとき） */
+.toc-sidebar-nav {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* 目次リスト（JS が生成） */
+.toc-sidebar-list,
+.toc-sidebar-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* h3 のぶら下げ（h2 の下に少しインデントして並べる） */
+.toc-sidebar-sublist {
+    padding-left: 12px;
+    margin: 4px 0 2px;
+    border-left: 1px solid #cdeafd;
+}
+
+.toc-sidebar-item {
+    margin: 0;
+}
+
+/* 目次リンク 1 行分。左の 2px ラインが現在地ハイライトのベースになる */
+.toc-sidebar-link {
+    display: block;
+    padding: 6px 10px;
+    margin: 1px 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #1f5a99 !important;
+    text-decoration: none !important;
+    border-left: 2px solid transparent;
+    border-radius: 0 4px 4px 0;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* h2（トップレベル）項目は少し強調 */
+.toc-sidebar-item.toc-h2 > .toc-sidebar-link {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.toc-sidebar-link:hover {
+    background-color: #dbeafe;
+    color: #0c1f35 !important;
+    text-decoration: none !important;
+}
+
+/* いま読んでいる見出し（JS が .is-active を付与） */
+.toc-sidebar-link.is-active {
+    background-color: #e0f2fe;
+    color: #0369a1 !important;
+    border-left-color: #0ea5e9;
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------------
+   サイドバー目次 ダークモード対応
+   ------------------------------------------------------------
+   detail.css は base.html で dark-mode.css より後に読み込まれるため、
+   ここでの html[data-theme="dark"] 指定が有効になる（error.css と同じ方式）。
+   ------------------------------------------------------------ */
+html[data-theme="dark"] .toc-sidebar-inner {
+    background-color: var(--dk-surface-2);
+    border-color: var(--dk-border-strong);
+    border-left-color: var(--dk-accent-strong);
+    box-shadow: var(--dk-shadow);
+}
+
+html[data-theme="dark"] .toc-sidebar-title {
+    color: var(--dk-text);
+    border-bottom-color: var(--dk-border);
+}
+
+html[data-theme="dark"] .toc-sidebar-sublist {
+    border-left-color: var(--dk-border);
+}
+
+html[data-theme="dark"] .toc-sidebar-link {
+    color: var(--dk-text-body) !important;
+}
+
+html[data-theme="dark"] .toc-sidebar-link:hover {
+    background-color: var(--dk-surface-3);
+    color: var(--dk-text) !important;
+}
+
+html[data-theme="dark"] .toc-sidebar-link.is-active {
+    background-color: var(--dk-surface-3);
+    color: var(--dk-text) !important;
+    border-left-color: var(--dk-accent);
+}
