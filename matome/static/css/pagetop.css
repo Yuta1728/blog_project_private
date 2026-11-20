@@ -70,6 +70,11 @@
     color: #ffffff;
     cursor: pointer;
 
+    /* スマホでタップした瞬間に出る OS 標準のタップハイライト（半透明の
+       暗い被膜）を無効化する。これが中の矢印・TOP 文字に被ると
+       タップ中だけ中身が見えづらくなるため透明にしておく。 */
+    -webkit-tap-highlight-color: transparent;
+
     box-shadow: 0 4px 14px rgba(12, 31, 53, 0.28),
                 0 2px 4px rgba(12, 31, 53, 0.18);
 
@@ -104,6 +109,25 @@
 
 .page-top-btn:active {
     transform: translateY(1px) scale(0.97);
+}
+
+/* ------------------------------------------------------------
+   丸の中身（矢印・TOP 文字）の色はタップしても変えない
+   ------------------------------------------------------------
+   背景色はタップ／ホバーで変化させるが、中身（currentColor を使う
+   SVG の線と TOP 文字）は常に同じ色のまま、はっきり表示させ続ける。
+   どの状態でも color を固定しておくことで、タップ中に中身が
+   消えたり見えづらくなったりしないようにする。 */
+.page-top-btn:hover,
+.page-top-btn:active,
+.page-top-btn:focus,
+.page-top-btn:focus-visible {
+    color: #ffffff;
+}
+
+/* SVG アイコンは currentColor（＝ボタンの color）を確実に継承させる */
+.page-top-btn-icon {
+    color: inherit;
 }
 
 /* キーボード操作時のフォーカスリング（アクセシビリティ） */
@@ -153,6 +177,14 @@ html[data-theme="dark"] .page-top-btn {
 html[data-theme="dark"] .page-top-btn:hover {
     background-color: var(--dk-accent);
     box-shadow: var(--dk-shadow-strong);
+}
+
+/* ダークモードでも中身（矢印・TOP 文字）の色はタップで変えず固定する */
+html[data-theme="dark"] .page-top-btn:hover,
+html[data-theme="dark"] .page-top-btn:active,
+html[data-theme="dark"] .page-top-btn:focus,
+html[data-theme="dark"] .page-top-btn:focus-visible {
+    color: #06243a;
 }
 
 html[data-theme="dark"] .page-top-btn:focus-visible {
