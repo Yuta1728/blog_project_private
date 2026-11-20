@@ -621,12 +621,14 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
    ------------------------------------------------------------ */
 @media (min-width: 1024px) {
 
-    /* コンテナを広めに取り、左 1fr（本文）＋右 280px（目次）のグリッドにする */
+    /* コンテナを広めに取り、左 1fr（本文）＋右 300px（目次）のグリッドにする。
+       全体幅（最大 1240px）と目次幅（300px）のぶん、本文側（1fr）も
+       あわせて広がる。 */
     .detail-container {
-        max-width: 1180px !important;
+        max-width: 1240px !important;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 280px;
-        column-gap: 44px;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        column-gap: 46px;
         align-items: start;   /* 目次を上端に合わせ、sticky を効かせる */
     }
 
@@ -651,9 +653,9 @@ hr { border: 0; border-top: 1px solid #e0f2fe; margin: 0 0 24px; }
     }
 }
 
-/* サイドバー目次カード本体（.post-toc と同系統の配色でそろえる） */
+/* サイドバー目次カード本体（白に近い極淡い水色で、本文カードとなじませる） */
 .toc-sidebar-inner {
-    background-color: #f0f9ff;
+    background-color: #fafdff;
     border: 1px solid #7dd3fa;
     border-left: 4px solid #0ea5e9;
     border-radius: 0 8px 8px 0;
