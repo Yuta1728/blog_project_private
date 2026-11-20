@@ -455,6 +455,11 @@ h1 {
 #bodyTextarea {
     border-radius: 0 0 8px 8px !important;
     border-top: none !important;
+    /* 本文入力欄の縦幅を下方向に広げる。
+       上端はツールバー直下に固定されたまま、min-height で下端だけを押し下げる。
+       rows="17"（約680px相当）より大きい値にすることで、元の上部の見た目は
+       変えずに下へ伸びる。共通の .post-form textarea の 520px を上書き。 */
+    min-height: 840px !important;
     scroll-margin-top: calc(85px + 48px + 8px);
 }
 
@@ -637,7 +642,7 @@ h1 {
     .md-btn { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; }
     .md-btn-list { padding: 10px 12px; font-size: 14px; min-width: 48px; min-height: 44px; gap: 4px; }
     .md-toolbar { top: 63px; padding: 8px 10px; gap: 5px; overflow-x: hidden; }
-    #bodyTextarea { scroll-margin-top: calc(63px + 56px + 8px); }
+    #bodyTextarea { scroll-margin-top: calc(63px + 56px + 8px); min-height: 600px !important; }
     .map-modal { top: auto; bottom: 0; left: 0; right: 0; transform: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 90dvh; overflow-y: auto; }
     .map-preview-area { height: 200px; }
     .preview-caption-input { font-size: 14px; }
