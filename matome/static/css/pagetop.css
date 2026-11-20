@@ -1,0 +1,180 @@
+/* ============================================================
+   static/css/pagetop.css
+   【対象ページ】 detail.html（記事詳細）
+   ------------------------------------------------------------
+   スマホ・タブレット幅（1024px 未満）で画面右下に出す
+   「記事タイトルへ戻る」フローティングボタン（#pageTopBtn）のスタイル。
+
+   ねらい：
+     記事を読み進めてから上の見出し（＝記事タイトル）へ戻るとき、
+     長い本文をスクロールして戻る手間をなくす。右下の丸ボタンを
+     タップすると記事タイトル（#articleTop）までスムーズに戻る。
+
+   表示条件：
+     - PC 幅（1024px 以上）… 右サイドバー目次が同じ役割を担うため非表示。
+     - スマホ幅（1024px 未満）… 既定は非表示で、JS が「少し下へ
+       スクロールしたとき」だけ .is-visible を付けて出す。
+
+   読み込み順：
+     base.css → … → dark-mode.css → detail.css → link_card.css →
+     （このファイル）pagetop.css
+     dark-mode.css より後に読むので、ダークモード変数（--dk-*）を
+     そのまま使える。
+   ============================================================ */
+
+/* ============================================================
+   ジャンプ先（記事タイトル）
+   ------------------------------------------------------------
+   固定ヘッダー（.main-header・高さおよそ 85px）の下にタイトルが
+   隠れないよう、scroll-margin-top を確保する。
+   これでボタンや目次リンクから #articleTop へ飛んでも、
+   タイトルがヘッダーの真下にきれいに収まる。
+   ============================================================ */
+#articleTop {
+    scroll-margin-top: 100px;
+}
+
+@media (max-width: 767px) {
+    #articleTop {
+        scroll-margin-top: 80px;
+    }
+}
+
+/* ============================================================
+   フローティングボタン本体
+   ------------------------------------------------------------
+   position: fixed で画面右下に固定する。
+   iPhone などのホームバー領域に被らないよう、safe-area-inset を加味する。
+   既定は非表示（opacity:0 / visibility:hidden）で、わずかに下へずらして
+   おき、.is-visible が付くとふわっと浮き上がって表示される。
+   ============================================================ */
+.page-top-btn {
+    position: fixed;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 90;   /* 固定ヘッダー(100)より下、本文より上 */
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+
+    background-color: #0ea5e9;   /* サイト基調のスカイブルー */
+    color: #ffffff;
+    cursor: pointer;
+
+    box-shadow: 0 4px 14px rgba(12, 31, 53, 0.28),
+                0 2px 4px rgba(12, 31, 53, 0.18);
+
+    /* 既定は非表示。少し下げておき、表示時に浮き上がらせる */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transition: opacity 0.22s ease,
+                visibility 0s linear 0.22s,
+                transform 0.22s ease,
+                background-color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+/* JS が付与する「表示」状態 */
+.page-top-btn.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.22s ease,
+                visibility 0s linear 0s,
+                transform 0.22s ease,
+                background-color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+.page-top-btn:hover {
+    background-color: #0369a1;   /* 濃いめのブルー */
+    box-shadow: 0 6px 18px rgba(12, 31, 53, 0.34),
+                0 2px 6px rgba(12, 31, 53, 0.2);
+}
+
+.page-top-btn:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+/* キーボード操作時のフォーカスリング（アクセシビリティ） */
+.page-top-btn:focus-visible {
+    outline: 3px solid rgba(14, 165, 233, 0.45);
+    outline-offset: 2px;
+}
+
+.page-top-btn-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.page-top-btn-label {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   PC 幅では非表示
+   ------------------------------------------------------------
+   1024px 以上では右サイドバー目次（.detail-toc-sidebar）が
+   「どこからでも見出しへ戻れる」役割を担うため、このボタンは出さない。
+   JS が .is-visible を付けても display:none が勝つので表示されない。
+   ============================================================ */
+@media (min-width: 1024px) {
+    .page-top-btn {
+        display: none !important;
+    }
+}
+
+/* ============================================================
+   ダークモード
+   ------------------------------------------------------------
+   dark-mode.css の --dk-* 変数を使って、暗い背景でも浮いて見える
+   配色・影に差し替える。
+   ============================================================ */
+html[data-theme="dark"] .page-top-btn {
+    background-color: var(--dk-accent-strong);
+    color: #06243a;
+    box-shadow: var(--dk-shadow);
+}
+
+html[data-theme="dark"] .page-top-btn:hover {
+    background-color: var(--dk-accent);
+    box-shadow: var(--dk-shadow-strong);
+}
+
+html[data-theme="dark"] .page-top-btn:focus-visible {
+    outline-color: rgba(56, 189, 248, 0.55);
+}
+
+/* ============================================================
+   モーション軽減設定の尊重
+   ------------------------------------------------------------
+   prefers-reduced-motion のユーザーには、ふわっとした動きを控える。
+   （クリック時のスクロールも detail.html 側 JS で auto に切り替える）
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    .page-top-btn {
+        transition: opacity 0.001s linear,
+                    visibility 0s linear;
+        transform: none;
+    }
+    .page-top-btn.is-visible {
+        transform: none;
+    }
+    .page-top-btn:active {
+        transform: none;
+    }
+}
